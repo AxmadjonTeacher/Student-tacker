@@ -127,30 +127,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
           </div>
         ) : (
           <>
-            {/* Master Table Header Row */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
-              alignItems: 'center',
-              padding: '0.85rem 1.5rem',
-              marginBottom: '0.75rem',
-              background: '#e0f2f1',
-              color: '#1e293b',
-              border: '1px solid #b2dfdb',
-              borderRadius: '12px',
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              letterSpacing: '0.05em'
-            }}>
-              <div>O'QUVCHI</div>
-              <div style={{ padding: '0 1.5rem' }}>QABUL QILINGAN SANA</div>
-              <div style={{ padding: '0 1.5rem' }}>AVVALGI DARAJA</div>
-              <div style={{ padding: '0 1.5rem' }}>HOZIRGI DARAJA</div>
-              <div style={{ padding: '0 1.5rem', textAlign: 'center' }}>
-                {isAdminMode ? "AMALLAR" : "PROGRESS"}
-              </div>
-            </div>
-
             {/* Group students by contiguous teacher blocks to preserve sort order and render split tables */}
             {(() => {
               const groups: { teacher: string; students: Student[] }[] = [];
@@ -187,6 +163,28 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
                       {group.teacher ? `O'qituvchi: ${group.teacher}` : "O'qituvchi biriktirilmagan"}
                     </span>
+                  </div>
+
+                  {/* Clean and Small but Noticeable Column Headers */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
+                    alignItems: 'center',
+                    padding: '0.65rem 1.5rem',
+                    borderBottom: '1px solid #f1f5f9',
+                    background: '#fafaf9',
+                    color: '#64748b',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em'
+                  }}>
+                    <div>O'QUVCHI</div>
+                    <div style={{ padding: '0 1.5rem' }}>QABUL QILINGAN SANA</div>
+                    <div style={{ padding: '0 1.5rem' }}>AVVALGI DARAJA</div>
+                    <div style={{ padding: '0 1.5rem' }}>HOZIRGI DARAJA</div>
+                    <div style={{ padding: '0 1.5rem', textAlign: 'center' }}>
+                      {isAdminMode ? "AMALLAR" : "PROGRESS"}
+                    </div>
                   </div>
 
                   {/* Student rows inside this teacher's card */}
