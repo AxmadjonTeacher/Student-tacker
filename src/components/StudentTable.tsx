@@ -212,6 +212,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onDragStart={(e) => handleDragStart(e, student.id)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, student.id)}
+                        onDragEnd={() => setDraggedId(null)}
                         style={{
                           display: 'grid',
                           gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
