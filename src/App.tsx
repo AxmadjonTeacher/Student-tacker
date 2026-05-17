@@ -206,21 +206,54 @@ function App() {
   }, [activeSubject]);
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
-    const indexedUploads = newStudents.map((s, index) => ({
-      ...s,
-      orderIndex: students.length + index
-    }));
+    const upsertedStudents: Student[] = [];
+    const localUpdatedList = [...students];
 
-    setStudents(prev => [...prev, ...indexedUploads]);
-    if (indexedUploads.length > 0 && indexedUploads[0].className) {
-      setActiveClass(getClassGroup(indexedUploads[0].className.toUpperCase()));
+    for (let i = 0; i < newStudents.length; i++) {
+      const newS = newStudents[i];
+      const matchIndex = localUpdatedList.findIndex(
+        old => old.name.toLowerCase().trim() === newS.name.toLowerCase().trim() &&
+               old.surname.toLowerCase().trim() === newS.surname.toLowerCase().trim()
+      );
+
+      if (matchIndex > -1) {
+        const existing = localUpdatedList[matchIndex];
+        const merged: Student = {
+          ...existing,
+          ...newS,
+          id: existing.id,
+          pictureUrl: existing.pictureUrl || newS.pictureUrl,
+          orderIndex: existing.orderIndex ?? (localUpdatedList.length + i),
+          grandTests: newS.grandTests || existing.grandTests,
+          mathGrandTests: newS.mathGrandTests || existing.mathGrandTests,
+          teacher: newS.teacher || existing.teacher,
+          mathTeacher: newS.mathTeacher || existing.mathTeacher
+        };
+        localUpdatedList[matchIndex] = merged;
+        upsertedStudents.push(merged);
+      } else {
+        const brandNew: Student = {
+          ...newS,
+          orderIndex: localUpdatedList.length
+        };
+        localUpdatedList.push(brandNew);
+        upsertedStudents.push(brandNew);
+      }
+    }
+
+    setStudents(localUpdatedList);
+
+    if (upsertedStudents.length > 0 && upsertedStudents[0].className) {
+      setActiveClass(getClassGroup(upsertedStudents[0].className.toUpperCase()));
     }
 
     try {
-      const { error } = await supabase.from('Students').insert(indexedUploads.map(mapStudentToDb));
+      const { error } = await supabase
+        .from('Students')
+        .upsert(upsertedStudents.map(mapStudentToDb), { onConflict: 'id' });
       if (error) throw error;
     } catch (err) {
-      console.error('Failed to sync uploaded students to Supabase:', err);
+      console.error('Failed to sync upserted students to Supabase:', err);
     }
   };
 

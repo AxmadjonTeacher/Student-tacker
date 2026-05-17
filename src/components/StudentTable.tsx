@@ -138,16 +138,30 @@ const StudentTable: React.FC<StudentTableProps> = ({
           </div>
         ) : (
           <>
-            {/* Group students by contiguous teacher blocks to preserve sort order and render split tables */}
+            {/* Group students by teacher block to render single unified table per teacher */}
             {(() => {
-              const groups: { teacher: string; students: Student[] }[] = [];
+              const groupsMap: { [teacher: string]: Student[] } = {};
               students.forEach((student) => {
                 const currentTeacher = student.teacher?.trim() || '';
-                if (groups.length === 0 || groups[groups.length - 1].teacher !== currentTeacher) {
-                  groups.push({ teacher: currentTeacher, students: [student] });
-                } else {
-                  groups[groups.length - 1].students.push(student);
+                if (!groupsMap[currentTeacher]) {
+                  groupsMap[currentTeacher] = [];
                 }
+                groupsMap[currentTeacher].push(student);
+              });
+
+              // Convert map to array and sort: alphabetical teachers, unassigned teachers at the very bottom
+              const groups = Object.keys(groupsMap).map((teacher) => ({
+                teacher,
+                students: groupsMap[teacher]
+              })).sort((a, b) => {
+                if (a.teacher === '') return 1;
+                if (b.teacher === '') return -1;
+                return a.teacher.localeCompare(b.teacher, 'uz');
+              });
+
+              // Sort students inside each group by orderIndex
+              groups.forEach(g => {
+                g.students.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
               });
 
               return groups.map((group, groupIdx) => (
