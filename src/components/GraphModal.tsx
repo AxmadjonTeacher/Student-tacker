@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, TrendingUp } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
@@ -8,20 +8,17 @@ import type { Student } from '../types';
 interface GraphModalProps {
   student: Student;
   onClose: () => void;
+  activeSubject: 'ENG' | 'MATH';
 }
 
+const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject }) => {
+  const [isComparing, setIsComparing] = useState(false);
 
-
-
-
-const GraphModal: React.FC<GraphModalProps> = ({ student, onClose }) => {
   // Normalize levels to a number for graphing
   const getLevelValue = (levelStr: string): number => {
     const trimmed = levelStr?.toString().trim() || '';
-    // Handle "Level 1", "Level 2", "level3" etc.
     const numMatch = trimmed.match(/\d+/);
     if (numMatch) return parseInt(numMatch[0], 10);
-    // Legacy text-based fallback
     const l = trimmed.toLowerCase();
     if (l.includes('adv') || l.includes('c1') || l.includes('c2')) return 6;
     if (l.includes('up')) return 5;
@@ -31,46 +28,61 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose }) => {
     return 1;
   };
 
-  const startValue = getLevelValue(student.startingLevel);
-  const endValue = getLevelValue(student.currentLevel);
-  
-  const levelsImproved = endValue - startValue;
+  // Helper to extract or generate clean test curves for both subjects
+  const getSubjectData = (subject: 'ENG' | 'MATH') => {
+    const isMath = subject === 'MATH';
+    const startLevel = getLevelValue(isMath ? (student.mathStartingLevel || 'Level 1') : (student.englishStartingLevel || student.startingLevel || 'Level 1'));
+    const endLevel = getLevelValue(isMath ? (student.mathCurrentLevel || 'Level 1') : (student.englishCurrentLevel || student.currentLevel || 'Level 1'));
+    const tests = isMath ? student.mathGrandTests : student.englishGrandTests;
 
-  // Use grand test data if available, otherwise generate some mock data based on levels
-  const data = student.grandTests ? student.grandTests.map(test => ({
-    date: test.name,
-    val: test.score
-  })) : (() => {
+    if (tests && tests.length > 0) {
+      return tests.map(test => ({
+        name: test.name,
+        score: test.score
+      }));
+    }
+
+    // Fallback/Mock generation with high aesthetic variation
     const mockData = [];
-    const totalPoints = 4;
     const testNames = ['Grant 1', 'Grant 2', 'Grant 3', 'Grant 4'];
-    
-    // Create a mock curve of scores from 40 to 90 depending on level improvement
-    for (let i = 0; i < totalPoints; i++) {
-      const progress = i / (totalPoints - 1);
-      const baseScore = 50 + (startValue * 5); // Just a mock math
-      const targetScore = 50 + (endValue * 5) + 15;
-      const currentVal = baseScore + (targetScore - baseScore) * progress;
-      
+    for (let i = 0; i < 4; i++) {
+      const progress = i / 3;
+      const baseScore = 45 + (startLevel * 6);
+      const targetScore = 45 + (endLevel * 6) + 12;
+      const variance = isMath ? (i === 1 ? -4 : i === 2 ? 3 : 0) : (i === 1 ? 2 : i === 2 ? -2 : 0);
       mockData.push({
-        date: testNames[i],
-        val: Math.round(currentVal)
+        name: testNames[i],
+        score: Math.min(100, Math.max(0, Math.round(baseScore + (targetScore - baseScore) * progress + variance)))
       });
     }
     return mockData;
-  })();
+  };
 
-  // Calculate dynamic, dramatic Y-axis domain boundaries to show impressive progress
-  const scores = data.map(d => d.val);
-  const minVal = scores.length > 0 ? Math.min(...scores) : 0;
-  const maxVal = scores.length > 0 ? Math.max(...scores) : 100;
+  const engData = getSubjectData('ENG');
+  const mathData = getSubjectData('MATH');
+
+  // Combine into single dataset for chart rendering
+  const combinedData = engData.map((d, index) => {
+    const mathPoint = mathData[index] || { score: 50 };
+    return {
+      date: d.name,
+      engVal: d.score,
+      mathVal: mathPoint.score
+    };
+  });
+
+  // Decide dynamically which scores are visible to scale Y-axis domain
+  const allVisibleScores = isComparing 
+    ? [...combinedData.map(d => d.engVal), ...combinedData.map(d => d.mathVal)]
+    : (activeSubject === 'MATH' ? combinedData.map(d => d.mathVal) : combinedData.map(d => d.engVal));
+
+  const minVal = allVisibleScores.length > 0 ? Math.min(...allVisibleScores) : 0;
+  const maxVal = allVisibleScores.length > 0 ? Math.max(...allVisibleScores) : 100;
   const valRange = maxVal - minVal;
-  // If progress is relatively narrow, compress domain so the mountain looks steeper and dramatic
   const padding = valRange < 15 ? 10 : 8; 
   const domainMin = Math.max(0, Math.floor((minVal - padding) / 5) * 5);
   const domainMax = Math.min(100, Math.ceil((maxVal + padding) / 5) * 5);
 
-  // Generate clean tick marks dynamically
   const ticks: number[] = [];
   const tickStep = Math.max(5, Math.ceil((domainMax - domainMin) / 4 / 5) * 5);
   for (let val = domainMin; val <= domainMax; val += tickStep) {
@@ -82,14 +94,42 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose }) => {
     ticks.push(domainMax);
   }
 
+  // Calculate subject-specific level changes
+  const engStart = getLevelValue(student.englishStartingLevel || student.startingLevel || 'Level 1');
+  const engEnd = getLevelValue(student.englishCurrentLevel || student.currentLevel || 'Level 1');
+  const engImproved = engEnd - engStart;
+
+  const mathStart = getLevelValue(student.mathStartingLevel || 'Level 1');
+  const mathEnd = getLevelValue(student.mathCurrentLevel || 'Level 1');
+  const mathImproved = mathEnd - mathStart;
+
+  const activeThemeColor = activeSubject === 'MATH' ? '#0d9488' : '#166534';
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div style={{ background: '#fff', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-          <p style={{ margin: 0, fontWeight: 600, color: '#0a1f2e', fontSize: '0.9rem' }}>{label}</p>
-          <p style={{ margin: '4px 0 0', color: '#129f87', fontSize: '0.85rem', fontWeight: 500 }}>
-            Natija : {payload[0].payload.val}%
-          </p>
+        <div style={{ 
+          background: '#ffffff', 
+          padding: '12px 16px', 
+          border: '1.5px solid #e2e8f0', 
+          borderRadius: '16px', 
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.35rem'
+        }}>
+          <p style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: '0.85rem', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>{label}</p>
+          {payload.map((item: any, idx: number) => {
+            const isMath = item.dataKey === 'mathVal';
+            const labelText = isMath ? 'Matematika' : 'Ingliz tili';
+            const color = isMath ? '#f97316' : '#129f87';
+            return (
+              <p key={idx} style={{ margin: 0, color: color, fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, display: 'inline-block' }}></span>
+                {labelText}: {item.value}%
+              </p>
+            );
+          })}
         </div>
       );
     }
@@ -102,97 +142,155 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose }) => {
         className="modal-content" 
         onClick={e => e.stopPropagation()} 
         style={{ 
-          maxWidth: '800px', 
+          maxWidth: '820px', 
           width: '95%',
           background: '#fcfcf9', 
-          borderRadius: '20px',
-          padding: '2rem 2.5rem'
+          borderRadius: '24px',
+          padding: '2.5rem'
         }}
       >
-        <div style={{ position: 'relative', marginBottom: '2rem' }}>
+        <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
           <button 
             onClick={onClose}
             style={{ 
-              position: 'absolute', right: '-10px', top: '-10px', 
-              background: 'transparent', border: '2px solid #129f87', 
+              position: 'absolute', right: '-15px', top: '-15px', 
+              background: 'transparent', border: `2px solid ${activeThemeColor}`, 
               borderRadius: '50%', padding: '4px', cursor: 'pointer',
-              color: '#129f87', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              color: activeThemeColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.08)';
+              e.currentTarget.style.background = `${activeThemeColor}10`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.background = 'transparent';
             }}
           >
             <X size={20} />
           </button>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <TrendingUp size={26} color="#129f87" strokeWidth={2.5} />
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0a1f2e', margin: 0 }}>
-              {student.name} {student.surname} — Progress
+            <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
+              {student.name} {student.surname} — {isComparing ? 'Fanlar taqqoslovi' : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')}
             </h2>
           </div>
           
-          <p style={{ color: '#64748b', fontSize: '1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span>Sinf {student.className}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+            <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sinf: {student.className}</span>
             <span style={{ color: '#cbd5e1' }}>·</span>
-            <span>Qabul qilingan: {student.dateJoined}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            {levelsImproved > 0 
-              ? (
-                <span style={{ 
-                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                  background: '#ccfbf1', color: '#0f766e',
-                  padding: '0.2rem 0.65rem', borderRadius: '999px',
-                  fontWeight: 600, fontSize: '0.9rem'
-                }}>
-                  <TrendingUp size={14} strokeWidth={2.5} />
-                  {levelsImproved} darajaga ko'tarildi
-                </span>
-              ) : levelsImproved < 0 ? (
-                <span style={{ 
-                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                  background: '#fee2e2', color: '#b91c1c',
-                  padding: '0.2rem 0.65rem', borderRadius: '999px',
-                  fontWeight: 600, fontSize: '0.9rem'
-                }}>
-                  <TrendingDown size={14} strokeWidth={2.5} />
-                  {Math.abs(levelsImproved)} darajaga tushdi
-                </span>
-              ) : (
-                <span style={{ 
-                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                  background: '#f1f5f9', color: '#64748b',
-                  padding: '0.2rem 0.65rem', borderRadius: '999px',
-                  fontWeight: 600, fontSize: '0.9rem'
-                }}>
-                  <Minus size={14} strokeWidth={2.5} />
-                  Daraja saqlandi
-                </span>
-              )
-            }
-          </p>
+            <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sana: {student.dateJoined}</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
+            {/* English Improvement Tag */}
+            {(isComparing || activeSubject === 'ENG') && (
+              <span style={{ 
+                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                background: '#e0f2fe', color: '#0369a1',
+                padding: '0.3rem 0.75rem', borderRadius: '999px',
+                fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.03em'
+              }}>
+                INGLIZ TILI: {engImproved > 0 ? `+${engImproved} daraja` : engImproved < 0 ? `${engImproved} daraja` : 'barqaror'}
+              </span>
+            )}
+
+            {/* Math Improvement Tag */}
+            {(isComparing || activeSubject === 'MATH') && (
+              <span style={{ 
+                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                background: '#ffedd5', color: '#c2410c',
+                padding: '0.3rem 0.75rem', borderRadius: '999px',
+                fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.03em'
+              }}>
+                MATEMATIKA: {mathImproved > 0 ? `+${mathImproved} daraja` : mathImproved < 0 ? `${mathImproved} daraja` : 'barqaror'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Real-time English & Math Switcher Button */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center',
+          marginBottom: '1.5rem' 
+        }}>
+          <button
+            onClick={() => setIsComparing(!isComparing)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: isComparing ? 'linear-gradient(135deg, #129f87, #f97316)' : '#ffffff',
+              color: isComparing ? '#ffffff' : '#475569',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '9999px',
+              padding: '0.6rem 1.5rem',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              letterSpacing: '0.05em'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1.5px)';
+              if (!isComparing) e.currentTarget.style.borderColor = activeThemeColor;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              if (!isComparing) e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+          >
+            {isComparing ? '📊 YAKKA KO\'RINISH' : '🆚 MATEMATIKA VA INGLIZ TILI BILAN TAQQOSLASH'}
+          </button>
         </div>
 
         <div style={{ 
           border: '1px solid #e2e8f0', 
-          borderRadius: '20px', 
+          borderRadius: '24px', 
           background: '#ffffff',
-          padding: '2rem 1.5rem 1rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02)'
+          padding: '2rem 1.5rem 1.25rem',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.01)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 1rem' }}>
-            <div style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '0.1em' }}>
-              BOSHLANG'ICH DARAJA: {student.startingLevel.toUpperCase()}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
+                BOSHLANG'ICH DARAJA
+              </div>
+              <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
+                {isComparing 
+                  ? `ENG: ${(student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase()} | MATH: ${(student.mathStartingLevel || 'Level 1').toUpperCase()}`
+                  : (activeSubject === 'MATH' ? (student.mathStartingLevel || 'Level 1').toUpperCase() : (student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase())
+                }
+              </div>
             </div>
-            <div style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600, letterSpacing: '0.1em' }}>
-              HOZIRGI DARAJA: {student.currentLevel.toUpperCase()}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
+                HOZIRGI DARAJA
+              </div>
+              <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
+                {isComparing 
+                  ? `ENG: ${(student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase()} | MATH: ${(student.mathCurrentLevel || 'Level 1').toUpperCase()}`
+                  : (activeSubject === 'MATH' ? (student.mathCurrentLevel || 'Level 1').toUpperCase() : (student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase())
+                }
+              </div>
             </div>
           </div>
 
           <div style={{ height: '350px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+              <AreaChart data={combinedData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
                 <defs>
-                  <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#129f87" stopOpacity={0.25}/>
+                  <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#129f87" stopOpacity={0.2}/>
                     <stop offset="95%" stopColor="#129f87" stopOpacity={0.0}/>
+                  </linearGradient>
+                  <linearGradient id="colorMath" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0.0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
@@ -200,7 +298,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose }) => {
                   dataKey="date" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 13, fontWeight: 600 }}
+                  tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
                   dy={15}
                 />
                 <YAxis 
@@ -209,28 +307,46 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose }) => {
                   tickFormatter={(val) => `${val}%`}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#64748b', fontSize: 13, fontWeight: 600 }}
+                  tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
                   width={50}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1 }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
                 
-                {/* Reference line at 50% for passing mark if visible within domain */}
                 {domainMin <= 50 && domainMax >= 50 && (
                   <ReferenceLine y={50} stroke="#e2e8f0" strokeWidth={1.5} strokeDasharray="3 3" />
                 )}
                 
-                <Area 
-                  type="monotone" 
-                  dataKey="val" 
-                  stroke="#129f87" 
-                  strokeWidth={4} 
-                  fillOpacity={1}
-                  fill="url(#colorProgress)"
-                  dot={{ r: 6, fill: '#ffffff', stroke: '#129f87', strokeWidth: 3 }}
-                  activeDot={{ r: 8, fill: '#129f87', stroke: '#ffffff', strokeWidth: 3 }}
-                  isAnimationActive={true}
-                  animationDuration={1500}
-                />
+                {/* English Score Area (Teal) */}
+                {(isComparing || activeSubject === 'ENG') && (
+                  <Area 
+                    type="monotone" 
+                    dataKey="engVal" 
+                    stroke="#129f87" 
+                    strokeWidth={4.5} 
+                    fillOpacity={1}
+                    fill="url(#colorEng)"
+                    dot={{ r: 5, fill: '#ffffff', stroke: '#129f87', strokeWidth: 3 }}
+                    activeDot={{ r: 7, fill: '#129f87', stroke: '#ffffff', strokeWidth: 3 }}
+                    isAnimationActive={true}
+                    animationDuration={1200}
+                  />
+                )}
+                
+                {/* Math Score Area (Orange) */}
+                {(isComparing || activeSubject === 'MATH') && (
+                  <Area 
+                    type="monotone" 
+                    dataKey="mathVal" 
+                    stroke="#f97316" 
+                    strokeWidth={4.5} 
+                    fillOpacity={1}
+                    fill="url(#colorMath)"
+                    dot={{ r: 5, fill: '#ffffff', stroke: '#f97316', strokeWidth: 3 }}
+                    activeDot={{ r: 7, fill: '#f97316', stroke: '#ffffff', strokeWidth: 3 }}
+                    isAnimationActive={true}
+                    animationDuration={1200}
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>

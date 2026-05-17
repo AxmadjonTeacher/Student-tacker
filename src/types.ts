@@ -15,6 +15,11 @@ export interface Student {
   mathStartingLevel?: string;
   mathCurrentLevel?: string;
   mathGrandTests?: { name: string; score: number }[];
+  // English explicit helpers (for math projection recovery)
+  englishTeacher?: string;
+  englishStartingLevel?: string;
+  englishCurrentLevel?: string;
+  englishGrandTests?: { name: string; score: number }[];
 }
 
 export type ClassName = '5A' | '5B' | '6A' | '6B' | '7A' | '7B' | '8A' | '8B' | string;

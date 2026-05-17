@@ -10,6 +10,7 @@ interface StudentTableProps {
   onDeleteStudent?: (studentId: string) => void;
   onAssignTeacher?: (studentId: string, teacherName: string) => void;
   onMoveStudent?: (draggedId: string, targetId: string) => void;
+  activeSubject?: 'ENG' | 'MATH';
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -18,7 +19,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onUpdatePhoto, 
   onDeleteStudent,
   onAssignTeacher,
-  onMoveStudent
+  onMoveStudent,
+  activeSubject = 'ENG'
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [uploadingStudentId, setUploadingStudentId] = useState<string | null>(null);
@@ -338,6 +340,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
         <GraphModal 
           student={selectedStudent} 
           onClose={() => setSelectedStudent(null)} 
+          activeSubject={activeSubject}
         />
       )}
     </>

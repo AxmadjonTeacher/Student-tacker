@@ -192,6 +192,19 @@ function App() {
     }
   }, [students, loading]);
 
+  // Dynamic theme colors: English = Dark Green, Math = Teal
+  useEffect(() => {
+    if (activeSubject === 'MATH') {
+      document.documentElement.style.setProperty('--accent-primary', '#0d9488'); // Teal
+      document.documentElement.style.setProperty('--accent-hover', '#0f766e');
+      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #0d9488, #0f766e)');
+    } else {
+      document.documentElement.style.setProperty('--accent-primary', '#166534'); // Premium Dark Green
+      document.documentElement.style.setProperty('--accent-hover', '#14532d');
+      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #166534, #14532d)');
+    }
+  }, [activeSubject]);
+
   const handleStudentsUploaded = async (newStudents: Student[]) => {
     const indexedUploads = newStudents.map((s, index) => ({
       ...s,
@@ -308,16 +321,25 @@ function App() {
   // Dynamically project activeSubject properties to standard fields
   const projectedStudents = useMemo(() => {
     return students.map(student => {
+      // Always store original english values explicitly so they are not lost after projection!
+      const studentWithEng = {
+        ...student,
+        englishTeacher: student.teacher,
+        englishStartingLevel: student.startingLevel,
+        englishCurrentLevel: student.currentLevel,
+        englishGrandTests: student.grandTests
+      };
+
       if (activeSubject === 'MATH') {
         return {
-          ...student,
+          ...studentWithEng,
           teacher: student.mathTeacher || '',
           startingLevel: student.mathStartingLevel || student.startingLevel || 'Level 1',
           currentLevel: student.mathCurrentLevel || student.currentLevel || 'Level 1',
           grandTests: student.mathGrandTests || []
         };
       }
-      return student;
+      return studentWithEng;
     });
   }, [students, activeSubject]);
 
@@ -472,6 +494,7 @@ function App() {
         onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
         onAssignTeacher={handleAssignTeacher}
         onMoveStudent={handleMoveStudent}
+        activeSubject={activeSubject}
       />
 
       {isAdminMode && (
