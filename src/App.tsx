@@ -13,19 +13,24 @@ const INITIAL_MOCK_DATA: Student[] = [
     id: '1', name: 'Emma', surname: 'Thompson', className: '5A', dateJoined: 'Sentyabr 2023', startingLevel: 'Level 1', currentLevel: 'Level 3',
     grandTests: [
       { name: 'Grant 1', score: 65 }, { name: 'Grant 2', score: 72 }, { name: 'Grant 3', score: 81 }, { name: 'Grant 4', score: 88 }
-    ]
+    ],
+    teacher: 'Abdulloh Teacher',
+    orderIndex: 0
   },
   { 
     id: '2', name: 'Liam', surname: 'Anderson', className: '5A', dateJoined: 'Sentyabr 2023', startingLevel: 'Level 1', currentLevel: 'Level 2',
     grandTests: [
       { name: 'Grant 1', score: 55 }, { name: 'Grant 2', score: 60 }, { name: 'Grant 3', score: 68 }, { name: 'Grant 4', score: 75 }
-    ]
+    ],
+    teacher: 'Abdulloh Teacher',
+    orderIndex: 1
   },
   { 
     id: '3', name: 'Sophia', surname: 'Martinez', className: '5B', dateJoined: 'Yanvar 2024', startingLevel: 'Level 1', currentLevel: 'Level 1',
     grandTests: [
       { name: 'Grant 1', score: 40 }, { name: 'Grant 2', score: 45 }, { name: 'Grant 3', score: 52 }, { name: 'Grant 4', score: 58 }
-    ]
+    ],
+    orderIndex: 2
   }
 ];
 
@@ -52,7 +57,10 @@ function App() {
         if (error) throw error;
         
         if (data && data.length > 0) {
-          setStudents(data.map(mapDbToStudent));
+          const loaded = data.map(mapDbToStudent);
+          // Sort based on saved orderIndex to preserve custom sorting
+          loaded.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+          setStudents(loaded);
         } else {
           // If Supabase table is empty, seed with initial mock data
           setStudents(INITIAL_MOCK_DATA);
@@ -64,7 +72,9 @@ function App() {
         const saved = localStorage.getItem('students_data_v2');
         if (saved) {
           try {
-            setStudents(JSON.parse(saved));
+            const loaded = JSON.parse(saved);
+            loaded.sort((a: Student, b: Student) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+            setStudents(loaded);
           } catch (e) {
             setStudents(INITIAL_MOCK_DATA);
           }
@@ -86,15 +96,20 @@ function App() {
   }, [students, loading]);
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
-    // Optimistic UI update
-    setStudents(prev => [...prev, ...newStudents]);
-    if (newStudents.length > 0 && newStudents[0].className) {
-      setActiveClass(getClassGroup(newStudents[0].className.toUpperCase()));
+    // Sequentially index new uploads starting after current length
+    const indexedUploads = newStudents.map((s, index) => ({
+      ...s,
+      orderIndex: students.length + index
+    }));
+
+    setStudents(prev => [...prev, ...indexedUploads]);
+    if (indexedUploads.length > 0 && indexedUploads[0].className) {
+      setActiveClass(getClassGroup(indexedUploads[0].className.toUpperCase()));
     }
 
     // Sync to Supabase
     try {
-      const { error } = await supabase.from('Students').insert(newStudents.map(mapStudentToDb));
+      const { error } = await supabase.from('Students').insert(indexedUploads.map(mapStudentToDb));
       if (error) throw error;
     } catch (err) {
       console.error('Failed to sync uploaded students to Supabase:', err);
@@ -186,12 +201,85 @@ function App() {
     return counts;
   }, [students, availableClasses]);
 
-  const filteredStudents = students.filter(s => {
-    const group = getClassGroup(s.className.toUpperCase());
-    const matchesClass = group === activeClass;
-    const matchesSearch = `${s.name} ${s.surname}`.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesClass && matchesSearch;
-  });
+  // Keep a Memoized reference of active class students
+  const filteredStudents = useMemo(() => {
+    return students.filter(s => {
+      const group = getClassGroup(s.className.toUpperCase());
+      const matchesClass = group === activeClass;
+      const matchesSearch = `${s.name} ${s.surname}`.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesClass && matchesSearch;
+    });
+  }, [students, activeClass, searchTerm]);
+
+  // Reorder student positions globally and sequentially
+  const handleReorderStudent = async (studentId: string, direction: 'up' | 'down') => {
+    const currentFiltered = [...filteredStudents];
+    const index = currentFiltered.findIndex(s => s.id === studentId);
+    if (index === -1) return;
+
+    if (direction === 'up' && index > 0) {
+      const temp = currentFiltered[index];
+      currentFiltered[index] = currentFiltered[index - 1];
+      currentFiltered[index - 1] = temp;
+    } else if (direction === 'down' && index < currentFiltered.length - 1) {
+      const temp = currentFiltered[index];
+      currentFiltered[index] = currentFiltered[index + 1];
+      currentFiltered[index + 1] = temp;
+    } else {
+      return; // Out of bounds
+    }
+
+    // Rebuild global list in the exact new order
+    let filteredCursor = 0;
+    const finalGlobalList = students.map(s => {
+      const isFiltered = filteredStudents.some(fs => fs.id === s.id);
+      if (isFiltered) {
+        const replacement = currentFiltered[filteredCursor];
+        filteredCursor++;
+        return replacement;
+      }
+      return s;
+    });
+
+    // Assign sequential order indexes globally to persist order in database
+    const orderedList = finalGlobalList.map((s, idx) => ({
+      ...s,
+      orderIndex: idx
+    }));
+
+    setStudents(orderedList);
+
+    // Sync order updates to Supabase
+    try {
+      const promises = orderedList.map(s => 
+        supabase.from('Students').update({ order_index: s.orderIndex }).eq('id', s.id)
+      );
+      await Promise.all(promises);
+    } catch (err) {
+      console.error('Failed to sync student order to Supabase:', err);
+    }
+  };
+
+  // Assign or clear a teacher's association to a student
+  const handleAssignTeacher = async (studentId: string, currentTeacher: string) => {
+    const teacherName = prompt("O'qituvchining ismi va familiyasini kiriting (o'chirish uchun bo'sh qoldiring):", currentTeacher);
+    if (teacherName === null) return; // Cancelled
+
+    const trimmedName = teacherName.trim();
+    setStudents(prev => prev.map(s =>
+      s.id === studentId ? { ...s, teacher: trimmedName || undefined } : s
+    ));
+
+    try {
+      const { error } = await supabase
+        .from('Students')
+        .update({ teacher: trimmedName || null })
+        .eq('id', studentId);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to sync teacher assignment to Supabase:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -241,6 +329,8 @@ function App() {
         students={filteredStudents}
         onUpdatePhoto={handleUpdateStudentPhoto}
         onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
+        onReorderStudent={handleReorderStudent}
+        onAssignTeacher={handleAssignTeacher}
       />
 
       {isAdminMode && (
