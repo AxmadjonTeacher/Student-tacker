@@ -16,18 +16,7 @@ const Header: React.FC<HeaderProps> = ({
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, isAdminMode, onToggleAdmin 
 }) => {
   return (
-    <header className="header" style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'stretch', /* Override global align-items: center */
-      width: '100%',
-      gap: '2rem', /* Give more breathing room between rows */
-      marginBottom: '2.5rem', 
-      padding: '0', 
-      background: 'transparent', 
-      border: 'none', 
-      boxShadow: 'none' 
-    }}>
+    <>
       
       {/* Top Row: Heading & Logo (Sticky Transparent Header) */}
       <div style={{ 
@@ -103,7 +92,16 @@ const Header: React.FC<HeaderProps> = ({
       </div>
  
       {/* Bottom Row: Classes & Search */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '1.5rem', flexWrap: 'wrap' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        width: '100%', 
+        gap: '1.5rem', 
+        flexWrap: 'wrap',
+        marginTop: '2rem',
+        marginBottom: '2.5rem'
+      }}>
         <div className="class-selector" style={{ 
           display: 'flex', 
           gap: '0.25rem', 
@@ -179,8 +177,7 @@ const Header: React.FC<HeaderProps> = ({
           />
         </div>
       </div>
-
-    </header>
+    </>
   );
 };
 
