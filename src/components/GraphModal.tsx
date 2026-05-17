@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import type { Student } from '../types';
 
@@ -59,6 +59,28 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose }) => {
     }
     return mockData;
   })();
+
+  // Calculate dynamic, dramatic Y-axis domain boundaries to show impressive progress
+  const scores = data.map(d => d.val);
+  const minVal = scores.length > 0 ? Math.min(...scores) : 0;
+  const maxVal = scores.length > 0 ? Math.max(...scores) : 100;
+  const valRange = maxVal - minVal;
+  // If progress is relatively narrow, compress domain so the mountain looks steeper and dramatic
+  const padding = valRange < 15 ? 10 : 8; 
+  const domainMin = Math.max(0, Math.floor((minVal - padding) / 5) * 5);
+  const domainMax = Math.min(100, Math.ceil((maxVal + padding) / 5) * 5);
+
+  // Generate clean tick marks dynamically
+  const ticks: number[] = [];
+  const tickStep = Math.max(5, Math.ceil((domainMax - domainMin) / 4 / 5) * 5);
+  for (let val = domainMin; val <= domainMax; val += tickStep) {
+    if (!ticks.includes(val)) {
+      ticks.push(val);
+    }
+  }
+  if (ticks[ticks.length - 1] < domainMax && domainMax <= 100) {
+    ticks.push(domainMax);
+  }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -166,40 +188,50 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose }) => {
 
           <div style={{ height: '350px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
-                <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0} />
+              <AreaChart data={data} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+                <defs>
+                  <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#129f87" stopOpacity={0.25}/>
+                    <stop offset="95%" stopColor="#129f87" stopOpacity={0.0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
                 <XAxis 
                   dataKey="date" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fill: '#0a1f2e', fontSize: 13, fontWeight: 500 }}
+                  tick={{ fill: '#64748b', fontSize: 13, fontWeight: 600 }}
                   dy={15}
                 />
                 <YAxis 
-                  domain={[0, 100]} 
-                  ticks={[0, 20, 40, 60, 80, 100]}
+                  domain={[domainMin, domainMax]} 
+                  ticks={ticks}
                   tickFormatter={(val) => `${val}%`}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#0a1f2e', fontSize: 13, fontWeight: 500 }}
+                  tick={{ fill: '#64748b', fontSize: 13, fontWeight: 600 }}
                   width={50}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1 }} />
                 
-                {/* Reference line at 50% for passing mark */}
-                <ReferenceLine y={50} stroke="#e5e7eb" strokeWidth={1.5} strokeDasharray="3 3" />
+                {/* Reference line at 50% for passing mark if visible within domain */}
+                {domainMin <= 50 && domainMax >= 50 && (
+                  <ReferenceLine y={50} stroke="#e2e8f0" strokeWidth={1.5} strokeDasharray="3 3" />
+                )}
                 
-                <Line 
+                <Area 
                   type="monotone" 
                   dataKey="val" 
-                  stroke="#475569" 
+                  stroke="#129f87" 
                   strokeWidth={4} 
-                  dot={{ r: 7, fill: '#0a1f2e', stroke: '#0a1f2e', strokeWidth: 2 }}
-                  activeDot={{ r: 9, fill: '#129f87', stroke: '#129f87' }}
+                  fillOpacity={1}
+                  fill="url(#colorProgress)"
+                  dot={{ r: 6, fill: '#ffffff', stroke: '#129f87', strokeWidth: 3 }}
+                  activeDot={{ r: 8, fill: '#129f87', stroke: '#ffffff', strokeWidth: 3 }}
                   isAnimationActive={true}
                   animationDuration={1500}
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
