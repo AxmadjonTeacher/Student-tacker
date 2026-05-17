@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Settings, X } from 'lucide-react';
 
 interface HeaderProps {
   classes: string[];
@@ -8,9 +8,13 @@ interface HeaderProps {
   classCounts: Record<string, number>;
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  isAdminMode: boolean;
+  onToggleAdmin: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, isAdminMode, onToggleAdmin 
+}) => {
   return (
     <header className="header" style={{ 
       display: 'flex', 
@@ -26,12 +30,12 @@ const Header: React.FC<HeaderProps> = ({ classes, activeClass, onClassSelect, cl
     }}>
       
       {/* Top Row: Heading & Logo */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', paddingTop: '0.2rem' }}>
-          O'quvchilar natijalari tahlili
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
+        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+          O'QUVCHILAR NATIJALARI TAHLILI
         </h1>
         
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <div className="school-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', padding: '0', background: 'transparent', border: 'none' }}>
             <div style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '0.05em', color: '#0a1f2e', lineHeight: 1 }}>
               AL-XORAZMIY
@@ -46,6 +50,39 @@ const Header: React.FC<HeaderProps> = ({ classes, activeClass, onClassSelect, cl
               </div>
             </div>
           </div>
+
+          {/* Small Gear Settings Button */}
+          <button
+            onClick={onToggleAdmin}
+            title={isAdminMode ? "Admin panelini yopish" : "Admin panelini ochish"}
+            style={{
+              background: isAdminMode ? '#0d9488' : '#ffffff',
+              color: isAdminMode ? '#ffffff' : '#475569',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              transition: 'all 0.2s ease',
+              padding: 0
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.08)';
+              e.currentTarget.style.borderColor = '#0d9488';
+              if (!isAdminMode) e.currentTarget.style.color = '#0d9488';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+              if (!isAdminMode) e.currentTarget.style.color = '#475569';
+            }}
+          >
+            {isAdminMode ? <X size={18} /> : <Settings size={18} />}
+          </button>
         </div>
       </div>
  

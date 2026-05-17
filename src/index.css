@@ -19,6 +19,13 @@
   padding: 0;
 }
 
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   font-family: var(--font-main);
   background-color: var(--bg-main);
@@ -45,13 +52,10 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  background: var(--bg-card);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--border-color);
-  padding: 1.5rem 2rem;
-  border-radius: 16px;
-  box-shadow: var(--glass-shadow);
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
 }
 
 .header h1 {

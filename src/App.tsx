@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Settings, X } from 'lucide-react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
 import AdminPanel from './components/AdminPanel';
@@ -423,6 +422,8 @@ function App() {
         classCounts={classCounts}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
+        isAdminMode={isAdminMode}
+        onToggleAdmin={handleToggleAdmin}
       />
 
       <StudentTable
@@ -444,40 +445,29 @@ function App() {
         />
       )}
 
-      {/* Floating Bottom-Right Admin Toggle Button */}
-      <button
-        onClick={handleToggleAdmin}
-        style={{
-          position: 'fixed',
-          bottom: '2rem',
-          right: '2rem',
-          zIndex: 99,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          background: isAdminMode ? '#0d9488' : '#ffffff',
-          color: isAdminMode ? '#ffffff' : '#0d9488',
-          border: '1.5px solid #0d9488',
-          borderRadius: '9999px',
-          padding: '0.75rem 1.5rem',
-          fontSize: '0.9rem',
-          fontWeight: 700,
-          boxShadow: '0 10px 15px -3px rgba(13,148,136,0.3), 0 4px 6px -4px rgba(13,148,136,0.3)',
-          cursor: 'pointer',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(13,148,136,0.4), 0 8px 10px -6px rgba(13,148,136,0.4)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(13,148,136,0.3), 0 4px 6px -4px rgba(13,148,136,0.3)';
-        }}
-      >
-        {isAdminMode ? <X size={18} /> : <Settings size={18} />}
-        {isAdminMode ? "Chiqish" : "Admin"}
-      </button>
+      {/* Elegant Symmetrical Footer */}
+      <footer style={{
+        marginTop: 'auto',
+        paddingTop: '3rem',
+        paddingBottom: '1.5rem',
+        textAlign: 'center',
+        borderTop: '1px solid #e2e8f0',
+        color: '#64748b',
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        letterSpacing: '0.05em',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.35rem',
+        alignItems: 'center'
+      }}>
+        <div style={{ textTransform: 'uppercase' }}>
+          © 2026 Al-Xorazmiy School. Barcha huquqlar himoyalangan.
+        </div>
+        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
+          Created by Axmadjon
+        </div>
+      </footer>
 
       {/* Modern Custom Dialog Pop-up */}
       <CustomDialog
