@@ -352,6 +352,56 @@ function App() {
     });
   }, [projectedStudents, activeClass, searchTerm]);
 
+  const handleUpdateProgress = async (
+    studentId: string, 
+    startingLevel: string, 
+    currentLevel: string, 
+    grandTests: { name: string; score: number }[]
+  ) => {
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        if (activeSubject === 'MATH') {
+          return {
+            ...s,
+            mathStartingLevel: startingLevel,
+            mathCurrentLevel: currentLevel,
+            mathGrandTests: grandTests
+          };
+        } else {
+          return {
+            ...s,
+            startingLevel: startingLevel,
+            currentLevel: currentLevel,
+            grandTests: grandTests
+          };
+        }
+      }
+      return s;
+    }));
+
+    try {
+      const updatePayload = activeSubject === 'MATH'
+        ? {
+            math_starting_level: startingLevel,
+            math_current_level: currentLevel,
+            math_grand_tests: grandTests
+          }
+        : {
+            starting_level: startingLevel,
+            current_level: currentLevel,
+            grand_tests: grandTests
+          };
+
+      const { error } = await supabase
+        .from('Students')
+        .update(updatePayload)
+        .eq('id', studentId);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to sync progress updates to Supabase:', err);
+    }
+  };
+
   const handleAssignTeacher = (studentId: string, currentTeacher: string) => {
     showPrompt(
       "O'qituvchini biriktirish",
@@ -495,6 +545,7 @@ function App() {
         onAssignTeacher={handleAssignTeacher}
         onMoveStudent={handleMoveStudent}
         activeSubject={activeSubject}
+        onUpdateProgress={handleUpdateProgress}
       />
 
       {isAdminMode && (

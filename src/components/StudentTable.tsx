@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Student } from '../types';
 import { Inbox, LineChart, ArrowRight, Trash2 } from 'lucide-react';
 import GraphModal from './GraphModal';
+import EditProgressModal from './EditProgressModal';
 
 interface StudentTableProps {
   students: Student[];
@@ -11,6 +12,12 @@ interface StudentTableProps {
   onAssignTeacher?: (studentId: string, teacherName: string) => void;
   onMoveStudent?: (draggedId: string, targetId: string) => void;
   activeSubject?: 'ENG' | 'MATH';
+  onUpdateProgress?: (
+    studentId: string,
+    startingLevel: string,
+    currentLevel: string,
+    grandTests: { name: string; score: number }[]
+  ) => void;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -20,9 +27,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onDeleteStudent,
   onAssignTeacher,
   onMoveStudent,
-  activeSubject = 'ENG'
+  activeSubject = 'ENG',
+  onUpdateProgress
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [uploadingStudentId, setUploadingStudentId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -288,6 +297,20 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         ) : (
                           <div style={{ padding: '0 0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
                             <button 
+                              onClick={() => setEditingStudent(student)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                background: '#eff6ff', color: '#2563eb',
+                                border: '1px solid #bfdbfe', borderRadius: '9999px',
+                                padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
+                                cursor: 'pointer', transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#dbeafe'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = '#eff6ff'; }}
+                            >
+                              Tahrirlash
+                            </button>
+                            <button 
                               onClick={() => onAssignTeacher && onAssignTeacher(student.id, student.teacher || '')}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '0.3rem',
@@ -341,6 +364,20 @@ const StudentTable: React.FC<StudentTableProps> = ({
           student={selectedStudent} 
           onClose={() => setSelectedStudent(null)} 
           activeSubject={activeSubject}
+        />
+      )}
+
+      {editingStudent && (
+        <EditProgressModal
+          student={editingStudent}
+          activeSubject={activeSubject}
+          onClose={() => setEditingStudent(null)}
+          onSave={(start, curr, tests) => {
+            if (onUpdateProgress) {
+              onUpdateProgress(editingStudent.id, start, curr, tests);
+            }
+            setEditingStudent(null);
+          }}
         />
       )}
     </>
