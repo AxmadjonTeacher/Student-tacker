@@ -5,21 +5,24 @@ import GraphModal from './GraphModal';
 
 interface StudentTableProps {
   students: Student[];
+  isAdminMode: boolean;
   onUpdatePhoto?: (studentId: string, photoUrl: string) => void;
   onDeleteStudent?: (studentId: string) => void;
-  onReorderStudent?: (studentId: string, direction: 'up' | 'down') => void;
   onAssignTeacher?: (studentId: string, teacherName: string) => void;
+  onMoveStudent?: (draggedId: string, targetId: string) => void;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
   students, 
+  isAdminMode,
   onUpdatePhoto, 
   onDeleteStudent,
-  onReorderStudent,
-  onAssignTeacher
+  onAssignTeacher,
+  onMoveStudent
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [uploadingStudentId, setUploadingStudentId] = useState<string | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleAvatarClick = (studentId: string) => {
@@ -94,18 +97,24 @@ const StudentTable: React.FC<StudentTableProps> = ({
     return 'Daraja saqlandi';
   };
 
-  // Group students by teacher (optionally empty strings)
-  const groupedStudents = React.useMemo(() => {
-    const groups: Record<string, Student[]> = {};
-    students.forEach(student => {
-      const teacherName = student.teacher?.trim() || '';
-      if (!groups[teacherName]) {
-        groups[teacherName] = [];
-      }
-      groups[teacherName].push(student);
-    });
-    return groups;
-  }, [students]);
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id);
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain') || draggedId;
+    if (sourceId && sourceId !== targetId && onMoveStudent) {
+      onMoveStudent(sourceId, targetId);
+    }
+    setDraggedId(null);
+  };
 
   return (
     <>
@@ -121,7 +130,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
             {/* Master Table Header Row */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1fr',
+              gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
               alignItems: 'center',
               padding: '0.5rem 1.5rem',
               marginBottom: '-0.75rem',
@@ -134,220 +143,187 @@ const StudentTable: React.FC<StudentTableProps> = ({
               <div style={{ padding: '0 1.5rem' }}>QABUL QILINGAN SANA</div>
               <div style={{ padding: '0 1.5rem' }}>AVVALGI DARAJA</div>
               <div style={{ padding: '0 1.5rem' }}>HOZIRGI DARAJA</div>
-              <div style={{ padding: '0 1.5rem' }}>
-                {onDeleteStudent ? "O'CHIRISH" : "PROGRESS"}
+              <div style={{ padding: '0 1.5rem', textAlign: 'center' }}>
+                {isAdminMode ? "AMALLAR" : "PROGRESS"}
               </div>
             </div>
 
-            {Object.entries(groupedStudents).map(([teacher, groupStudents]) => {
-              return (
-                <div key={teacher || 'unassigned'} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  
-                  {/* Optional Teacher Section Separator */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.5rem 0.5rem 0.2rem 0.5rem',
-                    marginTop: '0.5rem'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{ width: '4px', height: '18px', background: '#0d9488', borderRadius: '4px' }}></div>
-                      <span style={{ fontWeight: 700, color: '#1f2937', fontSize: '0.95rem', letterSpacing: '-0.01em' }}>
-                        {teacher ? `O'qituvchi: ${teacher}` : "O'qituvchi biriktirilmagan"}
-                      </span>
-                      <span style={{
-                        background: '#f3f4f6',
-                        color: '#6b7280',
-                        padding: '0.1rem 0.6rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.7rem',
-                        fontWeight: 600
+            {/* Unified Adjacency Card Container */}
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
+              overflow: 'hidden'
+            }}>
+              {students.map((student, idx) => {
+                const improvement = calculateImprovement(student.startingLevel, student.currentLevel);
+                const isLast = idx === students.length - 1;
+
+                // Detect when the teacher changes to render a gorgeous section divider
+                const showDivider = idx === 0 || (students[idx - 1]?.teacher?.trim() || '') !== (student.teacher?.trim() || '');
+                const teacherDisplay = student.teacher?.trim() || '';
+
+                return (
+                  <React.Fragment key={student.id}>
+                    {showDivider && (
+                      <div style={{
+                        background: '#f8fafc',
+                        padding: '0.85rem 1.5rem',
+                        borderBottom: '1px solid #e5e7eb',
+                        borderTop: idx > 0 ? '1px solid #e5e7eb' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
                       }}>
-                        {groupStudents.length} ta o'quvchi
-                      </span>
-                    </div>
-                  </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{ width: '4px', height: '16px', background: '#0d9488', borderRadius: '4px' }}></div>
+                          <span style={{ fontWeight: 700, color: '#334155', fontSize: '0.85rem', letterSpacing: '0.02em' }}>
+                            {teacherDisplay ? `O'qituvchi: ${teacherDisplay}` : "O'qituvchi biriktirilmagan"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
-                  {/* Adjacent rows in a unified layout container */}
-                  <div style={{
-                    background: '#ffffff',
-                    borderRadius: '20px',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
-                    overflow: 'hidden'
-                  }}>
-                    {groupStudents.map((student, idx) => {
-                      const improvement = calculateImprovement(student.startingLevel, student.currentLevel);
-                      const isLast = idx === groupStudents.length - 1;
-                      
-                      return (
+                    <div 
+                      draggable={isAdminMode}
+                      onDragStart={(e) => handleDragStart(e, student.id)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, student.id)}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
+                        alignItems: 'center',
+                        padding: '1.2rem 1.5rem',
+                        borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
+                        background: '#ffffff',
+                        transition: 'all 0.2s ease',
+                        cursor: isAdminMode ? 'grab' : 'default',
+                        opacity: draggedId === student.id ? 0.45 : 1
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#fafaf9'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                    >
+                      {/* Name block */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid #e5e7eb', height: '100%' }}>
                         <div 
-                          key={student.id} 
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1fr',
-                            alignItems: 'center',
-                            padding: '1.2rem 1.5rem',
-                            borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
-                            background: '#ffffff',
-                            transition: 'background 0.2s ease',
+                          onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
+                          style={{ 
+                            width: '52px', height: '52px', borderRadius: '50%', 
+                            background: '#0d9488', color: '#ffffff',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '1.1rem', fontWeight: 600, flexShrink: 0,
+                            cursor: onUpdatePhoto ? 'pointer' : 'default',
+                            overflow: 'hidden',
+                            position: 'relative'
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = '#fafaf9'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                          title={onUpdatePhoto ? "Rasm yuklash" : ""}
                         >
-                          {/* Name Block */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid #e5e7eb', height: '100%' }}>
-                            
-                            {/* Optional Reorder arrows */}
-                            {onReorderStudent && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '0.2rem' }}>
-                                <button 
-                                  onClick={() => onReorderStudent(student.id, 'up')}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px 4px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                  title="Yuqoriga ko'chirish"
-                                >
-                                  ▲
-                                </button>
-                                <button 
-                                  onClick={() => onReorderStudent(student.id, 'down')}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px 4px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                  title="Pastga ko'chirish"
-                                >
-                                  ▼
-                                </button>
-                              </div>
-                            )}
-
-                            <div 
-                              onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
-                              style={{ 
-                                width: '52px', height: '52px', borderRadius: '50%', 
-                                background: '#0d9488', color: '#ffffff',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '1.1rem', fontWeight: 600, flexShrink: 0,
-                                cursor: onUpdatePhoto ? 'pointer' : 'default',
-                                overflow: 'hidden',
-                                position: 'relative'
-                              }}
-                              title={onUpdatePhoto ? "Rasm yuklash" : ""}
-                            >
-                              {student.pictureUrl ? (
-                                <img src={student.pictureUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                getInitials(student.name, student.surname)
-                              )}
-                            </div>
-                            <div>
-                              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#1a1a1a' }}>
-                                {student.name} {student.surname}
-                              </h3>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', letterSpacing: '0.05em' }}>
-                                  SINF {student.className.toUpperCase()}
-                                </span>
-                                
-                                {/* Interactive Teacher assignment badge */}
-                                <span 
-                                  onClick={() => onAssignTeacher && onAssignTeacher(student.id, student.teacher || '')}
-                                  style={{
-                                    fontSize: '0.65rem',
-                                    fontWeight: 700,
-                                    background: student.teacher ? '#ccfbf1' : '#f3f4f6',
-                                    color: student.teacher ? '#0f766e' : '#9ca3af',
-                                    padding: '0.1rem 0.4rem',
-                                    borderRadius: '4px',
-                                    cursor: onAssignTeacher ? 'pointer' : 'default',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    transition: 'all 0.2s',
-                                    border: student.teacher ? '1px solid #0f766e' : '1px dashed #d1d5db'
-                                  }}
-                                  title={onAssignTeacher ? "O'qituvchini biriktirish / o'zgartirish" : ""}
-                                >
-                                  {student.teacher ? student.teacher : "+ O'qituvchi"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* When block */}
-                          <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <div style={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.95rem' }}>
-                              {student.dateJoined}
-                            </div>
-                          </div>
-
-                          {/* Level block */}
-                          <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <div style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.95rem' }}>
-                              {student.startingLevel}
-                            </div>
-                          </div>
-
-                          {/* Current Level block */}
-                          <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <div style={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.95rem', marginBottom: '0.2rem' }}>
-                              {student.currentLevel}
-                            </div>
-                            {improvement.includes('+') ? (
-                              <div style={{ 
-                                display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                                background: '#ccfbf1', color: '#0f766e', 
-                                padding: '0.15rem 0.4rem', borderRadius: '9999px',
-                                fontSize: '0.7rem', fontWeight: 600, width: 'max-content'
-                              }}>
-                                <ArrowRight size={10} style={{ transform: 'rotate(-45deg)' }} />
-                                {improvement}
-                              </div>
-                            ) : null}
-                          </div>
-
-                          {/* Column 5: Graph Button / Delete Button */}
-                          {!onDeleteStudent ? (
-                            <div style={{ padding: '0 0 0 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                              <button 
-                                onClick={() => setSelectedStudent(student)}
-                                style={{
-                                  display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                  background: 'transparent', color: '#0d9488',
-                                  border: '1px solid #0d9488', borderRadius: '9999px',
-                                  padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
-                                  cursor: 'pointer', transition: 'all 0.2s ease', width: 'max-content'
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = '#ccfbf1'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                              >
-                                <LineChart size={14} />
-                                Grafikni ko'rish
-                              </button>
-                            </div>
+                          {student.pictureUrl ? (
+                            <img src={student.pictureUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
-                            <div style={{ padding: '0 0 0 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                              <button 
-                                onClick={() => onDeleteStudent(student.id)}
-                                style={{
-                                  display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                  background: '#fee2e2', color: '#b91c1c',
-                                  border: '1px solid #fca5a5', borderRadius: '9999px',
-                                  padding: '0.35rem 1rem', fontSize: '0.8rem', fontWeight: 600,
-                                  cursor: 'pointer', transition: 'all 0.2s ease', width: 'max-content'
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
-                              >
-                                <Trash2 size={14} />
-                                O'chirish
-                              </button>
-                            </div>
+                            getInitials(student.name, student.surname)
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#1a1a1a' }}>
+                            {student.name} {student.surname}
+                          </h3>
+                          <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', letterSpacing: '0.05em' }}>
+                            SINF {student.className.toUpperCase()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* When block */}
+                      <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.95rem' }}>
+                          {student.dateJoined}
+                        </div>
+                      </div>
+
+                      {/* Level block */}
+                      <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.95rem' }}>
+                          {student.startingLevel}
+                        </div>
+                      </div>
+
+                      {/* Current Level block */}
+                      <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.95rem', marginBottom: '0.2rem' }}>
+                          {student.currentLevel}
+                        </div>
+                        {improvement.includes('+') ? (
+                          <div style={{ 
+                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                            background: '#ccfbf1', color: '#0f766e', 
+                            padding: '0.15rem 0.4rem', borderRadius: '9999px',
+                            fontSize: '0.7rem', fontWeight: 600, width: 'max-content'
+                          }}>
+                            <ArrowRight size={10} style={{ transform: 'rotate(-45deg)' }} />
+                            {improvement}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Actions/Progress block */}
+                      {!isAdminMode ? (
+                        <div style={{ padding: '0 0 0 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                          <button 
+                            onClick={() => setSelectedStudent(student)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '0.5rem',
+                              background: 'transparent', color: '#0d9488',
+                              border: '1px solid #0d9488', borderRadius: '9999px',
+                              padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
+                              cursor: 'pointer', transition: 'all 0.2s ease', width: 'max-content'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#ccfbf1'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <LineChart size={14} />
+                            Grafikni ko'rish
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ padding: '0 0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                          <button 
+                            onClick={() => onAssignTeacher && onAssignTeacher(student.id, student.teacher || '')}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '0.3rem',
+                              background: '#f0fdf4', color: '#16a34a',
+                              border: '1px solid #bbf7d0', borderRadius: '9999px',
+                              padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
+                              cursor: 'pointer', transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
+                          >
+                            O'qituvchi
+                          </button>
+                          <button 
+                            onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '0.3rem',
+                              background: '#fee2e2', color: '#b91c1c',
+                              border: '1px solid #fca5a5', borderRadius: '9999px',
+                              padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
+                              cursor: 'pointer', transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                          >
+                            <Trash2 size={14} />
+                            O'chirish
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </>
         )}
       </div>

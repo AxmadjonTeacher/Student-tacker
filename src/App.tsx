@@ -211,55 +211,6 @@ function App() {
     });
   }, [students, activeClass, searchTerm]);
 
-  // Reorder student positions globally and sequentially
-  const handleReorderStudent = async (studentId: string, direction: 'up' | 'down') => {
-    const currentFiltered = [...filteredStudents];
-    const index = currentFiltered.findIndex(s => s.id === studentId);
-    if (index === -1) return;
-
-    if (direction === 'up' && index > 0) {
-      const temp = currentFiltered[index];
-      currentFiltered[index] = currentFiltered[index - 1];
-      currentFiltered[index - 1] = temp;
-    } else if (direction === 'down' && index < currentFiltered.length - 1) {
-      const temp = currentFiltered[index];
-      currentFiltered[index] = currentFiltered[index + 1];
-      currentFiltered[index + 1] = temp;
-    } else {
-      return; // Out of bounds
-    }
-
-    // Rebuild global list in the exact new order
-    let filteredCursor = 0;
-    const finalGlobalList = students.map(s => {
-      const isFiltered = filteredStudents.some(fs => fs.id === s.id);
-      if (isFiltered) {
-        const replacement = currentFiltered[filteredCursor];
-        filteredCursor++;
-        return replacement;
-      }
-      return s;
-    });
-
-    // Assign sequential order indexes globally to persist order in database
-    const orderedList = finalGlobalList.map((s, idx) => ({
-      ...s,
-      orderIndex: idx
-    }));
-
-    setStudents(orderedList);
-
-    // Sync order updates to Supabase
-    try {
-      const promises = orderedList.map(s => 
-        supabase.from('Students').update({ order_index: s.orderIndex }).eq('id', s.id)
-      );
-      await Promise.all(promises);
-    } catch (err) {
-      console.error('Failed to sync student order to Supabase:', err);
-    }
-  };
-
   // Assign or clear a teacher's association to a student
   const handleAssignTeacher = async (studentId: string, currentTeacher: string) => {
     const teacherName = prompt("O'qituvchining ismi va familiyasini kiriting (o'chirish uchun bo'sh qoldiring):", currentTeacher);
@@ -278,6 +229,55 @@ function App() {
       if (error) throw error;
     } catch (err) {
       console.error('Failed to sync teacher assignment to Supabase:', err);
+    }
+  };
+
+  // Move one student next to another via Drag-and-Drop and inherit their teacher group
+  const handleMoveStudent = async (draggedId: string, targetId: string) => {
+    const draggedIndex = students.findIndex(s => s.id === draggedId);
+    const targetIndex = students.findIndex(s => s.id === targetId);
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const updatedList = [...students];
+    const draggedStudent = { ...updatedList[draggedIndex] };
+    const targetStudent = updatedList[targetIndex];
+
+    // Dragged student inherits target student's teacher!
+    draggedStudent.teacher = targetStudent.teacher;
+
+    // Remove from the old position and insert at new position next to the target
+    updatedList.splice(draggedIndex, 1);
+    const newTargetIndex = updatedList.findIndex(s => s.id === targetId);
+    updatedList.splice(newTargetIndex, 0, draggedStudent);
+
+    // Re-index all elements sequentially
+    const sequentialList = updatedList.map((s, idx) => ({
+      ...s,
+      orderIndex: idx
+    }));
+
+    setStudents(sequentialList);
+
+    // Persist changes in Supabase
+    try {
+      // Sync dragged student's updated teacher and orderIndex
+      const { error } = await supabase
+        .from('Students')
+        .update({ 
+          teacher: draggedStudent.teacher || null,
+          order_index: sequentialList.findIndex(s => s.id === draggedId)
+        })
+        .eq('id', draggedId);
+
+      if (error) throw error;
+
+      // Update orderIndex for all other items in batch
+      const promises = sequentialList.map((s, idx) =>
+        supabase.from('Students').update({ order_index: idx }).eq('id', s.id)
+      );
+      await Promise.all(promises);
+    } catch (err) {
+      console.error('Failed to sync drag-and-drop reorder to Supabase:', err);
     }
   };
 
@@ -327,10 +327,11 @@ function App() {
 
       <StudentTable
         students={filteredStudents}
+        isAdminMode={isAdminMode}
         onUpdatePhoto={handleUpdateStudentPhoto}
         onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
-        onReorderStudent={handleReorderStudent}
         onAssignTeacher={handleAssignTeacher}
+        onMoveStudent={handleMoveStudent}
       />
 
       {isAdminMode && (
