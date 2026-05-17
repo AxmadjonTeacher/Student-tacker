@@ -16,7 +16,9 @@ export const mapDbToStudent = (db: any): Student => ({
   startingLevel: db.starting_level || '',
   currentLevel: db.current_level || '',
   pictureUrl: db.picture_url || undefined,
-  grandTests: db.grand_tests || undefined
+  grandTests: db.grand_tests || undefined,
+  teacher: db.teacher || undefined,
+  orderIndex: db.order_index !== null && db.order_index !== undefined ? Number(db.order_index) : undefined
 });
 
 export const mapStudentToDb = (student: Student) => ({
@@ -28,5 +30,7 @@ export const mapStudentToDb = (student: Student) => ({
   starting_level: student.startingLevel,
   current_level: student.currentLevel,
   picture_url: student.pictureUrl || null,
-  grand_tests: student.grandTests || null
+  grand_tests: student.grandTests || null,
+  teacher: student.teacher || null,
+  order_index: student.orderIndex !== undefined ? student.orderIndex : null
 });
