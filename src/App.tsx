@@ -3,6 +3,7 @@ import { Settings, X } from 'lucide-react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
 import AdminPanel from './components/AdminPanel';
+import CustomDialog from './components/CustomDialog';
 import type { Student } from './types';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
 
@@ -48,6 +49,70 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdminMode, setIsAdminMode] = useState(false);
 
+  // Custom Dialog DialogState
+  const [dialog, setDialog] = useState<{
+    isOpen: boolean;
+    type: 'confirm' | 'prompt';
+    title: string;
+    message: string;
+    defaultValue?: string;
+    placeholder?: string;
+    confirmText?: string;
+    cancelText?: string;
+    danger?: boolean;
+    onConfirm: (value?: string) => void;
+  }>({
+    isOpen: false,
+    type: 'confirm',
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const showConfirm = (title: string, message: string, danger: boolean, onConfirm: () => void) => {
+    setDialog({
+      isOpen: true,
+      type: 'confirm',
+      title,
+      message,
+      confirmText: 'Tasdiqlash',
+      cancelText: 'Bekor qilish',
+      danger,
+      onConfirm: () => {
+        onConfirm();
+        closeDialog();
+      }
+    });
+  };
+
+  const showPrompt = (
+    title: string, 
+    message: string, 
+    defaultValue: string, 
+    placeholder: string, 
+    onConfirm: (val: string) => void
+  ) => {
+    setDialog({
+      isOpen: true,
+      type: 'prompt',
+      title,
+      message,
+      defaultValue,
+      placeholder,
+      confirmText: 'Saqlash',
+      cancelText: 'Bekor qilish',
+      danger: false,
+      onConfirm: (val) => {
+        onConfirm(val || '');
+        closeDialog();
+      }
+    });
+  };
+
+  const closeDialog = () => {
+    setDialog(prev => ({ ...prev, isOpen: false }));
+  };
+
   // Load from Supabase on mount
   useEffect(() => {
     const fetchStudents = async () => {
@@ -58,17 +123,14 @@ function App() {
         
         if (data && data.length > 0) {
           const loaded = data.map(mapDbToStudent);
-          // Sort based on saved orderIndex to preserve custom sorting
           loaded.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
           setStudents(loaded);
         } else {
-          // If Supabase table is empty, seed with initial mock data
           setStudents(INITIAL_MOCK_DATA);
           await supabase.from('Students').insert(INITIAL_MOCK_DATA.map(mapStudentToDb));
         }
       } catch (err) {
         console.error('Supabase fetch error, falling back to LocalStorage:', err);
-        // Fallback to LocalStorage
         const saved = localStorage.getItem('students_data_v2');
         if (saved) {
           try {
@@ -96,7 +158,6 @@ function App() {
   }, [students, loading]);
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
-    // Sequentially index new uploads starting after current length
     const indexedUploads = newStudents.map((s, index) => ({
       ...s,
       orderIndex: students.length + index
@@ -107,7 +168,6 @@ function App() {
       setActiveClass(getClassGroup(indexedUploads[0].className.toUpperCase()));
     }
 
-    // Sync to Supabase
     try {
       const { error } = await supabase.from('Students').insert(indexedUploads.map(mapStudentToDb));
       if (error) throw error;
@@ -121,7 +181,6 @@ function App() {
       s.id === studentId ? { ...s, pictureUrl: photoUrl } : s
     ));
 
-    // Sync to Supabase
     try {
       const { error } = await supabase
         .from('Students')
@@ -133,45 +192,55 @@ function App() {
     }
   };
 
-  const handleDeleteStudent = async (studentId: string) => {
-    if (window.confirm("Haqiqatan ham ushbu o'quvchini o'chirmoqchimisiz?")) {
-      setStudents(prev => prev.filter(s => s.id !== studentId));
+  const handleDeleteStudent = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    const fullName = student ? `${student.name} ${student.surname}` : "o'quvchi";
 
-      // Sync to Supabase
-      try {
-        const { error } = await supabase
-          .from('Students')
-          .delete()
-          .eq('id', studentId);
-        if (error) throw error;
-      } catch (err) {
-        console.error('Failed to delete student from Supabase:', err);
+    showConfirm(
+      "O'quvchini o'chirish",
+      `Haqiqatan ham ${fullName}ni sinfdan o'chirmoqchimisiz?`,
+      true,
+      async () => {
+        setStudents(prev => prev.filter(s => s.id !== studentId));
+        try {
+          const { error } = await supabase
+            .from('Students')
+            .delete()
+            .eq('id', studentId);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed to delete student from Supabase:', err);
+        }
       }
-    }
+    );
   };
 
   const handleToggleAdmin = () => {
     setIsAdminMode(prev => !prev);
   };
 
-  const handleBulkDeleteClass = async () => {
-    if (window.confirm(`Haqiqatan ham ${activeClass} guruhidagi BARCHA o'quvchilarni o'chirmoqchimisiz? Ushbu amalni ortga qaytarib bo'lmaydi.`)) {
-      const studentsToDelete = students.filter(s => getClassGroup(s.className.toUpperCase()) === activeClass);
-      const idsToDelete = studentsToDelete.map(s => s.id);
+  const handleBulkDeleteClass = () => {
+    showConfirm(
+      "Sinfni tozalash",
+      `Haqiqatan ham ${activeClass} guruhidagi BARCHA o'quvchilarni o'chirmoqchimisiz? Ushbu amalni ortga qaytarib bo'lmaydi.`,
+      true,
+      async () => {
+        const studentsToDelete = students.filter(s => getClassGroup(s.className.toUpperCase()) === activeClass);
+        const idsToDelete = studentsToDelete.map(s => s.id);
 
-      setStudents(prev => prev.filter(s => getClassGroup(s.className.toUpperCase()) !== activeClass));
+        setStudents(prev => prev.filter(s => getClassGroup(s.className.toUpperCase()) !== activeClass));
 
-      // Sync to Supabase
-      try {
-        const { error } = await supabase
-          .from('Students')
-          .delete()
-          .in('id', idsToDelete);
-        if (error) throw error;
-      } catch (err) {
-        console.error('Failed bulk delete in Supabase:', err);
+        try {
+          const { error } = await supabase
+            .from('Students')
+            .delete()
+            .in('id', idsToDelete);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed bulk delete in Supabase:', err);
+        }
       }
-    }
+    );
   };
 
   const availableClasses = useMemo(() => {
@@ -201,7 +270,6 @@ function App() {
     return counts;
   }, [students, availableClasses]);
 
-  // Keep a Memoized reference of active class students
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
       const group = getClassGroup(s.className.toUpperCase());
@@ -211,28 +279,31 @@ function App() {
     });
   }, [students, activeClass, searchTerm]);
 
-  // Assign or clear a teacher's association to a student
-  const handleAssignTeacher = async (studentId: string, currentTeacher: string) => {
-    const teacherName = prompt("O'qituvchining ismi va familiyasini kiriting (o'chirish uchun bo'sh qoldiring):", currentTeacher);
-    if (teacherName === null) return; // Cancelled
+  const handleAssignTeacher = (studentId: string, currentTeacher: string) => {
+    showPrompt(
+      "O'qituvchini biriktirish",
+      "O'qituvchining ismi va familiyasini kiriting (o'chirish uchun bo'sh qoldiring):",
+      currentTeacher,
+      "Ism va familiya...",
+      async (value) => {
+        const trimmedName = value.trim();
+        setStudents(prev => prev.map(s =>
+          s.id === studentId ? { ...s, teacher: trimmedName || undefined } : s
+        ));
 
-    const trimmedName = teacherName.trim();
-    setStudents(prev => prev.map(s =>
-      s.id === studentId ? { ...s, teacher: trimmedName || undefined } : s
-    ));
-
-    try {
-      const { error } = await supabase
-        .from('Students')
-        .update({ teacher: trimmedName || null })
-        .eq('id', studentId);
-      if (error) throw error;
-    } catch (err) {
-      console.error('Failed to sync teacher assignment to Supabase:', err);
-    }
+        try {
+          const { error } = await supabase
+            .from('Students')
+            .update({ teacher: trimmedName || null })
+            .eq('id', studentId);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed to sync teacher assignment to Supabase:', err);
+        }
+      }
+    );
   };
 
-  // Move one student next to another via Drag-and-Drop and inherit their teacher group
   const handleMoveStudent = async (draggedId: string, targetId: string) => {
     const draggedIndex = students.findIndex(s => s.id === draggedId);
     const targetIndex = students.findIndex(s => s.id === targetId);
@@ -242,15 +313,12 @@ function App() {
     const draggedStudent = { ...updatedList[draggedIndex] };
     const targetStudent = updatedList[targetIndex];
 
-    // Dragged student inherits target student's teacher!
     draggedStudent.teacher = targetStudent.teacher;
 
-    // Remove from the old position and insert at new position next to the target
     updatedList.splice(draggedIndex, 1);
     const newTargetIndex = updatedList.findIndex(s => s.id === targetId);
     updatedList.splice(newTargetIndex, 0, draggedStudent);
 
-    // Re-index all elements sequentially
     const sequentialList = updatedList.map((s, idx) => ({
       ...s,
       orderIndex: idx
@@ -258,9 +326,7 @@ function App() {
 
     setStudents(sequentialList);
 
-    // Persist changes in Supabase
     try {
-      // Sync dragged student's updated teacher and orderIndex
       const { error } = await supabase
         .from('Students')
         .update({ 
@@ -271,7 +337,6 @@ function App() {
 
       if (error) throw error;
 
-      // Update orderIndex for all other items in batch
       const promises = sequentialList.map((s, idx) =>
         supabase.from('Students').update({ order_index: idx }).eq('id', s.id)
       );
@@ -378,6 +443,21 @@ function App() {
         {isAdminMode ? <X size={18} /> : <Settings size={18} />}
         {isAdminMode ? "Chiqish" : "Admin"}
       </button>
+
+      {/* Modern Custom Dialog Pop-up */}
+      <CustomDialog
+        isOpen={dialog.isOpen}
+        type={dialog.type}
+        title={dialog.title}
+        message={dialog.message}
+        defaultValue={dialog.defaultValue}
+        placeholder={dialog.placeholder}
+        confirmText={dialog.confirmText}
+        cancelText={dialog.cancelText}
+        danger={dialog.danger}
+        onConfirm={dialog.onConfirm}
+        onClose={closeDialog}
+      />
     </div>
   );
 }
