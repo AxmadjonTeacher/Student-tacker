@@ -151,26 +151,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     marginBottom: '2rem'
                   }}
                 >
-                  {/* Teacher Banner at the top of this card */}
-                  <div style={{
-                    background: '#ffffff',
-                    padding: '1.35rem 1.5rem',
-                    borderBottom: '1px solid #f3f4f6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}>
-                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
-                      {group.teacher ? `O'qituvchi: ${group.teacher}` : "O'qituvchi biriktirilmagan"}
-                    </span>
-                  </div>
-
-                  {/* Clean and Small but Noticeable Column Headers */}
+                  {/* Clean and Small but Noticeable Column Headers (With Integrated Teacher Name in All Caps) */}
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
                     alignItems: 'center',
-                    padding: '0.65rem 1.5rem',
+                    padding: '0.9rem 1.5rem',
                     borderBottom: '1px solid #f1f5f9',
                     background: '#fafaf9',
                     color: '#64748b',
@@ -178,7 +164,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     fontWeight: 700,
                     letterSpacing: '0.08em'
                   }}>
-                    <div>O'QUVCHI</div>
+                    <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em' }}>
+                      {group.teacher ? `O'QITUVCHI: ${group.teacher.toUpperCase()}` : "O'QITUVCHI BIRIKTIRILMAGAN"}
+                    </div>
                     <div style={{ padding: '0 1.5rem' }}>QABUL QILINGAN SANA</div>
                     <div style={{ padding: '0 1.5rem' }}>AVVALGI DARAJA</div>
                     <div style={{ padding: '0 1.5rem' }}>HOZIRGI DARAJA</div>

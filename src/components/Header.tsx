@@ -29,8 +29,24 @@ const Header: React.FC<HeaderProps> = ({
       boxShadow: 'none' 
     }}>
       
-      {/* Top Row: Heading & Logo */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
+      {/* Top Row: Heading & Logo (Sticky Transparent Header) */}
+      <div style={{ 
+        position: 'sticky', 
+        top: 0, 
+        zIndex: 100, 
+        background: 'rgba(249, 248, 243, 0.9)', 
+        backdropFilter: 'blur(16px)', 
+        WebkitBackdropFilter: 'blur(16px)',
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        width: '100%', 
+        flexWrap: 'wrap', 
+        gap: '1rem',
+        paddingTop: '2rem',
+        paddingBottom: '1rem',
+        borderBottom: '1px solid rgba(229, 231, 235, 0.5)'
+      }}>
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
           O'QUVCHILAR NATIJALARI TAHLILI
         </h1>
