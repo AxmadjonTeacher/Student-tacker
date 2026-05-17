@@ -113,6 +113,41 @@ function App() {
     setDialog(prev => ({ ...prev, isOpen: false }));
   };
 
+  // Keyboard shortcut listener for Fullscreen mode (pressing 'F' key)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      // Safeguard: Do not trigger if user is active inside an input or text area!
+      if (
+        activeEl && (
+          activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement).isContentEditable
+        )
+      ) {
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch((err) => {
+            console.error("Failed to enter fullscreen:", err);
+          });
+        } else {
+          document.exitFullscreen().catch((err) => {
+            console.error("Failed to exit fullscreen:", err);
+          });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Load from Supabase on mount
   useEffect(() => {
     const fetchStudents = async () => {
