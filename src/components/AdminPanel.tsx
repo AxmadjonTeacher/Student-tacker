@@ -72,37 +72,66 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
               name = rawNameStr;
             }
 
-            // Handle grand tests from the columns
+            // Parse English Grand Tests
             const grandTests = [];
-            const term1 = row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'];
-            if (term1) grandTests.push({ name: 'Grant 1', score: parseInt(term1) || 0 });
+            const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
+            if (term1.toString().trim()) grandTests.push({ name: 'Grant 1', score: parseInt(term1) || 0 });
             
-            const term2 = row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'];
-            if (term2) grandTests.push({ name: 'Grant 2', score: parseInt(term2) || 0 });
+            const term2 = row['Grant 2 eng'] || row['Grant 2 ENG'] || row['grant 2 eng'] || row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'] || '';
+            if (term2.toString().trim()) grandTests.push({ name: 'Grant 2', score: parseInt(term2) || 0 });
             
-            const term3 = row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'];
-            if (term3) grandTests.push({ name: 'Grant 3', score: parseInt(term3) || 0 });
+            const term3 = row['Grant 3 eng'] || row['Grant 3 ENG'] || row['grant 3 eng'] || row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'] || '';
+            if (term3.toString().trim()) grandTests.push({ name: 'Grant 3', score: parseInt(term3) || 0 });
             
-            const term4 = row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'];
-            if (term4) grandTests.push({ name: 'Grant 4', score: parseInt(term4) || 0 });
+            const term4 = row['Grant 4 eng'] || row['Grant 4 ENG'] || row['grant 4 eng'] || row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'] || '';
+            if (term4.toString().trim()) grandTests.push({ name: 'Grant 4', score: parseInt(term4) || 0 });
 
-            const normStartingLevel = normalizeLevel(
-              row['boshlang\'ich daraja'] || 
-              row['Boshlang\'ich daraja'] || 
-              row['avvalgi daraja'] || 
-              row['Avvalgi daraja'] || 
-              row['initial level'] || 
-              row['Level'] || 
-              row['level'] || 
-              row['StartingLevel'] || ''
-            );
-            const normCurrentLevel = normalizeLevel(
-              row['hozirgi daraja'] || 
-              row['Hozirgi daraja'] || 
-              row['current level'] || 
-              row['CurrentLevel'] || 
-              row['currentLevel'] || ''
-            );
+            // Parse Math Grand Tests
+            const mathGrandTests = [];
+            const mTerm1 = row['Grant 1 math'] || row['Grant 1 MATH'] || row['grant 1 math'] || row['1-chorak matematika'] || row['math term 1 score'] || '';
+            if (mTerm1.toString().trim()) mathGrandTests.push({ name: 'Grant 1', score: parseInt(mTerm1) || 0 });
+            
+            const mTerm2 = row['Grant 2 math'] || row['Grant 2 MATH'] || row['grant 2 math'] || row['2-chorak matematika'] || row['math term 2 score'] || '';
+            if (mTerm2.toString().trim()) mathGrandTests.push({ name: 'Grant 2', score: parseInt(mTerm2) || 0 });
+            
+            const mTerm3 = row['Grant 3 math'] || row['Grant 3 MATH'] || row['grant 3 math'] || row['3-chorak matematika'] || row['math term 3 score'] || '';
+            if (mTerm3.toString().trim()) mathGrandTests.push({ name: 'Grant 3', score: parseInt(mTerm3) || 0 });
+            
+            const mTerm4 = row['Grant 4 math'] || row['Grant 4 MATH'] || row['grant 4 math'] || row['4-chorak matematika'] || row['math term 4 score'] || '';
+            if (mTerm4.toString().trim()) mathGrandTests.push({ name: 'Grant 4', score: parseInt(mTerm4) || 0 });
+
+            // Parse Levels
+            const rawEngStarting = row['boshlang\'ich daraja eng'] || row['Boshlang\'ich daraja eng'] || row['StartingLevelENG'] || row['boshlang\'ich daraja'] || row['Boshlang\'ich daraja'] || row['avvalgi daraja'] || row['Avvalgi daraja'] || row['initial level'] || row['initial level eng'] || row['Level'] || row['level'] || row['StartingLevel'] || '';
+            const rawEngCurrent = row['hozirgi daraja eng'] || row['Hozirgi daraja eng'] || row['CurrentLevelENG'] || row['hozirgi daraja'] || row['Hozirgi daraja'] || row['current level'] || row['CurrentLevel'] || row['currentLevel'] || row['current level eng'] || '';
+
+            const rawMathStarting = row['boshlang\'ich daraja math'] || row['Boshlang\'ich daraja math'] || row['StartingLevelMATH'] || row['initial level math'] || row['avvalgi daraja math'] || row['Avvalgi daraja math'] || '';
+            const rawMathCurrent = row['hozirgi daraja math'] || row['Hozirgi daraja math'] || row['CurrentLevelMATH'] || row['current level math'] || '';
+
+            const normEngStarting = normalizeLevel(rawEngStarting);
+            const normEngCurrent = normalizeLevel(rawEngCurrent);
+            const normMathStarting = normalizeLevel(rawMathStarting);
+            const normMathCurrent = normalizeLevel(rawMathCurrent);
+
+            // Self-healing / Active-subject resolution logic for backward compatibility
+            const hasExplicitMathColumns = !!(rawMathStarting || rawMathCurrent || mTerm1 || mTerm2 || mTerm3 || mTerm4);
+
+            let finalEngStarting = normEngStarting || 'Level 1';
+            let finalEngCurrent = normEngCurrent || 'Level 1';
+            let finalEngTests: { name: string; score: number }[] | undefined = grandTests.length > 0 ? grandTests : undefined;
+
+            let finalMathStarting = normMathStarting || 'Level 1';
+            let finalMathCurrent = normMathCurrent || 'Level 1';
+            let finalMathTests: { name: string; score: number }[] | undefined = mathGrandTests.length > 0 ? mathGrandTests : undefined;
+
+            if (!hasExplicitMathColumns && activeSubject === 'MATH') {
+              finalMathStarting = normEngStarting || 'Level 1';
+              finalMathCurrent = normEngCurrent || 'Level 1';
+              finalMathTests = grandTests.length > 0 ? grandTests : undefined;
+
+              finalEngStarting = 'Level 1';
+              finalEngCurrent = 'Level 1';
+              finalEngTests = undefined;
+            }
 
             return {
               id: Math.random().toString(36).substr(2, 9),
@@ -122,14 +151,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
                 row['When'] || 
                 row['date joined'] || 'Sentyabr 2024'
               ).toString().trim(),
-              startingLevel: activeSubject === 'MATH' ? 'Level 1' : normStartingLevel,
-              currentLevel: activeSubject === 'MATH' ? 'Level 1' : normCurrentLevel,
-              grandTests: activeSubject === 'MATH' ? undefined : (grandTests.length > 0 ? grandTests : undefined),
+              startingLevel: finalEngStarting,
+              currentLevel: finalEngCurrent,
+              grandTests: finalEngTests,
               pictureUrl: row['PictureUrl'] || row['pictureUrl'] || '',
               // Math fields mapping
-              mathStartingLevel: activeSubject === 'MATH' ? normStartingLevel : undefined,
-              mathCurrentLevel: activeSubject === 'MATH' ? normCurrentLevel : undefined,
-              mathGrandTests: activeSubject === 'MATH' ? (grandTests.length > 0 ? grandTests : undefined) : undefined,
+              mathStartingLevel: finalMathStarting,
+              mathCurrentLevel: finalMathCurrent,
+              mathGrandTests: finalMathTests,
             };
           })
           .filter((s: Student) => s.name.trim() !== '' || s.surname.trim() !== '');
@@ -152,11 +181,54 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
   };
 
   const downloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,O'quvchining ismi va familiyasi,sinf,qabul qilingan sana,boshlang'ich daraja,hozirgi daraja,Grant 1,Grant 2,Grant 3,Grant 4\nYodgorov Axmadjon,5A,Sentyabr 2024,1,5,70,72,90,67\nSalohiddinov Otabek,5B,Sentyabr 2024,3,5,55,40,68,90";
-    const encodedUri = encodeURI(csvContent);
+    const headers = [
+      "O'quvchining ismi va familiyasi",
+      "sinf",
+      "qabul qilingan sana",
+      "boshlang'ich daraja eng",
+      "hozirgi daraja eng",
+      "Grant 1 eng",
+      "Grant 2 eng",
+      "Grant 3 eng",
+      "Grant 4 eng",
+      "boshlang'ich daraja math",
+      "hozirgi daraja math",
+      "Grant 1 math",
+      "Grant 2 math",
+      "Grant 3 math",
+      "Grant 4 math"
+    ].join(",");
+
+    const row1 = [
+      "Yodgorov Axmadjon",
+      "5A",
+      "Sentyabr 2024",
+      "1",
+      "5",
+      "70", "72", "90", "67",
+      "2",
+      "4",
+      "60", "68", "75", "82"
+    ].join(",");
+
+    const row2 = [
+      "Salohiddinov Otabek",
+      "5B",
+      "Sentyabr 2024",
+      "3",
+      "5",
+      "55", "40", "68", "90",
+      "1",
+      "3",
+      "45", "55", "62", "70"
+    ].join(",");
+
+    const csvContent = headers + "\n" + row1 + "\n" + row2;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "o_quvchilar_namuna.csv");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "o_quvchilar_kombinatsiyalangan_namuna.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
