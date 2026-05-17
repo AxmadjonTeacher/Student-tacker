@@ -171,15 +171,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   <React.Fragment key={student.id}>
                     {showDivider && (
                       <div style={{
-                        background: '#e0f2f1',
-                        padding: '1rem 1.5rem',
-                        borderBottom: '1px solid #b2dfdb',
-                        borderTop: idx > 0 ? '1px solid #b2dfdb' : 'none',
+                        background: '#ffffff',
+                        padding: '1.35rem 1.5rem',
+                        borderBottom: '1px solid #f3f4f6',
+                        borderTop: idx > 0 ? '1px solid #f3f4f6' : 'none',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                       }}>
-                        <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '1rem', letterSpacing: '0.01em' }}>
+                        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
                           {teacherDisplay ? `O'qituvchi: ${teacherDisplay}` : "O'qituvchi biriktirilmagan"}
                         </span>
                       </div>
