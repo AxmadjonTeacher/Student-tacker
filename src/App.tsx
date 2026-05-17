@@ -43,6 +43,7 @@ export const getClassGroup = (clsName: string): string => {
 
 function App() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [activeSubject, setActiveSubject] = useState<'ENG' | 'MATH'>('ENG');
   const [loading, setLoading] = useState(true);
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
   const [searchTerm, setSearchTerm] = useState('');
@@ -304,14 +305,30 @@ function App() {
     return counts;
   }, [students, availableClasses]);
 
+  // Dynamically project activeSubject properties to standard fields
+  const projectedStudents = useMemo(() => {
+    return students.map(student => {
+      if (activeSubject === 'MATH') {
+        return {
+          ...student,
+          teacher: student.mathTeacher || '',
+          startingLevel: student.mathStartingLevel || student.startingLevel || 'Level 1',
+          currentLevel: student.mathCurrentLevel || student.currentLevel || 'Level 1',
+          grandTests: student.mathGrandTests || []
+        };
+      }
+      return student;
+    });
+  }, [students, activeSubject]);
+
   const filteredStudents = useMemo(() => {
-    return students.filter(s => {
+    return projectedStudents.filter(s => {
       const group = getClassGroup(s.className.toUpperCase());
       const matchesClass = group === activeClass;
       const matchesSearch = `${s.name} ${s.surname}`.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesClass && matchesSearch;
     });
-  }, [students, activeClass, searchTerm]);
+  }, [projectedStudents, activeClass, searchTerm]);
 
   const handleAssignTeacher = (studentId: string, currentTeacher: string) => {
     showPrompt(
@@ -321,14 +338,23 @@ function App() {
       "Ism va familiya...",
       async (value) => {
         const trimmedName = value.trim();
-        setStudents(prev => prev.map(s =>
-          s.id === studentId ? { ...s, teacher: trimmedName || undefined } : s
-        ));
+        setStudents(prev => prev.map(s => {
+          if (s.id === studentId) {
+            return activeSubject === 'MATH'
+              ? { ...s, mathTeacher: trimmedName || undefined }
+              : { ...s, teacher: trimmedName || undefined };
+          }
+          return s;
+        }));
 
         try {
+          const updatePayload = activeSubject === 'MATH'
+            ? { math_teacher: trimmedName || null }
+            : { teacher: trimmedName || null };
+
           const { error } = await supabase
             .from('Students')
-            .update({ teacher: trimmedName || null })
+            .update(updatePayload)
             .eq('id', studentId);
           if (error) throw error;
         } catch (err) {
@@ -347,7 +373,11 @@ function App() {
     const draggedStudent = { ...updatedList[draggedIndex] };
     const targetStudent = updatedList[targetIndex];
 
-    draggedStudent.teacher = targetStudent.teacher;
+    if (activeSubject === 'MATH') {
+      draggedStudent.mathTeacher = targetStudent.mathTeacher;
+    } else {
+      draggedStudent.teacher = targetStudent.teacher;
+    }
 
     updatedList.splice(draggedIndex, 1);
     const newTargetIndex = updatedList.findIndex(s => s.id === targetId);
@@ -361,12 +391,19 @@ function App() {
     setStudents(sequentialList);
 
     try {
+      const updatePayload = activeSubject === 'MATH'
+        ? { 
+            math_teacher: draggedStudent.mathTeacher || null,
+            order_index: sequentialList.findIndex(s => s.id === draggedId)
+          }
+        : { 
+            teacher: draggedStudent.teacher || null,
+            order_index: sequentialList.findIndex(s => s.id === draggedId)
+          };
+
       const { error } = await supabase
         .from('Students')
-        .update({ 
-          teacher: draggedStudent.teacher || null,
-          order_index: sequentialList.findIndex(s => s.id === draggedId)
-        })
+        .update(updatePayload)
         .eq('id', draggedId);
 
       if (error) throw error;
@@ -424,6 +461,8 @@ function App() {
         onSearchChange={setSearchTerm}
         isAdminMode={isAdminMode}
         onToggleAdmin={handleToggleAdmin}
+        activeSubject={activeSubject}
+        onSubjectChange={setActiveSubject}
       />
 
       <StudentTable
@@ -442,6 +481,7 @@ function App() {
           onStudentsUploaded={handleStudentsUploaded}
           onDeleteStudent={handleDeleteStudent}
           onBulkDeleteClass={handleBulkDeleteClass}
+          activeSubject={activeSubject}
         />
       )}
 

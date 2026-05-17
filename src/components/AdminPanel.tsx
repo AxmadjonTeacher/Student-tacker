@@ -9,9 +9,10 @@ interface AdminPanelProps {
   onStudentsUploaded: (students: Student[]) => void;
   onDeleteStudent: (id: string) => void;
   onBulkDeleteClass: () => void;
+  activeSubject: 'ENG' | 'MATH';
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStudentsUploaded, onBulkDeleteClass }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStudentsUploaded, onBulkDeleteClass, activeSubject }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,6 +86,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
             const term4 = row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'];
             if (term4) grandTests.push({ name: 'Grant 4', score: parseInt(term4) || 0 });
 
+            const normStartingLevel = normalizeLevel(
+              row['boshlang\'ich daraja'] || 
+              row['Boshlang\'ich daraja'] || 
+              row['avvalgi daraja'] || 
+              row['Avvalgi daraja'] || 
+              row['initial level'] || 
+              row['Level'] || 
+              row['level'] || 
+              row['StartingLevel'] || ''
+            );
+            const normCurrentLevel = normalizeLevel(
+              row['hozirgi daraja'] || 
+              row['Hozirgi daraja'] || 
+              row['current level'] || 
+              row['CurrentLevel'] || 
+              row['currentLevel'] || ''
+            );
+
             return {
               id: Math.random().toString(36).substr(2, 9),
               name,
@@ -103,25 +122,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
                 row['When'] || 
                 row['date joined'] || 'Sentyabr 2024'
               ).toString().trim(),
-              startingLevel: normalizeLevel(
-                row['boshlang\'ich daraja'] || 
-                row['Boshlang\'ich daraja'] || 
-                row['avvalgi daraja'] || 
-                row['Avvalgi daraja'] || 
-                row['initial level'] || 
-                row['Level'] || 
-                row['level'] || 
-                row['StartingLevel'] || ''
-              ),
-              currentLevel: normalizeLevel(
-                row['hozirgi daraja'] || 
-                row['Hozirgi daraja'] || 
-                row['current level'] || 
-                row['CurrentLevel'] || 
-                row['currentLevel'] || ''
-              ),
+              startingLevel: activeSubject === 'MATH' ? 'Level 1' : normStartingLevel,
+              currentLevel: activeSubject === 'MATH' ? 'Level 1' : normCurrentLevel,
+              grandTests: activeSubject === 'MATH' ? undefined : (grandTests.length > 0 ? grandTests : undefined),
               pictureUrl: row['PictureUrl'] || row['pictureUrl'] || '',
-              grandTests: grandTests.length > 0 ? grandTests : undefined
+              // Math fields mapping
+              mathStartingLevel: activeSubject === 'MATH' ? normStartingLevel : undefined,
+              mathCurrentLevel: activeSubject === 'MATH' ? normCurrentLevel : undefined,
+              mathGrandTests: activeSubject === 'MATH' ? (grandTests.length > 0 ? grandTests : undefined) : undefined,
             };
           })
           .filter((s: Student) => s.name.trim() !== '' || s.surname.trim() !== '');

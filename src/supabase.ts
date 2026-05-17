@@ -18,7 +18,11 @@ export const mapDbToStudent = (db: any): Student => ({
   pictureUrl: db.picture_url || undefined,
   grandTests: db.grand_tests || undefined,
   teacher: db.teacher || undefined,
-  orderIndex: db.order_index !== null && db.order_index !== undefined ? Number(db.order_index) : undefined
+  orderIndex: db.order_index !== null && db.order_index !== undefined ? Number(db.order_index) : undefined,
+  mathTeacher: db.math_teacher || undefined,
+  mathStartingLevel: db.math_starting_level || undefined,
+  mathCurrentLevel: db.math_current_level || undefined,
+  mathGrandTests: db.math_grand_tests || undefined
 });
 
 export const mapStudentToDb = (student: Student) => ({
@@ -32,5 +36,9 @@ export const mapStudentToDb = (student: Student) => ({
   picture_url: student.pictureUrl || null,
   grand_tests: student.grandTests || null,
   teacher: student.teacher || null,
-  order_index: student.orderIndex !== undefined ? student.orderIndex : null
+  order_index: student.orderIndex !== undefined ? student.orderIndex : null,
+  math_teacher: student.mathTeacher || null,
+  math_starting_level: student.mathStartingLevel || null,
+  math_current_level: student.mathCurrentLevel || null,
+  math_grand_tests: student.mathGrandTests || null
 });

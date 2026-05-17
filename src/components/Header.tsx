@@ -10,10 +10,13 @@ interface HeaderProps {
   onSearchChange: (term: string) => void;
   isAdminMode: boolean;
   onToggleAdmin: () => void;
+  activeSubject: 'ENG' | 'MATH';
+  onSubjectChange: (subj: 'ENG' | 'MATH') => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, isAdminMode, onToggleAdmin 
+  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, isAdminMode, onToggleAdmin,
+  activeSubject, onSubjectChange
 }) => {
   return (
     <>
@@ -88,6 +91,63 @@ const Header: React.FC<HeaderProps> = ({
           >
             {isAdminMode ? <X size={18} /> : <Settings size={18} />}
           </button>
+
+          {/* Subject Switcher (ENG / MATH) */}
+          <div style={{
+            display: 'flex',
+            background: '#ffffff',
+            border: '1.5px solid #e2e8f0',
+            borderRadius: '9999px',
+            padding: '0.15rem',
+            gap: '0.1rem',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+            height: '40px',
+            alignItems: 'center',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => onSubjectChange('ENG')}
+              style={{
+                background: activeSubject === 'ENG' ? '#0d9488' : 'transparent',
+                color: activeSubject === 'ENG' ? '#ffffff' : '#64748b',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '0.35rem 0.85rem',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                letterSpacing: '0.05em'
+              }}
+            >
+              ENG
+            </button>
+            <button
+              onClick={() => onSubjectChange('MATH')}
+              style={{
+                background: activeSubject === 'MATH' ? '#0d9488' : 'transparent',
+                color: activeSubject === 'MATH' ? '#ffffff' : '#64748b',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '0.35rem 0.85rem',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                letterSpacing: '0.05em'
+              }}
+            >
+              MATH
+            </button>
+          </div>
         </div>
       </div>
  
