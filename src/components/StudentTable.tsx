@@ -132,11 +132,13 @@ const StudentTable: React.FC<StudentTableProps> = ({
               display: 'grid',
               gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
               alignItems: 'center',
-              padding: '0.5rem 1.5rem',
-              marginBottom: '-0.75rem',
-              color: '#9ca3af',
+              padding: '0.85rem 1.5rem',
+              marginBottom: '0.75rem',
+              background: '#1e293b',
+              color: '#ffffff',
+              borderRadius: '12px',
               fontSize: '0.75rem',
-              fontWeight: 700,
+              fontWeight: 800,
               letterSpacing: '0.05em'
             }}>
               <div>O'QUVCHI</div>
@@ -168,20 +170,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   <React.Fragment key={student.id}>
                     {showDivider && (
                       <div style={{
-                        background: '#f8fafc',
-                        padding: '0.85rem 1.5rem',
-                        borderBottom: '1px solid #e5e7eb',
-                        borderTop: idx > 0 ? '1px solid #e5e7eb' : 'none',
+                        background: '#e0f2f1',
+                        padding: '1rem 1.5rem',
+                        borderBottom: '1px solid #b2dfdb',
+                        borderTop: idx > 0 ? '1px solid #b2dfdb' : 'none',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <div style={{ width: '4px', height: '16px', background: '#0d9488', borderRadius: '4px' }}></div>
-                          <span style={{ fontWeight: 700, color: '#334155', fontSize: '0.85rem', letterSpacing: '0.02em' }}>
-                            {teacherDisplay ? `O'qituvchi: ${teacherDisplay}` : "O'qituvchi biriktirilmagan"}
-                          </span>
-                        </div>
+                        <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '1rem', letterSpacing: '0.01em' }}>
+                          {teacherDisplay ? `O'qituvchi: ${teacherDisplay}` : "O'qituvchi biriktirilmagan"}
+                        </span>
                       </div>
                     )}
 
