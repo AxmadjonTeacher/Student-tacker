@@ -101,8 +101,8 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
       date: 'Yozgi Reja',
       engVal: null,
       mathVal: null,
-      engEstimate: Math.min(100, lastEng + 10),
-      mathEstimate: Math.min(100, lastMath + 10)
+      engEstimate: Math.min(100, lastEng + 5),
+      mathEstimate: Math.min(100, lastMath + 5)
     });
   }
 
