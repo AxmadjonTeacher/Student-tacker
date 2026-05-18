@@ -399,16 +399,15 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                   />
                 )}
 
-                {/* English Summer Estimate Segment (Gold/Amber Dashed Line) */}
+                {/* English Summer Estimate Segment (Gold/Amber Bold Solid Line) */}
                 {(isComparing || activeSubject === 'ENG') && (
                   <Line 
                     type="monotone" 
                     dataKey="engEstimate" 
                     stroke="#d97706" 
-                    strokeWidth={4} 
-                    strokeDasharray="4 4"
-                    dot={{ r: 6, fill: '#fffbeb', stroke: '#d97706', strokeWidth: 3 }}
-                    activeDot={{ r: 8, fill: '#d97706', stroke: '#ffffff', strokeWidth: 3 }}
+                    strokeWidth={6.5} 
+                    dot={{ r: 7, fill: '#fffbeb', stroke: '#d97706', strokeWidth: 4 }}
+                    activeDot={{ r: 9, fill: '#d97706', stroke: '#ffffff', strokeWidth: 3.5 }}
                     isAnimationActive={true}
                     animationDuration={1200}
                   />
@@ -430,16 +429,15 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                   />
                 )}
 
-                {/* Math Summer Estimate Segment (Rose/Pink Dashed Line) */}
+                {/* Math Summer Estimate Segment (Rose/Pink Bold Solid Line) */}
                 {(isComparing || activeSubject === 'MATH') && (
                   <Line 
                     type="monotone" 
                     dataKey="mathEstimate" 
                     stroke="#f43f5e" 
-                    strokeWidth={4} 
-                    strokeDasharray="4 4"
-                    dot={{ r: 6, fill: '#fff1f2', stroke: '#f43f5e', strokeWidth: 3 }}
-                    activeDot={{ r: 8, fill: '#f43f5e', stroke: '#ffffff', strokeWidth: 3 }}
+                    strokeWidth={6.5} 
+                    dot={{ r: 7, fill: '#fff1f2', stroke: '#f43f5e', strokeWidth: 4 }}
+                    activeDot={{ r: 9, fill: '#f43f5e', stroke: '#ffffff', strokeWidth: 3.5 }}
                     isAnimationActive={true}
                     animationDuration={1200}
                   />
