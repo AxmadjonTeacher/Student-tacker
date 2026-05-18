@@ -3,6 +3,7 @@ import Header from './components/Header';
 import StudentTable from './components/StudentTable';
 import AdminPanel from './components/AdminPanel';
 import CustomDialog from './components/CustomDialog';
+import PasscodeModal from './components/PasscodeModal';
 import type { Student } from './types';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
 
@@ -48,6 +49,7 @@ function App() {
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
   // Custom Dialog DialogState
   const [dialog, setDialog] = useState<{
@@ -297,7 +299,11 @@ function App() {
   };
 
   const handleToggleAdmin = () => {
-    setIsAdminMode(prev => !prev);
+    if (isAdminMode) {
+      setIsAdminMode(false);
+    } else {
+      setShowPasscodeModal(true);
+    }
   };
 
   const handleBulkDeleteClass = () => {
@@ -630,6 +636,17 @@ function App() {
         onConfirm={dialog.onConfirm}
         onClose={closeDialog}
       />
+
+      {showPasscodeModal && (
+        <PasscodeModal
+          activeSubject={activeSubject}
+          onClose={() => setShowPasscodeModal(false)}
+          onSuccess={() => {
+            setIsAdminMode(true);
+            setShowPasscodeModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
