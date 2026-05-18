@@ -184,7 +184,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
     const headers = [
       "O'quvchining ismi va familiyasi",
       "sinf",
-      "qabul qilingan sana",
       "boshlang'ich daraja eng",
       "hozirgi daraja eng",
       "Grant 1 eng",
@@ -202,7 +201,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
     const row1 = [
       "Yodgorov Axmadjon",
       "5A",
-      "Sentyabr 2024",
       "1",
       "5",
       "70", "72", "90", "67",
@@ -214,7 +212,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
     const row2 = [
       "Salohiddinov Otabek",
       "5B",
-      "Sentyabr 2024",
       "3",
       "5",
       "55", "40", "68", "90",

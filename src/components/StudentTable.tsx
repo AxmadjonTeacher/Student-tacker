@@ -179,7 +179,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   {/* Clean and Small but Noticeable Column Headers (With Integrated Teacher Name in All Caps) */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
+                    gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr',
                     alignItems: 'center',
                     padding: '0.9rem 1.5rem',
                     borderBottom: '1px solid #f1f5f9',
@@ -192,7 +192,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em' }}>
                       {group.teacher ? `O'QITUVCHI: ${group.teacher.toUpperCase()}` : "O'QITUVCHI BIRIKTIRILMAGAN"}
                     </div>
-                    <div style={{ padding: '0 1.5rem' }}>QABUL QILINGAN SANA</div>
                     <div style={{ padding: '0 1.5rem' }}>AVVALGI DARAJA</div>
                     <div style={{ padding: '0 1.5rem' }}>HOZIRGI DARAJA</div>
                     <div style={{ padding: '0 1.5rem', textAlign: 'center' }}>
@@ -215,7 +214,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onDragEnd={() => setDraggedId(null)}
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '2.5fr 1.5fr 1fr 1.5fr 1.5fr',
+                          gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr',
                           alignItems: 'center',
                           padding: '1.2rem 1.5rem',
                           borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
@@ -255,13 +254,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', letterSpacing: '0.05em' }}>
                               SINF {student.className.toUpperCase()}
                             </p>
-                          </div>
-                        </div>
-
-                        {/* When block */}
-                        <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                          <div style={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.95rem' }}>
-                            {student.dateJoined}
                           </div>
                         </div>
 
