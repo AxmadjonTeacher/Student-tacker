@@ -188,7 +188,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             const subjectLabel = isMath ? 'Matematika' : 'Ingliz tili';
             const labelText = isEstimate && label === 'Yozgi Reja' ? `${subjectLabel} (Prognoz)` : subjectLabel;
             const color = isMath 
-              ? (isEstimate && label === 'Yozgi Reja' ? '#f43f5e' : '#f97316') 
+              ? (isEstimate && label === 'Yozgi Reja' ? '#2563eb' : '#f97316') 
               : (isEstimate && label === 'Yozgi Reja' ? '#d97706' : '#129f87');
             return (
               <p key={idx} style={{ margin: 0, color: color, fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -429,15 +429,15 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                   />
                 )}
 
-                {/* Math Summer Estimate Segment (Rose/Pink Bold Solid Line) */}
+                {/* Math Summer Estimate Segment (Royal Blue Bold Solid Line) */}
                 {(isComparing || activeSubject === 'MATH') && (
                   <Line 
                     type="monotone" 
                     dataKey="mathEstimate" 
-                    stroke="#f43f5e" 
+                    stroke="#2563eb" 
                     strokeWidth={6.5} 
-                    dot={{ r: 7, fill: '#fff1f2', stroke: '#f43f5e', strokeWidth: 4 }}
-                    activeDot={{ r: 9, fill: '#f43f5e', stroke: '#ffffff', strokeWidth: 3.5 }}
+                    dot={{ r: 7, fill: '#eff6ff', stroke: '#2563eb', strokeWidth: 4 }}
+                    activeDot={{ r: 9, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 3.5 }}
                     isAnimationActive={true}
                     animationDuration={1200}
                   />
