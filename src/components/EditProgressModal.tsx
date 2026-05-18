@@ -39,16 +39,17 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const [startingLevel, setStartingLevel] = useState(initialStartingLevel);
   const [currentLevel, setCurrentLevel] = useState(initialCurrentLevel);
 
-  // pre-fill four test scores
-  const getScoreForTest = (testName: string): string => {
-    const found = initialTests.find(t => t.name.toLowerCase() === testName.toLowerCase());
+  // pre-fill four test scores checking both Grant and Chorak naming patterns
+  const getScoreForTest = (testNum: number): string => {
+    const namesToTry = [`grant ${testNum}`, `${testNum}-chorak`, `${testNum} chorak`].map(n => n.toLowerCase());
+    const found = initialTests.find(t => namesToTry.includes(t.name.toLowerCase()));
     return found ? found.score.toString() : '';
   };
 
-  const [grant1, setGrant1] = useState(getScoreForTest('Grant 1'));
-  const [grant2, setGrant2] = useState(getScoreForTest('Grant 2'));
-  const [grant3, setGrant3] = useState(getScoreForTest('Grant 3'));
-  const [grant4, setGrant4] = useState(getScoreForTest('Grant 4'));
+  const [grant1, setGrant1] = useState(getScoreForTest(1));
+  const [grant2, setGrant2] = useState(getScoreForTest(2));
+  const [grant3, setGrant3] = useState(getScoreForTest(3));
+  const [grant4, setGrant4] = useState(getScoreForTest(4));
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,12 +168,12 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
           {/* Test Scores */}
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
-              GRAND TEST BALLARI (%)
+              CHORAK NATIJALARI (%)
             </label>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>Grant 1</label>
+                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>1-Chorak</label>
                 <input 
                   type="number" 
                   min="0" 
@@ -194,7 +195,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>Grant 2</label>
+                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>2-Chorak</label>
                 <input 
                   type="number" 
                   min="0" 
@@ -216,7 +217,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>Grant 3</label>
+                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>3-Chorak</label>
                 <input 
                   type="number" 
                   min="0" 
@@ -238,7 +239,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>Grant 4</label>
+                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>4-Chorak</label>
                 <input 
                   type="number" 
                   min="0" 

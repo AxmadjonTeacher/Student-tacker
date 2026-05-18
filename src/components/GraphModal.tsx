@@ -28,6 +28,19 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
     return 1;
   };
 
+  const renameTestName = (name: string): string => {
+    const trimmed = name.toString().trim().toLowerCase();
+    if (trimmed === 'grant 1') return '1-Chorak';
+    if (trimmed === 'grant 2') return '2-Chorak';
+    if (trimmed === 'grant 3') return '3-Chorak';
+    if (trimmed === 'grant 4') return '4-Chorak';
+    const match = trimmed.match(/(\d+)/);
+    if (match) {
+      return `${match[1]}-Chorak`;
+    }
+    return name;
+  };
+
   // Helper to extract or generate clean test curves for both subjects
   const getSubjectData = (subject: 'ENG' | 'MATH') => {
     const isMath = subject === 'MATH';
@@ -37,14 +50,14 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
 
     if (tests && tests.length > 0) {
       return tests.map(test => ({
-        name: test.name,
+        name: renameTestName(test.name),
         score: test.score
       }));
     }
 
     // Fallback/Mock generation with high aesthetic variation
     const mockData = [];
-    const testNames = ['Grant 1', 'Grant 2', 'Grant 3', 'Grant 4'];
+    const testNames = ['1-Chorak', '2-Chorak', '3-Chorak', '4-Chorak'];
     for (let i = 0; i < 4; i++) {
       const progress = i / 3;
       const baseScore = 45 + (startLevel * 6);
