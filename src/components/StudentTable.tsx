@@ -179,7 +179,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   {/* Clean and Small but Noticeable Column Headers (With Integrated Teacher Name in All Caps) */}
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr',
+                    gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr 1.5fr',
                     alignItems: 'center',
                     padding: '0.9rem 1.5rem',
                     borderBottom: '1px solid #f1f5f9',
@@ -194,6 +194,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     </div>
                     <div style={{ padding: '0 1.5rem' }}>AVVALGI DARAJA</div>
                     <div style={{ padding: '0 1.5rem' }}>HOZIRGI DARAJA</div>
+                    <div style={{ padding: '0 1.5rem', color: '#ea580c', fontWeight: 800 }}>☀️ YOZGI REJA</div>
                     <div style={{ padding: '0 1.5rem', textAlign: 'center' }}>
                       {isAdminMode ? "AMALLAR" : "PROGRESS"}
                     </div>
@@ -214,7 +215,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onDragEnd={() => setDraggedId(null)}
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr',
+                          gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr 1.5fr',
                           alignItems: 'center',
                           padding: '1.2rem 1.5rem',
                           borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
@@ -280,6 +281,33 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               {improvement}
                             </div>
                           ) : null}
+                        </div>
+
+                        {/* Yozgi Natija block */}
+                        <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                            color: '#ea580c',
+                            border: '1px dashed #fdba74',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '12px',
+                            fontSize: '0.85rem',
+                            fontWeight: 850,
+                            boxShadow: '0 4px 10px -2px rgba(234, 88, 12, 0.15)',
+                            width: 'max-content'
+                          }}>
+                            <span style={{ fontSize: '0.95rem' }}>☀️</span>
+                            {(() => {
+                              const match = (student.currentLevel || '').match(/(\d+)/);
+                              if (match) {
+                                return `Level ${parseInt(match[1]) + 1}`;
+                              }
+                              return 'Level 2';
+                            })()}
+                          </div>
                         </div>
 
                         {/* Actions/Progress block */}

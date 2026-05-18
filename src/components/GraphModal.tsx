@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, TrendingUp } from 'lucide-react';
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
+  AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import type { Student } from '../types';
 
@@ -75,19 +75,55 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
   const mathData = getSubjectData('MATH');
 
   // Combine into single dataset for chart rendering
-  const combinedData = engData.map((d, index) => {
+  const combinedData: any[] = engData.map((d, index) => {
     const mathPoint = mathData[index] || { score: 50 };
     return {
       date: d.name,
-      engVal: d.score,
-      mathVal: mathPoint.score
+      engVal: d.score as number | null,
+      mathVal: mathPoint.score as number | null,
+      engEstimate: null as number | null,
+      mathEstimate: null as number | null
     };
   });
 
+  // Append 5th point (Yozgi Reja) as +10% estimated raise
+  if (combinedData.length > 0) {
+    const lastIdx = combinedData.length - 1;
+    const lastEng = combinedData[lastIdx].engVal || 50;
+    const lastMath = combinedData[lastIdx].mathVal || 50;
+
+    // Connect the 4th point to the estimate line
+    combinedData[lastIdx].engEstimate = lastEng;
+    combinedData[lastIdx].mathEstimate = lastMath;
+
+    // Add 5th point (Yozgi Reja)
+    combinedData.push({
+      date: 'Yozgi Reja',
+      engVal: null,
+      mathVal: null,
+      engEstimate: Math.min(100, lastEng + 10),
+      mathEstimate: Math.min(100, lastMath + 10)
+    });
+  }
+
   // Decide dynamically which scores are visible to scale Y-axis domain
   const allVisibleScores = isComparing 
-    ? [...combinedData.map(d => d.engVal), ...combinedData.map(d => d.mathVal)]
-    : (activeSubject === 'MATH' ? combinedData.map(d => d.mathVal) : combinedData.map(d => d.engVal));
+    ? [
+        ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined),
+        ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined),
+        ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined),
+        ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined)
+      ]
+    : (activeSubject === 'MATH' 
+        ? [
+            ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined),
+            ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined)
+          ]
+        : [
+            ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined),
+            ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined)
+          ]
+      );
 
   const minVal = allVisibleScores.length > 0 ? Math.min(...allVisibleScores) : 0;
   const maxVal = allVisibleScores.length > 0 ? Math.max(...allVisibleScores) : 100;
@@ -120,6 +156,18 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const shownKeys = new Set<string>();
+      const filteredPayload = payload.filter((item: any) => {
+        if (item.value === null || item.value === undefined) return false;
+        
+        const isEng = item.dataKey === 'engVal' || item.dataKey === 'engEstimate';
+        const typeKey = isEng ? 'ENG' : 'MATH';
+        
+        if (shownKeys.has(typeKey)) return false;
+        shownKeys.add(typeKey);
+        return true;
+      });
+
       return (
         <div style={{ 
           background: '#ffffff', 
@@ -131,11 +179,17 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           flexDirection: 'column',
           gap: '0.35rem'
         }}>
-          <p style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: '0.85rem', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>{label}</p>
-          {payload.map((item: any, idx: number) => {
-            const isMath = item.dataKey === 'mathVal';
-            const labelText = isMath ? 'Matematika' : 'Ingliz tili';
-            const color = isMath ? '#f97316' : '#129f87';
+          <p style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: '0.85rem', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>
+            {label === 'Yozgi Reja' ? '☀️ Yozgi Reja (Kutilmoqda)' : label}
+          </p>
+          {filteredPayload.map((item: any, idx: number) => {
+            const isMath = item.dataKey === 'mathVal' || item.dataKey === 'mathEstimate';
+            const isEstimate = item.dataKey === 'engEstimate' || item.dataKey === 'mathEstimate';
+            const subjectLabel = isMath ? 'Matematika' : 'Ingliz tili';
+            const labelText = isEstimate && label === 'Yozgi Reja' ? `${subjectLabel} (Prognoz)` : subjectLabel;
+            const color = isMath 
+              ? (isEstimate && label === 'Yozgi Reja' ? '#f43f5e' : '#f97316') 
+              : (isEstimate && label === 'Yozgi Reja' ? '#d97706' : '#129f87');
             return (
               <p key={idx} style={{ margin: 0, color: color, fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, display: 'inline-block' }}></span>
@@ -344,6 +398,21 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                     animationDuration={1200}
                   />
                 )}
+
+                {/* English Summer Estimate Segment (Gold/Amber Dashed Line) */}
+                {(isComparing || activeSubject === 'ENG') && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="engEstimate" 
+                    stroke="#d97706" 
+                    strokeWidth={4} 
+                    strokeDasharray="4 4"
+                    dot={{ r: 6, fill: '#fffbeb', stroke: '#d97706', strokeWidth: 3 }}
+                    activeDot={{ r: 8, fill: '#d97706', stroke: '#ffffff', strokeWidth: 3 }}
+                    isAnimationActive={true}
+                    animationDuration={1200}
+                  />
+                )}
                 
                 {/* Math Score Area (Orange) */}
                 {(isComparing || activeSubject === 'MATH') && (
@@ -356,6 +425,21 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                     fill="url(#colorMath)"
                     dot={{ r: 5, fill: '#ffffff', stroke: '#f97316', strokeWidth: 3 }}
                     activeDot={{ r: 7, fill: '#f97316', stroke: '#ffffff', strokeWidth: 3 }}
+                    isAnimationActive={true}
+                    animationDuration={1200}
+                  />
+                )}
+
+                {/* Math Summer Estimate Segment (Rose/Pink Dashed Line) */}
+                {(isComparing || activeSubject === 'MATH') && (
+                  <Line 
+                    type="monotone" 
+                    dataKey="mathEstimate" 
+                    stroke="#f43f5e" 
+                    strokeWidth={4} 
+                    strokeDasharray="4 4"
+                    dot={{ r: 6, fill: '#fff1f2', stroke: '#f43f5e', strokeWidth: 3 }}
+                    activeDot={{ r: 8, fill: '#f43f5e', stroke: '#ffffff', strokeWidth: 3 }}
                     isAnimationActive={true}
                     animationDuration={1200}
                   />
