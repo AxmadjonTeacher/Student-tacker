@@ -188,8 +188,8 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             const subjectLabel = isMath ? 'Matematika' : 'Ingliz tili';
             const labelText = isEstimate && label === 'Yozgi Reja' ? `${subjectLabel} (Prognoz)` : subjectLabel;
             const color = isMath 
-              ? (isEstimate && label === 'Yozgi Reja' ? '#2563eb' : '#f97316') 
-              : (isEstimate && label === 'Yozgi Reja' ? '#d97706' : '#129f87');
+              ? (isEstimate && label === 'Yozgi Reja' ? '#c2410c' : '#f97316') 
+              : (isEstimate && label === 'Yozgi Reja' ? '#166534' : '#129f87');
             return (
               <p key={idx} style={{ margin: 0, color: color, fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, display: 'inline-block' }}></span>
@@ -399,15 +399,16 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                   />
                 )}
 
-                {/* English Summer Estimate Segment (Gold/Amber Bold Solid Line) */}
+                {/* English Summer Estimate Segment (Dark Green Long Dashed Line) */}
                 {(isComparing || activeSubject === 'ENG') && (
                   <Line 
                     type="monotone" 
                     dataKey="engEstimate" 
-                    stroke="#d97706" 
-                    strokeWidth={6.5} 
-                    dot={{ r: 7, fill: '#fffbeb', stroke: '#d97706', strokeWidth: 4 }}
-                    activeDot={{ r: 9, fill: '#d97706', stroke: '#ffffff', strokeWidth: 3.5 }}
+                    stroke="#166534" 
+                    strokeWidth={5.5} 
+                    strokeDasharray="20 10"
+                    dot={{ r: 7, fill: '#f0fdf4', stroke: '#166534', strokeWidth: 4 }}
+                    activeDot={{ r: 9, fill: '#166534', stroke: '#ffffff', strokeWidth: 3.5 }}
                     isAnimationActive={true}
                     animationDuration={1200}
                   />
@@ -429,15 +430,16 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                   />
                 )}
 
-                {/* Math Summer Estimate Segment (Royal Blue Bold Solid Line) */}
+                {/* Math Summer Estimate Segment (Dark Orange Long Dashed Line) */}
                 {(isComparing || activeSubject === 'MATH') && (
                   <Line 
                     type="monotone" 
                     dataKey="mathEstimate" 
-                    stroke="#2563eb" 
-                    strokeWidth={6.5} 
-                    dot={{ r: 7, fill: '#eff6ff', stroke: '#2563eb', strokeWidth: 4 }}
-                    activeDot={{ r: 9, fill: '#2563eb', stroke: '#ffffff', strokeWidth: 3.5 }}
+                    stroke="#c2410c" 
+                    strokeWidth={5.5} 
+                    strokeDasharray="20 10"
+                    dot={{ r: 7, fill: '#fff7ed', stroke: '#c2410c', strokeWidth: 4 }}
+                    activeDot={{ r: 9, fill: '#c2410c', stroke: '#ffffff', strokeWidth: 3.5 }}
                     isAnimationActive={true}
                     animationDuration={1200}
                   />
