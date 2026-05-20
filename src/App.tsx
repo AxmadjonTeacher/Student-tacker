@@ -528,6 +528,92 @@ function App() {
     }
   };
 
+  const handleRenameTeacherTable = (oldTeacherName: string) => {
+    showPrompt(
+      "Jadval nomini tahrirlash",
+      "O'qituvchining yangi ismini va familiyasini kiriting (o'chirish uchun bo'sh qoldiring):",
+      oldTeacherName,
+      "Ism va familiya...",
+      async (newTeacherName) => {
+        const trimmedNew = newTeacherName.trim();
+        // Update local state
+        setStudents(prev => prev.map(s => {
+          const studentClassGroup = getClassGroup(s.className.toUpperCase());
+          if (studentClassGroup !== activeClass) return s;
+
+          if (activeSubject === 'MATH') {
+            if ((s.mathTeacher || '') === oldTeacherName) {
+              return { ...s, mathTeacher: trimmedNew || undefined };
+            }
+          } else {
+            if ((s.teacher || '') === oldTeacherName) {
+              return { ...s, teacher: trimmedNew || undefined };
+            }
+          }
+          return s;
+        }));
+
+        // Update Supabase
+        try {
+          const field = activeSubject === 'MATH' ? 'math_teacher' : 'teacher';
+          const matchingStudents = students.filter(s => {
+            const studentClassGroup = getClassGroup(s.className.toUpperCase());
+            if (studentClassGroup !== activeClass) return false;
+            
+            const t = activeSubject === 'MATH' ? s.mathTeacher : s.teacher;
+            return (t || '') === oldTeacherName;
+          });
+
+          if (matchingStudents.length === 0) return;
+
+          const ids = matchingStudents.map(s => s.id);
+
+          const { error } = await supabase
+            .from('Students')
+            .update({ [field]: trimmedNew || null })
+            .in('id', ids);
+
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed to rename teacher table in Supabase:', err);
+        }
+      }
+    );
+  };
+
+  const handleDeleteTeacherTable = (teacherName: string) => {
+    const matchingStudents = students.filter(s => {
+      const studentClassGroup = getClassGroup(s.className.toUpperCase());
+      if (studentClassGroup !== activeClass) return false;
+
+      const t = activeSubject === 'MATH' ? s.mathTeacher : s.teacher;
+      return (t || '') === teacherName;
+    });
+
+    if (matchingStudents.length === 0) return;
+
+    const teacherDisplay = teacherName || "O'qituvchi biriktirilmagan";
+    showConfirm(
+      "Jadvalni o'chirish",
+      `Haqiqatan ham "${teacherDisplay}" guruhidagi barcha (${matchingStudents.length} ta) o'quvchilarni o'chirmoqchimisiz?`,
+      true,
+      async () => {
+        const idsToDelete = matchingStudents.map(s => s.id);
+        setStudents(prev => prev.filter(s => !idsToDelete.includes(s.id)));
+
+        try {
+          const { error } = await supabase
+            .from('Students')
+            .delete()
+            .in('id', idsToDelete);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed to delete teacher table students from Supabase:', err);
+        }
+      }
+    );
+  };
+
   if (loading) {
     return (
       <div style={{
@@ -585,6 +671,8 @@ function App() {
         onMoveStudent={handleMoveStudent}
         activeSubject={activeSubject}
         onUpdateProgress={handleUpdateProgress}
+        onRenameTeacherTable={handleRenameTeacherTable}
+        onDeleteTeacherTable={handleDeleteTeacherTable}
       />
 
       {isAdminMode && (

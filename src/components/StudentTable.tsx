@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import type { Student } from '../types';
-import { Inbox, LineChart, ArrowRight, Trash2 } from 'lucide-react';
+import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical } from 'lucide-react';
 import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
+import * as XLSX from 'xlsx';
 
 interface StudentTableProps {
   students: Student[];
@@ -18,6 +19,8 @@ interface StudentTableProps {
     currentLevel: string,
     grandTests: { name: string; score: number }[]
   ) => void;
+  onRenameTeacherTable?: (oldName: string) => void;
+  onDeleteTeacherTable?: (teacherName: string) => void;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -28,13 +31,59 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onAssignTeacher,
   onMoveStudent,
   activeSubject = 'ENG',
-  onUpdateProgress
+  onUpdateProgress,
+  onRenameTeacherTable,
+  onDeleteTeacherTable
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [uploadingStudentId, setUploadingStudentId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleExportTableToExcel = (teacherName: string, studentsList: Student[]) => {
+    const suffix = activeSubject.toLowerCase(); // 'eng' or 'math'
+    
+    const data = studentsList.map(student => {
+      const getScore = (testName: string) => {
+        const test = student.grandTests?.find(t => t.name.toLowerCase().includes(testName.toLowerCase()));
+        return test ? test.score : '';
+      };
+
+      return {
+        "O'quvchining ismi va familiyasi": `${student.name} ${student.surname}`,
+        "sinf": student.className,
+        [`boshlang'ich daraja ${suffix}`]: student.startingLevel,
+        [`hozirgi daraja ${suffix}`]: student.currentLevel,
+        [`Grant 1 ${suffix}`]: getScore("Grant 1") || getScore("1"),
+        [`Grant 2 ${suffix}`]: getScore("Grant 2") || getScore("2"),
+        [`Grant 3 ${suffix}`]: getScore("Grant 3") || getScore("3"),
+        [`Grant 4 ${suffix}`]: getScore("Grant 4") || getScore("4")
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+
+    // Beautiful column widths matching content
+    worksheet['!cols'] = [
+      { wch: 30 }, // O'quvchining ismi va familiyasi
+      { wch: 10 }, // sinf
+      { wch: 25 }, // boshlang'ich daraja
+      { wch: 20 }, // hozirgi daraja
+      { wch: 15 }, // Grant 1
+      { wch: 15 }, // Grant 2
+      { wch: 15 }, // Grant 3
+      { wch: 15 }  // Grant 4
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    const safeTeacherName = teacherName.replace(/[^a-zA-Z0-9 uz]/g, '') || 'Oqituvchisiz';
+    XLSX.utils.book_append_sheet(workbook, worksheet, safeTeacherName.slice(0, 30));
+
+    const filename = `${safeTeacherName}_${activeSubject}_tabel.xlsx`;
+    XLSX.writeFile(workbook, filename);
+  };
 
   const handleAvatarClick = (studentId: string) => {
     setUploadingStudentId(studentId);
@@ -195,8 +244,162 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     <div style={{ padding: '0 1.5rem' }}>AVVALGI DARAJA</div>
                     <div style={{ padding: '0 1.5rem' }}>HOZIRGI DARAJA</div>
                     <div style={{ padding: '0 1.5rem', color: '#ea580c', fontWeight: 800 }}>☀️ YOZGI REJA</div>
-                    <div style={{ padding: '0 1.5rem', textAlign: 'center' }}>
-                      {isAdminMode ? "AMALLAR" : "PROGRESS"}
+                    <div style={{ 
+                      padding: '0 1.5rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      position: 'relative'
+                    }}>
+                      <span style={{ textAlign: 'center', flexGrow: 1 }}>
+                        {isAdminMode ? "AMALLAR" : "PROGRESS"}
+                      </span>
+                      {(() => {
+                        const dropdownId = group.teacher || 'unassigned';
+                        const isOpen = openDropdownId === dropdownId;
+                        return (
+                          <div 
+                            className="table-actions-dropdown-container" 
+                            style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                            onMouseEnter={() => setOpenDropdownId(dropdownId)}
+                            onMouseLeave={() => setOpenDropdownId(null)}
+                          >
+                            <button 
+                              onClick={() => setOpenDropdownId(isOpen ? null : dropdownId)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#64748b',
+                                cursor: 'pointer',
+                                padding: '0.25rem',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.2s ease',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+                            
+                            <div 
+                              className="table-actions-menu"
+                              style={{
+                                position: 'absolute',
+                                top: '100%',
+                                right: 0,
+                                marginTop: '0.5rem',
+                                width: '180px',
+                                background: '#ffffff',
+                                borderRadius: '12px',
+                                border: '1px solid #e2e8f0',
+                                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+                                padding: '0.5rem',
+                                display: isOpen ? 'flex' : 'none',
+                                flexDirection: 'column',
+                                gap: '0.25rem',
+                                zIndex: 100,
+                                textAlign: 'left'
+                              }}
+                            >
+                              {isAdminMode && (
+                                <button
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    if (onRenameTeacherTable) onRenameTeacherTable(group.teacher);
+                                  }}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    padding: '0.5rem 0.75rem',
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: '#334155',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    transition: 'all 0.2s ease',
+                                    width: '100%'
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <Pencil size={12} />
+                                  Tahrirlash
+                                </button>
+                              )}
+                              
+                              <button
+                                onClick={() => {
+                                  setOpenDropdownId(null);
+                                  handleExportTableToExcel(group.teacher, group.students);
+                                }}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  padding: '0.5rem 0.75rem',
+                                  borderRadius: '8px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  transition: 'all 0.2s ease',
+                                  width: '100%'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="7 10 12 15 17 10" />
+                                  <line x1="12" y1="15" x2="12" y2="3" />
+                                </svg>
+                                Excel Yuklash
+                              </button>
+                              
+                              {isAdminMode && (
+                                <button
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    if (onDeleteTeacherTable) onDeleteTeacherTable(group.teacher);
+                                  }}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    padding: '0.5rem 0.75rem',
+                                    borderRadius: '8px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: '#ef4444',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    transition: 'all 0.2s ease',
+                                    width: '100%'
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <Trash2 size={12} />
+                                  Jadvalni o'chirish
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -330,49 +533,51 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             </button>
                           </div>
                         ) : (
-                          <div style={{ padding: '0 0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                          <div style={{ padding: '0 0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
                             <button 
                               onClick={() => setEditingStudent(student)}
+                              title="Tahrirlash"
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 background: '#eff6ff', color: '#2563eb',
-                                border: '1px solid #bfdbfe', borderRadius: '9999px',
-                                padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
+                                border: '1px solid #bfdbfe', borderRadius: '50%',
+                                width: '36px', height: '36px',
                                 cursor: 'pointer', transition: 'all 0.2s ease'
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#dbeafe'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = '#eff6ff'; }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#dbeafe'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.transform = 'scale(1)'; }}
                             >
-                              Tahrirlash
+                              <Pencil size={16} />
                             </button>
                             <button 
                               onClick={() => onAssignTeacher && onAssignTeacher(student.id, student.teacher || '')}
+                              title="O'qituvchi biriktirish"
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 background: '#f0fdf4', color: '#16a34a',
-                                border: '1px solid #bbf7d0', borderRadius: '9999px',
-                                padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
+                                border: '1px solid #bbf7d0', borderRadius: '50%',
+                                width: '36px', height: '36px',
                                 cursor: 'pointer', transition: 'all 0.2s ease'
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.transform = 'scale(1)'; }}
                             >
-                              O'qituvchi
+                              <Users size={16} />
                             </button>
                             <button 
                               onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
+                              title="O'chirib yuborish"
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 background: '#fee2e2', color: '#b91c1c',
-                                border: '1px solid #fca5a5', borderRadius: '9999px',
-                                padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
+                                border: '1px solid #fca5a5', borderRadius: '50%',
+                                width: '36px', height: '36px',
                                 cursor: 'pointer', transition: 'all 0.2s ease'
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
                             >
-                              <Trash2 size={14} />
-                              O'chirish
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         )}
