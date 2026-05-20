@@ -291,25 +291,57 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 position: 'absolute',
                                 top: '100%',
                                 right: 0,
-                                marginTop: '0.5rem',
+                                paddingTop: '6px', // Continuous hover hit-box zone
+                                display: isOpen ? 'flex' : 'none',
+                                zIndex: 100,
+                              }}
+                            >
+                              <div style={{
                                 width: '180px',
                                 background: '#ffffff',
                                 borderRadius: '12px',
                                 border: '1px solid #e2e8f0',
                                 boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
                                 padding: '0.5rem',
-                                display: isOpen ? 'flex' : 'none',
+                                display: 'flex',
                                 flexDirection: 'column',
                                 gap: '0.25rem',
-                                zIndex: 100,
                                 textAlign: 'left'
-                              }}
-                            >
-                              {isAdminMode && (
+                              }}>
+                                {isAdminMode && (
+                                  <button
+                                    onClick={() => {
+                                      setOpenDropdownId(null);
+                                      if (onRenameTeacherTable) onRenameTeacherTable(group.teacher);
+                                    }}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '0.5rem 0.75rem',
+                                      borderRadius: '8px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
+                                      color: '#334155',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      transition: 'all 0.2s ease',
+                                      width: '100%'
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                  >
+                                    <Pencil size={12} />
+                                    Tahrirlash
+                                  </button>
+                                )}
+                                
                                 <button
                                   onClick={() => {
                                     setOpenDropdownId(null);
-                                    if (onRenameTeacherTable) onRenameTeacherTable(group.teacher);
+                                    handleExportTableToExcel(group.teacher, group.students);
                                   }}
                                   style={{
                                     background: 'transparent',
@@ -330,72 +362,44 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                   onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                 >
-                                  <Pencil size={12} />
-                                  Tahrirlash
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                  </svg>
+                                  Excel Yuklash
                                 </button>
-                              )}
-                              
-                              <button
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  handleExportTableToExcel(group.teacher, group.students);
-                                }}
-                                style={{
-                                  background: 'transparent',
-                                  border: 'none',
-                                  padding: '0.5rem 0.75rem',
-                                  borderRadius: '8px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 600,
-                                  color: '#334155',
-                                  cursor: 'pointer',
-                                  textAlign: 'left',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.5rem',
-                                  transition: 'all 0.2s ease',
-                                  width: '100%'
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                              >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                  <polyline points="7 10 12 15 17 10" />
-                                  <line x1="12" y1="15" x2="12" y2="3" />
-                                </svg>
-                                Excel Yuklash
-                              </button>
-                              
-                              {isAdminMode && (
-                                <button
-                                  onClick={() => {
-                                    setOpenDropdownId(null);
-                                    if (onDeleteTeacherTable) onDeleteTeacherTable(group.teacher);
-                                  }}
-                                  style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    padding: '0.5rem 0.75rem',
-                                    borderRadius: '8px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    color: '#ef4444',
-                                    cursor: 'pointer',
-                                    textAlign: 'left',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    transition: 'all 0.2s ease',
-                                    width: '100%'
-                                  }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                                >
-                                  <Trash2 size={12} />
-                                  Jadvalni o'chirish
-                                </button>
-                              )}
+                                
+                                {isAdminMode && (
+                                  <button
+                                    onClick={() => {
+                                      setOpenDropdownId(null);
+                                      if (onDeleteTeacherTable) onDeleteTeacherTable(group.teacher);
+                                    }}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '0.5rem 0.75rem',
+                                      borderRadius: '8px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
+                                      color: '#ef4444',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      transition: 'all 0.2s ease',
+                                      width: '100%'
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                  >
+                                    <Trash2 size={12} />
+                                    Jadvalni o'chirish
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
