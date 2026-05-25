@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, Settings, X, Download, Trash2 } from 'lucide-react';
+import { UploadCloud, Settings, X, Download, Trash2, UserPlus } from 'lucide-react';
 import Papa from 'papaparse';
 import type { Student } from '../types';
+import AddStudentModal from './AddStudentModal';
 
 interface AdminPanelProps {
   students: Student[];
@@ -9,11 +10,13 @@ interface AdminPanelProps {
   onStudentsUploaded: (students: Student[]) => void;
   onDeleteStudent: (id: string) => void;
   onBulkDeleteClass: () => void;
+  onAddStudent: (studentData: Partial<Student>) => void;
   activeSubject: 'ENG' | 'MATH';
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStudentsUploaded, onBulkDeleteClass, activeSubject }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStudentsUploaded, onBulkDeleteClass, onAddStudent, activeSubject }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -277,6 +280,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
             </button>
 
             <button
+              onClick={() => setIsAddStudentOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                background: '#f8fafc', color: '#0d9488',
+                border: '1px solid #ccfbf1', borderRadius: '10px',
+                padding: '0.6rem 1.2rem', fontSize: '0.9rem', fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+            >
+              <UserPlus size={16} />
+              Yangi o'quvchi qo'shish
+            </button>
+
+            <button
               onClick={() => { setUploadStatus(null); setIsOpen(true); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -361,6 +380,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
           </div>
         </div>
       )}
+
+      <AddStudentModal 
+        isOpen={isAddStudentOpen}
+        onClose={() => setIsAddStudentOpen(false)}
+        onAddStudent={onAddStudent}
+        activeSubject={activeSubject}
+      />
     </>
   );
 };

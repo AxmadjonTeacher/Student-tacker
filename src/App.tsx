@@ -259,6 +259,36 @@ function App() {
     }
   };
 
+  const handleAddStudent = async (studentData: Partial<Student>) => {
+    const brandNew: Student = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: studentData.name || '',
+      surname: studentData.surname || '',
+      className: activeClass,
+      dateJoined: new Date().toISOString().split('T')[0],
+      startingLevel: studentData.startingLevel || 'Level 1',
+      currentLevel: studentData.currentLevel || 'Level 1',
+      teacher: studentData.teacher,
+      mathStartingLevel: studentData.mathStartingLevel || 'Level 1',
+      mathCurrentLevel: studentData.mathCurrentLevel || 'Level 1',
+      mathTeacher: studentData.mathTeacher,
+      orderIndex: students.length,
+      teacherOrder: 0,
+      mathTeacherOrder: 0
+    };
+
+    setStudents(prev => [...prev, brandNew]);
+
+    try {
+      const { error } = await supabase
+        .from('Students')
+        .insert(mapStudentToDb(brandNew));
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to add student manually to Supabase:', err);
+    }
+  };
+
   const handleUpdateStudentPhoto = async (studentId: string, photoUrl: string) => {
     setStudents(prev => prev.map(s =>
       s.id === studentId ? { ...s, pictureUrl: photoUrl } : s
@@ -764,6 +794,7 @@ function App() {
           onStudentsUploaded={handleStudentsUploaded}
           onDeleteStudent={handleDeleteStudent}
           onBulkDeleteClass={handleBulkDeleteClass}
+          onAddStudent={handleAddStudent}
           activeSubject={activeSubject}
         />
       )}
