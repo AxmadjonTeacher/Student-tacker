@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   UploadCloud, X, Download, Trash2, UserPlus, Settings,
   Calendar, AlertCircle, Tag, Image as ImageIcon, Plus, 
-  ChevronDown, ChevronUp, Clock, Eye, Send
+  ChevronDown, ChevronUp, Clock, Eye, Send, Bell
 } from 'lucide-react';
 import Papa from 'papaparse';
 import type { Student } from '../types';
@@ -65,6 +65,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [newsLabel, setNewsLabel] = useState('E\'lon');
   const [uploadedPics, setUploadedPics] = useState<string[]>([]);
   const [isSubmittingNews, setIsSubmittingNews] = useState(false);
+  const [newsType, setNewsType] = useState<'news' | 'event' | 'reminder'>('news');
   const newsImageInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize level helper
@@ -419,8 +420,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         date: new Date(newsDate).toISOString(),
         scheduled_for: isScheduled ? new Date(scheduledFor).toISOString() : null,
         urgency: urgency,
-        label: newsLabel.trim(),
-        picture_urls: uploadedPics
+        label: newsType === 'reminder' ? 'Eslatma' : newsLabel.trim(),
+        picture_urls: newsType === 'reminder' ? [] : uploadedPics,
+        type: newsType
       };
 
       const { error } = await supabase
@@ -439,6 +441,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       setUrgency('medium');
       setNewsLabel('E\'lon');
       setUploadedPics([]);
+      setNewsType('news');
       setIsFormOpen(false);
       fetchNewsEvents();
     } catch (err) {
@@ -877,7 +880,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Plus size={16} />
-                  <span>YANGILIK YOKI TADBIR QO'SHISH</span>
+                  <span>YANGILIK / TADBIR / ESLATMA QO'SHISH</span>
                 </div>
                 {isFormOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
@@ -899,7 +902,54 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     gap: '0.85rem'
                   }}
                 >
-                  {/* Category Label Input */}
+                  {/* Type Selector (Turi) */}
+                  <div>
+                    <label style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', display: 'block', marginBottom: '0.35rem' }}>
+                      TURI (TYPE)
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      {([{ key: 'news', label: 'Yangilik', icon: '📰' }, { key: 'event', label: 'Tadbir', icon: '🎉' }, { key: 'reminder', label: 'Eslatma', icon: '🔔' }] as const).map(opt => {
+                        const isActive = newsType === opt.key;
+                        return (
+                          <button
+                            type="button"
+                            key={opt.key}
+                            onClick={() => {
+                              setNewsType(opt.key as 'news' | 'event' | 'reminder');
+                              if (opt.key === 'reminder') {
+                                setNewsLabel('Eslatma');
+                                setUploadedPics([]);
+                              } else if (newsLabel === 'Eslatma') {
+                                setNewsLabel('E\'lon');
+                              }
+                            }}
+                            style={{
+                              flex: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.3rem',
+                              padding: '0.55rem 0.5rem',
+                              borderRadius: '10px',
+                              background: isActive ? (opt.key === 'reminder' ? '#fffbeb' : opt.key === 'event' ? '#f0fdf4' : '#eff6ff') : '#ffffff',
+                              color: isActive ? (opt.key === 'reminder' ? '#92400e' : opt.key === 'event' ? '#166534' : '#1d4ed8') : '#64748b',
+                              border: isActive ? `2px solid ${opt.key === 'reminder' ? '#f59e0b' : opt.key === 'event' ? '#22c55e' : '#3b82f6'}` : '1.5px solid #e2e8f0',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <span>{opt.icon}</span>
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Category Label Input — hidden for reminders */}
+                  {newsType !== 'reminder' && (
                   <div>
                     <label style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.35rem' }}>
                       <Tag size={12} />
@@ -947,6 +997,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       ))}
                     </div>
                   </div>
+                  )}
 
                   {/* Date Input */}
                   <div>
@@ -1125,7 +1176,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     />
                   </div>
 
-                  {/* Pictures Upload Area */}
+                  {/* Pictures Upload Area — hidden for reminders */}
+                  {newsType !== 'reminder' && (
                   <div>
                     <label style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.35rem' }}>
                       <ImageIcon size={12} />
@@ -1186,6 +1238,64 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       onChange={handleNewsPhotoUpload}
                     />
                   </div>
+                  )}
+
+                  {/* Reminder Mock Preview */}
+                  {newsType === 'reminder' && (newsTitle.trim() || newsMessage.trim()) && (
+                    <div style={{
+                      background: '#fffbeb',
+                      border: '1.5px solid #fbbf24',
+                      borderRadius: '14px',
+                      padding: '1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem',
+                      animation: 'fadeIn 0.2s ease-out'
+                    }}>
+                      <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#92400e', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Eye size={10} />
+                        ILOVADAGI KO'RINISHI (PREVIEW)
+                      </div>
+                      <div style={{
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        padding: '1rem',
+                        boxShadow: '0 4px 20px -4px rgba(0,0,0,0.12)',
+                        border: '1px solid #e5e7eb',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{
+                          width: '36px', height: '36px', borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          <Bell size={18} color="#ffffff" />
+                        </div>
+                        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
+                          {newsTitle.trim() || 'Sarlavha...'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#475569', lineHeight: 1.4 }}>
+                          {newsMessage.trim() || 'Xabar matni...'}
+                        </div>
+                        <div style={{
+                          background: '#f59e0b',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '0.4rem 1.5rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          marginTop: '0.25rem'
+                        }}>
+                          OK
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Submit buttons */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
@@ -1248,12 +1358,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                            item.urgency === 'high' ? 'Yuqori' :
                                            item.urgency === 'critical' ? 'Jiddiy' : item.urgency;
                     
+                    const isReminder = item.type === 'reminder';
+                    const isEvent = item.type === 'event';
+
                     return (
                       <div 
                         key={item.id}
                         style={{
-                          background: '#ffffff',
-                          border: '1px solid #e2e8f0',
+                          background: isReminder ? '#fffbeb' : '#ffffff',
+                          border: isReminder ? '1px solid #fde68a' : '1px solid #e2e8f0',
                           borderRadius: '16px',
                           padding: '1rem',
                           boxShadow: '0 2px 4px rgba(15, 23, 42, 0.01)',
@@ -1266,13 +1379,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         {/* Header Badges row */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                            {/* Label Tag */}
+                            {/* Type Badge */}
                             <span style={{
-                              background: '#f1f5f9', color: '#475569',
+                              background: isReminder ? '#fef3c7' : isEvent ? '#dcfce7' : '#f1f5f9',
+                              color: isReminder ? '#92400e' : isEvent ? '#166534' : '#475569',
                               padding: '0.2rem 0.5rem', borderRadius: '6px',
-                              fontSize: '0.62rem', fontWeight: 800
+                              fontSize: '0.62rem', fontWeight: 800,
+                              display: 'flex', alignItems: 'center', gap: '0.2rem'
                             }}>
-                              {item.label}
+                              {isReminder ? <Bell size={9} /> : null}
+                              {isReminder ? 'Eslatma' : isEvent ? 'Tadbir' : item.label}
                             </span>
                             {/* Urgency Badge */}
                             <span style={{
@@ -1303,7 +1419,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
                         {/* Title and Date */}
                         <div>
-                          <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
+                          <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            {isReminder && <Bell size={14} color="#f59e0b" />}
                             {item.title}
                           </h3>
                           <div style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
@@ -1322,8 +1439,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           {item.message}
                         </p>
 
-                        {/* Pictures Carousel/Grid Row */}
-                        {item.picture_urls && item.picture_urls.length > 0 && (
+                        {/* Pictures Carousel/Grid Row — only for news/events, not reminders */}
+                        {!isReminder && item.picture_urls && item.picture_urls.length > 0 && (
                           <div 
                             style={{ 
                               display: 'flex', gap: '0.35rem', overflowX: 'auto', 
