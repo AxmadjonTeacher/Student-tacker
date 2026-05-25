@@ -1054,9 +1054,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
           student={editingStudent}
           activeSubject={activeSubject}
           onClose={() => setEditingStudent(null)}
-          onSave={(start, curr, tests) => {
+          onSave={(start, curr, tests, newName, newSurname, newClassName, engScore, mathScore, attendance, homework) => {
             if (onUpdateProgress) {
-              onUpdateProgress(editingStudent.id, start, curr, tests);
+              onUpdateProgress(editingStudent.id, start, curr, tests, newName, newSurname, newClassName, engScore, mathScore, attendance, homework);
             }
             setEditingStudent(null);
           }}
