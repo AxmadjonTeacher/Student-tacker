@@ -69,6 +69,27 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const [grant3, setGrant3] = useState(getScoreForTest(3));
   const [grant4, setGrant4] = useState(getScoreForTest(4));
 
+  const handleScoreChange = (val: string, setter: (v: string) => void) => {
+    const trimmed = val.trim();
+    if (trimmed === '-') {
+      setter('-');
+      return;
+    }
+    if (trimmed === '') {
+      setter('');
+      return;
+    }
+    const digits = trimmed.replace(/\D/g, '');
+    if (digits === '') {
+      setter('');
+      return;
+    }
+    const parsed = parseInt(digits, 10);
+    if (parsed >= 0 && parsed <= 100) {
+      setter(parsed.toString());
+    }
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -350,8 +371,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 </label>
                 
                 {(() => {
-                  const scoreOptions = ['-', ...Array.from({ length: 101 }, (_, i) => i.toString())];
-                  const selectStyle = {
+                  const inputStyle = {
                     width: '100%',
                     padding: '0.65rem 0.85rem',
                     border: '1.5px solid #e2e8f0',
@@ -360,62 +380,53 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     fontWeight: 600,
                     outline: 'none',
                     color: '#1e293b',
-                    background: '#ffffff',
-                    cursor: 'pointer'
+                    background: '#ffffff'
                   };
 
                   return (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>1-Chorak</label>
-                        <select 
+                        <input 
+                          type="text"
                           value={grant1}
-                          onChange={(e) => setGrant1(e.target.value)}
-                          style={selectStyle}
-                        >
-                          {scoreOptions.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
+                          onChange={(e) => handleScoreChange(e.target.value, setGrant1)}
+                          placeholder="-"
+                          style={inputStyle}
+                        />
                       </div>
 
                       <div>
                         <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>2-Chorak</label>
-                        <select 
+                        <input 
+                          type="text"
                           value={grant2}
-                          onChange={(e) => setGrant2(e.target.value)}
-                          style={selectStyle}
-                        >
-                          {scoreOptions.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
+                          onChange={(e) => handleScoreChange(e.target.value, setGrant2)}
+                          placeholder="-"
+                          style={inputStyle}
+                        />
                       </div>
 
                       <div>
                         <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>3-Chorak</label>
-                        <select 
+                        <input 
+                          type="text"
                           value={grant3}
-                          onChange={(e) => setGrant3(e.target.value)}
-                          style={selectStyle}
-                        >
-                          {scoreOptions.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
+                          onChange={(e) => handleScoreChange(e.target.value, setGrant3)}
+                          placeholder="-"
+                          style={inputStyle}
+                        />
                       </div>
 
                       <div>
                         <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>4-Chorak</label>
-                        <select 
+                        <input 
+                          type="text"
                           value={grant4}
-                          onChange={(e) => setGrant4(e.target.value)}
-                          style={selectStyle}
-                        >
-                          {scoreOptions.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
+                          onChange={(e) => handleScoreChange(e.target.value, setGrant4)}
+                          placeholder="-"
+                          style={inputStyle}
+                        />
                       </div>
                     </div>
                   );
