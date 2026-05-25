@@ -51,6 +51,8 @@ function App() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState<string>('Hozirgi hafta');
+  const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
 
   // Custom Dialog DialogState
   const [dialog, setDialog] = useState<{
@@ -153,7 +155,7 @@ function App() {
 
   // Load from Supabase on mount
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchStudentsAndWeeks = async () => {
       try {
         const { data, error } = await supabase.from('Students').select('*');
         
@@ -181,11 +183,21 @@ function App() {
         } else {
           setStudents(INITIAL_MOCK_DATA);
         }
+      }
+
+      try {
+        const { data, error } = await supabase.from('student_weeks').select('*');
+        if (error) throw error;
+        if (data) {
+          setStudentWeeks(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch student weeks history:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchStudents();
+    fetchStudentsAndWeeks();
   }, []);
 
   // Sync state to LocalStorage as a local offline cache backup
@@ -213,8 +225,9 @@ function App() {
   }, [activeSubject]);
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
-    const upsertedStudents: Student[] = [];
     const localUpdatedList = [...students];
+    const upsertedMainStudents: Student[] = [];
+    const upsertedWeekData: any[] = [];
 
     for (let i = 0; i < newStudents.length; i++) {
       const newS = newStudents[i];
@@ -223,26 +236,50 @@ function App() {
                old.surname.toLowerCase().trim() === newS.surname.toLowerCase().trim()
       );
 
+      let studentId = '';
       if (matchIndex > -1) {
         const existing = localUpdatedList[matchIndex];
-        const merged: Student = {
-          ...existing,
-          ...newS,
-          id: existing.id,
-          pictureUrl: existing.pictureUrl || newS.pictureUrl,
-          orderIndex: existing.orderIndex ?? (localUpdatedList.length + i),
-          grandTests: newS.grandTests || existing.grandTests,
-          mathGrandTests: newS.mathGrandTests || existing.mathGrandTests,
-          teacher: newS.teacher || existing.teacher,
-          mathTeacher: newS.mathTeacher || existing.mathTeacher,
-          engScore: newS.engScore !== undefined ? newS.engScore : existing.engScore,
-          mathScore: newS.mathScore !== undefined ? newS.mathScore : existing.mathScore,
-          attendance: newS.attendance !== undefined ? newS.attendance : existing.attendance,
-          homework: newS.homework !== undefined ? newS.homework : existing.homework
-        };
-        localUpdatedList[matchIndex] = merged;
-        upsertedStudents.push(merged);
+        studentId = existing.id;
+        
+        if (selectedWeek === 'Hozirgi hafta') {
+          const merged: Student = {
+            ...existing,
+            ...newS,
+            id: existing.id,
+            pictureUrl: existing.pictureUrl || newS.pictureUrl,
+            orderIndex: existing.orderIndex ?? (localUpdatedList.length + i),
+            grandTests: newS.grandTests || existing.grandTests,
+            mathGrandTests: newS.mathGrandTests || existing.mathGrandTests,
+            teacher: newS.teacher || existing.teacher,
+            mathTeacher: newS.mathTeacher || existing.mathTeacher,
+            engScore: newS.engScore !== undefined ? newS.engScore : existing.engScore,
+            mathScore: newS.mathScore !== undefined ? newS.mathScore : existing.mathScore,
+            attendance: newS.attendance !== undefined ? newS.attendance : existing.attendance,
+            homework: newS.homework !== undefined ? newS.homework : existing.homework
+          };
+          localUpdatedList[matchIndex] = merged;
+          upsertedMainStudents.push(merged);
+        } else {
+          const existingWeekRecord = studentWeeks.find(sw => sw.student_id === studentId && sw.week === selectedWeek);
+          
+          const weekPayload = {
+            student_id: studentId,
+            week: selectedWeek,
+            eng_score: newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score ?? existing.engScore ?? 0),
+            math_score: newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score ?? existing.mathScore ?? 0),
+            attendance: newS.attendance !== undefined ? newS.attendance : (existingWeekRecord?.attendance ?? existing.attendance ?? 1),
+            homework: newS.homework !== undefined ? newS.homework : (existingWeekRecord?.homework ?? existing.homework ?? 1),
+            starting_level: activeSubject === 'ENG' ? (newS.startingLevel || existingWeekRecord?.starting_level || existing.startingLevel || 'Level 1') : (existingWeekRecord?.starting_level || existing.startingLevel || 'Level 1'),
+            current_level: activeSubject === 'ENG' ? (newS.currentLevel || existingWeekRecord?.current_level || existing.currentLevel || 'Level 1') : (existingWeekRecord?.current_level || existing.currentLevel || 'Level 1'),
+            grand_tests: activeSubject === 'ENG' ? (newS.grandTests || existingWeekRecord?.grand_tests || existing.grandTests || []) : (existingWeekRecord?.grand_tests || existing.grandTests || []),
+            math_starting_level: activeSubject === 'MATH' ? (newS.mathStartingLevel || existingWeekRecord?.math_starting_level || existing.mathStartingLevel || 'Level 1') : (existingWeekRecord?.math_starting_level || existing.startingLevel || 'Level 1'),
+            math_current_level: activeSubject === 'MATH' ? (newS.mathCurrentLevel || existingWeekRecord?.math_current_level || existing.currentLevel || 'Level 1') : (existingWeekRecord?.math_current_level || existing.currentLevel || 'Level 1'),
+            math_grand_tests: activeSubject === 'MATH' ? (newS.mathGrandTests || existingWeekRecord?.math_grand_tests || existing.mathGrandTests || []) : (existingWeekRecord?.math_grand_tests || existing.mathGrandTests || [])
+          };
+          upsertedWeekData.push(weekPayload);
+        }
       } else {
+        studentId = Math.random().toString(36).substr(2, 9);
         let inheritedEngOrder = 0;
         if (newS.teacher) {
           const engStudent = localUpdatedList.find(s => 
@@ -263,6 +300,7 @@ function App() {
 
         const brandNew: Student = {
           ...newS,
+          id: studentId,
           orderIndex: localUpdatedList.length,
           teacherOrder: inheritedEngOrder,
           mathTeacherOrder: inheritedMathOrder,
@@ -272,23 +310,60 @@ function App() {
           homework: newS.homework !== undefined ? newS.homework : 1
         };
         localUpdatedList.push(brandNew);
-        upsertedStudents.push(brandNew);
+        upsertedMainStudents.push(brandNew);
+
+        if (selectedWeek !== 'Hozirgi hafta') {
+          const weekPayload = {
+            student_id: studentId,
+            week: selectedWeek,
+            eng_score: newS.engScore !== undefined ? newS.engScore : 0,
+            math_score: newS.mathScore !== undefined ? newS.mathScore : 0,
+            attendance: newS.attendance !== undefined ? newS.attendance : 1,
+            homework: newS.homework !== undefined ? newS.homework : 1,
+            starting_level: newS.startingLevel || 'Level 1',
+            current_level: newS.currentLevel || 'Level 1',
+            grand_tests: newS.grandTests || [],
+            math_starting_level: newS.mathStartingLevel || 'Level 1',
+            math_current_level: newS.mathCurrentLevel || 'Level 1',
+            math_grand_tests: newS.mathGrandTests || []
+          };
+          upsertedWeekData.push(weekPayload);
+        }
       }
     }
 
     setStudents(localUpdatedList);
 
-    if (upsertedStudents.length > 0 && upsertedStudents[0].className) {
-      setActiveClass(getClassGroup(upsertedStudents[0].className.toUpperCase()));
+    if (newStudents.length > 0 && newStudents[0].className) {
+      setActiveClass(getClassGroup(newStudents[0].className.toUpperCase()));
     }
 
-    try {
-      const { error } = await supabase
-        .from('Students')
-        .upsert(upsertedStudents.map(mapStudentToDb), { onConflict: 'id' });
-      if (error) throw error;
-    } catch (err) {
-      console.error('Failed to sync upserted students to Supabase:', err);
+    if (upsertedMainStudents.length > 0) {
+      try {
+        const { error } = await supabase
+          .from('Students')
+          .upsert(upsertedMainStudents.map(mapStudentToDb), { onConflict: 'id' });
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to sync upserted main students to Supabase:', err);
+      }
+    }
+
+    if (upsertedWeekData.length > 0) {
+      setStudentWeeks(prev => {
+        const ids = upsertedWeekData.map(w => w.student_id);
+        const filtered = prev.filter(sw => !(ids.includes(sw.student_id) && sw.week === selectedWeek));
+        return [...filtered, ...upsertedWeekData];
+      });
+
+      try {
+        const { error } = await supabase
+          .from('student_weeks')
+          .upsert(upsertedWeekData, { onConflict: 'student_id,week' });
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to sync upserted student weeks to Supabase:', err);
+      }
     }
   };
 
@@ -442,16 +517,57 @@ function App() {
     return counts;
   }, [students, availableClasses]);
 
-  // Dynamically project activeSubject properties to standard fields
+  // Dynamically project activeSubject properties to standard fields and apply selectedWeek time-travel data
   const projectedStudents = useMemo(() => {
     return students.map(student => {
+      let startingLevel = student.startingLevel;
+      let currentLevel = student.currentLevel;
+      let grandTests = student.grandTests;
+      let mathStartingLevel = student.mathStartingLevel;
+      let mathCurrentLevel = student.mathCurrentLevel;
+      let mathGrandTests = student.mathGrandTests;
+      let engScore = student.engScore;
+      let mathScore = student.mathScore;
+      let attendance = student.attendance;
+      let homework = student.homework;
+
+      if (selectedWeek !== 'Hozirgi hafta') {
+        const hist = studentWeeks.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+        if (hist) {
+          startingLevel = hist.starting_level ?? student.startingLevel;
+          currentLevel = hist.current_level ?? student.currentLevel;
+          grandTests = hist.grand_tests ?? student.grandTests;
+          mathStartingLevel = hist.math_starting_level ?? student.mathStartingLevel;
+          mathCurrentLevel = hist.math_current_level ?? student.mathCurrentLevel;
+          mathGrandTests = hist.math_grand_tests ?? student.mathGrandTests;
+          engScore = hist.eng_score ?? student.engScore;
+          mathScore = hist.math_score ?? student.mathScore;
+          attendance = hist.attendance ?? student.attendance;
+          homework = hist.homework ?? student.homework;
+        } else {
+          currentLevel = student.startingLevel;
+          grandTests = [];
+          mathStartingLevel = student.mathStartingLevel || 'Level 1';
+          mathCurrentLevel = student.mathStartingLevel || 'Level 1';
+          mathGrandTests = [];
+          engScore = 0;
+          mathScore = 0;
+          attendance = 1;
+          homework = 1;
+        }
+      }
+
       // Always store original english values explicitly so they are not lost after projection!
       const studentWithEng = {
         ...student,
+        engScore,
+        mathScore,
+        attendance,
+        homework,
         englishTeacher: student.teacher,
-        englishStartingLevel: student.startingLevel,
-        englishCurrentLevel: student.currentLevel,
-        englishGrandTests: student.grandTests,
+        englishStartingLevel: startingLevel,
+        englishCurrentLevel: currentLevel,
+        englishGrandTests: grandTests,
         englishTeacherOrder: student.teacherOrder
       };
 
@@ -459,9 +575,9 @@ function App() {
         return {
           ...studentWithEng,
           teacher: student.mathTeacher || '',
-          startingLevel: student.mathStartingLevel || student.startingLevel || 'Level 1',
-          currentLevel: student.mathCurrentLevel || student.currentLevel || 'Level 1',
-          grandTests: student.mathGrandTests || [],
+          startingLevel: mathStartingLevel || 'Level 1',
+          currentLevel: mathCurrentLevel || 'Level 1',
+          grandTests: mathGrandTests || [],
           teacherOrder: student.mathTeacherOrder || 0
         };
       } else if (activeSubject === 'ALL') {
@@ -473,10 +589,13 @@ function App() {
       }
       return {
         ...studentWithEng,
+        startingLevel,
+        currentLevel,
+        grandTests: grandTests || [],
         teacherOrder: student.teacherOrder || 0
       };
     });
-  }, [students, activeSubject]);
+  }, [students, activeSubject, selectedWeek, studentWeeks]);
 
   const filteredStudents = useMemo(() => {
     return projectedStudents.filter(s => {
@@ -507,26 +626,34 @@ function App() {
           name: newName !== undefined ? newName : s.name,
           surname: newSurname !== undefined ? newSurname : s.surname,
           className: newClassName !== undefined ? newClassName : s.className,
-          engScore: engScore !== undefined ? engScore : s.engScore,
-          mathScore: mathScore !== undefined ? mathScore : s.mathScore,
-          attendance: attendance !== undefined ? attendance : s.attendance,
-          homework: homework !== undefined ? homework : s.homework
         };
 
-        if (activeSubject === 'MATH') {
-          return {
+        if (selectedWeek === 'Hozirgi hafta') {
+          const withScores = {
             ...updatedBase,
-            mathStartingLevel: startingLevel,
-            mathCurrentLevel: currentLevel,
-            mathGrandTests: grandTests
+            engScore: engScore !== undefined ? engScore : s.engScore,
+            mathScore: mathScore !== undefined ? mathScore : s.mathScore,
+            attendance: attendance !== undefined ? attendance : s.attendance,
+            homework: homework !== undefined ? homework : s.homework
           };
-        } else if (activeSubject === 'ENG') {
-          return {
-            ...updatedBase,
-            startingLevel: startingLevel,
-            currentLevel: currentLevel,
-            grandTests: grandTests
-          };
+
+          if (activeSubject === 'MATH') {
+            return {
+              ...withScores,
+              mathStartingLevel: startingLevel,
+              mathCurrentLevel: currentLevel,
+              mathGrandTests: grandTests
+            };
+          } else if (activeSubject === 'ENG') {
+            return {
+              ...withScores,
+              startingLevel: startingLevel,
+              currentLevel: currentLevel,
+              grandTests: grandTests
+            };
+          } else {
+            return withScores;
+          }
         } else {
           return updatedBase;
         }
@@ -534,37 +661,87 @@ function App() {
       return s;
     }));
 
-    try {
-      let updatePayload: any = {};
-      if (activeSubject === 'MATH') {
-        updatePayload = {
-          math_starting_level: startingLevel,
-          math_current_level: currentLevel,
-          math_grand_tests: grandTests
-        };
-      } else if (activeSubject === 'ENG') {
-        updatePayload = {
-          starting_level: startingLevel,
-          current_level: currentLevel,
-          grand_tests: grandTests
-        };
+    if (selectedWeek === 'Hozirgi hafta') {
+      try {
+        let updatePayload: any = {};
+        if (activeSubject === 'MATH') {
+          updatePayload = {
+            math_starting_level: startingLevel,
+            math_current_level: currentLevel,
+            math_grand_tests: grandTests
+          };
+        } else if (activeSubject === 'ENG') {
+          updatePayload = {
+            starting_level: startingLevel,
+            current_level: currentLevel,
+            grand_tests: grandTests
+          };
+        }
+
+        if (newName !== undefined) updatePayload.name = newName;
+        if (newSurname !== undefined) updatePayload.surname = newSurname;
+        if (newClassName !== undefined) updatePayload.class_name = newClassName;
+        if (engScore !== undefined) updatePayload.eng_score = engScore;
+        if (mathScore !== undefined) updatePayload.math_score = mathScore;
+        if (attendance !== undefined) updatePayload.attendance = attendance;
+        if (homework !== undefined) updatePayload.homework = homework;
+
+        const { error } = await supabase
+          .from('Students')
+          .update(updatePayload)
+          .eq('id', studentId);
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to sync progress updates to Supabase:', err);
+      }
+    } else {
+      if (newName !== undefined || newSurname !== undefined || newClassName !== undefined) {
+        try {
+          const identPayload: any = {};
+          if (newName !== undefined) identPayload.name = newName;
+          if (newSurname !== undefined) identPayload.surname = newSurname;
+          if (newClassName !== undefined) identPayload.class_name = newClassName;
+          
+          await supabase
+            .from('Students')
+            .update(identPayload)
+            .eq('id', studentId);
+        } catch (err) {
+          console.error('Failed to update student identity in Supabase:', err);
+        }
       }
 
-      if (newName !== undefined) updatePayload.name = newName;
-      if (newSurname !== undefined) updatePayload.surname = newSurname;
-      if (newClassName !== undefined) updatePayload.class_name = newClassName;
-      if (engScore !== undefined) updatePayload.eng_score = engScore;
-      if (mathScore !== undefined) updatePayload.math_score = mathScore;
-      if (attendance !== undefined) updatePayload.attendance = attendance;
-      if (homework !== undefined) updatePayload.homework = homework;
+      const existing = studentWeeks.find(sw => sw.student_id === studentId && sw.week === selectedWeek);
+      const baseStudent = students.find(s => s.id === studentId);
 
-      const { error } = await supabase
-        .from('Students')
-        .update(updatePayload)
-        .eq('id', studentId);
-      if (error) throw error;
-    } catch (err) {
-      console.error('Failed to sync progress updates to Supabase:', err);
+      const weekPayload = {
+        student_id: studentId,
+        week: selectedWeek,
+        eng_score: engScore !== undefined ? engScore : (existing?.eng_score ?? baseStudent?.engScore ?? 0),
+        math_score: mathScore !== undefined ? mathScore : (existing?.math_score ?? baseStudent?.mathScore ?? 0),
+        attendance: attendance !== undefined ? attendance : (existing?.attendance ?? baseStudent?.attendance ?? 1),
+        homework: homework !== undefined ? homework : (existing?.homework ?? baseStudent?.homework ?? 1),
+        starting_level: activeSubject === 'ENG' ? startingLevel : (existing?.starting_level ?? baseStudent?.startingLevel ?? 'Level 1'),
+        current_level: activeSubject === 'ENG' ? currentLevel : (existing?.current_level ?? baseStudent?.currentLevel ?? 'Level 1'),
+        grand_tests: activeSubject === 'ENG' ? grandTests : (existing?.grand_tests ?? baseStudent?.grandTests ?? []),
+        math_starting_level: activeSubject === 'MATH' ? startingLevel : (existing?.math_starting_level ?? baseStudent?.mathStartingLevel ?? 'Level 1'),
+        math_current_level: activeSubject === 'MATH' ? currentLevel : (existing?.math_current_level ?? baseStudent?.mathCurrentLevel ?? 'Level 1'),
+        math_grand_tests: activeSubject === 'MATH' ? grandTests : (existing?.math_grand_tests ?? baseStudent?.mathGrandTests ?? [])
+      };
+
+      setStudentWeeks(prev => {
+        const filtered = prev.filter(sw => !(sw.student_id === studentId && sw.week === selectedWeek));
+        return [...filtered, weekPayload];
+      });
+
+      try {
+        const { error } = await supabase
+          .from('student_weeks')
+          .upsert(weekPayload, { onConflict: 'student_id,week' });
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to sync student week progress to Supabase:', err);
+      }
     }
   };
 
@@ -875,6 +1052,8 @@ function App() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onOpenDrawer={() => setIsDrawerOpen(true)}
+        selectedWeek={selectedWeek}
+        onWeekChange={setSelectedWeek}
       />
 
       <StudentTable

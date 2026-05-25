@@ -9,10 +9,13 @@ interface HeaderProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onOpenDrawer: () => void;
+  selectedWeek: string;
+  onWeekChange: (week: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer
+  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
+  selectedWeek, onWeekChange
 }) => {
   return (
     <>
@@ -160,25 +163,71 @@ const Header: React.FC<HeaderProps> = ({
           })}
         </div>
  
-        <div style={{ position: 'relative', width: '320px', flex: '0 0 auto' }}>
-          <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-          <input 
-            type="text" 
-            placeholder="O'quvchilarni qidirish..." 
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.85rem 1rem 0.85rem 2.75rem',
-              borderRadius: '9999px',
-              border: '1px solid #e5e7eb',
-              background: '#ffffff',
-              fontSize: '0.95rem',
-              color: '#1a1a1a',
-              outline: 'none',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)'
-            }}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
+          {/* Week Selector Dropdown */}
+          <div style={{ position: 'relative' }}>
+            <select
+              value={selectedWeek}
+              onChange={(e) => onWeekChange(e.target.value)}
+              style={{
+                background: '#ffffff',
+                color: '#1e293b',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '9999px',
+                padding: '0.85rem 2.25rem 0.85rem 1.25rem',
+                fontSize: '0.9rem',
+                fontWeight: 800,
+                outline: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                display: 'block',
+                lineHeight: 1.2
+              }}
+            >
+              <option value="Hozirgi hafta">Hozirgi hafta</option>
+              {Array.from({ length: 16 }, (_, i) => {
+                const w = `${i + 1}-Hafta`;
+                return <option key={w} value={w}>{w}</option>;
+              })}
+            </select>
+            <div style={{
+              position: 'absolute',
+              right: '1rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              pointerEvents: 'none',
+              color: '#9ca3af',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative', width: '320px' }}>
+            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+            <input 
+              type="text" 
+              placeholder="O'quvchilarni qidirish..." 
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.85rem 1rem 0.85rem 2.75rem',
+                borderRadius: '9999px',
+                border: '1px solid #e5e7eb',
+                background: '#ffffff',
+                fontSize: '0.95rem',
+                color: '#1a1a1a',
+                outline: 'none',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)'
+              }}
+            />
+          </div>
         </div>
       </div>
     </>
