@@ -202,8 +202,8 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
   };
 
   const renderInsideLabel = (props: any) => {
-    const { x, y, width, height, index } = props;
-    const name = barData[index]?.name || '';
+    const { x, y, width, height, value } = props;
+    const name = value || '';
     
     if (height < 70) return null;
     
@@ -425,26 +425,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           padding: '2rem 1.5rem 1.25rem',
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.01)'
         }}>
-          {activeSubject === 'ALL' ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
-                  INGLIZ TILI DARAJASI (BOSHLANG'ICH ➜ HOZIRGI)
-                </div>
-                <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
-                  {(student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase()} ➜ {(student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase()}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
-                  MATEMATIKA DARAJASI (BOSHLANG'ICH ➜ HOZIRGI)
-                </div>
-                <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
-                  {(student.mathStartingLevel || 'Level 1').toUpperCase()} ➜ {(student.mathCurrentLevel || 'Level 1').toUpperCase()}
-                </div>
-              </div>
-            </div>
-          ) : (
+          {activeSubject !== 'ALL' && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
@@ -472,55 +453,34 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           )}
 
           {activeSubject === 'ALL' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-              <div style={{
-                border: '3.5px solid #fda4af', // Rounded pink border enclosing the graph bars
-                borderRadius: '24px',
-                padding: '2.5rem 1.5rem 1.5rem',
-                background: '#ffffff',
-                width: '100%',
-                boxSizing: 'border-box'
-              }}>
-                <div style={{ height: '300px', width: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barData} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
-                      <CartesianGrid vertical={false} stroke="#f1f5f9" strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
-                      />
-                      <YAxis 
-                        domain={[0, 100]} 
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }}
-                        tickFormatter={(val) => `${val}%`}
-                        width={45}
-                      />
-                      <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
-                      <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={55}>
-                        {barData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                        <LabelList dataKey="value" content={renderCustomizedLabel} />
-                        <LabelList dataKey="name" content={renderInsideLabel} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              <div style={{
-                marginTop: '1.25rem',
-                fontSize: '1rem',
-                fontWeight: 800,
-                color: '#f87171',
-                letterSpacing: '0.05em',
-                fontFamily: 'monospace'
-              }}>
-                Example Chart
-              </div>
+            <div style={{ height: '350px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} margin={{ top: 25, right: 30, left: 10, bottom: 10 }}>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                  />
+                  <YAxis 
+                    domain={[0, 100]} 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                    tickFormatter={(val) => `${val}%`}
+                    width={50}
+                  />
+                  <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
+                  <Bar dataKey="value" radius={[10, 10, 10, 10]} barSize={55}>
+                    {barData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                    <LabelList dataKey="value" content={renderCustomizedLabel} />
+                    <LabelList dataKey="name" content={renderInsideLabel} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           ) : (
             <div style={{ height: '350px', width: '100%' }}>
