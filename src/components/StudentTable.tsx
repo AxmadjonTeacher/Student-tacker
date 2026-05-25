@@ -207,8 +207,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
               // Convert map to array and sort: orderIndex, unassigned teachers at the very bottom
               const groups = Object.keys(groupsMap).map((teacher) => {
-                // Determine group order based on the first student's teacherOrder
-                const orderIndex = groupsMap[teacher][0]?.teacherOrder ?? 0;
+                // Find the maximum teacherOrder in the group (ignores newly added 0s if group is non-zero)
+                const orderIndex = Math.max(...groupsMap[teacher].map(s => s.teacherOrder ?? 0));
                 return {
                   teacher,
                   orderIndex,

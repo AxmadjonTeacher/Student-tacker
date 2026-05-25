@@ -260,6 +260,24 @@ function App() {
   };
 
   const handleAddStudent = async (studentData: Partial<Student>) => {
+    let inheritedEngOrder = 0;
+    if (studentData.teacher) {
+      const engStudent = students.find(s => 
+        getClassGroup(s.className.toUpperCase()) === activeClass &&
+        s.teacher?.trim() === studentData.teacher?.trim()
+      );
+      if (engStudent) inheritedEngOrder = engStudent.teacherOrder || 0;
+    }
+
+    let inheritedMathOrder = 0;
+    if (studentData.mathTeacher) {
+      const mathStudent = students.find(s => 
+        getClassGroup(s.className.toUpperCase()) === activeClass &&
+        s.mathTeacher?.trim() === studentData.mathTeacher?.trim()
+      );
+      if (mathStudent) inheritedMathOrder = mathStudent.mathTeacherOrder || 0;
+    }
+
     const brandNew: Student = {
       id: Math.random().toString(36).substr(2, 9),
       name: studentData.name || '',
@@ -273,8 +291,8 @@ function App() {
       mathCurrentLevel: studentData.mathCurrentLevel || 'Level 1',
       mathTeacher: studentData.mathTeacher,
       orderIndex: students.length,
-      teacherOrder: 0,
-      mathTeacherOrder: 0
+      teacherOrder: inheritedEngOrder,
+      mathTeacherOrder: inheritedMathOrder
     };
 
     setStudents(prev => [...prev, brandNew]);
@@ -498,19 +516,33 @@ function App() {
       "Ism va familiya...",
       async (value) => {
         const trimmedName = value.trim();
+        
+        let inheritedOrder = 0;
+        if (trimmedName) {
+          const existingStudent = students.find(s => 
+            getClassGroup(s.className.toUpperCase()) === activeClass &&
+            (activeSubject === 'MATH' ? s.mathTeacher : s.teacher)?.trim() === trimmedName
+          );
+          if (existingStudent) {
+            inheritedOrder = activeSubject === 'MATH' 
+              ? (existingStudent.mathTeacherOrder || 0) 
+              : (existingStudent.teacherOrder || 0);
+          }
+        }
+
         setStudents(prev => prev.map(s => {
           if (s.id === studentId) {
             return activeSubject === 'MATH'
-              ? { ...s, mathTeacher: trimmedName || undefined }
-              : { ...s, teacher: trimmedName || undefined };
+              ? { ...s, mathTeacher: trimmedName || undefined, mathTeacherOrder: inheritedOrder }
+              : { ...s, teacher: trimmedName || undefined, teacherOrder: inheritedOrder };
           }
           return s;
         }));
 
         try {
           const updatePayload = activeSubject === 'MATH'
-            ? { math_teacher: trimmedName || null }
-            : { teacher: trimmedName || null };
+            ? { math_teacher: trimmedName || null, math_teacher_order: inheritedOrder }
+            : { teacher: trimmedName || null, teacher_order: inheritedOrder };
 
           const { error } = await supabase
             .from('Students')
@@ -695,7 +727,6 @@ function App() {
     uniqueTeachers[targetIdx] = temp;
 
     // Now uniquely assign an order based on the new array index
-    const field = activeSubject === 'MATH' ? 'math_teacher_order' : 'teacher_order';
     const localField = activeSubject === 'MATH' ? 'mathTeacherOrder' : 'teacherOrder';
     
     // Build update payload for Supabase and update local state simultaneously
@@ -708,16 +739,10 @@ function App() {
       
       // If order changed, track for Supabase
       if (s[localField] !== newOrder) {
-        updates.push({
-          id: s.id,
-          name: s.name,
-          surname: s.surname,
-          class_name: s.className,
-          date_joined: s.dateJoined,
-          starting_level: s.startingLevel,
-          current_level: s.currentLevel,
-          [field]: newOrder
-        });
+        updates.push(mapStudentToDb({
+          ...s,
+          [localField]: newOrder
+        }));
       }
 
       return {
