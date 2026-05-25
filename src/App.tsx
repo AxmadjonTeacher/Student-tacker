@@ -366,7 +366,8 @@ function App() {
         englishTeacher: student.teacher,
         englishStartingLevel: student.startingLevel,
         englishCurrentLevel: student.currentLevel,
-        englishGrandTests: student.grandTests
+        englishGrandTests: student.grandTests,
+        englishTeacherOrder: student.teacherOrder
       };
 
       if (activeSubject === 'MATH') {
@@ -375,10 +376,14 @@ function App() {
           teacher: student.mathTeacher || '',
           startingLevel: student.mathStartingLevel || student.startingLevel || 'Level 1',
           currentLevel: student.mathCurrentLevel || student.currentLevel || 'Level 1',
-          grandTests: student.mathGrandTests || []
+          grandTests: student.mathGrandTests || [],
+          teacherOrder: student.mathTeacherOrder || 0
         };
       }
-      return studentWithEng;
+      return {
+        ...studentWithEng,
+        teacherOrder: student.teacherOrder || 0
+      };
     });
   }, [students, activeSubject]);
 
@@ -614,6 +619,76 @@ function App() {
     );
   };
 
+  const handleMoveTeacherTable = async (sourceTeacherName: string, targetTeacherName: string) => {
+    // Determine the unique teachers in the current class for the active subject
+    const groupsMap: { [teacher: string]: number } = {};
+    filteredStudents.forEach(s => {
+      const teacher = s.teacher?.trim() || '';
+      if (groupsMap[teacher] === undefined) {
+        groupsMap[teacher] = s.teacherOrder || 0;
+      }
+    });
+
+    const uniqueTeachers = Object.keys(groupsMap).sort((a, b) => {
+      if (a === '') return 1;
+      if (b === '') return -1;
+      return groupsMap[a] - groupsMap[b];
+    });
+
+    const sourceIdx = uniqueTeachers.indexOf(sourceTeacherName);
+    const targetIdx = uniqueTeachers.indexOf(targetTeacherName);
+
+    if (sourceIdx === -1 || targetIdx === -1) return;
+
+    // Reorder array
+    const [moved] = uniqueTeachers.splice(sourceIdx, 1);
+    uniqueTeachers.splice(targetIdx, 0, moved);
+
+    // Now uniquely assign an order based on the new array index
+    const field = activeSubject === 'MATH' ? 'math_teacher_order' : 'teacher_order';
+    const localField = activeSubject === 'MATH' ? 'mathTeacherOrder' : 'teacherOrder';
+    
+    // Build update payload for Supabase and update local state simultaneously
+    const updates: any[] = [];
+    
+    setStudents(prev => prev.map(s => {
+      if (getClassGroup(s.className.toUpperCase()) !== activeClass) return s;
+      const t = (activeSubject === 'MATH' ? s.mathTeacher : s.teacher)?.trim() || '';
+      const newOrder = uniqueTeachers.indexOf(t) !== -1 ? uniqueTeachers.indexOf(t) : 0;
+      
+      // If order changed, track for Supabase
+      if (s[localField] !== newOrder) {
+        updates.push({
+          id: s.id,
+          name: s.name,
+          surname: s.surname,
+          class_name: s.className,
+          date_joined: s.dateJoined,
+          starting_level: s.startingLevel,
+          current_level: s.currentLevel,
+          [field]: newOrder
+        });
+      }
+
+      return {
+        ...s,
+        [localField]: newOrder
+      };
+    }));
+
+    if (updates.length > 0) {
+      try {
+        const { error } = await supabase
+          .from('Students')
+          .upsert(updates, { onConflict: 'id' });
+        
+        if (error) throw error;
+      } catch (err) {
+        console.error('Failed to sync teacher table order to Supabase:', err);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div style={{
@@ -669,6 +744,7 @@ function App() {
         onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
         onAssignTeacher={handleAssignTeacher}
         onMoveStudent={handleMoveStudent}
+        onMoveTeacherTable={handleMoveTeacherTable}
         activeSubject={activeSubject}
         onUpdateProgress={handleUpdateProgress}
         onRenameTeacherTable={handleRenameTeacherTable}

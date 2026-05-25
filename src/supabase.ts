@@ -19,10 +19,12 @@ export const mapDbToStudent = (db: any): Student => ({
   grandTests: db.grand_tests || undefined,
   teacher: db.teacher || undefined,
   orderIndex: db.order_index !== null && db.order_index !== undefined ? Number(db.order_index) : undefined,
+  teacherOrder: db.teacher_order !== null && db.teacher_order !== undefined ? Number(db.teacher_order) : 0,
   mathTeacher: db.math_teacher || undefined,
   mathStartingLevel: db.math_starting_level || undefined,
   mathCurrentLevel: db.math_current_level || undefined,
-  mathGrandTests: db.math_grand_tests || undefined
+  mathGrandTests: db.math_grand_tests || undefined,
+  mathTeacherOrder: db.math_teacher_order !== null && db.math_teacher_order !== undefined ? Number(db.math_teacher_order) : 0
 });
 
 export const mapStudentToDb = (student: Student) => ({
@@ -37,8 +39,10 @@ export const mapStudentToDb = (student: Student) => ({
   grand_tests: student.grandTests || null,
   teacher: student.teacher || null,
   order_index: student.orderIndex !== undefined ? student.orderIndex : null,
+  teacher_order: student.teacherOrder !== undefined ? student.teacherOrder : 0,
   math_teacher: student.mathTeacher || null,
   math_starting_level: student.mathStartingLevel || null,
   math_current_level: student.mathCurrentLevel || null,
-  math_grand_tests: student.mathGrandTests || null
+  math_grand_tests: student.mathGrandTests || null,
+  math_teacher_order: student.mathTeacherOrder !== undefined ? student.mathTeacherOrder : 0
 });

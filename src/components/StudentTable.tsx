@@ -21,6 +21,7 @@ interface StudentTableProps {
   ) => void;
   onRenameTeacherTable?: (oldName: string) => void;
   onDeleteTeacherTable?: (teacherName: string) => void;
+  onMoveTeacherTable?: (sourceTeacherName: string, targetTeacherName: string) => void;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -33,12 +34,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
   activeSubject = 'ENG',
   onUpdateProgress,
   onRenameTeacherTable,
-  onDeleteTeacherTable
+  onDeleteTeacherTable,
+  onMoveTeacherTable
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [uploadingStudentId, setUploadingStudentId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [draggedGroup, setDraggedGroup] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -158,6 +161,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.stopPropagation();
     setDraggedId(id);
     e.dataTransfer.setData('text/plain', id);
     e.dataTransfer.effectAllowed = 'move';
@@ -169,11 +173,34 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
+    e.stopPropagation();
     const sourceId = e.dataTransfer.getData('text/plain') || draggedId;
-    if (sourceId && sourceId !== targetId && onMoveStudent) {
+    if (sourceId && sourceId !== targetId && !sourceId.startsWith('group:') && onMoveStudent) {
       onMoveStudent(sourceId, targetId);
     }
     setDraggedId(null);
+  };
+
+  const handleDragStartGroup = (e: React.DragEvent, teacherName: string) => {
+    e.stopPropagation();
+    setDraggedGroup(teacherName);
+    e.dataTransfer.setData('text/plain', `group:${teacherName}`);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOverGroup = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDropGroup = (e: React.DragEvent, targetTeacherName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceData = e.dataTransfer.getData('text/plain') || '';
+    const sourceGroup = sourceData.startsWith('group:') ? sourceData.split('group:')[1] : draggedGroup;
+    if (sourceGroup && sourceGroup !== targetTeacherName && onMoveTeacherTable) {
+      onMoveTeacherTable(sourceGroup, targetTeacherName);
+    }
+    setDraggedGroup(null);
   };
 
   return (
@@ -198,13 +225,21 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 groupsMap[currentTeacher].push(student);
               });
 
-              // Convert map to array and sort: alphabetical teachers, unassigned teachers at the very bottom
-              const groups = Object.keys(groupsMap).map((teacher) => ({
-                teacher,
-                students: groupsMap[teacher]
-              })).sort((a, b) => {
+              // Convert map to array and sort: orderIndex, unassigned teachers at the very bottom
+              const groups = Object.keys(groupsMap).map((teacher) => {
+                // Determine group order based on the first student's teacherOrder
+                const orderIndex = groupsMap[teacher][0]?.teacherOrder ?? 0;
+                return {
+                  teacher,
+                  orderIndex,
+                  students: groupsMap[teacher]
+                };
+              }).sort((a, b) => {
                 if (a.teacher === '') return 1;
                 if (b.teacher === '') return -1;
+                if (a.orderIndex !== b.orderIndex) {
+                  return a.orderIndex - b.orderIndex;
+                }
                 return a.teacher.localeCompare(b.teacher, 'uz');
               });
 
@@ -222,8 +257,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     border: '1px solid #e5e7eb',
                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
                     overflow: 'hidden',
-                    marginBottom: '2rem'
+                    marginBottom: '2rem',
+                    opacity: draggedGroup === group.teacher ? 0.5 : 1,
+                    transition: 'opacity 0.2s ease',
+                    cursor: isAdminMode ? 'grab' : 'default'
                   }}
+                  draggable={isAdminMode && !!group.teacher}
+                  onDragStart={(e) => handleDragStartGroup(e, group.teacher)}
+                  onDragOver={handleDragOverGroup}
+                  onDrop={(e) => handleDropGroup(e, group.teacher)}
+                  onDragEnd={() => setDraggedGroup(null)}
                 >
                   {/* Clean and Small but Noticeable Column Headers (With Integrated Teacher Name in All Caps) */}
                   <div style={{
