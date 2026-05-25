@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings, X } from 'lucide-react';
+import { Search, Settings } from 'lucide-react';
 
 interface HeaderProps {
   classes: string[];
@@ -8,15 +8,11 @@ interface HeaderProps {
   classCounts: Record<string, number>;
   searchTerm: string;
   onSearchChange: (term: string) => void;
-  isAdminMode: boolean;
-  onToggleAdmin: () => void;
-  activeSubject: 'ENG' | 'MATH' | 'ALL';
-  onSubjectChange: (subj: 'ENG' | 'MATH' | 'ALL') => void;
+  onOpenDrawer: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, isAdminMode, onToggleAdmin,
-  activeSubject, onSubjectChange
+  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer
 }) => {
   return (
     <>
@@ -59,116 +55,43 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Small Gear Settings Button */}
+          {/* Minimalist modern settings/sidebar menu button */}
           <button
-            onClick={onToggleAdmin}
-            title={isAdminMode ? "Admin panelini yopish" : "Admin panelini ochish"}
+            onClick={onOpenDrawer}
+            title="Boshqaruv panelini ochish"
             style={{
-              background: isAdminMode ? 'var(--accent-primary)' : '#ffffff',
-              color: isAdminMode ? '#ffffff' : '#475569',
+              background: '#ffffff',
+              color: '#475569',
               border: '1.5px solid #e2e8f0',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
+              borderRadius: '9999px',
+              padding: '0.5rem 1.1rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: '0.45rem',
               cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
               transition: 'all 0.2s ease',
-              padding: 0
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              height: '40px'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.08)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
               e.currentTarget.style.borderColor = 'var(--accent-primary)';
-              if (!isAdminMode) e.currentTarget.style.color = 'var(--accent-primary)';
+              e.currentTarget.style.color = 'var(--accent-primary)';
+              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.03)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.borderColor = '#e2e8f0';
-              if (!isAdminMode) e.currentTarget.style.color = '#475569';
+              e.currentTarget.style.color = '#475569';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.01)';
             }}
           >
-            {isAdminMode ? <X size={18} /> : <Settings size={18} />}
+            <Settings size={15} />
+            <span>SOZLAMALAR</span>
           </button>
-
-          {/* Subject Switcher (ENG / MATH / ALL) */}
-          <div style={{
-            display: 'flex',
-            background: '#ffffff',
-            border: '1.5px solid #e2e8f0',
-            borderRadius: '9999px',
-            padding: '0.15rem',
-            gap: '0.1rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-            height: '40px',
-            alignItems: 'center',
-            position: 'relative'
-          }}>
-            <button
-              onClick={() => onSubjectChange('ENG')}
-              style={{
-                background: activeSubject === 'ENG' ? 'var(--accent-primary)' : 'transparent',
-                color: activeSubject === 'ENG' ? '#ffffff' : '#64748b',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '0.35rem 0.85rem',
-                fontSize: '0.75rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                letterSpacing: '0.05em'
-              }}
-            >
-              ENG
-            </button>
-            <button
-              onClick={() => onSubjectChange('MATH')}
-              style={{
-                background: activeSubject === 'MATH' ? 'var(--accent-primary)' : 'transparent',
-                color: activeSubject === 'MATH' ? '#ffffff' : '#64748b',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '0.35rem 0.85rem',
-                fontSize: '0.75rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                letterSpacing: '0.05em'
-              }}
-            >
-              MATH
-            </button>
-            <button
-              onClick={() => onSubjectChange('ALL')}
-              style={{
-                background: activeSubject === 'ALL' ? 'var(--accent-primary)' : 'transparent',
-                color: activeSubject === 'ALL' ? '#ffffff' : '#64748b',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '0.35rem 0.85rem',
-                fontSize: '0.75rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                letterSpacing: '0.05em'
-              }}
-            >
-              ALL
-            </button>
-          </div>
         </div>
       </div>
  

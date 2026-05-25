@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
-import AdminPanel from './components/AdminPanel';
+import SidebarDrawer from './components/SidebarDrawer';
 import CustomDialog from './components/CustomDialog';
 import PasscodeModal from './components/PasscodeModal';
 import type { Student } from './types';
@@ -50,6 +50,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Custom Dialog DialogState
   const [dialog, setDialog] = useState<{
@@ -873,10 +874,7 @@ function App() {
         classCounts={classCounts}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        isAdminMode={isAdminMode}
-        onToggleAdmin={handleToggleAdmin}
-        activeSubject={activeSubject}
-        onSubjectChange={setActiveSubject}
+        onOpenDrawer={() => setIsDrawerOpen(true)}
       />
 
       <StudentTable
@@ -893,17 +891,19 @@ function App() {
         onDeleteTeacherTable={handleDeleteTeacherTable}
       />
 
-      {isAdminMode && (
-        <AdminPanel
-          students={students}
-          activeClass={activeClass}
-          onStudentsUploaded={handleStudentsUploaded}
-          onDeleteStudent={handleDeleteStudent}
-          onBulkDeleteClass={handleBulkDeleteClass}
-          onAddStudent={handleAddStudent}
-          activeSubject={activeSubject}
-        />
-      )}
+      <SidebarDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        activeSubject={activeSubject}
+        onSubjectChange={setActiveSubject}
+        isAdminMode={isAdminMode}
+        onToggleAdmin={handleToggleAdmin}
+        students={students}
+        activeClass={activeClass}
+        onStudentsUploaded={handleStudentsUploaded}
+        onBulkDeleteClass={handleBulkDeleteClass}
+        onAddStudent={handleAddStudent}
+      />
 
       {/* Elegant Symmetrical Footer */}
       <footer style={{
