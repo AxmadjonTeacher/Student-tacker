@@ -29,18 +29,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
     return 1;
   };
 
-  const renameTestName = (name: string): string => {
-    const trimmed = name.toString().trim().toLowerCase();
-    if (trimmed === 'grant 1') return '1-Chorak';
-    if (trimmed === 'grant 2') return '2-Chorak';
-    if (trimmed === 'grant 3') return '3-Chorak';
-    if (trimmed === 'grant 4') return '4-Chorak';
-    const match = trimmed.match(/(\d+)/);
-    if (match) {
-      return `${match[1]}-Chorak`;
-    }
-    return name;
-  };
+
 
   // Helper to extract or generate clean test curves for both subjects
   const getSubjectData = (subject: 'ENG' | 'MATH') => {
@@ -49,16 +38,29 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
     const endLevel = getLevelValue(isMath ? (student.mathCurrentLevel || 'Level 1') : (student.englishCurrentLevel || student.currentLevel || 'Level 1'));
     const tests = isMath ? student.mathGrandTests : student.englishGrandTests;
 
+    const testNames = ['1-Chorak', '2-Chorak', '3-Chorak', '4-Chorak'];
+
     if (tests && tests.length > 0) {
-      return tests.map(test => ({
-        name: renameTestName(test.name),
-        score: test.score
-      }));
+      return testNames.map((name, index) => {
+        const termNum = index + 1;
+        const namesToTry = [`grant ${termNum}`, `${termNum}-chorak`, `${termNum} chorak`].map(n => n.toLowerCase());
+        const found = tests.find(t => namesToTry.includes(t.name.toLowerCase()));
+        
+        let score: number | null = null;
+        if (found && found.score !== null && found.score !== undefined && found.score.toString().trim() !== '-') {
+          const parsed = parseInt(found.score.toString());
+          score = isNaN(parsed) ? null : parsed;
+        }
+
+        return {
+          name,
+          score
+        };
+      });
     }
 
     // Fallback/Mock generation with high aesthetic variation
     const mockData = [];
-    const testNames = ['1-Chorak', '2-Chorak', '3-Chorak', '4-Chorak'];
     for (let i = 0; i < 4; i++) {
       const progress = i / 3;
       const baseScore = 45 + (startLevel * 6);
@@ -77,7 +79,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
 
   // Combine into single dataset for chart rendering
   const combinedData: any[] = engData.map((d, index) => {
-    const mathPoint = mathData[index] || { score: 50 };
+    const mathPoint = mathData[index] || { score: null };
     return {
       date: d.name,
       engVal: d.score as number | null,
@@ -87,23 +89,39 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
     };
   });
 
-  // Append 5th point (Yozgi Reja) as +10% estimated raise
+  // Find last valid actual indices and values
+  let lastEngIdx = -1;
+  let lastEngVal = 50; // default fallback if none valid
+  let lastMathIdx = -1;
+  let lastMathVal = 50;
+
+  combinedData.forEach((d, idx) => {
+    if (d.engVal !== null && d.engVal !== undefined) {
+      lastEngIdx = idx;
+      lastEngVal = d.engVal;
+    }
+    if (d.mathVal !== null && d.mathVal !== undefined) {
+      lastMathIdx = idx;
+      lastMathVal = d.mathVal;
+    }
+  });
+
+  // Connect the last valid point to the estimate line
+  if (lastEngIdx >= 0) {
+    combinedData[lastEngIdx].engEstimate = lastEngVal;
+  }
+  if (lastMathIdx >= 0) {
+    combinedData[lastMathIdx].mathEstimate = lastMathVal;
+  }
+
+  // Add 5th point (Yozgi Reja) if we have any valid data points
   if (combinedData.length > 0) {
-    const lastIdx = combinedData.length - 1;
-    const lastEng = combinedData[lastIdx].engVal || 50;
-    const lastMath = combinedData[lastIdx].mathVal || 50;
-
-    // Connect the 4th point to the estimate line
-    combinedData[lastIdx].engEstimate = lastEng;
-    combinedData[lastIdx].mathEstimate = lastMath;
-
-    // Add 5th point (Yozgi Reja)
     combinedData.push({
       date: 'Yozgi Reja',
       engVal: null,
       mathVal: null,
-      engEstimate: Math.min(100, lastEng + 5),
-      mathEstimate: Math.min(100, lastMath + 5)
+      engEstimate: lastEngIdx >= 0 ? Math.min(100, lastEngVal + 5) : null,
+      mathEstimate: lastMathIdx >= 0 ? Math.min(100, lastMathVal + 5) : null
     });
   }
 
@@ -543,6 +561,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                       stroke="#166534" 
                       strokeWidth={5.5} 
                       strokeDasharray="35 3"
+                      connectNulls={true}
                       dot={{ r: 7, fill: '#f0fdf4', stroke: '#166534', strokeWidth: 4 }}
                       activeDot={{ r: 9, fill: '#166534', stroke: '#ffffff', strokeWidth: 3.5 }}
                       isAnimationActive={true}
@@ -574,6 +593,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                       stroke="#c2410c" 
                       strokeWidth={5.5} 
                       strokeDasharray="35 3"
+                      connectNulls={true}
                       dot={{ r: 7, fill: '#fff7ed', stroke: '#c2410c', strokeWidth: 4 }}
                       activeDot={{ r: 9, fill: '#c2410c', stroke: '#ffffff', strokeWidth: 3.5 }}
                       isAnimationActive={true}

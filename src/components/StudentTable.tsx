@@ -17,7 +17,7 @@ interface StudentTableProps {
     studentId: string,
     startingLevel: string,
     currentLevel: string,
-    grandTests: { name: string; score: number }[],
+    grandTests: { name: string; score: number | null }[],
     newName?: string,
     newSurname?: string,
     newClassName?: string,

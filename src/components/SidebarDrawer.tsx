@@ -149,31 +149,39 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               name = rawNameStr;
             }
 
-            const grandTests = [];
-            const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
-            if (term1.toString().trim()) grandTests.push({ name: 'Grant 1', score: parseInt(term1) || 0 });
-            
-            const term2 = row['Grant 2 eng'] || row['Grant 2 ENG'] || row['grant 2 eng'] || row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'] || '';
-            if (term2.toString().trim()) grandTests.push({ name: 'Grant 2', score: parseInt(term2) || 0 });
-            
-            const term3 = row['Grant 3 eng'] || row['Grant 3 ENG'] || row['grant 3 eng'] || row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'] || '';
-            if (term3.toString().trim()) grandTests.push({ name: 'Grant 3', score: parseInt(term3) || 0 });
-            
-            const term4 = row['Grant 4 eng'] || row['Grant 4 ENG'] || row['grant 4 eng'] || row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'] || '';
-            if (term4.toString().trim()) grandTests.push({ name: 'Grant 4', score: parseInt(term4) || 0 });
+            const parseImportScore = (val: any): number | null => {
+              if (val === undefined || val === null) return null;
+              const s = val.toString().trim();
+              if (s === '' || s === '-') return null;
+              const p = parseInt(s);
+              return isNaN(p) ? null : p;
+            };
 
-            const mathGrandTests = [];
+            const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
+            const term2 = row['Grant 2 eng'] || row['Grant 2 ENG'] || row['grant 2 eng'] || row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'] || '';
+            const term3 = row['Grant 3 eng'] || row['Grant 3 ENG'] || row['grant 3 eng'] || row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'] || '';
+            const term4 = row['Grant 4 eng'] || row['Grant 4 ENG'] || row['grant 4 eng'] || row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'] || '';
+
+            const hasAnyEngScore = [term1, term2, term3, term4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
+            const grandTests = hasAnyEngScore ? [
+              { name: 'Grant 1', score: parseImportScore(term1) },
+              { name: 'Grant 2', score: parseImportScore(term2) },
+              { name: 'Grant 3', score: parseImportScore(term3) },
+              { name: 'Grant 4', score: parseImportScore(term4) }
+            ] : [];
+
             const mTerm1 = row['Grant 1 math'] || row['Grant 1 MATH'] || row['grant 1 math'] || row['1-chorak matematika'] || row['math term 1 score'] || '';
-            if (mTerm1.toString().trim()) mathGrandTests.push({ name: 'Grant 1', score: parseInt(mTerm1) || 0 });
-            
             const mTerm2 = row['Grant 2 math'] || row['Grant 2 MATH'] || row['grant 2 math'] || row['2-chorak matematika'] || row['math term 2 score'] || '';
-            if (mTerm2.toString().trim()) mathGrandTests.push({ name: 'Grant 2', score: parseInt(mTerm2) || 0 });
-            
             const mTerm3 = row['Grant 3 math'] || row['Grant 3 MATH'] || row['grant 3 math'] || row['3-chorak matematika'] || row['math term 3 score'] || '';
-            if (mTerm3.toString().trim()) mathGrandTests.push({ name: 'Grant 3', score: parseInt(mTerm3) || 0 });
-            
             const mTerm4 = row['Grant 4 math'] || row['Grant 4 MATH'] || row['grant 4 math'] || row['4-chorak matematika'] || row['math term 4 score'] || '';
-            if (mTerm4.toString().trim()) mathGrandTests.push({ name: 'Grant 4', score: parseInt(mTerm4) || 0 });
+
+            const hasAnyMathScore = [mTerm1, mTerm2, mTerm3, mTerm4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
+            const mathGrandTests = hasAnyMathScore ? [
+              { name: 'Grant 1', score: parseImportScore(mTerm1) },
+              { name: 'Grant 2', score: parseImportScore(mTerm2) },
+              { name: 'Grant 3', score: parseImportScore(mTerm3) },
+              { name: 'Grant 4', score: parseImportScore(mTerm4) }
+            ] : [];
 
             const rawEngStarting = row['boshlang\'ich daraja eng'] || row['Boshlang\'ich daraja eng'] || row['StartingLevelENG'] || row['boshlang\'ich daraja'] || row['Boshlang\'ich daraja'] || row['avvalgi daraja'] || row['Avvalgi daraja'] || row['initial level'] || row['initial level eng'] || row['Level'] || row['level'] || row['StartingLevel'] || '';
             const rawEngCurrent = row['hozirgi daraja eng'] || row['Hozirgi daraja eng'] || row['CurrentLevelENG'] || row['hozirgi daraja'] || row['Hozirgi daraja'] || row['current level'] || row['CurrentLevel'] || row['currentLevel'] || row['current level eng'] || '';
@@ -190,11 +198,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
             let finalEngStarting = normEngStarting || 'Level 1';
             let finalEngCurrent = normEngCurrent || 'Level 1';
-            let finalEngTests: { name: string; score: number }[] | undefined = grandTests.length > 0 ? grandTests : undefined;
+            let finalEngTests: { name: string; score: number | null }[] | undefined = grandTests.length > 0 ? grandTests : undefined;
 
             let finalMathStarting = normMathStarting || 'Level 1';
             let finalMathCurrent = normMathCurrent || 'Level 1';
-            let finalMathTests: { name: string; score: number }[] | undefined = mathGrandTests.length > 0 ? mathGrandTests : undefined;
+            let finalMathTests: { name: string; score: number | null }[] | undefined = mathGrandTests.length > 0 ? mathGrandTests : undefined;
 
             if (!hasExplicitMathColumns && activeSubject === 'MATH') {
               finalMathStarting = normEngStarting || 'Level 1';

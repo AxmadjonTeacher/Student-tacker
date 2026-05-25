@@ -7,7 +7,7 @@ export interface Student {
   startingLevel: string;
   currentLevel: string;
   pictureUrl?: string;
-  grandTests?: { name: string; score: number }[];
+  grandTests?: { name: string; score: number | null }[];
   teacher?: string;
   orderIndex?: number;
   teacherOrder?: number;
@@ -15,13 +15,13 @@ export interface Student {
   mathTeacher?: string;
   mathStartingLevel?: string;
   mathCurrentLevel?: string;
-  mathGrandTests?: { name: string; score: number }[];
+  mathGrandTests?: { name: string; score: number | null }[];
   mathTeacherOrder?: number;
   // English explicit helpers (for math projection recovery)
   englishTeacher?: string;
   englishStartingLevel?: string;
   englishCurrentLevel?: string;
-  englishGrandTests?: { name: string; score: number }[];
+  englishGrandTests?: { name: string; score: number | null }[];
   englishTeacherOrder?: number;
   // ALL subject specific fields
   engScore?: number;

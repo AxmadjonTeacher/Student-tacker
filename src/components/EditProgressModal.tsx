@@ -8,7 +8,7 @@ interface EditProgressModalProps {
   onSave: (
     startingLevel: string,
     currentLevel: string,
-    grandTests: { name: string; score: number }[],
+    grandTests: { name: string; score: number | null }[],
     newName?: string,
     newSurname?: string,
     newClassName?: string,
@@ -61,7 +61,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const getScoreForTest = (testNum: number): string => {
     const namesToTry = [`grant ${testNum}`, `${testNum}-chorak`, `${testNum} chorak`].map(n => n.toLowerCase());
     const found = initialTests.find(t => namesToTry.includes(t.name.toLowerCase()));
-    return found ? found.score.toString() : '';
+    return found ? (found.score === null || found.score === undefined || found.score.toString().trim() === '-' ? '-' : found.score.toString()) : '-';
   };
 
   const [grant1, setGrant1] = useState(getScoreForTest(1));
@@ -86,12 +86,18 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
         parseInt(homework) || 1
       );
     } else {
+      const parseScore = (val: string): number | null => {
+        if (!val || val.trim() === '' || val.trim() === '-') return null;
+        const parsed = parseInt(val);
+        return isNaN(parsed) ? null : parsed;
+      };
+
       const grandTestsArray = [
-        { name: 'Grant 1', score: Math.min(100, Math.max(0, parseInt(grant1) || 0)) },
-        { name: 'Grant 2', score: Math.min(100, Math.max(0, parseInt(grant2) || 0)) },
-        { name: 'Grant 3', score: Math.min(100, Math.max(0, parseInt(grant3) || 0)) },
-        { name: 'Grant 4', score: Math.min(100, Math.max(0, parseInt(grant4) || 0)) },
-      ].filter(t => t.score > 0 || grant1 || grant2 || grant3 || grant4); // keep if entered
+        { name: 'Grant 1', score: parseScore(grant1) },
+        { name: 'Grant 2', score: parseScore(grant2) },
+        { name: 'Grant 3', score: parseScore(grant3) },
+        { name: 'Grant 4', score: parseScore(grant4) },
+      ];
 
       onSave(startingLevel, currentLevel, grandTestsArray, name.trim(), surname.trim(), className.trim());
     }
@@ -343,95 +349,77 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                   CHORAK NATIJALARI (%)
                 </label>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>1-Chorak</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      max="100"
-                      placeholder="Foiz (masalan: 75)"
-                      value={grant1}
-                      onChange={(e) => setGrant1(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        border: '1.5px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        outline: 'none',
-                        color: '#1e293b'
-                      }}
-                    />
-                  </div>
+                {(() => {
+                  const scoreOptions = ['-', ...Array.from({ length: 101 }, (_, i) => i.toString())];
+                  const selectStyle = {
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '10px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    outline: 'none',
+                    color: '#1e293b',
+                    background: '#ffffff',
+                    cursor: 'pointer'
+                  };
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>2-Chorak</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      max="100"
-                      placeholder="Foiz (masalan: 80)"
-                      value={grant2}
-                      onChange={(e) => setGrant2(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        border: '1.5px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        outline: 'none',
-                        color: '#1e293b'
-                      }}
-                    />
-                  </div>
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>1-Chorak</label>
+                        <select 
+                          value={grant1}
+                          onChange={(e) => setGrant1(e.target.value)}
+                          style={selectStyle}
+                        >
+                          {scoreOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>3-Chorak</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      max="100"
-                      placeholder="Foiz (masalan: 85)"
-                      value={grant3}
-                      onChange={(e) => setGrant3(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        border: '1.5px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        outline: 'none',
-                        color: '#1e293b'
-                      }}
-                    />
-                  </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>2-Chorak</label>
+                        <select 
+                          value={grant2}
+                          onChange={(e) => setGrant2(e.target.value)}
+                          style={selectStyle}
+                        >
+                          {scoreOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>4-Chorak</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      max="100"
-                      placeholder="Foiz (masalan: 90)"
-                      value={grant4}
-                      onChange={(e) => setGrant4(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        border: '1.5px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        outline: 'none',
-                        color: '#1e293b'
-                      }}
-                    />
-                  </div>
-                </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>3-Chorak</label>
+                        <select 
+                          value={grant3}
+                          onChange={(e) => setGrant3(e.target.value)}
+                          style={selectStyle}
+                        >
+                          {scoreOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>4-Chorak</label>
+                        <select 
+                          value={grant4}
+                          onChange={(e) => setGrant4(e.target.value)}
+                          style={selectStyle}
+                        >
+                          {scoreOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </>
           )}
