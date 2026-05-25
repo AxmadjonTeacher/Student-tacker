@@ -468,7 +468,27 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
 
                       {/* Chart block */}
-                      <div style={{ padding: '0 1.5rem', borderRight: isAdminMode ? '1px solid #e5e7eb' : 'none', height: '100%', display: 'flex', alignItems: 'center' }}>
+                      <div 
+                        onClick={() => setSelectedStudent(student)}
+                        style={{ 
+                          padding: '0 1.5rem', 
+                          borderRight: isAdminMode ? '1px solid #e5e7eb' : 'none', 
+                          height: '100%', 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          transition: 'transform 0.15s ease, opacity 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                          e.currentTarget.style.opacity = '0.85';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.opacity = '1';
+                        }}
+                        title="Grafikni ko'rish"
+                      >
                         <svg width="100" height="42" style={{ overflow: 'visible' }}>
                           {/* Eng Bar */}
                           <g>
@@ -1025,7 +1045,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
         <GraphModal 
           student={selectedStudent} 
           onClose={() => setSelectedStudent(null)} 
-          activeSubject={activeSubject === 'ALL' ? 'ENG' : activeSubject}
+          activeSubject={activeSubject}
         />
       )}
 

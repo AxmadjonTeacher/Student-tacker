@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { X, TrendingUp } from 'lucide-react';
 import { 
-  AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
+  AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+  BarChart, Bar, Cell, LabelList
 } from 'recharts';
 import type { Student } from '../types';
 
 interface GraphModalProps {
   student: Student;
   onClose: () => void;
-  activeSubject: 'ENG' | 'MATH';
+  activeSubject: 'ENG' | 'MATH' | 'ALL';
 }
 
 const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject }) => {
@@ -152,7 +153,101 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
   const mathEnd = getLevelValue(student.mathCurrentLevel || 'Level 1');
   const mathImproved = mathEnd - mathStart;
 
-  const activeThemeColor = activeSubject === 'MATH' ? '#0d9488' : '#166534';
+  const activeThemeColor = activeSubject === 'MATH' ? '#0d9488' : activeSubject === 'ALL' ? '#4f46e5' : '#166534';
+
+  // Calculate percentages for ALL section
+  const engPercent = ((student.engScore || 0) / 15 * 100);
+  const mathPercent = ((student.mathScore || 0) / 15 * 100);
+  const absences = (student.attendance ?? 1) < 0 ? -(student.attendance ?? 1) : 0;
+  const attPercent = Math.max(0, 100 - absences * 16.67);
+  const missedHw = (student.homework ?? 1) < 0 ? -(student.homework ?? 1) : 0;
+  const hwPercent = Math.max(0, 100 - missedHw * 20);
+
+  const barData = [
+    {
+      name: 'Eng Score',
+      value: Math.round(engPercent * 100) / 100,
+      color: '#6366f1' // Indigo
+    },
+    {
+      name: 'Math Score',
+      value: Math.round(mathPercent * 100) / 100,
+      color: '#14b8a6' // Teal
+    },
+    {
+      name: 'Attendance',
+      value: Math.round(attPercent * 100) / 100,
+      color: '#f97316' // Orange
+    },
+    {
+      name: 'Homework',
+      value: Math.round(hwPercent * 100) / 100,
+      color: '#10b981' // Emerald
+    }
+  ];
+
+  const renderCustomizedLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    return (
+      <text 
+        x={x + width / 2} 
+        y={y - 12} 
+        fill="#1e293b" 
+        textAnchor="middle" 
+        style={{ fontSize: '0.85rem', fontWeight: 850 }}
+      >
+        {value}%
+      </text>
+    );
+  };
+
+  const renderInsideLabel = (props: any) => {
+    const { x, y, width, height, index } = props;
+    const name = barData[index]?.name || '';
+    
+    if (height < 70) return null;
+    
+    const anchorY = y + height - 20;
+    const anchorX = x + width / 2;
+    
+    return (
+      <text
+        x={anchorX}
+        y={anchorY}
+        fill="#ffffff"
+        textAnchor="start"
+        transform={`rotate(-90, ${anchorX}, ${anchorY})`}
+        style={{ 
+          fontSize: '0.75rem', 
+          fontWeight: 800, 
+          letterSpacing: '0.04em',
+          fontFamily: 'inherit'
+        }}
+      >
+        {name}
+      </text>
+    );
+  };
+
+  const BarTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div style={{
+          background: '#ffffff',
+          padding: '10px 14px',
+          border: '1.5px solid #e2e8f0',
+          borderRadius: '12px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+        }}>
+          <p style={{ margin: 0, fontWeight: 800, color: data.color, fontSize: '0.85rem' }}>
+            {data.name}: {data.value}%
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -241,7 +336,13 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} />
             <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
-              {student.name} {student.surname} — {isComparing ? 'Fanlar taqqoslovi' : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')}
+              {student.name} {student.surname} — {
+                activeSubject === 'ALL' 
+                  ? "Umumiy ko'rsatkichlar"
+                  : isComparing 
+                    ? 'Fanlar taqqoslovi' 
+                    : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')
+              }
             </h2>
           </div>
           
@@ -253,7 +354,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
 
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
             {/* English Improvement Tag */}
-            {(isComparing || activeSubject === 'ENG') && (
+            {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
               <span style={{ 
                 display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
                 background: '#e0f2fe', color: '#0369a1',
@@ -265,7 +366,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             )}
 
             {/* Math Improvement Tag */}
-            {(isComparing || activeSubject === 'MATH') && (
+            {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
               <span style={{ 
                 display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
                 background: '#ffedd5', color: '#c2410c',
@@ -279,41 +380,43 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
         </div>
 
         {/* Real-time English & Math Switcher Button */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center',
-          marginBottom: '1.5rem' 
-        }}>
-          <button
-            onClick={() => setIsComparing(!isComparing)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: isComparing ? 'linear-gradient(135deg, #129f87, #f97316)' : '#ffffff',
-              color: isComparing ? '#ffffff' : '#475569',
-              border: '1.5px solid #e2e8f0',
-              borderRadius: '9999px',
-              padding: '0.6rem 1.5rem',
-              fontSize: '0.8rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-              letterSpacing: '0.05em'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1.5px)';
-              if (!isComparing) e.currentTarget.style.borderColor = activeThemeColor;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              if (!isComparing) e.currentTarget.style.borderColor = '#e2e8f0';
-            }}
-          >
-            {isComparing ? '📊 YAKKA KO\'RINISH' : '🆚 MATEMATIKA VA INGLIZ TILI BILAN TAQQOSLASH'}
-          </button>
-        </div>
+        {activeSubject !== 'ALL' && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center',
+            marginBottom: '1.5rem' 
+          }}>
+            <button
+              onClick={() => setIsComparing(!isComparing)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: isComparing ? 'linear-gradient(135deg, #129f87, #f97316)' : '#ffffff',
+                color: isComparing ? '#ffffff' : '#475569',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '9999px',
+                padding: '0.6rem 1.5rem',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                letterSpacing: '0.05em'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1.5px)';
+                if (!isComparing) e.currentTarget.style.borderColor = activeThemeColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                if (!isComparing) e.currentTarget.style.borderColor = '#e2e8f0';
+              }}
+            >
+              {isComparing ? '📊 YAKKA KO\'RINISH' : '🆚 MATEMATIKA VA INGLIZ TILI BILAN TAQQOSLASH'}
+            </button>
+          </div>
+        )}
 
         <div style={{ 
           border: '1px solid #e2e8f0', 
@@ -322,131 +425,205 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           padding: '2rem 1.5rem 1.25rem',
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.01)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
-                BOSHLANG'ICH DARAJA
+          {activeSubject === 'ALL' ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
+                  INGLIZ TILI DARAJASI (BOSHLANG'ICH ➜ HOZIRGI)
+                </div>
+                <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
+                  {(student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase()} ➜ {(student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase()}
+                </div>
               </div>
-              <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
-                {isComparing 
-                  ? `ENG: ${(student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase()} | MATH: ${(student.mathStartingLevel || 'Level 1').toUpperCase()}`
-                  : (activeSubject === 'MATH' ? (student.mathStartingLevel || 'Level 1').toUpperCase() : (student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase())
-                }
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
-                HOZIRGI DARAJA
-              </div>
-              <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
-                {isComparing 
-                  ? `ENG: ${(student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase()} | MATH: ${(student.mathCurrentLevel || 'Level 1').toUpperCase()}`
-                  : (activeSubject === 'MATH' ? (student.mathCurrentLevel || 'Level 1').toUpperCase() : (student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase())
-                }
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
+                  MATEMATIKA DARAJASI (BOSHLANG'ICH ➜ HOZIRGI)
+                </div>
+                <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
+                  {(student.mathStartingLevel || 'Level 1').toUpperCase()} ➜ {(student.mathCurrentLevel || 'Level 1').toUpperCase()}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
+                  BOSHLANG'ICH DARAJA
+                </div>
+                <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
+                  {isComparing 
+                    ? `ENG: ${(student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase()} | MATH: ${(student.mathStartingLevel || 'Level 1').toUpperCase()}`
+                    : (activeSubject === 'MATH' ? (student.mathStartingLevel || 'Level 1').toUpperCase() : (student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase())
+                  }
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
+                  HOZIRGI DARAJA
+                </div>
+                <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
+                  {isComparing 
+                    ? `ENG: ${(student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase()} | MATH: ${(student.mathCurrentLevel || 'Level 1').toUpperCase()}`
+                    : (activeSubject === 'MATH' ? (student.mathCurrentLevel || 'Level 1').toUpperCase() : (student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase())
+                  }
+                </div>
+              </div>
+            </div>
+          )}
 
-          <div style={{ height: '350px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={combinedData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
-                <defs>
-                  <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#129f87" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#129f87" stopOpacity={0.0}/>
-                  </linearGradient>
-                  <linearGradient id="colorMath" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#f97316" stopOpacity={0.0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="date" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
-                  dy={15}
-                />
-                <YAxis 
-                  domain={[domainMin, domainMax]} 
-                  ticks={ticks}
-                  tickFormatter={(val) => `${val}%`}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
-                  width={50}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
-                
-                {domainMin <= 50 && domainMax >= 50 && (
-                  <ReferenceLine y={50} stroke="#e2e8f0" strokeWidth={1.5} strokeDasharray="3 3" />
-                )}
-                
-                {/* English Score Area (Teal) */}
-                {(isComparing || activeSubject === 'ENG') && (
-                  <Area 
-                    type="monotone" 
-                    dataKey="engVal" 
-                    stroke="#129f87" 
-                    strokeWidth={4.5} 
-                    fillOpacity={1}
-                    fill="url(#colorEng)"
-                    dot={{ r: 5, fill: '#ffffff', stroke: '#129f87', strokeWidth: 3 }}
-                    activeDot={{ r: 7, fill: '#129f87', stroke: '#ffffff', strokeWidth: 3 }}
-                    isAnimationActive={true}
-                    animationDuration={1200}
+          {activeSubject === 'ALL' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+              <div style={{
+                border: '3.5px solid #fda4af', // Rounded pink border enclosing the graph bars
+                borderRadius: '24px',
+                padding: '2.5rem 1.5rem 1.5rem',
+                background: '#ffffff',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
+                <div style={{ height: '300px', width: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={barData} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+                      <CartesianGrid vertical={false} stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="name" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                      />
+                      <YAxis 
+                        domain={[0, 100]} 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }}
+                        tickFormatter={(val) => `${val}%`}
+                        width={45}
+                      />
+                      <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
+                      <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={55}>
+                        {barData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                        <LabelList dataKey="value" content={renderCustomizedLabel} />
+                        <LabelList dataKey="name" content={renderInsideLabel} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div style={{
+                marginTop: '1.25rem',
+                fontSize: '1rem',
+                fontWeight: 800,
+                color: '#f87171',
+                letterSpacing: '0.05em',
+                fontFamily: 'monospace'
+              }}>
+                Example Chart
+              </div>
+            </div>
+          ) : (
+            <div style={{ height: '350px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={combinedData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
+                  <defs>
+                    <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#129f87" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#129f87" stopOpacity={0.0}/>
+                    </linearGradient>
+                    <linearGradient id="colorMath" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#f97316" stopOpacity={0.0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                    dy={15}
                   />
-                )}
+                  <YAxis 
+                    domain={[domainMin, domainMax]} 
+                    ticks={ticks}
+                    tickFormatter={(val) => `${val}%`}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                    width={50}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
+                  
+                  {domainMin <= 50 && domainMax >= 50 && (
+                    <ReferenceLine y={50} stroke="#e2e8f0" strokeWidth={1.5} strokeDasharray="3 3" />
+                  )}
+                  
+                  {/* English Score Area (Teal) */}
+                  {(isComparing || activeSubject === 'ENG') && (
+                    <Area 
+                      type="monotone" 
+                      dataKey="engVal" 
+                      stroke="#129f87" 
+                      strokeWidth={4.5} 
+                      fillOpacity={1}
+                      fill="url(#colorEng)"
+                      dot={{ r: 5, fill: '#ffffff', stroke: '#129f87', strokeWidth: 3 }}
+                      activeDot={{ r: 7, fill: '#129f87', stroke: '#ffffff', strokeWidth: 3 }}
+                      isAnimationActive={true}
+                      animationDuration={1200}
+                    />
+                  )}
 
-                {/* English Summer Estimate Segment (Dark Green Long Dashed Line) */}
-                {(isComparing || activeSubject === 'ENG') && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="engEstimate" 
-                    stroke="#166534" 
-                    strokeWidth={5.5} 
-                    strokeDasharray="35 3"
-                    dot={{ r: 7, fill: '#f0fdf4', stroke: '#166534', strokeWidth: 4 }}
-                    activeDot={{ r: 9, fill: '#166534', stroke: '#ffffff', strokeWidth: 3.5 }}
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                  />
-                )}
-                
-                {/* Math Score Area (Orange) */}
-                {(isComparing || activeSubject === 'MATH') && (
-                  <Area 
-                    type="monotone" 
-                    dataKey="mathVal" 
-                    stroke="#f97316" 
-                    strokeWidth={4.5} 
-                    fillOpacity={1}
-                    fill="url(#colorMath)"
-                    dot={{ r: 5, fill: '#ffffff', stroke: '#f97316', strokeWidth: 3 }}
-                    activeDot={{ r: 7, fill: '#f97316', stroke: '#ffffff', strokeWidth: 3 }}
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                  />
-                )}
+                  {/* English Summer Estimate Segment (Dark Green Long Dashed Line) */}
+                  {(isComparing || activeSubject === 'ENG') && (
+                    <Line 
+                      type="monotone" 
+                      dataKey="engEstimate" 
+                      stroke="#166534" 
+                      strokeWidth={5.5} 
+                      strokeDasharray="35 3"
+                      dot={{ r: 7, fill: '#f0fdf4', stroke: '#166534', strokeWidth: 4 }}
+                      activeDot={{ r: 9, fill: '#166534', stroke: '#ffffff', strokeWidth: 3.5 }}
+                      isAnimationActive={true}
+                      animationDuration={1200}
+                    />
+                  )}
+                  
+                  {/* Math Score Area (Orange) */}
+                  {(isComparing || activeSubject === 'MATH') && (
+                    <Area 
+                      type="monotone" 
+                      dataKey="mathVal" 
+                      stroke="#f97316" 
+                      strokeWidth={4.5} 
+                      fillOpacity={1}
+                      fill="url(#colorMath)"
+                      dot={{ r: 5, fill: '#ffffff', stroke: '#f97316', strokeWidth: 3 }}
+                      activeDot={{ r: 7, fill: '#f97316', stroke: '#ffffff', strokeWidth: 3 }}
+                      isAnimationActive={true}
+                      animationDuration={1200}
+                    />
+                  )}
 
-                {/* Math Summer Estimate Segment (Dark Orange Long Dashed Line) */}
-                {(isComparing || activeSubject === 'MATH') && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="mathEstimate" 
-                    stroke="#c2410c" 
-                    strokeWidth={5.5} 
-                    strokeDasharray="35 3"
-                    dot={{ r: 7, fill: '#fff7ed', stroke: '#c2410c', strokeWidth: 4 }}
-                    activeDot={{ r: 9, fill: '#c2410c', stroke: '#ffffff', strokeWidth: 3.5 }}
-                    isAnimationActive={true}
-                    animationDuration={1200}
-                  />
-                )}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+                  {/* Math Summer Estimate Segment (Dark Orange Long Dashed Line) */}
+                  {(isComparing || activeSubject === 'MATH') && (
+                    <Line 
+                      type="monotone" 
+                      dataKey="mathEstimate" 
+                      stroke="#c2410c" 
+                      strokeWidth={5.5} 
+                      strokeDasharray="35 3"
+                      dot={{ r: 7, fill: '#fff7ed', stroke: '#c2410c', strokeWidth: 4 }}
+                      activeDot={{ r: 9, fill: '#c2410c', stroke: '#ffffff', strokeWidth: 3.5 }}
+                      isAnimationActive={true}
+                      animationDuration={1200}
+                    />
+                  )}
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
     </div>
