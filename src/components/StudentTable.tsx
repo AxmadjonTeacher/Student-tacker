@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Student } from '../types';
-import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical } from 'lucide-react';
+import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
 import * as XLSX from 'xlsx';
@@ -21,7 +21,7 @@ interface StudentTableProps {
   ) => void;
   onRenameTeacherTable?: (oldName: string) => void;
   onDeleteTeacherTable?: (teacherName: string) => void;
-  onMoveTeacherTable?: (sourceTeacherName: string, targetTeacherName: string) => void;
+  onMoveTeacherTable?: (teacherName: string, direction: 'up' | 'down') => void;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -41,7 +41,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [uploadingStudentId, setUploadingStudentId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [draggedGroup, setDraggedGroup] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -181,28 +180,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
     setDraggedId(null);
   };
 
-  const handleDragStartGroup = (e: React.DragEvent, teacherName: string) => {
-    e.stopPropagation();
-    setDraggedGroup(teacherName);
-    e.dataTransfer.setData('text/plain', `group:${teacherName}`);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOverGroup = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDropGroup = (e: React.DragEvent, targetTeacherName: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const sourceData = e.dataTransfer.getData('text/plain') || '';
-    const sourceGroup = sourceData.startsWith('group:') ? sourceData.split('group:')[1] : draggedGroup;
-    if (sourceGroup && sourceGroup !== targetTeacherName && onMoveTeacherTable) {
-      onMoveTeacherTable(sourceGroup, targetTeacherName);
-    }
-    setDraggedGroup(null);
-  };
-
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>
@@ -257,16 +234,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     border: '1px solid #e5e7eb',
                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
                     overflow: 'hidden',
-                    marginBottom: '2rem',
-                    opacity: draggedGroup === group.teacher ? 0.5 : 1,
-                    transition: 'opacity 0.2s ease',
-                    cursor: isAdminMode ? 'grab' : 'default'
+                    marginBottom: '2rem'
                   }}
-                  draggable={isAdminMode && !!group.teacher}
-                  onDragStart={(e) => handleDragStartGroup(e, group.teacher)}
-                  onDragOver={handleDragOverGroup}
-                  onDrop={(e) => handleDropGroup(e, group.teacher)}
-                  onDragEnd={() => setDraggedGroup(null)}
                 >
                   {/* Clean and Small but Noticeable Column Headers (With Integrated Teacher Name in All Caps) */}
                   <div style={{
@@ -304,10 +273,41 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         return (
                           <div 
                             className="table-actions-dropdown-container" 
-                            style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
-                            onMouseEnter={() => setOpenDropdownId(dropdownId)}
-                            onMouseLeave={() => setOpenDropdownId(null)}
+                            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                           >
+                            {isAdminMode && group.teacher && (
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onMoveTeacherTable && onMoveTeacherTable(group.teacher, 'up'); }}
+                                  title="Yuqoriga"
+                                  style={{
+                                    background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer',
+                                    padding: '0', margin: '0', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.color = '#334155'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; }}
+                                >
+                                  <ChevronUp size={16} />
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); onMoveTeacherTable && onMoveTeacherTable(group.teacher, 'down'); }}
+                                  title="Pastga"
+                                  style={{
+                                    background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer',
+                                    padding: '0', margin: '0', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.color = '#334155'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; }}
+                                >
+                                  <ChevronDown size={16} />
+                                </button>
+                              </div>
+                            )}
+                            <div
+                              onMouseEnter={() => setOpenDropdownId(dropdownId)}
+                              onMouseLeave={() => setOpenDropdownId(null)}
+                              style={{ display: 'flex' }}
+                            >
                             <button 
                               onClick={() => setOpenDropdownId(isOpen ? null : dropdownId)}
                               style={{
@@ -443,6 +443,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                   </button>
                                 )}
                               </div>
+                            </div>
                             </div>
                           </div>
                         );

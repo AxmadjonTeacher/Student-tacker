@@ -619,7 +619,7 @@ function App() {
     );
   };
 
-  const handleMoveTeacherTable = async (sourceTeacherName: string, targetTeacherName: string) => {
+  const handleMoveTeacherTable = async (sourceTeacherName: string, direction: 'up' | 'down') => {
     // Determine the unique teachers in the current class for the active subject
     const groupsMap: { [teacher: string]: number } = {};
     filteredStudents.forEach(s => {
@@ -636,13 +636,19 @@ function App() {
     });
 
     const sourceIdx = uniqueTeachers.indexOf(sourceTeacherName);
-    const targetIdx = uniqueTeachers.indexOf(targetTeacherName);
+    if (sourceIdx === -1) return;
 
-    if (sourceIdx === -1 || targetIdx === -1) return;
+    const targetIdx = direction === 'up' ? sourceIdx - 1 : sourceIdx + 1;
+    
+    // Check bounds
+    if (targetIdx < 0 || targetIdx >= uniqueTeachers.length) return;
+    // Don't swap with the "unassigned" teacher empty string if it is explicitly kept at the end
+    if (uniqueTeachers[targetIdx] === '') return;
 
-    // Reorder array
-    const [moved] = uniqueTeachers.splice(sourceIdx, 1);
-    uniqueTeachers.splice(targetIdx, 0, moved);
+    // Swap elements
+    const temp = uniqueTeachers[sourceIdx];
+    uniqueTeachers[sourceIdx] = uniqueTeachers[targetIdx];
+    uniqueTeachers[targetIdx] = temp;
 
     // Now uniquely assign an order based on the new array index
     const field = activeSubject === 'MATH' ? 'math_teacher_order' : 'teacher_order';
