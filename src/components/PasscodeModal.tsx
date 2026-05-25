@@ -4,7 +4,7 @@ import { X, Lock, KeyRound } from 'lucide-react';
 interface PasscodeModalProps {
   onClose: () => void;
   onSuccess: () => void;
-  activeSubject: 'ENG' | 'MATH';
+  activeSubject: 'ENG' | 'MATH' | 'ALL';
 }
 
 const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activeSubject }) => {
@@ -14,7 +14,8 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isMath = activeSubject === 'MATH';
-  const activeThemeColor = isMath ? '#0d9488' : '#166534';
+  const isAll = activeSubject === 'ALL';
+  const activeThemeColor = isMath ? '#0d9488' : isAll ? '#4f46e5' : '#166534';
 
   useEffect(() => {
     // Autofocus input on open

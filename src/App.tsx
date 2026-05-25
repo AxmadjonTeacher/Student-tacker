@@ -44,7 +44,7 @@ export const getClassGroup = (clsName: string): string => {
 
 function App() {
   const [students, setStudents] = useState<Student[]>([]);
-  const [activeSubject, setActiveSubject] = useState<'ENG' | 'MATH'>('ENG');
+  const [activeSubject, setActiveSubject] = useState<'ENG' | 'MATH' | 'ALL'>('ENG');
   const [loading, setLoading] = useState(true);
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
   const [searchTerm, setSearchTerm] = useState('');
@@ -194,12 +194,16 @@ function App() {
     }
   }, [students, loading]);
 
-  // Dynamic theme colors: English = Dark Green, Math = Teal
+  // Dynamic theme colors: English = Dark Green, Math = Teal, All = Indigo
   useEffect(() => {
     if (activeSubject === 'MATH') {
       document.documentElement.style.setProperty('--accent-primary', '#0d9488'); // Teal
       document.documentElement.style.setProperty('--accent-hover', '#0f766e');
       document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #0d9488, #0f766e)');
+    } else if (activeSubject === 'ALL') {
+      document.documentElement.style.setProperty('--accent-primary', '#4f46e5'); // Premium Indigo
+      document.documentElement.style.setProperty('--accent-hover', '#4338ca');
+      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #4f46e5, #4338ca)');
     } else {
       document.documentElement.style.setProperty('--accent-primary', '#166534'); // Premium Dark Green
       document.documentElement.style.setProperty('--accent-hover', '#14532d');
@@ -229,14 +233,42 @@ function App() {
           grandTests: newS.grandTests || existing.grandTests,
           mathGrandTests: newS.mathGrandTests || existing.mathGrandTests,
           teacher: newS.teacher || existing.teacher,
-          mathTeacher: newS.mathTeacher || existing.mathTeacher
+          mathTeacher: newS.mathTeacher || existing.mathTeacher,
+          engScore: newS.engScore !== undefined ? newS.engScore : existing.engScore,
+          mathScore: newS.mathScore !== undefined ? newS.mathScore : existing.mathScore,
+          attendance: newS.attendance !== undefined ? newS.attendance : existing.attendance,
+          homework: newS.homework !== undefined ? newS.homework : existing.homework
         };
         localUpdatedList[matchIndex] = merged;
         upsertedStudents.push(merged);
       } else {
+        let inheritedEngOrder = 0;
+        if (newS.teacher) {
+          const engStudent = localUpdatedList.find(s => 
+            getClassGroup(s.className.toUpperCase()) === getClassGroup(newS.className.toUpperCase()) &&
+            s.teacher?.trim() === newS.teacher?.trim()
+          );
+          if (engStudent) inheritedEngOrder = engStudent.teacherOrder || 0;
+        }
+
+        let inheritedMathOrder = 0;
+        if (newS.mathTeacher) {
+          const mathStudent = localUpdatedList.find(s => 
+            getClassGroup(s.className.toUpperCase()) === getClassGroup(newS.className.toUpperCase()) &&
+            s.mathTeacher?.trim() === newS.mathTeacher?.trim()
+          );
+          if (mathStudent) inheritedMathOrder = mathStudent.mathTeacherOrder || 0;
+        }
+
         const brandNew: Student = {
           ...newS,
-          orderIndex: localUpdatedList.length
+          orderIndex: localUpdatedList.length,
+          teacherOrder: inheritedEngOrder,
+          mathTeacherOrder: inheritedMathOrder,
+          engScore: newS.engScore !== undefined ? newS.engScore : 0,
+          mathScore: newS.mathScore !== undefined ? newS.mathScore : 0,
+          attendance: newS.attendance !== undefined ? newS.attendance : 1,
+          homework: newS.homework !== undefined ? newS.homework : 1
         };
         localUpdatedList.push(brandNew);
         upsertedStudents.push(brandNew);
@@ -292,7 +324,11 @@ function App() {
       mathTeacher: studentData.mathTeacher,
       orderIndex: students.length,
       teacherOrder: inheritedEngOrder,
-      mathTeacherOrder: inheritedMathOrder
+      mathTeacherOrder: inheritedMathOrder,
+      engScore: studentData.engScore !== undefined ? studentData.engScore : 0,
+      mathScore: studentData.mathScore !== undefined ? studentData.mathScore : 0,
+      attendance: studentData.attendance !== undefined ? studentData.attendance : 1,
+      homework: studentData.homework !== undefined ? studentData.homework : 1
     };
 
     setStudents(prev => [...prev, brandNew]);
@@ -427,6 +463,12 @@ function App() {
           grandTests: student.mathGrandTests || [],
           teacherOrder: student.mathTeacherOrder || 0
         };
+      } else if (activeSubject === 'ALL') {
+        return {
+          ...studentWithEng,
+          teacher: '',
+          teacherOrder: 0
+        };
       }
       return {
         ...studentWithEng,
@@ -451,7 +493,11 @@ function App() {
     grandTests: { name: string; score: number }[],
     newName?: string,
     newSurname?: string,
-    newClassName?: string
+    newClassName?: string,
+    engScore?: number,
+    mathScore?: number,
+    attendance?: number,
+    homework?: number
   ) => {
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
@@ -459,7 +505,11 @@ function App() {
           ...s,
           name: newName !== undefined ? newName : s.name,
           surname: newSurname !== undefined ? newSurname : s.surname,
-          className: newClassName !== undefined ? newClassName : s.className
+          className: newClassName !== undefined ? newClassName : s.className,
+          engScore: engScore !== undefined ? engScore : s.engScore,
+          mathScore: mathScore !== undefined ? mathScore : s.mathScore,
+          attendance: attendance !== undefined ? attendance : s.attendance,
+          homework: homework !== undefined ? homework : s.homework
         };
 
         if (activeSubject === 'MATH') {
@@ -469,34 +519,43 @@ function App() {
             mathCurrentLevel: currentLevel,
             mathGrandTests: grandTests
           };
-        } else {
+        } else if (activeSubject === 'ENG') {
           return {
             ...updatedBase,
             startingLevel: startingLevel,
             currentLevel: currentLevel,
             grandTests: grandTests
           };
+        } else {
+          return updatedBase;
         }
       }
       return s;
     }));
 
     try {
-      const updatePayload: any = activeSubject === 'MATH'
-        ? {
-            math_starting_level: startingLevel,
-            math_current_level: currentLevel,
-            math_grand_tests: grandTests
-          }
-        : {
-            starting_level: startingLevel,
-            current_level: currentLevel,
-            grand_tests: grandTests
-          };
+      let updatePayload: any = {};
+      if (activeSubject === 'MATH') {
+        updatePayload = {
+          math_starting_level: startingLevel,
+          math_current_level: currentLevel,
+          math_grand_tests: grandTests
+        };
+      } else if (activeSubject === 'ENG') {
+        updatePayload = {
+          starting_level: startingLevel,
+          current_level: currentLevel,
+          grand_tests: grandTests
+        };
+      }
 
       if (newName !== undefined) updatePayload.name = newName;
       if (newSurname !== undefined) updatePayload.surname = newSurname;
       if (newClassName !== undefined) updatePayload.class_name = newClassName;
+      if (engScore !== undefined) updatePayload.eng_score = engScore;
+      if (mathScore !== undefined) updatePayload.math_score = mathScore;
+      if (attendance !== undefined) updatePayload.attendance = attendance;
+      if (homework !== undefined) updatePayload.homework = homework;
 
       const { error } = await supabase
         .from('Students')
@@ -738,7 +797,7 @@ function App() {
     // Build update payload for Supabase and update local state simultaneously
     const updates: any[] = [];
     
-    setStudents(prev => prev.map(s => {
+    const updatedStudents = students.map(s => {
       if (getClassGroup(s.className.toUpperCase()) !== activeClass) return s;
       const t = (activeSubject === 'MATH' ? s.mathTeacher : s.teacher)?.trim() || '';
       const newOrder = uniqueTeachers.indexOf(t) !== -1 ? uniqueTeachers.indexOf(t) : 0;
@@ -755,7 +814,9 @@ function App() {
         ...s,
         [localField]: newOrder
       };
-    }));
+    });
+
+    setStudents(updatedStudents);
 
     if (updates.length > 0) {
       try {

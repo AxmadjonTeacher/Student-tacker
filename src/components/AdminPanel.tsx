@@ -11,7 +11,7 @@ interface AdminPanelProps {
   onDeleteStudent: (id: string) => void;
   onBulkDeleteClass: () => void;
   onAddStudent: (studentData: Partial<Student>) => void;
-  activeSubject: 'ENG' | 'MATH';
+  activeSubject: 'ENG' | 'MATH' | 'ALL';
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStudentsUploaded, onBulkDeleteClass, onAddStudent, activeSubject }) => {
@@ -136,6 +136,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
               finalEngTests = undefined;
             }
 
+            // Parse raw scores, attendance, homework for ALL mode
+            const rawEngScore = row['Eng score'] || row['English score'] || row['eng_score'] || row['eng score'] || '';
+            const engScore = rawEngScore !== '' ? Math.min(15, Math.max(0, parseInt(rawEngScore) || 0)) : 0;
+
+            const rawMathScore = row['Math score'] || row['math_score'] || row['math score'] || '';
+            const mathScore = rawMathScore !== '' ? Math.min(15, Math.max(0, parseInt(rawMathScore) || 0)) : 0;
+
+            const rawAttendance = row['Attendance'] || row['attendance'] || '';
+            const attendance = rawAttendance !== '' ? parseInt(rawAttendance) || 1 : 1;
+
+            const rawHomework = row['Homework'] || row['homework'] || '';
+            const homework = rawHomework !== '' ? parseInt(rawHomework) || 1 : 1;
+
             return {
               id: Math.random().toString(36).substr(2, 9),
               name,
@@ -162,6 +175,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
               mathStartingLevel: finalMathStarting,
               mathCurrentLevel: finalMathCurrent,
               mathGrandTests: finalMathTests,
+              engScore,
+              mathScore,
+              attendance,
+              homework,
             };
           })
           .filter((s: Student) => s.name.trim() !== '' || s.surname.trim() !== '');
@@ -184,6 +201,46 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ students, activeClass, onStuden
   };
 
   const downloadTemplate = () => {
+    if (activeSubject === 'ALL') {
+      const headers = [
+        "O'quvchining ismi va familiyasi",
+        "sinf",
+        "Eng score",
+        "Math score",
+        "Attendance",
+        "Homework"
+      ].join(",");
+
+      const row1 = [
+        "Yodgorov Axmadjon",
+        "5A",
+        "14",
+        "11",
+        "1",
+        "1"
+      ].join(",");
+
+      const row2 = [
+        "Salohiddinov Otabek",
+        "5B",
+        "8",
+        "10",
+        "-1",
+        "-2"
+      ].join(",");
+
+      const csvContent = headers + "\n" + row1 + "\n" + row2;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "o_quvchilar_all_namuna.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
     const headers = [
       "O'quvchining ismi va familiyasi",
       "sinf",

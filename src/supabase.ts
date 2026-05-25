@@ -24,7 +24,11 @@ export const mapDbToStudent = (db: any): Student => ({
   mathStartingLevel: db.math_starting_level || undefined,
   mathCurrentLevel: db.math_current_level || undefined,
   mathGrandTests: db.math_grand_tests || undefined,
-  mathTeacherOrder: db.math_teacher_order !== null && db.math_teacher_order !== undefined ? Number(db.math_teacher_order) : 0
+  mathTeacherOrder: db.math_teacher_order !== null && db.math_teacher_order !== undefined ? Number(db.math_teacher_order) : 0,
+  engScore: db.eng_score !== null && db.eng_score !== undefined ? Number(db.eng_score) : 0,
+  mathScore: db.math_score !== null && db.math_score !== undefined ? Number(db.math_score) : 0,
+  attendance: db.attendance !== null && db.attendance !== undefined ? Number(db.attendance) : 1,
+  homework: db.homework !== null && db.homework !== undefined ? Number(db.homework) : 1
 });
 
 export const mapStudentToDb = (student: Student) => ({
@@ -44,5 +48,9 @@ export const mapStudentToDb = (student: Student) => ({
   math_starting_level: student.mathStartingLevel || null,
   math_current_level: student.mathCurrentLevel || null,
   math_grand_tests: student.mathGrandTests || null,
-  math_teacher_order: student.mathTeacherOrder !== undefined ? student.mathTeacherOrder : 0
+  math_teacher_order: student.mathTeacherOrder !== undefined ? student.mathTeacherOrder : 0,
+  eng_score: student.engScore !== undefined ? student.engScore : 0,
+  math_score: student.mathScore !== undefined ? student.mathScore : 0,
+  attendance: student.attendance !== undefined ? student.attendance : 1,
+  homework: student.homework !== undefined ? student.homework : 1
 });

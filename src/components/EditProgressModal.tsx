@@ -11,9 +11,13 @@ interface EditProgressModalProps {
     grandTests: { name: string; score: number }[],
     newName?: string,
     newSurname?: string,
-    newClassName?: string
+    newClassName?: string,
+    engScore?: number,
+    mathScore?: number,
+    attendance?: number,
+    homework?: number
   ) => void;
-  activeSubject: 'ENG' | 'MATH';
+  activeSubject: 'ENG' | 'MATH' | 'ALL';
 }
 
 const EditProgressModal: React.FC<EditProgressModalProps> = ({ 
@@ -23,12 +27,19 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   activeSubject 
 }) => {
   const isMath = activeSubject === 'MATH';
-  const subjectName = isMath ? 'Matematika' : 'Ingliz tili';
-  const activeThemeColor = isMath ? '#0d9488' : '#166534';
+  const isAll = activeSubject === 'ALL';
+  const subjectName = isMath ? 'Matematika' : isAll ? 'Barcha natijalar' : 'Ingliz tili';
+  const activeThemeColor = isMath ? '#0d9488' : isAll ? '#4f46e5' : '#166534';
 
   const [name, setName] = useState(student.name);
   const [surname, setSurname] = useState(student.surname);
   const [className, setClassName] = useState(student.className);
+
+  // ALL subject fields
+  const [engScore, setEngScore] = useState(student.engScore?.toString() || '0');
+  const [mathScore, setMathScore] = useState(student.mathScore?.toString() || '0');
+  const [attendance, setAttendance] = useState(student.attendance?.toString() || '1');
+  const [homework, setHomework] = useState(student.homework?.toString() || '1');
 
   // Get initial values from student based on selected subject
   const initialStartingLevel = isMath 
@@ -61,14 +72,29 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const grandTestsArray = [
-      { name: 'Grant 1', score: Math.min(100, Math.max(0, parseInt(grant1) || 0)) },
-      { name: 'Grant 2', score: Math.min(100, Math.max(0, parseInt(grant2) || 0)) },
-      { name: 'Grant 3', score: Math.min(100, Math.max(0, parseInt(grant3) || 0)) },
-      { name: 'Grant 4', score: Math.min(100, Math.max(0, parseInt(grant4) || 0)) },
-    ].filter(t => t.score > 0 || grant1 || grant2 || grant3 || grant4); // keep if entered
+    if (isAll) {
+      onSave(
+        '',
+        '',
+        [],
+        name.trim(),
+        surname.trim(),
+        className.trim(),
+        Math.min(15, Math.max(0, parseInt(engScore) || 0)),
+        Math.min(15, Math.max(0, parseInt(mathScore) || 0)),
+        parseInt(attendance) || 1,
+        parseInt(homework) || 1
+      );
+    } else {
+      const grandTestsArray = [
+        { name: 'Grant 1', score: Math.min(100, Math.max(0, parseInt(grant1) || 0)) },
+        { name: 'Grant 2', score: Math.min(100, Math.max(0, parseInt(grant2) || 0)) },
+        { name: 'Grant 3', score: Math.min(100, Math.max(0, parseInt(grant3) || 0)) },
+        { name: 'Grant 4', score: Math.min(100, Math.max(0, parseInt(grant4) || 0)) },
+      ].filter(t => t.score > 0 || grant1 || grant2 || grant3 || grant4); // keep if entered
 
-    onSave(startingLevel, currentLevel, grandTestsArray, name.trim(), surname.trim(), className.trim());
+      onSave(startingLevel, currentLevel, grandTestsArray, name.trim(), surname.trim(), className.trim());
+    }
   };
 
   const levelOptions = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6'];
@@ -113,7 +139,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             O'quvchini tahrirlash
           </h2>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: activeThemeColor, fontWeight: 700, letterSpacing: '0.05em' }}>
-            {subjectName.toUpperCase()} MULTIMEDIA TARIXI
+            {subjectName.toUpperCase()} MA'LUMOTLARI
           </p>
         </div>
 
@@ -171,156 +197,244 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             />
           </div>
 
-          {/* Starting Level selection */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-              BOSHLANG'ICH DARAJA
-            </label>
-            <select 
-              value={startingLevel}
-              onChange={(e) => setStartingLevel(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                border: '1.5px solid #e2e8f0',
-                borderRadius: '12px',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                color: '#1e293b',
-                background: '#ffffff',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              {levelOptions.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Current Level selection */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-              HOZIRGI DARAJA
-            </label>
-            <select 
-              value={currentLevel}
-              onChange={(e) => setCurrentLevel(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                border: '1.5px solid #e2e8f0',
-                borderRadius: '12px',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                color: '#1e293b',
-                background: '#ffffff',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              {levelOptions.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Test Scores */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
-              CHORAK NATIJALARI (%)
-            </label>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>1-Chorak</label>
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="100"
-                  placeholder="Foiz (masalan: 75)"
-                  value={grant1}
-                  onChange={(e) => setGrant1(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 0.85rem',
-                    border: '1.5px solid #e2e8f0',
-                    borderRadius: '10px',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    outline: 'none',
-                    color: '#1e293b'
-                  }}
-                />
+          {isAll ? (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                    ENG SCORE (0-15) *
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    max="15"
+                    value={engScore}
+                    onChange={e => setEngScore(e.target.value)}
+                    required
+                    style={{
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                    MATH SCORE (0-15) *
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    max="15"
+                    value={mathScore}
+                    onChange={e => setMathScore(e.target.value)}
+                    required
+                    style={{
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                    }}
+                  />
+                </div>
               </div>
 
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                    ATTENDANCE (1, -1, -2...) *
+                  </label>
+                  <input 
+                    type="number" 
+                    max="1"
+                    value={attendance}
+                    onChange={e => setAttendance(e.target.value)}
+                    required
+                    style={{
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                    }}
+                  />
+                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.35rem', lineHeight: 1.3 }}>
+                    1 = 100% · -1 = 83.3% · -2 = 66.7%
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                    HOMEWORK (1, -1, -2...) *
+                  </label>
+                  <input 
+                    type="number" 
+                    max="1"
+                    value={homework}
+                    onChange={e => setHomework(e.target.value)}
+                    required
+                    style={{
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                    }}
+                  />
+                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.35rem', lineHeight: 1.3 }}>
+                    1 = 100% · -1 = 80.0% · -2 = 60.0%
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Starting Level selection */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>2-Chorak</label>
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="100"
-                  placeholder="Foiz (masalan: 80)"
-                  value={grant2}
-                  onChange={(e) => setGrant2(e.target.value)}
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  BOSHLANG'ICH DARAJA
+                </label>
+                <select 
+                  value={startingLevel}
+                  onChange={(e) => setStartingLevel(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '0.65rem 0.85rem',
+                    padding: '0.75rem 1rem',
                     border: '1.5px solid #e2e8f0',
-                    borderRadius: '10px',
-                    fontSize: '0.85rem',
+                    borderRadius: '12px',
+                    fontSize: '0.9rem',
                     fontWeight: 600,
+                    color: '#1e293b',
+                    background: '#ffffff',
                     outline: 'none',
-                    color: '#1e293b'
+                    cursor: 'pointer'
                   }}
-                />
+                >
+                  {levelOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
+              {/* Current Level selection */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>3-Chorak</label>
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="100"
-                  placeholder="Foiz (masalan: 85)"
-                  value={grant3}
-                  onChange={(e) => setGrant3(e.target.value)}
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  HOZIRGI DARAJA
+                </label>
+                <select 
+                  value={currentLevel}
+                  onChange={(e) => setCurrentLevel(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '0.65rem 0.85rem',
+                    padding: '0.75rem 1rem',
                     border: '1.5px solid #e2e8f0',
-                    borderRadius: '10px',
-                    fontSize: '0.85rem',
+                    borderRadius: '12px',
+                    fontSize: '0.9rem',
                     fontWeight: 600,
+                    color: '#1e293b',
+                    background: '#ffffff',
                     outline: 'none',
-                    color: '#1e293b'
+                    cursor: 'pointer'
                   }}
-                />
+                >
+                  {levelOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
+              {/* Test Scores */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>4-Chorak</label>
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="100"
-                  placeholder="Foiz (masalan: 90)"
-                  value={grant4}
-                  onChange={(e) => setGrant4(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 0.85rem',
-                    border: '1.5px solid #e2e8f0',
-                    borderRadius: '10px',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    outline: 'none',
-                    color: '#1e293b'
-                  }}
-                />
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
+                  CHORAK NATIJALARI (%)
+                </label>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>1-Chorak</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="100"
+                      placeholder="Foiz (masalan: 75)"
+                      value={grant1}
+                      onChange={(e) => setGrant1(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        border: '1.5px solid #e2e8f0',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        outline: 'none',
+                        color: '#1e293b'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>2-Chorak</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="100"
+                      placeholder="Foiz (masalan: 80)"
+                      value={grant2}
+                      onChange={(e) => setGrant2(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        border: '1.5px solid #e2e8f0',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        outline: 'none',
+                        color: '#1e293b'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>3-Chorak</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="100"
+                      placeholder="Foiz (masalan: 85)"
+                      value={grant3}
+                      onChange={(e) => setGrant3(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        border: '1.5px solid #e2e8f0',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        outline: 'none',
+                        color: '#1e293b'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>4-Chorak</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="100"
+                      placeholder="Foiz (masalan: 90)"
+                      value={grant4}
+                      onChange={(e) => setGrant4(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        border: '1.5px solid #e2e8f0',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        outline: 'none',
+                        color: '#1e293b'
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           <button 
             type="submit"

@@ -6,7 +6,7 @@ interface AddStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddStudent: (studentData: Partial<Student>) => void;
-  activeSubject: 'ENG' | 'MATH';
+  activeSubject: 'ENG' | 'MATH' | 'ALL';
 }
 
 const LEVELS = [
@@ -39,12 +39,21 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
       studentData.mathTeacher = teacher.trim();
       studentData.startingLevel = 'Level 1';
       studentData.currentLevel = 'Level 1';
-    } else {
+    } else if (activeSubject === 'ENG') {
       studentData.startingLevel = startingLevel;
       studentData.currentLevel = currentLevel;
       studentData.teacher = teacher.trim();
       studentData.mathStartingLevel = 'Level 1';
       studentData.mathCurrentLevel = 'Level 1';
+    } else {
+      studentData.startingLevel = 'Level 1';
+      studentData.currentLevel = 'Level 1';
+      studentData.mathStartingLevel = 'Level 1';
+      studentData.mathCurrentLevel = 'Level 1';
+      studentData.engScore = 0;
+      studentData.mathScore = 0;
+      studentData.attendance = 1;
+      studentData.homework = 1;
     }
 
     onAddStudent(studentData);

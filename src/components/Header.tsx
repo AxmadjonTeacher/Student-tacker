@@ -10,8 +10,8 @@ interface HeaderProps {
   onSearchChange: (term: string) => void;
   isAdminMode: boolean;
   onToggleAdmin: () => void;
-  activeSubject: 'ENG' | 'MATH';
-  onSubjectChange: (subj: 'ENG' | 'MATH') => void;
+  activeSubject: 'ENG' | 'MATH' | 'ALL';
+  onSubjectChange: (subj: 'ENG' | 'MATH' | 'ALL') => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -64,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({
             onClick={onToggleAdmin}
             title={isAdminMode ? "Admin panelini yopish" : "Admin panelini ochish"}
             style={{
-              background: isAdminMode ? '#0d9488' : '#ffffff',
+              background: isAdminMode ? 'var(--accent-primary)' : '#ffffff',
               color: isAdminMode ? '#ffffff' : '#475569',
               border: '1.5px solid #e2e8f0',
               borderRadius: '50%',
@@ -80,8 +80,8 @@ const Header: React.FC<HeaderProps> = ({
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.08)';
-              e.currentTarget.style.borderColor = '#0d9488';
-              if (!isAdminMode) e.currentTarget.style.color = '#0d9488';
+              e.currentTarget.style.borderColor = 'var(--accent-primary)';
+              if (!isAdminMode) e.currentTarget.style.color = 'var(--accent-primary)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
@@ -92,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({
             {isAdminMode ? <X size={18} /> : <Settings size={18} />}
           </button>
 
-          {/* Subject Switcher (ENG / MATH) */}
+          {/* Subject Switcher (ENG / MATH / ALL) */}
           <div style={{
             display: 'flex',
             background: '#ffffff',
@@ -108,7 +108,7 @@ const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => onSubjectChange('ENG')}
               style={{
-                background: activeSubject === 'ENG' ? '#0d9488' : 'transparent',
+                background: activeSubject === 'ENG' ? 'var(--accent-primary)' : 'transparent',
                 color: activeSubject === 'ENG' ? '#ffffff' : '#64748b',
                 border: 'none',
                 borderRadius: '9999px',
@@ -129,7 +129,7 @@ const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => onSubjectChange('MATH')}
               style={{
-                background: activeSubject === 'MATH' ? '#0d9488' : 'transparent',
+                background: activeSubject === 'MATH' ? 'var(--accent-primary)' : 'transparent',
                 color: activeSubject === 'MATH' ? '#ffffff' : '#64748b',
                 border: 'none',
                 borderRadius: '9999px',
@@ -146,6 +146,27 @@ const Header: React.FC<HeaderProps> = ({
               }}
             >
               MATH
+            </button>
+            <button
+              onClick={() => onSubjectChange('ALL')}
+              style={{
+                background: activeSubject === 'ALL' ? 'var(--accent-primary)' : 'transparent',
+                color: activeSubject === 'ALL' ? '#ffffff' : '#64748b',
+                border: 'none',
+                borderRadius: '9999px',
+                padding: '0.35rem 0.85rem',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                letterSpacing: '0.05em'
+              }}
+            >
+              ALL
             </button>
           </div>
         </div>
