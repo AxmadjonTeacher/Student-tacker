@@ -430,20 +430,30 @@ function App() {
     studentId: string, 
     startingLevel: string, 
     currentLevel: string, 
-    grandTests: { name: string; score: number }[]
+    grandTests: { name: string; score: number }[],
+    newName?: string,
+    newSurname?: string,
+    newClassName?: string
   ) => {
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
+        const updatedBase = {
+          ...s,
+          name: newName !== undefined ? newName : s.name,
+          surname: newSurname !== undefined ? newSurname : s.surname,
+          className: newClassName !== undefined ? newClassName : s.className
+        };
+
         if (activeSubject === 'MATH') {
           return {
-            ...s,
+            ...updatedBase,
             mathStartingLevel: startingLevel,
             mathCurrentLevel: currentLevel,
             mathGrandTests: grandTests
           };
         } else {
           return {
-            ...s,
+            ...updatedBase,
             startingLevel: startingLevel,
             currentLevel: currentLevel,
             grandTests: grandTests
@@ -454,7 +464,7 @@ function App() {
     }));
 
     try {
-      const updatePayload = activeSubject === 'MATH'
+      const updatePayload: any = activeSubject === 'MATH'
         ? {
             math_starting_level: startingLevel,
             math_current_level: currentLevel,
@@ -465,6 +475,10 @@ function App() {
             current_level: currentLevel,
             grand_tests: grandTests
           };
+
+      if (newName !== undefined) updatePayload.name = newName;
+      if (newSurname !== undefined) updatePayload.surname = newSurname;
+      if (newClassName !== undefined) updatePayload.class_name = newClassName;
 
       const { error } = await supabase
         .from('Students')

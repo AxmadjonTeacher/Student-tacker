@@ -17,7 +17,10 @@ interface StudentTableProps {
     studentId: string,
     startingLevel: string,
     currentLevel: string,
-    grandTests: { name: string; score: number }[]
+    grandTests: { name: string; score: number }[],
+    newName?: string,
+    newSurname?: string,
+    newClassName?: string
   ) => void;
   onRenameTeacherTable?: (oldName: string) => void;
   onDeleteTeacherTable?: (teacherName: string) => void;

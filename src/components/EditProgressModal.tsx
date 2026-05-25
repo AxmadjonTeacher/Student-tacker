@@ -8,7 +8,10 @@ interface EditProgressModalProps {
   onSave: (
     startingLevel: string,
     currentLevel: string,
-    grandTests: { name: string; score: number }[]
+    grandTests: { name: string; score: number }[],
+    newName?: string,
+    newSurname?: string,
+    newClassName?: string
   ) => void;
   activeSubject: 'ENG' | 'MATH';
 }
@@ -22,6 +25,10 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const isMath = activeSubject === 'MATH';
   const subjectName = isMath ? 'Matematika' : 'Ingliz tili';
   const activeThemeColor = isMath ? '#0d9488' : '#166534';
+
+  const [name, setName] = useState(student.name);
+  const [surname, setSurname] = useState(student.surname);
+  const [className, setClassName] = useState(student.className);
 
   // Get initial values from student based on selected subject
   const initialStartingLevel = isMath 
@@ -61,7 +68,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
       { name: 'Grant 4', score: Math.min(100, Math.max(0, parseInt(grant4) || 0)) },
     ].filter(t => t.score > 0 || grant1 || grant2 || grant3 || grant4); // keep if entered
 
-    onSave(startingLevel, currentLevel, grandTestsArray);
+    onSave(startingLevel, currentLevel, grandTestsArray, name.trim(), surname.trim(), className.trim());
   };
 
   const levelOptions = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6'];
@@ -103,7 +110,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
           </button>
           
           <h2 style={{ fontSize: '1.3rem', fontWeight: 850, color: '#1e293b', margin: 0 }}>
-            {student.name} {student.surname}
+            O'quvchini tahrirlash
           </h2>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: activeThemeColor, fontWeight: 700, letterSpacing: '0.05em' }}>
             {subjectName.toUpperCase()} MULTIMEDIA TARIXI
@@ -111,6 +118,59 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
         </div>
 
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                ISM *
+              </label>
+              <input 
+                type="text" 
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                style={{
+                  width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                  borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                  color: '#1e293b', background: '#ffffff', outline: 'none'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                FAMILIYA *
+              </label>
+              <input 
+                type="text" 
+                value={surname}
+                onChange={e => setSurname(e.target.value)}
+                required
+                style={{
+                  width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                  borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                  color: '#1e293b', background: '#ffffff', outline: 'none'
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+              SINF / GURUH *
+            </label>
+            <input 
+              type="text" 
+              value={className}
+              onChange={e => setClassName(e.target.value)}
+              required
+              style={{
+                width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                color: '#1e293b', background: '#ffffff', outline: 'none'
+              }}
+            />
+          </div>
+
           {/* Starting Level selection */}
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
