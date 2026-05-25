@@ -700,15 +700,21 @@ function App() {
     const groupsMap: { [teacher: string]: number } = {};
     filteredStudents.forEach(s => {
       const teacher = s.teacher?.trim() || '';
+      const order = s.teacherOrder || 0;
       if (groupsMap[teacher] === undefined) {
-        groupsMap[teacher] = s.teacherOrder || 0;
+        groupsMap[teacher] = order;
+      } else {
+        groupsMap[teacher] = Math.max(groupsMap[teacher], order);
       }
     });
 
     const uniqueTeachers = Object.keys(groupsMap).sort((a, b) => {
       if (a === '') return 1;
       if (b === '') return -1;
-      return groupsMap[a] - groupsMap[b];
+      if (groupsMap[a] !== groupsMap[b]) {
+        return groupsMap[a] - groupsMap[b];
+      }
+      return a.localeCompare(b, 'uz');
     });
 
     const sourceIdx = uniqueTeachers.indexOf(sourceTeacherName);
