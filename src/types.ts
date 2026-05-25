@@ -28,6 +28,7 @@ export interface Student {
   mathScore?: number;
   attendance?: number;
   homework?: number;
+  isDeleted?: boolean;
 }
 
 export type ClassName = '5A' | '5B' | '6A' | '6B' | '7A' | '7B' | '8A' | '8B' | string;

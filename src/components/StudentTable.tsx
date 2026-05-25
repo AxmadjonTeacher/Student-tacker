@@ -29,6 +29,7 @@ interface StudentTableProps {
   onRenameTeacherTable?: (oldName: string) => void;
   onDeleteTeacherTable?: (teacherName: string) => void;
   onMoveTeacherTable?: (teacherName: string, direction: 'up' | 'down') => void;
+  studentWeeks?: any[];
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -42,7 +43,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onUpdateProgress,
   onRenameTeacherTable,
   onDeleteTeacherTable,
-  onMoveTeacherTable
+  onMoveTeacherTable,
+  studentWeeks = []
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -1046,6 +1048,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           student={selectedStudent} 
           onClose={() => setSelectedStudent(null)} 
           activeSubject={activeSubject}
+          studentWeeks={studentWeeks}
         />
       )}
 

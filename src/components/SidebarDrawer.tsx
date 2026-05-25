@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   UploadCloud, X, Download, Trash2, UserPlus, Settings,
   Calendar, AlertCircle, Tag, Image as ImageIcon, Plus, 
@@ -17,6 +17,9 @@ interface SidebarDrawerProps {
   isAdminMode: boolean;
   onToggleAdmin: () => void;
   students: Student[];
+  deletedStudents: Student[];
+  onRestoreStudent: (studentId: string) => void;
+  onPermanentDeleteStudent: (studentId: string) => void;
   activeClass: string;
   onStudentsUploaded: (students: Student[]) => void;
   onBulkDeleteClass: () => void;
@@ -31,13 +34,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   isAdminMode,
   onToggleAdmin,
   students,
+  deletedStudents,
+  onRestoreStudent,
+  onPermanentDeleteStudent,
   activeClass,
   onStudentsUploaded,
   onBulkDeleteClass,
   onAddStudent
 }) => {
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<'settings' | 'news'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'trash'>('settings');
 
   // CSV and Student Upload states
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
@@ -67,6 +73,17 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [isSubmittingNews, setIsSubmittingNews] = useState(false);
   const [newsType, setNewsType] = useState<'news' | 'event' | 'reminder'>('news');
   const newsImageInputRef = useRef<HTMLInputElement>(null);
+
+  // Group deleted students by class
+  const groupedDeleted = useMemo(() => {
+    const groups: Record<string, Student[]> = {};
+    deletedStudents.forEach(s => {
+      const cls = s.className || 'Boshqa';
+      if (!groups[cls]) groups[cls] = [];
+      groups[cls].push(s);
+    });
+    return groups;
+  }, [deletedStudents]);
 
   // Normalize level helper
   const normalizeLevel = (raw: string): string => {
@@ -607,6 +624,26 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           >
             News and Events
           </button>
+          {isAdminMode && (
+            <button
+              onClick={() => setActiveTab('trash')}
+              style={{
+                flex: 1,
+                background: activeTab === 'trash' ? '#ffffff' : 'transparent',
+                color: activeTab === 'trash' ? '#0f172a' : '#64748b',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.5rem',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: activeTab === 'trash' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              SAVAT ({deletedStudents.length})
+            </button>
+          )}
         </div>
 
         {/* Drawer Scrollable Content */}
@@ -1475,6 +1512,114 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 )}
               </div>
 
+            </div>
+          )}
+
+          {/* TAB 3: Trash / Savat */}
+          {activeTab === 'trash' && isAdminMode && (
+            <div style={{ animation: 'fadeIn 0.2s ease-out', marginTop: '0.5rem' }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '1rem' }}>
+                <Trash2 size={12} />
+                SAVATDAGI O'QUVCHILAR ({deletedStudents.length} ta)
+              </div>
+
+              {deletedStudents.length === 0 ? (
+                <div style={{ 
+                  textAlign: 'center', padding: '2.5rem 1rem', border: '1.5px dashed #cbd5e1', 
+                  borderRadius: '16px', color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.5 
+                }}>
+                  Savat bo'sh.<br />O'chirilgan o'quvchilar shu yerda paydo bo'ladi.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {Object.entries(groupedDeleted).map(([className, list]) => (
+                    <div key={className} style={{
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '16px',
+                      padding: '1rem',
+                      boxShadow: '0 2px 4px rgba(15, 23, 42, 0.01)'
+                    }}>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        color: 'var(--accent-primary)',
+                        borderBottom: '1px solid #f1f5f9',
+                        paddingBottom: '0.5rem',
+                        marginBottom: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}>
+                        {className} Guruhi ({list.length} ta)
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {list.map(s => (
+                          <div key={s.id} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.75rem',
+                            fontSize: '0.8rem'
+                          }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              <div style={{ fontWeight: 700, color: '#1e293b' }}>
+                                {s.name} {s.surname}
+                              </div>
+                              {(s.teacher || s.mathTeacher) && (
+                                <div style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                                  O'qituvchi: {s.teacher || s.mathTeacher}
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.35rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => onRestoreStudent(s.id)}
+                                style={{
+                                  background: '#f0fdf4',
+                                  color: '#166534',
+                                  border: '1px solid #bbf7d0',
+                                  borderRadius: '8px',
+                                  padding: '0.35rem 0.7rem',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
+                              >
+                                Tiklash
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onPermanentDeleteStudent(s.id)}
+                                style={{
+                                  background: '#fef2f2',
+                                  color: '#991b1b',
+                                  border: '1px solid #fecaca',
+                                  borderRadius: '8px',
+                                  padding: '0.35rem 0.7rem',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = '#fef2f2'; }}
+                              >
+                                O'chirish
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

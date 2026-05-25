@@ -441,18 +441,18 @@ function App() {
 
     showConfirm(
       "O'quvchini o'chirish",
-      `Haqiqatan ham ${fullName}ni sinfdan o'chirmoqchimisiz?`,
+      `Haqiqatan ham ${fullName}ni sinfdan o'chirmoqchimisiz? (O'quvchi savatga o'tkaziladi)`,
       true,
       async () => {
-        setStudents(prev => prev.filter(s => s.id !== studentId));
+        setStudents(prev => prev.map(s => s.id === studentId ? { ...s, isDeleted: true } : s));
         try {
           const { error } = await supabase
             .from('Students')
-            .delete()
+            .update({ is_deleted: true })
             .eq('id', studentId);
           if (error) throw error;
         } catch (err) {
-          console.error('Failed to delete student from Supabase:', err);
+          console.error('Failed to soft-delete student in Supabase:', err);
         }
       }
     );
@@ -469,18 +469,18 @@ function App() {
   const handleBulkDeleteClass = () => {
     showConfirm(
       "Sinfni tozalash",
-      `Haqiqatan ham ${activeClass} guruhidagi BARCHA o'quvchilarni o'chirmoqchimisiz? Ushbu amalni ortga qaytarib bo'lmaydi.`,
+      `Haqiqatan ham ${activeClass} guruhidagi BARCHA o'quvchilarni o'chirmoqchimisiz? (O'quvchilar savatga o'tkaziladi)`,
       true,
       async () => {
-        const studentsToDelete = students.filter(s => getClassGroup(s.className.toUpperCase()) === activeClass);
+        const studentsToDelete = students.filter(s => getClassGroup(s.className.toUpperCase()) === activeClass && !s.isDeleted);
         const idsToDelete = studentsToDelete.map(s => s.id);
 
-        setStudents(prev => prev.filter(s => getClassGroup(s.className.toUpperCase()) !== activeClass));
+        setStudents(prev => prev.map(s => idsToDelete.includes(s.id) ? { ...s, isDeleted: true } : s));
 
         try {
           const { error } = await supabase
             .from('Students')
-            .delete()
+            .update({ is_deleted: true })
             .in('id', idsToDelete);
           if (error) throw error;
         } catch (err) {
@@ -490,10 +490,31 @@ function App() {
     );
   };
 
+  const activeStudents = useMemo(() => {
+    return students.filter(s => !s.isDeleted);
+  }, [students]);
+
+  const deletedStudents = useMemo(() => {
+    return students.filter(s => s.isDeleted);
+  }, [students]);
+
+  const weeksList = useMemo(() => {
+    const weeksSet = new Set<string>();
+    studentWeeks.forEach(sw => {
+      if (sw.week) weeksSet.add(sw.week);
+    });
+    return Array.from(weeksSet).sort((a, b) => {
+      const numA = parseInt(a);
+      const numB = parseInt(b);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [studentWeeks]);
+
   const availableClasses = useMemo(() => {
     const groups = new Set([
       ...INITIAL_CLASSES,
-      ...students.map(s => getClassGroup(s.className.toUpperCase()))
+      ...activeStudents.map(s => getClassGroup(s.className.toUpperCase()))
     ]);
     return Array.from(groups).sort((a, b) => {
       const intA = parseInt(a);
@@ -501,12 +522,12 @@ function App() {
       if (!isNaN(intA) && !isNaN(intB)) return intA - intB;
       return a.localeCompare(b);
     });
-  }, [students]);
+  }, [activeStudents]);
 
   const classCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     availableClasses.forEach(cls => counts[cls] = 0);
-    students.forEach(s => {
+    activeStudents.forEach(s => {
       const group = getClassGroup(s.className.toUpperCase());
       if (counts[group] !== undefined) {
         counts[group]++;
@@ -515,11 +536,11 @@ function App() {
       }
     });
     return counts;
-  }, [students, availableClasses]);
+  }, [activeStudents, availableClasses]);
 
   // Dynamically project activeSubject properties to standard fields and apply selectedWeek time-travel data
   const projectedStudents = useMemo(() => {
-    return students.map(student => {
+    return activeStudents.map(student => {
       let startingLevel = student.startingLevel;
       let currentLevel = student.currentLevel;
       let grandTests = student.grandTests;
@@ -595,7 +616,7 @@ function App() {
         teacherOrder: student.teacherOrder || 0
       };
     });
-  }, [students, activeSubject, selectedWeek, studentWeeks]);
+  }, [activeStudents, activeSubject, selectedWeek, studentWeeks]);
 
   const filteredStudents = useMemo(() => {
     return projectedStudents.filter(s => {
@@ -903,6 +924,7 @@ function App() {
     const matchingStudents = students.filter(s => {
       const studentClassGroup = getClassGroup(s.className.toUpperCase());
       if (studentClassGroup !== activeClass) return false;
+      if (s.isDeleted) return false;
 
       const t = activeSubject === 'MATH' ? s.mathTeacher : s.teacher;
       return (t || '') === teacherName;
@@ -913,20 +935,151 @@ function App() {
     const teacherDisplay = teacherName || "O'qituvchi biriktirilmagan";
     showConfirm(
       "Jadvalni o'chirish",
-      `Haqiqatan ham "${teacherDisplay}" guruhidagi barcha (${matchingStudents.length} ta) o'quvchilarni o'chirmoqchimisiz?`,
+      `Haqiqatan ham "${teacherDisplay}" guruhidagi barcha (${matchingStudents.length} ta) o'quvchilarni o'chirmoqchimisiz? (O'quvchilar savatga o'tkaziladi)`,
       true,
       async () => {
         const idsToDelete = matchingStudents.map(s => s.id);
-        setStudents(prev => prev.filter(s => !idsToDelete.includes(s.id)));
+        setStudents(prev => prev.map(s => idsToDelete.includes(s.id) ? { ...s, isDeleted: true } : s));
 
         try {
           const { error } = await supabase
             .from('Students')
-            .delete()
+            .update({ is_deleted: true })
             .in('id', idsToDelete);
           if (error) throw error;
         } catch (err) {
-          console.error('Failed to delete teacher table students from Supabase:', err);
+          console.error('Failed to soft-delete teacher table students from Supabase:', err);
+        }
+      }
+    );
+  };
+
+  const handleRestoreStudent = async (studentId: string) => {
+    setStudents(prev => prev.map(s => s.id === studentId ? { ...s, isDeleted: false } : s));
+    try {
+      const { error } = await supabase
+        .from('Students')
+        .update({ is_deleted: false })
+        .eq('id', studentId);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to restore student in Supabase:', err);
+    }
+  };
+
+  const handlePermanentDeleteStudent = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    const fullName = student ? `${student.name} ${student.surname}` : "o'quvchi";
+
+    showConfirm(
+      "O'quvchini butunlay o'chirish",
+      `Haqiqatan ham ${fullName}ni butunlay o'chirib tashlamoqchimisiz? Ushbu amalni ortga qaytarib bo'lmaydi va uning barcha haftalik natijalari o'chib ketadi!`,
+      true,
+      async () => {
+        setStudents(prev => prev.filter(s => s.id !== studentId));
+        try {
+          await supabase
+            .from('student_weeks')
+            .delete()
+            .eq('student_id', studentId);
+
+          const { error } = await supabase
+            .from('Students')
+            .delete()
+            .eq('id', studentId);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed to permanently delete student in Supabase:', err);
+        }
+      }
+    );
+  };
+
+  const handleStartNewWeekClick = () => {
+    // Propose default week name based on max existing week
+    let nextWeekNum = 1;
+    weeksList.forEach(w => {
+      const num = parseInt(w);
+      if (!isNaN(num) && num >= nextWeekNum) {
+        nextWeekNum = num + 1;
+      }
+    });
+    const defaultWeekName = `${nextWeekNum}-Hafta`;
+
+    showPrompt(
+      "Yangi o'quv haftasini boshlash",
+      "Yangi haftaning nomini kiriting. Joriy barcha o'quvchilar ballari arxivlanadi va faol ballar nollashtiriladi:",
+      defaultWeekName,
+      "Hafta nomi (masalan: 12-Hafta)",
+      async (weekName) => {
+        const trimmed = weekName.trim();
+        if (!trimmed) return;
+
+        try {
+          // 1. Snapshot active students' current scores
+          const activeStudentsList = students.filter(s => !s.isDeleted);
+          if (activeStudentsList.length === 0) {
+            alert("Faol o'quvchilar mavjud emas!");
+            return;
+          }
+
+          const snapshotPayload = activeStudentsList.map(s => ({
+            student_id: s.id,
+            week: trimmed,
+            eng_score: s.engScore ?? 0,
+            math_score: s.mathScore ?? 0,
+            attendance: s.attendance ?? 1,
+            homework: s.homework ?? 1,
+            starting_level: s.startingLevel || 'Level 1',
+            current_level: s.currentLevel || 'Level 1',
+            grand_tests: s.grandTests || [],
+            math_starting_level: s.mathStartingLevel || 'Level 1',
+            math_current_level: s.mathCurrentLevel || 'Level 1',
+            math_grand_tests: s.mathGrandTests || []
+          }));
+
+          // 2. Upload snapshot
+          const { error: snapshotError } = await supabase
+            .from('student_weeks')
+            .upsert(snapshotPayload, { onConflict: 'student_id,week' });
+
+          if (snapshotError) throw snapshotError;
+
+          // 3. Reset scores in DB
+          const { error: resetError } = await supabase
+            .from('Students')
+            .update({
+              eng_score: 0,
+              math_score: 0,
+              attendance: 1,
+              homework: 1
+            })
+            .neq('id', '');
+
+          if (resetError) throw resetError;
+
+          // 4. Update local state
+          setStudents(prev => prev.map(s => s.isDeleted ? s : {
+            ...s,
+            engScore: 0,
+            mathScore: 0,
+            attendance: 1,
+            homework: 1
+          }));
+
+          // Refetch student weeks history to ensure sync
+          const { data: weekData, error: weekFetchError } = await supabase
+            .from('student_weeks')
+            .select('*');
+          if (!weekFetchError && weekData) {
+            setStudentWeeks(weekData);
+          }
+
+          setSelectedWeek('Hozirgi hafta');
+          alert(`"${trimmed}" muvaffaqiyatli boshlandi! Hamma ballar nollashtirildi.`);
+        } catch (err) {
+          console.error("Yangi haftani boshlashda xatolik:", err);
+          alert("Haftani arxivlashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
         }
       }
     );
@@ -1054,6 +1207,10 @@ function App() {
         onOpenDrawer={() => setIsDrawerOpen(true)}
         selectedWeek={selectedWeek}
         onWeekChange={setSelectedWeek}
+        activeSubject={activeSubject}
+        isAdminMode={isAdminMode}
+        weeksList={weeksList}
+        onStartNewWeekClick={handleStartNewWeekClick}
       />
 
       <StudentTable
@@ -1068,6 +1225,7 @@ function App() {
         onUpdateProgress={handleUpdateProgress}
         onRenameTeacherTable={handleRenameTeacherTable}
         onDeleteTeacherTable={handleDeleteTeacherTable}
+        studentWeeks={studentWeeks}
       />
 
       <SidebarDrawer
@@ -1077,7 +1235,10 @@ function App() {
         onSubjectChange={setActiveSubject}
         isAdminMode={isAdminMode}
         onToggleAdmin={handleToggleAdmin}
-        students={students}
+        students={activeStudents}
+        deletedStudents={deletedStudents}
+        onRestoreStudent={handleRestoreStudent}
+        onPermanentDeleteStudent={handlePermanentDeleteStudent}
         activeClass={activeClass}
         onStudentsUploaded={handleStudentsUploaded}
         onBulkDeleteClass={handleBulkDeleteClass}
