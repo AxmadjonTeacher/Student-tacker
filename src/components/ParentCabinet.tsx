@@ -153,6 +153,33 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
           }
         }
         @media (max-width: 500px) {
+          .cabinet-header {
+            padding: 0.75rem 1rem !important;
+          }
+          .cabinet-header-logo {
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 8px !important;
+          }
+          .cabinet-header-logo svg {
+            width: 18px !important;
+            height: 18px !important;
+          }
+          .cabinet-header-title {
+            font-size: 1rem !important;
+          }
+          .cabinet-header-subtitle {
+            font-size: 0.65rem !important;
+          }
+          .cabinet-header-btn {
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.75rem !important;
+            border-radius: 8px !important;
+          }
+          .cabinet-header-btn svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
           .cabinet-banner {
             flex-direction: column-reverse !important;
             align-items: center !important;
@@ -170,7 +197,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
       `}} />
 
       {/* Modern Symmetrical Header */}
-      <header style={{
+      <header className="cabinet-header" style={{
         background: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
         padding: '1.25rem 2rem',
@@ -183,7 +210,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
         zIndex: 100
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{
+          <div className="cabinet-header-logo" style={{
             width: '40px',
             height: '40px',
             borderRadius: '10px',
@@ -196,10 +223,10 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
             <Award size={22} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+            <h1 className="cabinet-header-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
               AL-XORAZMIY SCHOOL
             </h1>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, margin: 0 }}>
+            <p className="cabinet-header-subtitle" style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, margin: 0 }}>
               OTA-ONALAR KABINETI
             </p>
           </div>
@@ -207,6 +234,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
 
         <button
           onClick={onLogout}
+          className="cabinet-header-btn"
           style={{
             display: 'flex',
             alignItems: 'center',

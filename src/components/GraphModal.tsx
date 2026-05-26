@@ -6,6 +6,21 @@ import {
 } from 'recharts';
 import type { Student } from '../types';
 
+const formatXAxisWeek = (tick: string) => {
+  if (tick === "Faol hafta") return "Faol";
+  return tick;
+};
+
+const formatXAxisTerm = (tick: string) => {
+  if (tick && tick.includes('Chorak')) {
+    return tick.replace('Chorak', 'Ch.');
+  }
+  if (tick === 'Yozgi Reja') {
+    return 'Yozgi R.';
+  }
+  return tick;
+};
+
 interface GraphModalProps {
   student: Student;
   onClose: () => void;
@@ -185,22 +200,22 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
 
   const barData = [
     {
-      name: 'Eng Score',
+      name: 'Ingliz tili',
       value: Math.round(engPercent * 100) / 100,
       color: '#6366f1' // Indigo
     },
     {
-      name: 'Math Score',
+      name: 'Matematika',
       value: Math.round(mathPercent * 100) / 100,
       color: '#14b8a6' // Teal
     },
     {
-      name: 'Attendance',
+      name: 'Davomat',
       value: Math.round(attPercent * 100) / 100,
       color: '#f97316' // Orange
     },
     {
-      name: 'Homework',
+      name: 'Vazifalar',
       value: Math.round(hwPercent * 100) / 100,
       color: '#10b981' // Emerald
     }
@@ -224,10 +239,25 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
     });
 
     compiledHistorical.sort((a, b) => {
-      const numA = parseInt(a.week);
-      const numB = parseInt(b.week);
-      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-      return a.week.localeCompare(b.week);
+      const parseWeekVal = (weekStr: string): number => {
+        if (!weekStr) return 0;
+        if (weekStr.toLowerCase().endsWith('hafta')) {
+          const num = parseInt(weekStr, 10);
+          return isNaN(num) ? 0 : num;
+        }
+        const parts = weekStr.split('-');
+        if (parts.length !== 2) return 9999;
+        const day = parseInt(parts[0], 10);
+        if (isNaN(day)) return 9999;
+        const monthStr = parts[1].toLowerCase();
+        
+        const academicMonths = ['sen', 'okt', 'noy', 'dek', 'yan', 'fev', 'mar', 'apr', 'may', 'iyun', 'iyul', 'avg'];
+        const monthIdx = academicMonths.indexOf(monthStr);
+        if (monthIdx === -1) return 1000 + day;
+        
+        return 1000 + monthIdx * 100 + day;
+      };
+      return parseWeekVal(a.week) - parseWeekVal(b.week);
     });
 
     return [
@@ -401,8 +431,10 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             dataKey="date" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
-            dy={15}
+            interval={0}
+            tickFormatter={formatXAxisTerm}
+            tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+            dy={10}
           />
           <YAxis 
             domain={[domainMin, domainMax]} 
@@ -410,8 +442,8 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             tickFormatter={(val) => `${val}%`}
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
-            width={50}
+            tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+            width={35}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
           
@@ -536,6 +568,22 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           .level-info div {
             text-align: center !important;
           }
+          .modal-tags-container {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            gap: 0.4rem !important;
+            width: 100% !important;
+            justify-content: space-between !important;
+          }
+          .modal-tag {
+            flex: 1 !important;
+            justify-content: center !important;
+            font-size: 0.65rem !important;
+            padding: 0.25rem 0.4rem !important;
+            white-space: nowrap !important;
+            text-align: center !important;
+          }
         }
       `}} />
       <div 
@@ -590,10 +638,10 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sana: {student.dateJoined}</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
+          <div className="modal-tags-container" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
             {/* English Improvement Tag */}
             {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
-              <span style={{ 
+              <span className="modal-tag" style={{ 
                 display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
                 background: '#e0f2fe', color: '#0369a1',
                 padding: '0.3rem 0.75rem', borderRadius: '999px',
@@ -605,7 +653,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
 
             {/* Math Improvement Tag */}
             {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
-              <span style={{ 
+              <span className="modal-tag" style={{ 
                 display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
                 background: '#ffedd5', color: '#c2410c',
                 padding: '0.3rem 0.75rem', borderRadius: '999px',
@@ -738,24 +786,26 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             allActiveTab === 'progression' ? (
               <div className="chart-container" style={{ height: '350px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={progressionData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
+                  <LineChart data={progressionData} margin={{ top: 15, right: 15, left: -5, bottom: 10 }}>
                     <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
                     <XAxis 
                       dataKey="week" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                      interval={0}
+                      tickFormatter={formatXAxisWeek}
+                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
                     />
                     <YAxis 
                       domain={[0, 100]} 
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
                       tickFormatter={(val) => `${val}%`}
-                      width={50}
+                      width={35}
                     />
                     <Tooltip content={<ProgressionTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px', fontSize: '0.8rem', fontWeight: 700 }} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: '15px', fontSize: '0.7rem', fontWeight: 700 }} />
                     <Line 
                       type="monotone" 
                       dataKey="engPercent" 
@@ -798,21 +848,22 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             ) : allActiveTab === 'current' ? (
               <div className="chart-container" style={{ height: '350px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barData} margin={{ top: 25, right: 30, left: 10, bottom: 10 }}>
+                  <BarChart data={barData} margin={{ top: 25, right: 15, left: -5, bottom: 10 }}>
                     <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
                     <XAxis 
                       dataKey="name" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                      interval={0}
+                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
                     />
                     <YAxis 
                       domain={[0, 100]} 
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
+                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
                       tickFormatter={(val) => `${val}%`}
-                      width={50}
+                      width={35}
                     />
                     <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
                     <Bar dataKey="value" radius={[10, 10, 10, 10]} maxBarSize={50}>
