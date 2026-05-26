@@ -24,6 +24,9 @@ interface SidebarDrawerProps {
   onStudentsUploaded: (students: Student[]) => void;
   onBulkDeleteClass: () => void;
   onAddStudent: (studentData: Partial<Student>) => void;
+  deletedWeeks: string[];
+  onRestoreWeek: (weekName: string) => void;
+  onPermanentDeleteWeek: (weekName: string) => void;
 }
 
 const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
@@ -40,7 +43,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   activeClass,
   onStudentsUploaded,
   onBulkDeleteClass,
-  onAddStudent
+  onAddStudent,
+  deletedWeeks,
+  onRestoreWeek,
+  onPermanentDeleteWeek
 }) => {
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'trash'>('settings');
@@ -641,7 +647,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 transition: 'all 0.2s'
               }}
             >
-              SAVAT ({deletedStudents.length})
+              SAVAT ({deletedStudents.length + deletedWeeks.length})
             </button>
           )}
         </div>
@@ -1615,6 +1621,82 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Deleted Weeks Section */}
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2rem', marginBottom: '1rem' }}>
+                <Calendar size={12} />
+                SAVATDAGI HAFTALAR ({deletedWeeks.length} ta)
+              </div>
+
+              {deletedWeeks.length === 0 ? (
+                <div style={{ 
+                  textAlign: 'center', padding: '2.5rem 1rem', border: '1.5px dashed #cbd5e1', 
+                  borderRadius: '16px', color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.5 
+                }}>
+                  Savat bo'sh.<br />O'chirilgan haftalar shu yerda paydo bo'ladi.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {deletedWeeks.map(weekName => (
+                    <div key={weekName} style={{
+                      background: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '16px',
+                      padding: '1rem',
+                      boxShadow: '0 2px 4px rgba(15, 23, 42, 0.01)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '0.8rem'
+                    }}>
+                      <div style={{ fontWeight: 700, color: '#1e293b' }}>
+                        {weekName}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => onRestoreWeek(weekName)}
+                          style={{
+                            background: '#f0fdf4',
+                            color: '#166534',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px',
+                            padding: '0.35rem 0.7rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
+                        >
+                          Tiklash
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onPermanentDeleteWeek(weekName)}
+                          style={{
+                            background: '#fef2f2',
+                            color: '#991b1b',
+                            border: '1px solid #fee2e2',
+                            borderRadius: '8px',
+                            padding: '0.35rem 0.7rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = '#fef2f2'; }}
+                        >
+                          Butunlay o'chirish
+                        </button>
                       </div>
                     </div>
                   ))}

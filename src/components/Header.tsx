@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings, Plus } from 'lucide-react';
+import { Search, Settings, Plus, Trash2 } from 'lucide-react';
 
 interface HeaderProps {
   classes: string[];
@@ -15,11 +15,12 @@ interface HeaderProps {
   isAdminMode: boolean;
   weeksList: string[];
   onStartNewWeekClick?: () => void;
+  onDeleteWeekClick?: (weekName: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
-  selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick
+  selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick, onDeleteWeekClick
 }) => {
   return (
     <>
@@ -171,46 +172,83 @@ const Header: React.FC<HeaderProps> = ({
           {activeSubject === 'ALL' && (
             <>
               {/* Week Selector Dropdown */}
-              <div style={{ position: 'relative' }}>
-                <select
-                  value={selectedWeek}
-                  onChange={(e) => onWeekChange(e.target.value)}
-                  style={{
-                    background: '#ffffff',
-                    color: '#1e293b',
-                    border: '1.5px solid #e2e8f0',
-                    borderRadius: '9999px',
-                    padding: '0.85rem 2.25rem 0.85rem 1.25rem',
-                    fontSize: '0.9rem',
-                    fontWeight: 800,
-                    outline: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
-                    appearance: 'none',
-                    WebkitAppearance: 'none',
-                    display: 'block',
-                    lineHeight: 1.2
-                  }}
-                >
-                  <option value="Yangi hafta">Yangi hafta</option>
-                  {weeksList.map(w => (
-                    <option key={w} value={w}>{w}</option>
-                  ))}
-                </select>
-                <div style={{
-                  position: 'absolute',
-                  right: '1rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none',
-                  color: '#9ca3af',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
-                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    value={selectedWeek}
+                    onChange={(e) => onWeekChange(e.target.value)}
+                    style={{
+                      background: '#ffffff',
+                      color: '#1e293b',
+                      border: '1.5px solid #e2e8f0',
+                      borderRadius: '9999px',
+                      padding: '0.85rem 2.25rem 0.85rem 1.25rem',
+                      fontSize: '0.9rem',
+                      fontWeight: 800,
+                      outline: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      display: 'block',
+                      lineHeight: 1.2
+                    }}
+                  >
+                    {weeksList.length === 0 ? (
+                      <option value="">Hafta yo'q</option>
+                    ) : (
+                      weeksList.map(w => (
+                        <option key={w} value={w}>{w}</option>
+                      ))
+                    )}
+                  </select>
+                  <div style={{
+                    position: 'absolute',
+                    right: '1rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    color: '#9ca3af',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
+
+                {isAdminMode && selectedWeek && (
+                  <button
+                    onClick={() => onDeleteWeekClick && onDeleteWeekClick(selectedWeek)}
+                    title="Ushbu haftani savatga o'chirish"
+                    style={{
+                      background: '#fee2e2',
+                      color: '#ef4444',
+                      border: '1.5px solid #fca5a5',
+                      borderRadius: '9999px',
+                      padding: '0.85rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease',
+                      height: '42px',
+                      width: '42px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#ef4444';
+                      e.currentTarget.style.color = '#ffffff';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#fee2e2';
+                      e.currentTarget.style.color = '#ef4444';
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
 
               {/* Start new week button for admins */}

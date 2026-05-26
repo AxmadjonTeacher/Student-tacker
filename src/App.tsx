@@ -92,7 +92,7 @@ function App() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState<string>('Yangi hafta');
+  const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
 
   // Custom Dialog DialogState
@@ -253,6 +253,16 @@ function App() {
         if (error) throw error;
         if (data) {
           setStudentWeeks(data);
+          const activeWeeksSet = new Set<string>();
+          data.forEach(sw => {
+            if (sw.week && !sw.is_deleted) activeWeeksSet.add(sw.week);
+          });
+          const sortedActiveWeeks = Array.from(activeWeeksSet).sort((a, b) => {
+            return parseWeekToSortValue(a) - parseWeekToSortValue(b);
+          });
+          if (sortedActiveWeeks.length > 0) {
+            setSelectedWeek(sortedActiveWeeks[sortedActiveWeeks.length - 1]);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch student weeks history:', err);
@@ -304,25 +314,25 @@ function App() {
         const existing = localUpdatedList[matchIndex];
         studentId = existing.id;
         
-        if (selectedWeek === 'Yangi hafta') {
-          const merged: Student = {
-            ...existing,
-            ...newS,
-            id: existing.id,
-            pictureUrl: existing.pictureUrl || newS.pictureUrl,
-            orderIndex: existing.orderIndex ?? (localUpdatedList.length + i),
-            grandTests: newS.grandTests || existing.grandTests,
-            mathGrandTests: newS.mathGrandTests || existing.mathGrandTests,
-            teacher: newS.teacher || existing.teacher,
-            mathTeacher: newS.mathTeacher || existing.mathTeacher,
-            engScore: newS.engScore !== undefined ? newS.engScore : existing.engScore,
-            mathScore: newS.mathScore !== undefined ? newS.mathScore : existing.mathScore,
-            attendance: newS.attendance !== undefined ? newS.attendance : existing.attendance,
-            homework: newS.homework !== undefined ? newS.homework : existing.homework
-          };
-          localUpdatedList[matchIndex] = merged;
-          upsertedMainStudents.push(merged);
-        } else {
+        const merged: Student = {
+          ...existing,
+          ...newS,
+          id: existing.id,
+          pictureUrl: existing.pictureUrl || newS.pictureUrl,
+          orderIndex: existing.orderIndex ?? (localUpdatedList.length + i),
+          grandTests: newS.grandTests || existing.grandTests,
+          mathGrandTests: newS.mathGrandTests || existing.mathGrandTests,
+          teacher: newS.teacher || existing.teacher,
+          mathTeacher: newS.mathTeacher || existing.mathTeacher,
+          engScore: existing.engScore,
+          mathScore: existing.mathScore,
+          attendance: existing.attendance,
+          homework: existing.homework
+        };
+        localUpdatedList[matchIndex] = merged;
+        upsertedMainStudents.push(merged);
+
+        if (selectedWeek) {
           const existingWeekRecord = studentWeeks.find(sw => sw.student_id === studentId && sw.week === selectedWeek);
           
           const weekPayload = {
@@ -367,15 +377,15 @@ function App() {
           orderIndex: localUpdatedList.length,
           teacherOrder: inheritedEngOrder,
           mathTeacherOrder: inheritedMathOrder,
-          engScore: newS.engScore !== undefined ? newS.engScore : 0,
-          mathScore: newS.mathScore !== undefined ? newS.mathScore : 0,
-          attendance: newS.attendance !== undefined ? newS.attendance : 1,
-          homework: newS.homework !== undefined ? newS.homework : 1
+          engScore: 0,
+          mathScore: 0,
+          attendance: 1,
+          homework: 1
         };
         localUpdatedList.push(brandNew);
         upsertedMainStudents.push(brandNew);
 
-        if (selectedWeek !== 'Yangi hafta') {
+        if (selectedWeek) {
           const weekPayload = {
             student_id: studentId,
             week: selectedWeek,
@@ -564,7 +574,17 @@ function App() {
   const weeksList = useMemo(() => {
     const weeksSet = new Set<string>();
     studentWeeks.forEach(sw => {
-      if (sw.week) weeksSet.add(sw.week);
+      if (sw.week && !sw.is_deleted) weeksSet.add(sw.week);
+    });
+    return Array.from(weeksSet).sort((a, b) => {
+      return parseWeekToSortValue(a) - parseWeekToSortValue(b);
+    });
+  }, [studentWeeks]);
+
+  const deletedWeeks = useMemo(() => {
+    const weeksSet = new Set<string>();
+    studentWeeks.forEach(sw => {
+      if (sw.week && sw.is_deleted) weeksSet.add(sw.week);
     });
     return Array.from(weeksSet).sort((a, b) => {
       return parseWeekToSortValue(a) - parseWeekToSortValue(b);
@@ -612,7 +632,7 @@ function App() {
       let attendance = student.attendance;
       let homework = student.homework;
 
-      if (selectedWeek !== 'Yangi hafta') {
+      if (selectedWeek) {
         const hist = studentWeeks.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
         if (hist) {
           startingLevel = hist.starting_level ?? student.startingLevel;
@@ -636,6 +656,16 @@ function App() {
           attendance = 1;
           homework = 1;
         }
+      } else {
+        currentLevel = student.startingLevel;
+        grandTests = [];
+        mathStartingLevel = student.mathStartingLevel || 'Level 1';
+        mathCurrentLevel = student.mathStartingLevel || 'Level 1';
+        mathGrandTests = [];
+        engScore = 0;
+        mathScore = 0;
+        attendance = 1;
+        homework = 1;
       }
 
       // Always store original english values explicitly so they are not lost after projection!
@@ -700,98 +730,38 @@ function App() {
     attendance?: number,
     homework?: number
   ) => {
+    // 1. Update local students state for baseline identity edits
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
-        const updatedBase = {
+        return {
           ...s,
           name: newName !== undefined ? newName : s.name,
           surname: newSurname !== undefined ? newSurname : s.surname,
           className: newClassName !== undefined ? newClassName : s.className,
         };
-
-        if (selectedWeek === 'Yangi hafta') {
-          const withScores = {
-            ...updatedBase,
-            engScore: engScore !== undefined ? engScore : s.engScore,
-            mathScore: mathScore !== undefined ? mathScore : s.mathScore,
-            attendance: attendance !== undefined ? attendance : s.attendance,
-            homework: homework !== undefined ? homework : s.homework
-          };
-
-          if (activeSubject === 'MATH') {
-            return {
-              ...withScores,
-              mathStartingLevel: startingLevel,
-              mathCurrentLevel: currentLevel,
-              mathGrandTests: grandTests
-            };
-          } else if (activeSubject === 'ENG') {
-            return {
-              ...withScores,
-              startingLevel: startingLevel,
-              currentLevel: currentLevel,
-              grandTests: grandTests
-            };
-          } else {
-            return withScores;
-          }
-        } else {
-          return updatedBase;
-        }
       }
       return s;
     }));
 
-    if (selectedWeek === 'Yangi hafta') {
+    // 2. Update Students table in Supabase for baseline identity
+    if (newName !== undefined || newSurname !== undefined || newClassName !== undefined) {
       try {
-        let updatePayload: any = {};
-        if (activeSubject === 'MATH') {
-          updatePayload = {
-            math_starting_level: startingLevel,
-            math_current_level: currentLevel,
-            math_grand_tests: grandTests
-          };
-        } else if (activeSubject === 'ENG') {
-          updatePayload = {
-            starting_level: startingLevel,
-            current_level: currentLevel,
-            grand_tests: grandTests
-          };
-        }
-
-        if (newName !== undefined) updatePayload.name = newName;
-        if (newSurname !== undefined) updatePayload.surname = newSurname;
-        if (newClassName !== undefined) updatePayload.class_name = newClassName;
-        if (engScore !== undefined) updatePayload.eng_score = engScore;
-        if (mathScore !== undefined) updatePayload.math_score = mathScore;
-        if (attendance !== undefined) updatePayload.attendance = attendance;
-        if (homework !== undefined) updatePayload.homework = homework;
-
-        const { error } = await supabase
+        const identPayload: any = {};
+        if (newName !== undefined) identPayload.name = newName;
+        if (newSurname !== undefined) identPayload.surname = newSurname;
+        if (newClassName !== undefined) identPayload.class_name = newClassName;
+        
+        await supabase
           .from('Students')
-          .update(updatePayload)
+          .update(identPayload)
           .eq('id', studentId);
-        if (error) throw error;
       } catch (err) {
-        console.error('Failed to sync progress updates to Supabase:', err);
+        console.error('Failed to update student identity in Supabase:', err);
       }
-    } else {
-      if (newName !== undefined || newSurname !== undefined || newClassName !== undefined) {
-        try {
-          const identPayload: any = {};
-          if (newName !== undefined) identPayload.name = newName;
-          if (newSurname !== undefined) identPayload.surname = newSurname;
-          if (newClassName !== undefined) identPayload.class_name = newClassName;
-          
-          await supabase
-            .from('Students')
-            .update(identPayload)
-            .eq('id', studentId);
-        } catch (err) {
-          console.error('Failed to update student identity in Supabase:', err);
-        }
-      }
+    }
 
+    // 3. Update student_weeks table for weekly scores
+    if (selectedWeek) {
       const existing = studentWeeks.find(sw => sw.student_id === studentId && sw.week === selectedWeek);
       const baseStudent = students.find(s => s.id === studentId);
 
@@ -1058,7 +1028,7 @@ function App() {
   const handleStartNewWeekClick = () => {
     showDatePrompt(
       "Yangi o'quv haftasini boshlash",
-      "Arxivlanadigan o'quv haftasi sanasini tanlang. Joriy barcha o'quvchilar ballari ushbu sana nomi bilan arxivlanadi va faol ballar nollashtiriladi:",
+      "Yangi o'quv haftasi sanasini tanlang. Yangi hafta barcha o'quvchilar uchun 0 ball va 100% davomat bilan ochiladi:",
       getLocalDateString(),
       async (selectedDate) => {
         if (!selectedDate) return;
@@ -1066,7 +1036,7 @@ function App() {
         if (!weekName) return;
 
         try {
-          // 1. Snapshot active students' current scores
+          // 1. Prepare snapshot payload (initializing all active students with 0 scores and 100% attendance/homework)
           const activeStudentsList = students.filter(s => !s.isDeleted);
           if (activeStudentsList.length === 0) {
             alert("Faol o'quvchilar mavjud emas!");
@@ -1076,10 +1046,10 @@ function App() {
           const snapshotPayload = activeStudentsList.map(s => ({
             student_id: s.id,
             week: weekName,
-            eng_score: s.engScore ?? 0,
-            math_score: s.mathScore ?? 0,
-            attendance: s.attendance ?? 1,
-            homework: s.homework ?? 1,
+            eng_score: 0,
+            math_score: 0,
+            attendance: 1,
+            homework: 1,
             starting_level: s.startingLevel || 'Level 1',
             current_level: s.currentLevel || 'Level 1',
             grand_tests: s.grandTests || [],
@@ -1095,28 +1065,6 @@ function App() {
 
           if (snapshotError) throw snapshotError;
 
-          // 3. Reset scores in DB
-          const { error: resetError } = await supabase
-            .from('Students')
-            .update({
-              eng_score: 0,
-              math_score: 0,
-              attendance: 1,
-              homework: 1
-            })
-            .neq('id', '');
-
-          if (resetError) throw resetError;
-
-          // 4. Update local state
-          setStudents(prev => prev.map(s => s.isDeleted ? s : {
-            ...s,
-            engScore: 0,
-            mathScore: 0,
-            attendance: 1,
-            homework: 1
-          }));
-
           // Refetch student weeks history to ensure sync
           const { data: weekData, error: weekFetchError } = await supabase
             .from('student_weeks')
@@ -1125,8 +1073,8 @@ function App() {
             setStudentWeeks(weekData);
           }
 
-          setSelectedWeek('Yangi hafta');
-          alert(`"${weekName}" muvaffaqiyatli boshlandi! Hamma ballar nollashtirildi.`);
+          setSelectedWeek(weekName);
+          alert(`"${weekName}" muvaffaqiyatli boshlandi! Yangi hafta barcha o'quvchilar uchun 0 ball bilan ochildi.`);
         } catch (err) {
           console.error("Yangi haftani boshlashda xatolik:", err);
           alert("Haftani arxivlashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
@@ -1134,6 +1082,73 @@ function App() {
       }
     );
   };
+
+  const handleDeleteWeek = (weekName: string) => {
+    showConfirm(
+      "Haftani o'chirish",
+      `Haqiqatan ham "${weekName}" o'quv haftasini savatga o'chirmoqchimisiz?`,
+      true,
+      async () => {
+        // Update local state
+        setStudentWeeks(prev => prev.map(sw => sw.week === weekName ? { ...sw, is_deleted: true } : sw));
+        try {
+          const { error } = await supabase
+            .from('student_weeks')
+            .update({ is_deleted: true })
+            .eq('week', weekName);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed to soft-delete week in Supabase:', err);
+        }
+
+        // Auto select another week
+        const remainingWeeks = weeksList.filter(w => w !== weekName);
+        if (remainingWeeks.length > 0) {
+          setSelectedWeek(remainingWeeks[remainingWeeks.length - 1]);
+        } else {
+          setSelectedWeek('');
+        }
+      }
+    );
+  };
+
+  const handleRestoreWeek = async (weekName: string) => {
+    // Update local state
+    setStudentWeeks(prev => prev.map(sw => sw.week === weekName ? { ...sw, is_deleted: false } : sw));
+    try {
+      const { error } = await supabase
+        .from('student_weeks')
+        .update({ is_deleted: false })
+        .eq('week', weekName);
+      if (error) throw error;
+      setSelectedWeek(weekName);
+    } catch (err) {
+      console.error('Failed to restore week in Supabase:', err);
+    }
+  };
+
+  const handlePermanentDeleteWeek = (weekName: string) => {
+    showConfirm(
+      "Haftani butunlay o'chirish",
+      `Haqiqatan ham "${weekName}" o'quv haftasini butunlay o'chirib tashlamoqchimisiz? Ushbu haftadagi barcha o'quvchilar ballari butunlay yo'qoladi va bu amalni ortga qaytarib bo'lmaydi!`,
+      true,
+      async () => {
+        // Update local state
+        setStudentWeeks(prev => prev.filter(sw => sw.week !== weekName));
+        try {
+          const { error } = await supabase
+            .from('student_weeks')
+            .delete()
+            .eq('week', weekName);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed to permanently delete week in Supabase:', err);
+        }
+      }
+    );
+  };
+
+
 
   const handleMoveTeacherTable = async (sourceTeacherName: string, direction: 'up' | 'down') => {
     // Determine the unique teachers in the current class for the active subject
@@ -1261,6 +1276,7 @@ function App() {
         isAdminMode={isAdminMode}
         weeksList={weeksList}
         onStartNewWeekClick={handleStartNewWeekClick}
+        onDeleteWeekClick={handleDeleteWeek}
       />
 
       <StudentTable
@@ -1293,6 +1309,9 @@ function App() {
         onStudentsUploaded={handleStudentsUploaded}
         onBulkDeleteClass={handleBulkDeleteClass}
         onAddStudent={handleAddStudent}
+        deletedWeeks={deletedWeeks}
+        onRestoreWeek={handleRestoreWeek}
+        onPermanentDeleteWeek={handlePermanentDeleteWeek}
       />
 
       {/* Elegant Symmetrical Footer */}
