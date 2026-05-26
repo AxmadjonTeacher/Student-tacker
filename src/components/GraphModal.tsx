@@ -383,7 +383,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
   };
 
   const renderAreaChart = () => (
-    <div style={{ height: '350px', width: '100%' }}>
+    <div className="chart-container" style={{ height: '350px', width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={combinedData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
           <defs>
@@ -401,7 +401,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             dataKey="date" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+            tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
             dy={15}
           />
           <YAxis 
@@ -410,7 +410,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             tickFormatter={(val) => `${val}%`}
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+            tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
             width={50}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
@@ -489,6 +489,55 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(4px)', background: 'rgba(0, 0, 0, 0.5)' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .modal-content {
+          padding: 2rem !important;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+          .modal-content {
+            padding: 1.25rem 1rem !important;
+            border-radius: 16px !important;
+          }
+          .modal-title {
+            font-size: 1.1rem !important;
+            text-align: center;
+          }
+          .modal-tabs {
+            flex-direction: column !important;
+            border-radius: 12px !important;
+            width: 100% !important;
+            max-width: none !important;
+            gap: 4px !important;
+          }
+          .modal-tabs button {
+            width: 100% !important;
+            justify-content: center !important;
+            padding: 0.5rem !important;
+            font-size: 0.75rem !important;
+          }
+          .modal-compare-btn {
+            width: 100% !important;
+            padding: 0.6rem 1rem !important;
+            font-size: 0.75rem !important;
+            text-align: center !important;
+            justify-content: center !important;
+          }
+          .chart-container {
+            height: 240px !important;
+          }
+          .level-info {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .level-info div {
+            text-align: center !important;
+          }
+        }
+      `}} />
       <div 
         className="modal-content" 
         onClick={e => e.stopPropagation()} 
@@ -524,7 +573,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} />
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
+            <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
               {student.name} {student.surname} — {
                 activeSubject === 'ALL' 
                   ? "Umumiy ko'rsatkichlar"
@@ -576,6 +625,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             marginBottom: '1.5rem' 
           }}>
             <button
+              className="modal-compare-btn"
               onClick={() => setIsComparing(!isComparing)}
               style={{
                 display: 'flex',
@@ -606,7 +656,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             </button>
           </div>
         ) : (
-          <div style={{ 
+          <div className="modal-tabs" style={{ 
             display: 'flex', 
             justifyContent: 'center',
             gap: '0.5rem',
@@ -658,7 +708,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.01)'
         }}>
           {activeSubject !== 'ALL' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className="level-info" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
                   BOSHLANG'ICH DARAJA
@@ -686,7 +736,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
 
           {activeSubject === 'ALL' ? (
             allActiveTab === 'progression' ? (
-              <div style={{ height: '350px', width: '100%' }}>
+              <div className="chart-container" style={{ height: '350px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={progressionData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
                     <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
@@ -694,13 +744,13 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                       dataKey="week" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
                     />
                     <YAxis 
                       domain={[0, 100]} 
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
                       tickFormatter={(val) => `${val}%`}
                       width={50}
                     />
@@ -746,7 +796,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                 </ResponsiveContainer>
               </div>
             ) : allActiveTab === 'current' ? (
-              <div style={{ height: '350px', width: '100%' }}>
+              <div className="chart-container" style={{ height: '350px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={barData} margin={{ top: 25, right: 30, left: 10, bottom: 10 }}>
                     <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
@@ -754,18 +804,18 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                       dataKey="name" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
                     />
                     <YAxis 
                       domain={[0, 100]} 
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
                       tickFormatter={(val) => `${val}%`}
                       width={50}
                     />
                     <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
-                    <Bar dataKey="value" radius={[10, 10, 10, 10]} barSize={55}>
+                    <Bar dataKey="value" radius={[10, 10, 10, 10]} maxBarSize={50}>
                       {barData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}

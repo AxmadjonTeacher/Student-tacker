@@ -162,7 +162,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <label htmlFor="student-id" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-              Foydalanuvchi ID (Student ID)
+              STUDENT ID
             </label>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
@@ -175,7 +175,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 autoComplete="username"
                 required
                 enterKeyHint="next"
-                placeholder="Masalan: AL12345 yoki admin"
+                placeholder="Student ID..."
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
                 disabled={isLoading}

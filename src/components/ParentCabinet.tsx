@@ -152,6 +152,21 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
             padding: 1rem 0.75rem !important;
           }
         }
+        @media (max-width: 500px) {
+          .cabinet-banner {
+            flex-direction: column-reverse !important;
+            align-items: center !important;
+            text-align: center !important;
+            padding: 1.5rem 1rem !important;
+            gap: 1rem !important;
+          }
+          .cabinet-banner-text {
+            align-items: center !important;
+          }
+          .cabinet-banner-title {
+            font-size: 1.5rem !important;
+          }
+        }
       `}} />
 
       {/* Modern Symmetrical Header */}
@@ -216,7 +231,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
 
       <main className="cabinet-container">
         {/* Child Banner */}
-        <div style={{
+        <div className="cabinet-banner" style={{
           background: 'linear-gradient(135deg, #1e1b4b 0%, #0d9488 100%)',
           borderRadius: '24px',
           padding: '2rem',
@@ -229,11 +244,11 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
           position: 'relative',
           overflow: 'hidden'
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+          <div className="cabinet-banner-text" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em', color: '#ccfbf1', textTransform: 'uppercase' }}>
               O'quvchi ma'lumotlari
             </span>
-            <h2 style={{ fontSize: '2rem', fontWeight: 850, margin: 0, letterSpacing: '-0.02em' }}>
+            <h2 className="cabinet-banner-title" style={{ fontSize: '2rem', fontWeight: 850, margin: 0, letterSpacing: '-0.02em' }}>
               {student.name} {student.surname}
             </h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem', fontSize: '0.9rem', color: '#f1f5f9', fontWeight: 550 }}>
