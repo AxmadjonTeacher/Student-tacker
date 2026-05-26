@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { LogOut, TrendingUp, Bell, Award } from 'lucide-react';
 import type { Student, NewsEvent } from '../types';
 import { supabase } from '../supabase';
@@ -14,6 +14,43 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
   const [news, setNews] = useState<NewsEvent[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
+
+  // Find the latest week's record from studentWeeks (sorted by academic week order)
+  const latestWeekRecord = useMemo(() => {
+    if (!studentWeeks || studentWeeks.length === 0) return null;
+    return [...studentWeeks].sort((a, b) => {
+      const parseWeekVal = (weekStr: string): number => {
+        if (!weekStr) return 0;
+        if (weekStr.toLowerCase().endsWith('hafta')) {
+          const num = parseInt(weekStr, 10);
+          return isNaN(num) ? 0 : num;
+        }
+        const parts = weekStr.split('-');
+        if (parts.length !== 2) return 9999;
+        const day = parseInt(parts[0], 10);
+        if (isNaN(day)) return 9999;
+        const monthStr = parts[1].toLowerCase();
+        
+        const academicMonths = ['sen', 'okt', 'noy', 'dek', 'yan', 'fev', 'mar', 'apr', 'may', 'iyun', 'iyul', 'avg'];
+        const monthIdx = academicMonths.indexOf(monthStr);
+        if (monthIdx === -1) return 1000 + day;
+        
+        return 1000 + monthIdx * 100 + day;
+      };
+      return parseWeekVal(b.week) - parseWeekVal(a.week);
+    })[0];
+  }, [studentWeeks]);
+
+  const getInitials = (nameStr: string, surnameStr: string) => {
+    const first = nameStr ? nameStr.charAt(0).toUpperCase() : '';
+    const last = surnameStr ? surnameStr.charAt(0).toUpperCase() : '';
+    return `${first}${last}`;
+  };
+
+  const englishStartingLevel = latestWeekRecord?.starting_level || student.englishStartingLevel || student.startingLevel || 'Level 1';
+  const englishCurrentLevel = latestWeekRecord?.current_level || student.englishCurrentLevel || student.currentLevel || 'Level 1';
+  const mathStartingLevel = latestWeekRecord?.math_starting_level || student.mathStartingLevel || 'Level 1';
+  const mathCurrentLevel = latestWeekRecord?.math_current_level || student.mathCurrentLevel || 'Level 1';
 
   // Fetch announcements/news
   useEffect(() => {
@@ -182,25 +219,51 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
         <div style={{
           background: 'linear-gradient(135deg, #1e1b4b 0%, #0d9488 100%)',
           borderRadius: '24px',
-          padding: '2.5rem 2rem',
+          padding: '2rem',
           color: '#ffffff',
           boxShadow: '0 10px 15px -3px rgba(13, 148, 136, 0.15)',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem'
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '1.5rem',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em', color: '#ccfbf1', textTransform: 'uppercase' }}>
-            O'quvchi ma'lumotlari
-          </span>
-          <h2 style={{ fontSize: '2rem', fontWeight: 850, margin: 0, letterSpacing: '-0.02em' }}>
-            {student.name} {student.surname}
-          </h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem', fontSize: '0.9rem', color: '#f1f5f9', fontWeight: 550 }}>
-            <span>Sinf: <strong>{student.className}</strong></span>
-            <span>•</span>
-            <span>Qo'shilgan sana: <strong>{student.dateJoined}</strong></span>
-            <span>•</span>
-            <span>Student ID: <strong style={{ color: '#fed7aa', letterSpacing: '0.05em' }}>{student.id}</strong></span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em', color: '#ccfbf1', textTransform: 'uppercase' }}>
+              O'quvchi ma'lumotlari
+            </span>
+            <h2 style={{ fontSize: '2rem', fontWeight: 850, margin: 0, letterSpacing: '-0.02em' }}>
+              {student.name} {student.surname}
+            </h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem', fontSize: '0.9rem', color: '#f1f5f9', fontWeight: 550 }}>
+              <span>Sinf: <strong>{student.className}</strong></span>
+              <span>•</span>
+              <span>Student ID: <strong style={{ color: '#fed7aa', letterSpacing: '0.05em' }}>{student.id}</strong></span>
+            </div>
+          </div>
+
+          {/* Profile Picture */}
+          <div style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            background: 'rgba(255, 255, 255, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.75rem',
+            fontWeight: 800,
+            color: '#ffffff',
+            overflow: 'hidden',
+            flexShrink: 0
+          }}>
+            {student.pictureUrl ? (
+              <img src={student.pictureUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              getInitials(student.name, student.surname)
+            )}
           </div>
         </div>
 
@@ -219,19 +282,37 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
                 Fan o'qituvchilari va darajalar
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', marginBottom: '0.35rem' }}>INGLIZ TILI</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>{student.englishTeacher || student.teacher || "O'qituvchi belgilanmagan"}</div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginTop: '0.5rem' }}>
-                    Daraja: {student.englishStartingLevel || student.startingLevel || 'Level 1'} ➔ {student.englishCurrentLevel || student.currentLevel || 'Level 1'}
+                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', marginBottom: '0.25rem' }}>INGLIZ TILI</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{student.englishTeacher || student.teacher || "O'qituvchi belgilanmagan"}</div>
+                  </div>
+                  <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 650, color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Avvalgi daraja:</span>
+                      <span style={{ color: '#475569', fontWeight: 800 }}>{englishStartingLevel}</span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 650, color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Hozirgi daraja:</span>
+                      <span style={{ color: '#0d9488', fontWeight: 800 }}>{englishCurrentLevel}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', marginBottom: '0.35rem' }}>MATEMATIKA</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>{student.mathTeacher || "O'qituvchi belgilanmagan"}</div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginTop: '0.5rem' }}>
-                    Daraja: {student.mathStartingLevel || 'Level 1'} ➔ {student.mathCurrentLevel || 'Level 1'}
+                <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', marginBottom: '0.25rem' }}>MATEMATIKA</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{student.mathTeacher || "O'qituvchi belgilanmagan"}</div>
+                  </div>
+                  <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 650, color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Avvalgi daraja:</span>
+                      <span style={{ color: '#475569', fontWeight: 800 }}>{mathStartingLevel}</span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 650, color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Hozirgi daraja:</span>
+                      <span style={{ color: '#0d9488', fontWeight: 800 }}>{mathCurrentLevel}</span>
+                    </div>
                   </div>
                 </div>
               </div>
