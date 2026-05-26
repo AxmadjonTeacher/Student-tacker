@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 interface CustomDialogProps {
   isOpen: boolean;
-  type: 'confirm' | 'prompt';
+  type: 'confirm' | 'prompt' | 'date-prompt';
   title: string;
   message: string;
   defaultValue?: string;
@@ -128,6 +128,40 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               outline: 'none',
               transition: 'all 0.2s',
               boxSizing: 'border-box'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.border = '1.5px solid #0d9488';
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13,148,136,0.15)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.border = '1.5px solid #e2e8f0';
+              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          />
+        )}
+
+        {/* Conditional Input Field for Date Prompt */}
+        {type === 'date-prompt' && (
+          <input 
+            type="date"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            autoFocus
+            style={{
+              width: '100%',
+              background: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '0.85rem 1rem',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              color: '#0f172a',
+              outline: 'none',
+              transition: 'all 0.2s',
+              boxSizing: 'border-box',
+              fontFamily: 'inherit'
             }}
             onFocus={(e) => {
               e.currentTarget.style.border = '1.5px solid #0d9488';

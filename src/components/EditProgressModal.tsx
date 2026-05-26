@@ -93,6 +93,11 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const parsedEngScore = isNaN(parseInt(engScore)) ? 0 : Math.min(15, Math.max(0, parseInt(engScore)));
+    const parsedMathScore = isNaN(parseInt(mathScore)) ? 0 : Math.min(15, Math.max(0, parseInt(mathScore)));
+    const parsedAttendance = isNaN(parseInt(attendance)) ? 1 : parseInt(attendance);
+    const parsedHomework = isNaN(parseInt(homework)) ? 1 : parseInt(homework);
+
     if (isAll) {
       onSave(
         '',
@@ -101,10 +106,10 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
         name.trim(),
         surname.trim(),
         className.trim(),
-        Math.min(15, Math.max(0, parseInt(engScore) || 0)),
-        Math.min(15, Math.max(0, parseInt(mathScore) || 0)),
-        parseInt(attendance) || 1,
-        parseInt(homework) || 1
+        parsedEngScore,
+        parsedMathScore,
+        parsedAttendance,
+        parsedHomework
       );
     } else {
       const parseScore = (val: string): number | null => {
@@ -120,7 +125,18 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
         { name: 'Grant 4', score: parseScore(grant4) },
       ];
 
-      onSave(startingLevel, currentLevel, grandTestsArray, name.trim(), surname.trim(), className.trim());
+      onSave(
+        startingLevel,
+        currentLevel,
+        grandTestsArray,
+        name.trim(),
+        surname.trim(),
+        className.trim(),
+        activeSubject === 'ENG' ? parsedEngScore : undefined,
+        activeSubject === 'MATH' ? parsedMathScore : undefined,
+        parsedAttendance,
+        parsedHomework
+      );
     }
   };
 
@@ -431,6 +447,71 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     </div>
                   );
                 })()}
+              </div>
+
+              {/* Weekly Subject Score, Attendance, and Homework */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                    {activeSubject === 'ENG' ? 'ENG SCORE (0-15) *' : 'MATH SCORE (0-15) *'}
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    max="15"
+                    value={activeSubject === 'ENG' ? engScore : mathScore}
+                    onChange={e => activeSubject === 'ENG' ? setEngScore(e.target.value) : setMathScore(e.target.value)}
+                    required
+                    style={{
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                    ATTENDANCE (1, -1, -2...) *
+                  </label>
+                  <input 
+                    type="number" 
+                    max="1"
+                    value={attendance}
+                    onChange={e => setAttendance(e.target.value)}
+                    required
+                    style={{
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                    }}
+                  />
+                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.35rem', lineHeight: 1.3 }}>
+                    1 = 100% · -1 = 83.3% · -2 = 66.7%
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                    HOMEWORK (1, -1, -2...) *
+                  </label>
+                  <input 
+                    type="number" 
+                    max="1"
+                    value={homework}
+                    onChange={e => setHomework(e.target.value)}
+                    required
+                    style={{
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                    }}
+                  />
+                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.35rem', lineHeight: 1.3 }}>
+                    1 = 100% · -1 = 80.0% · -2 = 60.0%
+                  </div>
+                </div>
               </div>
             </>
           )}

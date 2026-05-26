@@ -42,6 +42,47 @@ export const getClassGroup = (clsName: string): string => {
   return match ? `${match[1]}-Sinf` : trimmed;
 };
 
+// Helper to convert Swedish date representation YYYY-MM-DD to DD-Month format
+export const formatDateLabel = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const monthIdx = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const monthsUz = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+  const monthName = monthsUz[monthIdx] || '';
+  return `${day}-${monthName}`;
+};
+
+// Helper to get local date string YYYY-MM-DD
+export const getLocalDateString = (): string => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper to parse week string to academic year sortable value
+export const parseWeekToSortValue = (weekStr: string): number => {
+  if (!weekStr) return 0;
+  if (weekStr.toLowerCase().endsWith('hafta')) {
+    const num = parseInt(weekStr, 10);
+    return isNaN(num) ? 0 : num;
+  }
+  const parts = weekStr.split('-');
+  if (parts.length !== 2) return 9999;
+  const day = parseInt(parts[0], 10);
+  if (isNaN(day)) return 9999;
+  const monthStr = parts[1].toLowerCase();
+  
+  const academicMonths = ['sen', 'okt', 'noy', 'dek', 'yan', 'fev', 'mar', 'apr', 'may', 'iyun', 'iyul', 'avg'];
+  const monthIdx = academicMonths.indexOf(monthStr);
+  if (monthIdx === -1) return 1000 + day;
+  
+  return 1000 + monthIdx * 100 + day;
+};
+
 function App() {
   const [students, setStudents] = useState<Student[]>([]);
   const [activeSubject, setActiveSubject] = useState<'ENG' | 'MATH' | 'ALL'>('ENG');
@@ -51,13 +92,13 @@ function App() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState<string>('Hozirgi hafta');
+  const [selectedWeek, setSelectedWeek] = useState<string>('Yangi hafta');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
 
   // Custom Dialog DialogState
   const [dialog, setDialog] = useState<{
     isOpen: boolean;
-    type: 'confirm' | 'prompt';
+    type: 'confirm' | 'prompt' | 'date-prompt';
     title: string;
     message: string;
     defaultValue?: string;
@@ -104,6 +145,28 @@ function App() {
       message,
       defaultValue,
       placeholder,
+      confirmText: 'Saqlash',
+      cancelText: 'Bekor qilish',
+      danger: false,
+      onConfirm: (val) => {
+        onConfirm(val || '');
+        closeDialog();
+      }
+    });
+  };
+
+  const showDatePrompt = (
+    title: string, 
+    message: string, 
+    defaultValue: string, 
+    onConfirm: (val: string) => void
+  ) => {
+    setDialog({
+      isOpen: true,
+      type: 'date-prompt',
+      title,
+      message,
+      defaultValue,
       confirmText: 'Saqlash',
       cancelText: 'Bekor qilish',
       danger: false,
@@ -241,7 +304,7 @@ function App() {
         const existing = localUpdatedList[matchIndex];
         studentId = existing.id;
         
-        if (selectedWeek === 'Hozirgi hafta') {
+        if (selectedWeek === 'Yangi hafta') {
           const merged: Student = {
             ...existing,
             ...newS,
@@ -312,7 +375,7 @@ function App() {
         localUpdatedList.push(brandNew);
         upsertedMainStudents.push(brandNew);
 
-        if (selectedWeek !== 'Hozirgi hafta') {
+        if (selectedWeek !== 'Yangi hafta') {
           const weekPayload = {
             student_id: studentId,
             week: selectedWeek,
@@ -504,10 +567,7 @@ function App() {
       if (sw.week) weeksSet.add(sw.week);
     });
     return Array.from(weeksSet).sort((a, b) => {
-      const numA = parseInt(a);
-      const numB = parseInt(b);
-      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-      return a.localeCompare(b);
+      return parseWeekToSortValue(a) - parseWeekToSortValue(b);
     });
   }, [studentWeeks]);
 
@@ -552,7 +612,7 @@ function App() {
       let attendance = student.attendance;
       let homework = student.homework;
 
-      if (selectedWeek !== 'Hozirgi hafta') {
+      if (selectedWeek !== 'Yangi hafta') {
         const hist = studentWeeks.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
         if (hist) {
           startingLevel = hist.starting_level ?? student.startingLevel;
@@ -649,7 +709,7 @@ function App() {
           className: newClassName !== undefined ? newClassName : s.className,
         };
 
-        if (selectedWeek === 'Hozirgi hafta') {
+        if (selectedWeek === 'Yangi hafta') {
           const withScores = {
             ...updatedBase,
             engScore: engScore !== undefined ? engScore : s.engScore,
@@ -682,7 +742,7 @@ function App() {
       return s;
     }));
 
-    if (selectedWeek === 'Hozirgi hafta') {
+    if (selectedWeek === 'Yangi hafta') {
       try {
         let updatePayload: any = {};
         if (activeSubject === 'MATH') {
@@ -996,24 +1056,14 @@ function App() {
   };
 
   const handleStartNewWeekClick = () => {
-    // Propose default week name based on max existing week
-    let nextWeekNum = 1;
-    weeksList.forEach(w => {
-      const num = parseInt(w);
-      if (!isNaN(num) && num >= nextWeekNum) {
-        nextWeekNum = num + 1;
-      }
-    });
-    const defaultWeekName = `${nextWeekNum}-Hafta`;
-
-    showPrompt(
+    showDatePrompt(
       "Yangi o'quv haftasini boshlash",
-      "Yangi haftaning nomini kiriting. Joriy barcha o'quvchilar ballari arxivlanadi va faol ballar nollashtiriladi:",
-      defaultWeekName,
-      "Hafta nomi (masalan: 12-Hafta)",
-      async (weekName) => {
-        const trimmed = weekName.trim();
-        if (!trimmed) return;
+      "Arxivlanadigan o'quv haftasi sanasini tanlang. Joriy barcha o'quvchilar ballari ushbu sana nomi bilan arxivlanadi va faol ballar nollashtiriladi:",
+      getLocalDateString(),
+      async (selectedDate) => {
+        if (!selectedDate) return;
+        const weekName = formatDateLabel(selectedDate);
+        if (!weekName) return;
 
         try {
           // 1. Snapshot active students' current scores
@@ -1025,7 +1075,7 @@ function App() {
 
           const snapshotPayload = activeStudentsList.map(s => ({
             student_id: s.id,
-            week: trimmed,
+            week: weekName,
             eng_score: s.engScore ?? 0,
             math_score: s.mathScore ?? 0,
             attendance: s.attendance ?? 1,
@@ -1075,8 +1125,8 @@ function App() {
             setStudentWeeks(weekData);
           }
 
-          setSelectedWeek('Hozirgi hafta');
-          alert(`"${trimmed}" muvaffaqiyatli boshlandi! Hamma ballar nollashtirildi.`);
+          setSelectedWeek('Yangi hafta');
+          alert(`"${weekName}" muvaffaqiyatli boshlandi! Hamma ballar nollashtirildi.`);
         } catch (err) {
           console.error("Yangi haftani boshlashda xatolik:", err);
           alert("Haftani arxivlashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");

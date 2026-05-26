@@ -192,7 +192,7 @@ const Header: React.FC<HeaderProps> = ({
                     lineHeight: 1.2
                   }}
                 >
-                  <option value="Hozirgi hafta">Hozirgi hafta</option>
+                  <option value="Yangi hafta">Yangi hafta</option>
                   {weeksList.map(w => (
                     <option key={w} value={w}>{w}</option>
                   ))}
