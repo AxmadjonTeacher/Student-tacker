@@ -245,6 +245,58 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .mobile-label {
+          display: none;
+        }
+        @media (max-width: 768px) {
+          .table-header-row {
+            display: none !important;
+          }
+          .student-row {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            border: 1.5px solid #e5e7eb !important;
+            border-radius: 20px !important;
+            margin-bottom: 1.25rem !important;
+            padding: 1.25rem 1rem !important;
+            gap: 0.75rem !important;
+            background: #ffffff !important;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01) !important;
+          }
+          .table-cell {
+            border-right: none !important;
+            border-bottom: 1px dashed #f1f5f9 !important;
+            padding: 0.5rem 0 !important;
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+            height: auto !important;
+          }
+          .table-cell:last-child, .table-cell.no-border {
+            border-bottom: none !important;
+          }
+          .mobile-label {
+            display: inline-block !important;
+            font-weight: 700 !important;
+            color: #64748b !important;
+            font-size: 0.8rem !important;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+          .name-block {
+            border-right: none !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            padding-bottom: 0.75rem !important;
+            margin-bottom: 0.25rem !important;
+            width: 100% !important;
+            height: auto !important;
+          }
+        }
+      `}} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>
         {students.length === 0 ? (
           <div className="empty-state">
@@ -266,7 +318,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 }}
               >
                 {/* Header row */}
-                <div style={{
+                <div className="table-header-row" style={{
                   display: 'grid',
                   gridTemplateColumns: isAdminMode ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
                   alignItems: 'center',
@@ -387,6 +439,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   return (
                     <div 
                       key={student.id}
+                      className="student-row"
                       style={{
                         display: 'grid',
                         gridTemplateColumns: isAdminMode ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
@@ -400,7 +453,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
                     >
                       {/* Name block */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid #e5e7eb', height: '100%' }}>
+                      <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid #e5e7eb', height: '100%' }}>
                         <div 
                           onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
                           style={{ 
@@ -431,7 +484,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
 
                       {/* Eng Score block */}
-                      <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <span className="mobile-label">Ingliz tili</span>
                         <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
                           {engPercent.toFixed(2)}%
                         </div>
@@ -441,7 +495,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
 
                       {/* Math Score block */}
-                      <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <span className="mobile-label">Matematika</span>
                         <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
                           {mathPercent.toFixed(2)}%
                         </div>
@@ -451,7 +506,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
 
                       {/* Attendance block */}
-                      <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <span className="mobile-label">Davomat</span>
                         <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
                           {attPercent.toFixed(2)}%
                         </div>
@@ -461,7 +517,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
 
                       {/* Homework block */}
-                      <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <span className="mobile-label">Vazifalar</span>
                         <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
                           {hwPercent.toFixed(2)}%
                         </div>
@@ -472,6 +529,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                       {/* Chart block */}
                       <div 
+                        className="table-cell"
                         onClick={() => setSelectedStudent(student)}
                         style={{ 
                           padding: '0 1.5rem', 
@@ -492,6 +550,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         }}
                         title="Grafikni ko'rish"
                       >
+                        <span className="mobile-label">Grafik tahlil</span>
                         <svg width="100" height="42" style={{ overflow: 'visible' }}>
                           {/* Eng Bar */}
                           <g>
@@ -552,7 +611,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                       {/* Actions */}
                       {isAdminMode && (
-                        <div style={{ padding: '0 0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                        <div className="table-cell no-border" style={{ padding: '0 0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                          <span className="mobile-label">Amallar</span>
                           <button 
                             onClick={() => setEditingStudent(student)}
                             title="Tahrirlash"
@@ -635,7 +695,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   }}
                 >
                   {/* Clean and Small but Noticeable Column Headers (With Integrated Teacher Name in All Caps) */}
-                  <div style={{
+                  <div className="table-header-row" style={{
                     display: 'grid',
                     gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr 1.5fr',
                     alignItems: 'center',
@@ -856,6 +916,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     return (
                       <div 
                         key={student.id}
+                        className="student-row"
                         draggable={isAdminMode}
                         onDragStart={(e) => handleDragStart(e, student.id)}
                         onDragOver={handleDragOver}
@@ -876,7 +937,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
                       >
                         {/* Name block */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid #e5e7eb', height: '100%' }}>
+                        <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid #e5e7eb', height: '100%' }}>
                           <div 
                             onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
                             style={{ 
@@ -907,14 +968,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         </div>
 
                         {/* Level block */}
-                        <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <span className="mobile-label">Avvalgi daraja</span>
                           <div style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.95rem' }}>
                             {student.startingLevel}
                           </div>
                         </div>
 
                         {/* Current Level block */}
-                        <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <span className="mobile-label">Hozirgi daraja</span>
                           <div style={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.95rem', marginBottom: '0.2rem' }}>
                             {student.currentLevel}
                           </div>
@@ -932,7 +995,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         </div>
 
                         {/* Yozgi Natija block */}
-                        <div style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <span className="mobile-label">Yozgi reja</span>
                           <div style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -960,7 +1024,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                         {/* Actions/Progress block */}
                         {!isAdminMode ? (
-                          <div style={{ padding: '0 0 0 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                          <div className="table-cell no-border" style={{ padding: '0 0 0 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                            <span className="mobile-label">Progress</span>
                             <button 
                               onClick={() => setSelectedStudent(student)}
                               style={{
@@ -978,7 +1043,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             </button>
                           </div>
                         ) : (
-                          <div style={{ padding: '0 0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                          <div className="table-cell no-border" style={{ padding: '0 0 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                            <span className="mobile-label">Amallar</span>
                             <button 
                               onClick={() => setEditingStudent(student)}
                               title="Tahrirlash"

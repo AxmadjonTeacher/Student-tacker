@@ -421,3 +421,9 @@ body {
   margin-bottom: 1rem;
   opacity: 0.5;
 }
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0 0.75rem 1rem 0.75rem !important;
+  }
+}

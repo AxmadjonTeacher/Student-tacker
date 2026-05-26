@@ -24,11 +24,79 @@ const Header: React.FC<HeaderProps> = ({
   selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick, onDeleteWeekClick,
   onLogout
 }) => {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .mobile-header-menu-container {
+          display: none;
+        }
+        @media (max-width: 768px) {
+          .desktop-header-actions {
+            display: none !important;
+          }
+          .mobile-header-menu-container {
+            display: block !important;
+          }
+          .admin-header-top-row {
+            padding-top: 0.75rem !important;
+            padding-bottom: 0.75rem !important;
+            gap: 0.5rem !important;
+          }
+          .admin-header-title {
+            font-size: 1rem !important;
+            text-align: left;
+            max-width: 50% !important;
+            line-height: 1.2 !important;
+          }
+          .school-logo {
+            display: none !important; /* Hide full logo on mobile top row to make room for menu */
+          }
+          .class-selector {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            scrollbar-width: none !important; /* Firefox */
+          }
+          .class-selector::-webkit-scrollbar {
+            display: none !important; /* Safari and Chrome */
+          }
+          /* Sticky Search Bar on Mobile */
+          .mobile-sticky-search {
+            position: sticky !important;
+            top: 55px !important; /* height of sticky header top row */
+            z-index: 99 !important;
+            width: 100% !important;
+            background: rgba(249, 248, 243, 0.96) !important;
+            padding: 0.5rem 0.25rem 0.75rem !important;
+            margin: 0 !important;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.4) !important;
+            backdrop-filter: blur(16px) !important;
+            WebkitBackdropFilter: blur(16px) !important;
+          }
+          .mobile-sticky-search > div {
+            width: 100% !important;
+          }
+          .mobile-sticky-search input {
+            font-size: 0.85rem !important;
+            padding: 0.6rem 1rem 0.6rem 2.25rem !important;
+          }
+          .mobile-sticky-search svg {
+            width: 14px !important;
+            height: 14px !important;
+            left: 0.75rem !important;
+          }
+          .admin-header-bottom-row {
+            margin-top: 1rem !important;
+            margin-bottom: 1.25rem !important;
+            gap: 1rem !important;
+          }
+        }
+      `}} />
       
       {/* Top Row: Heading & Logo (Sticky Transparent Header) */}
-      <div style={{ 
+      <div className="admin-header-top-row" style={{ 
         position: 'sticky', 
         top: 0, 
         zIndex: 100, 
@@ -45,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({
         paddingBottom: '1rem',
         borderBottom: '1px solid rgba(229, 231, 235, 0.5)'
       }}>
-        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+        <h1 className="admin-header-title" style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
           O'QUVCHILAR NATIJALARI TAHLILI
         </h1>
         
@@ -65,58 +133,23 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Minimalist modern settings/sidebar menu button */}
-          <button
-            onClick={onOpenDrawer}
-            title="Boshqaruv panelini ochish"
-            style={{
-              background: '#ffffff',
-              color: '#475569',
-              border: '1.5px solid #e2e8f0',
-              borderRadius: '9999px',
-              padding: '0.5rem 1.1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
-              transition: 'all 0.2s ease',
-              fontSize: '0.8rem',
-              fontWeight: 800,
-              letterSpacing: '0.04em',
-              height: '40px'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.borderColor = 'var(--accent-primary)';
-              e.currentTarget.style.color = 'var(--accent-primary)';
-              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.03)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.color = '#475569';
-              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.01)';
-            }}
-          >
-            <Settings size={15} />
-            <span>SOZLAMALAR</span>
-          </button>
-
-          {onLogout && (
+          {/* Desktop buttons */}
+          <div className="desktop-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Minimalist modern settings/sidebar menu button */}
             <button
-              onClick={onLogout}
-              title="Tizimdan chiqish"
+              onClick={onOpenDrawer}
+              title="Boshqaruv panelini ochish"
               style={{
-                background: '#fef2f2',
-                color: '#b91c1c',
-                border: '1.5px solid #fee2e2',
+                background: '#ffffff',
+                color: '#475569',
+                border: '1.5px solid #e2e8f0',
                 borderRadius: '9999px',
                 padding: '0.5rem 1.1rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.45rem',
                 cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
                 transition: 'all 0.2s ease',
                 fontSize: '0.8rem',
                 fontWeight: 800,
@@ -124,23 +157,128 @@ const Header: React.FC<HeaderProps> = ({
                 height: '40px'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#fee2e2';
                 e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                e.currentTarget.style.color = 'var(--accent-primary)';
+                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.03)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#fef2f2';
                 e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = '#e2e8f0';
+                e.currentTarget.style.color = '#475569';
+                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.01)';
               }}
             >
-              <LogOut size={15} />
-              <span>CHIQISH</span>
+              <Settings size={15} />
+              <span>SOZLAMALAR</span>
             </button>
-          )}
+
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                title="Tizimdan chiqish"
+                style={{
+                  background: '#fef2f2',
+                  color: '#b91c1c',
+                  border: '1.5px solid #fee2e2',
+                  borderRadius: '9999px',
+                  padding: '0.5rem 1.1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.04em',
+                  height: '40px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#fee2e2';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#fef2f2';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <LogOut size={15} />
+                <span>CHIQISH</span>
+              </button>
+            )}
+          </div>
+
+          {/* Hamburger Menu button */}
+          <div className="mobile-header-menu-container" style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              style={{
+                background: '#ffffff',
+                color: '#475569',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '1.25rem',
+                fontWeight: 'bold',
+                outline: 'none'
+              }}
+            >
+              ☰
+            </button>
+            {isMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '45px',
+                right: 0,
+                width: '180px',
+                background: '#ffffff',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+                padding: '0.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+                zIndex: 999
+              }}>
+                <button
+                  onClick={() => { setIsMenuOpen(false); onOpenDrawer(); }}
+                  style={{
+                    background: 'transparent', border: 'none', padding: '0.6rem 0.75rem',
+                    borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', cursor: 'pointer',
+                    textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%'
+                  }}
+                >
+                  <Settings size={14} />
+                  <span>SOZLAMALAR</span>
+                </button>
+                {onLogout && (
+                  <button
+                    onClick={() => { setIsMenuOpen(false); onLogout(); }}
+                    style={{
+                      background: '#fef2f2', border: '1px solid #fee2e2', padding: '0.6rem 0.75rem',
+                      borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, color: '#b91c1c', cursor: 'pointer',
+                      textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%'
+                    }}
+                  >
+                    <LogOut size={14} />
+                    <span>CHIQISH</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
  
       {/* Bottom Row: Classes & Search */}
-      <div style={{ 
+      <div className="admin-header-bottom-row" style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
@@ -326,7 +464,7 @@ const Header: React.FC<HeaderProps> = ({
             </>
           )}
 
-          <div style={{ position: 'relative', width: '320px' }}>
+          <div className="mobile-sticky-search" style={{ position: 'relative', width: '320px' }}>
             <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
             <input 
               type="text" 
