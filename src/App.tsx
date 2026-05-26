@@ -299,8 +299,9 @@ function App() {
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
     const localUpdatedList = [...students];
-    const upsertedMainStudents: Student[] = [];
-    const upsertedWeekData: any[] = [];
+    const existingUpserts: Student[] = [];
+    const newInserts: Student[] = [];
+    const finalUpsertedWeeks: any[] = [];
 
     for (let i = 0; i < newStudents.length; i++) {
       const newS = newStudents[i];
@@ -309,11 +310,8 @@ function App() {
                old.surname.toLowerCase().trim() === newS.surname.toLowerCase().trim()
       );
 
-      let studentId = '';
       if (matchIndex > -1) {
         const existing = localUpdatedList[matchIndex];
-        studentId = existing.id;
-        
         const merged: Student = {
           ...existing,
           ...newS,
@@ -330,29 +328,9 @@ function App() {
           homework: existing.homework
         };
         localUpdatedList[matchIndex] = merged;
-        upsertedMainStudents.push(merged);
-
-        if (selectedWeek) {
-          const existingWeekRecord = studentWeeks.find(sw => sw.student_id === studentId && sw.week === selectedWeek);
-          
-          const weekPayload = {
-            student_id: studentId,
-            week: selectedWeek,
-            eng_score: newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score ?? existing.engScore ?? 0),
-            math_score: newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score ?? existing.mathScore ?? 0),
-            attendance: newS.attendance !== undefined ? newS.attendance : (existingWeekRecord?.attendance ?? existing.attendance ?? 1),
-            homework: newS.homework !== undefined ? newS.homework : (existingWeekRecord?.homework ?? existing.homework ?? 1),
-            starting_level: activeSubject === 'ENG' ? (newS.startingLevel || existingWeekRecord?.starting_level || existing.startingLevel || 'Level 1') : (existingWeekRecord?.starting_level || existing.startingLevel || 'Level 1'),
-            current_level: activeSubject === 'ENG' ? (newS.currentLevel || existingWeekRecord?.current_level || existing.currentLevel || 'Level 1') : (existingWeekRecord?.current_level || existing.currentLevel || 'Level 1'),
-            grand_tests: activeSubject === 'ENG' ? (newS.grandTests || existingWeekRecord?.grand_tests || existing.grandTests || []) : (existingWeekRecord?.grand_tests || existing.grandTests || []),
-            math_starting_level: activeSubject === 'MATH' ? (newS.mathStartingLevel || existingWeekRecord?.math_starting_level || existing.mathStartingLevel || 'Level 1') : (existingWeekRecord?.math_starting_level || existing.startingLevel || 'Level 1'),
-            math_current_level: activeSubject === 'MATH' ? (newS.mathCurrentLevel || existingWeekRecord?.math_current_level || existing.currentLevel || 'Level 1') : (existingWeekRecord?.math_current_level || existing.currentLevel || 'Level 1'),
-            math_grand_tests: activeSubject === 'MATH' ? (newS.mathGrandTests || existingWeekRecord?.math_grand_tests || existing.mathGrandTests || []) : (existingWeekRecord?.math_grand_tests || existing.mathGrandTests || [])
-          };
-          upsertedWeekData.push(weekPayload);
-        }
+        existingUpserts.push(merged);
       } else {
-        studentId = Math.random().toString(36).substr(2, 9);
+        const tempId = Math.random().toString(36).substr(2, 9);
         let inheritedEngOrder = 0;
         if (newS.teacher) {
           const engStudent = localUpdatedList.find(s => 
@@ -373,70 +351,134 @@ function App() {
 
         const brandNew: Student = {
           ...newS,
-          id: studentId,
-          orderIndex: localUpdatedList.length,
+          id: tempId,
+          orderIndex: localUpdatedList.length + i,
           teacherOrder: inheritedEngOrder,
           mathTeacherOrder: inheritedMathOrder,
           engScore: 0,
           mathScore: 0,
           attendance: 1,
-          homework: 1
+          homework: 1,
+          passcode: ''
         };
         localUpdatedList.push(brandNew);
-        upsertedMainStudents.push(brandNew);
-
-        if (selectedWeek) {
-          const weekPayload = {
-            student_id: studentId,
-            week: selectedWeek,
-            eng_score: newS.engScore !== undefined ? newS.engScore : 0,
-            math_score: newS.mathScore !== undefined ? newS.mathScore : 0,
-            attendance: newS.attendance !== undefined ? newS.attendance : 1,
-            homework: newS.homework !== undefined ? newS.homework : 1,
-            starting_level: newS.startingLevel || 'Level 1',
-            current_level: newS.currentLevel || 'Level 1',
-            grand_tests: newS.grandTests || [],
-            math_starting_level: newS.mathStartingLevel || 'Level 1',
-            math_current_level: newS.mathCurrentLevel || 'Level 1',
-            math_grand_tests: newS.mathGrandTests || []
-          };
-          upsertedWeekData.push(weekPayload);
-        }
+        newInserts.push(brandNew);
       }
     }
 
-    setStudents(localUpdatedList);
+    let uploadedStudentsUpdatedList = [...localUpdatedList];
 
-    if (newStudents.length > 0 && newStudents[0].className) {
-      setActiveClass(getClassGroup(newStudents[0].className.toUpperCase()));
-    }
-
-    if (upsertedMainStudents.length > 0) {
+    // 1. Process and upsert existing students first (we already know their real IDs)
+    if (existingUpserts.length > 0) {
       try {
         const { error } = await supabase
           .from('Students')
-          .upsert(upsertedMainStudents.map(mapStudentToDb), { onConflict: 'id' });
+          .upsert(existingUpserts.map(mapStudentToDb), { onConflict: 'id' });
         if (error) throw error;
+        
+        // Add their week data
+        if (selectedWeek) {
+          existingUpserts.forEach(s => {
+            const newS = newStudents.find(ns => ns.name.toLowerCase().trim() === s.name.toLowerCase().trim() && ns.surname.toLowerCase().trim() === s.surname.toLowerCase().trim());
+            const existingWeekRecord = studentWeeks.find(sw => sw.student_id === s.id && sw.week === selectedWeek);
+            if (newS) {
+              finalUpsertedWeeks.push({
+                student_id: s.id,
+                week: selectedWeek,
+                eng_score: newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score ?? s.engScore ?? 0),
+                math_score: newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score ?? s.mathScore ?? 0),
+                attendance: newS.attendance !== undefined ? newS.attendance : (existingWeekRecord?.attendance ?? s.attendance ?? 1),
+                homework: newS.homework !== undefined ? newS.homework : (existingWeekRecord?.homework ?? s.homework ?? 1),
+                starting_level: activeSubject === 'ENG' ? (newS.startingLevel || existingWeekRecord?.starting_level || s.startingLevel || 'Level 1') : (existingWeekRecord?.starting_level || s.startingLevel || 'Level 1'),
+                current_level: activeSubject === 'ENG' ? (newS.currentLevel || existingWeekRecord?.current_level || s.currentLevel || 'Level 1') : (existingWeekRecord?.current_level || s.currentLevel || 'Level 1'),
+                grand_tests: activeSubject === 'ENG' ? (newS.grandTests || existingWeekRecord?.grand_tests || s.grandTests || []) : (existingWeekRecord?.grand_tests || s.grandTests || []),
+                math_starting_level: activeSubject === 'MATH' ? (newS.mathStartingLevel || existingWeekRecord?.math_starting_level || s.mathStartingLevel || 'Level 1') : (existingWeekRecord?.math_starting_level || s.startingLevel || 'Level 1'),
+                math_current_level: activeSubject === 'MATH' ? (newS.mathCurrentLevel || existingWeekRecord?.math_current_level || s.currentLevel || 'Level 1') : (existingWeekRecord?.math_current_level || s.currentLevel || 'Level 1'),
+                math_grand_tests: activeSubject === 'MATH' ? (newS.mathGrandTests || existingWeekRecord?.math_grand_tests || s.mathGrandTests || []) : (existingWeekRecord?.math_grand_tests || s.mathGrandTests || [])
+              });
+            }
+          });
+        }
       } catch (err) {
-        console.error('Failed to sync upserted main students to Supabase:', err);
+        console.error('Failed to upsert existing students:', err);
       }
     }
 
-    if (upsertedWeekData.length > 0) {
+    // 2. Process and insert new students (letting Supabase generate IDs and passcodes)
+    if (newInserts.length > 0) {
+      try {
+        const { data, error } = await supabase
+          .from('Students')
+          .insert(newInserts.map(s => {
+            const dbPayload = mapStudentToDb(s);
+            dbPayload.passcode = null; // Let DB generate passcode
+            return dbPayload;
+          }))
+          .select();
+        if (error) throw error;
+        if (data) {
+          const returnedStudents = data.map(mapDbToStudent);
+          
+          // Replace newInserts in uploadedStudentsUpdatedList with the returnedStudents that have correct IDs/passcodes
+          newInserts.forEach((s) => {
+            const matchedDb = returnedStudents.find(rs => rs.name.toLowerCase().trim() === s.name.toLowerCase().trim() && rs.surname.toLowerCase().trim() === s.surname.toLowerCase().trim());
+            if (matchedDb) {
+              const listIdx = uploadedStudentsUpdatedList.findIndex(item => item.name.toLowerCase().trim() === s.name.toLowerCase().trim() && item.surname.toLowerCase().trim() === s.surname.toLowerCase().trim());
+              if (listIdx > -1) {
+                uploadedStudentsUpdatedList[listIdx] = matchedDb;
+              } else {
+                uploadedStudentsUpdatedList.push(matchedDb);
+              }
+
+              // Create week payload for this new student using their real ID
+              if (selectedWeek) {
+                const newS = newStudents.find(ns => ns.name.toLowerCase().trim() === s.name.toLowerCase().trim() && ns.surname.toLowerCase().trim() === s.surname.toLowerCase().trim());
+                finalUpsertedWeeks.push({
+                  student_id: matchedDb.id,
+                  week: selectedWeek,
+                  eng_score: newS?.engScore ?? 0,
+                  math_score: newS?.mathScore ?? 0,
+                  attendance: newS?.attendance ?? 1,
+                  homework: newS?.homework ?? 1,
+                  starting_level: newS?.startingLevel || 'Level 1',
+                  current_level: newS?.currentLevel || 'Level 1',
+                  grand_tests: newS?.grandTests || [],
+                  math_starting_level: newS?.mathStartingLevel || 'Level 1',
+                  math_current_level: newS?.mathCurrentLevel || 'Level 1',
+                  math_grand_tests: newS?.mathGrandTests || []
+                });
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Failed to insert new students:', err);
+      }
+    }
+
+    // 3. Upsert week data for all students in bulk
+    if (finalUpsertedWeeks.length > 0) {
       setStudentWeeks(prev => {
-        const ids = upsertedWeekData.map(w => w.student_id);
+        const ids = finalUpsertedWeeks.map(w => w.student_id);
         const filtered = prev.filter(sw => !(ids.includes(sw.student_id) && sw.week === selectedWeek));
-        return [...filtered, ...upsertedWeekData];
+        return [...filtered, ...finalUpsertedWeeks];
       });
 
       try {
         const { error } = await supabase
           .from('student_weeks')
-          .upsert(upsertedWeekData, { onConflict: 'student_id,week' });
+          .upsert(finalUpsertedWeeks, { onConflict: 'student_id,week' });
         if (error) throw error;
       } catch (err) {
-        console.error('Failed to sync upserted student weeks to Supabase:', err);
+        console.error('Failed to upsert week data:', err);
       }
+    }
+
+    // Update students state
+    setStudents(uploadedStudentsUpdatedList);
+
+    if (newStudents.length > 0 && newStudents[0].className) {
+      setActiveClass(getClassGroup(newStudents[0].className.toUpperCase()));
     }
   };
 
@@ -459,8 +501,9 @@ function App() {
       if (mathStudent) inheritedMathOrder = mathStudent.mathTeacherOrder || 0;
     }
 
+    const tempId = Math.random().toString(36).substr(2, 9);
     const brandNew: Student = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: tempId,
       name: studentData.name || '',
       surname: studentData.surname || '',
       className: activeClass,
@@ -477,18 +520,61 @@ function App() {
       engScore: studentData.engScore !== undefined ? studentData.engScore : 0,
       mathScore: studentData.mathScore !== undefined ? studentData.mathScore : 0,
       attendance: studentData.attendance !== undefined ? studentData.attendance : 1,
-      homework: studentData.homework !== undefined ? studentData.homework : 1
+      homework: studentData.homework !== undefined ? studentData.homework : 1,
+      passcode: '',
+      parentPhone: studentData.parentPhone || ''
     };
 
     setStudents(prev => [...prev, brandNew]);
 
     try {
-      const { error } = await supabase
+      const dbPayload = mapStudentToDb(brandNew);
+      dbPayload.passcode = null; // Let Supabase trigger generate passcode
+
+      const { data, error } = await supabase
         .from('Students')
-        .insert(mapStudentToDb(brandNew));
+        .insert(dbPayload)
+        .select()
+        .single();
+      
       if (error) throw error;
+      
+      if (data) {
+        const dbStudent = mapDbToStudent(data);
+        // Replace temp student with db-generated ID and passcode in local state
+        setStudents(prev => prev.map(s => s.id === tempId ? dbStudent : s));
+
+        // If selectedWeek is active, insert a week record for this new student
+        if (selectedWeek) {
+          const weekPayload = {
+            student_id: dbStudent.id,
+            week: selectedWeek,
+            eng_score: dbStudent.engScore ?? 0,
+            math_score: dbStudent.mathScore ?? 0,
+            attendance: dbStudent.attendance ?? 1,
+            homework: dbStudent.homework ?? 1,
+            starting_level: dbStudent.startingLevel || 'Level 1',
+            current_level: dbStudent.currentLevel || 'Level 1',
+            grand_tests: dbStudent.grandTests || [],
+            math_starting_level: dbStudent.mathStartingLevel || 'Level 1',
+            math_current_level: dbStudent.mathCurrentLevel || 'Level 1',
+            math_grand_tests: dbStudent.mathGrandTests || []
+          };
+
+          setStudentWeeks(prev => {
+            const filtered = prev.filter(sw => !(sw.student_id === dbStudent.id && sw.week === selectedWeek));
+            return [...filtered, weekPayload];
+          });
+
+          await supabase
+            .from('student_weeks')
+            .upsert(weekPayload, { onConflict: 'student_id,week' });
+        }
+      }
     } catch (err) {
       console.error('Failed to add student manually to Supabase:', err);
+      // Rollback optimistic add
+      setStudents(prev => prev.filter(s => s.id !== tempId));
     }
   };
 
@@ -646,26 +732,28 @@ function App() {
           attendance = hist.attendance ?? student.attendance;
           homework = hist.homework ?? student.homework;
         } else {
-          currentLevel = student.startingLevel;
-          grandTests = [];
+          startingLevel = student.startingLevel;
+          currentLevel = student.currentLevel || student.startingLevel;
+          grandTests = student.grandTests || [];
           mathStartingLevel = student.mathStartingLevel || 'Level 1';
-          mathCurrentLevel = student.mathStartingLevel || 'Level 1';
-          mathGrandTests = [];
-          engScore = 0;
-          mathScore = 0;
-          attendance = 1;
-          homework = 1;
+          mathCurrentLevel = student.mathCurrentLevel || 'Level 1';
+          mathGrandTests = student.mathGrandTests || [];
+          engScore = student.engScore ?? 0;
+          mathScore = student.mathScore ?? 0;
+          attendance = student.attendance ?? 1;
+          homework = student.homework ?? 1;
         }
       } else {
-        currentLevel = student.startingLevel;
-        grandTests = [];
+        startingLevel = student.startingLevel;
+        currentLevel = student.currentLevel || student.startingLevel;
+        grandTests = student.grandTests || [];
         mathStartingLevel = student.mathStartingLevel || 'Level 1';
-        mathCurrentLevel = student.mathStartingLevel || 'Level 1';
-        mathGrandTests = [];
-        engScore = 0;
-        mathScore = 0;
-        attendance = 1;
-        homework = 1;
+        mathCurrentLevel = student.mathCurrentLevel || 'Level 1';
+        mathGrandTests = student.mathGrandTests || [];
+        engScore = student.engScore ?? 0;
+        mathScore = student.mathScore ?? 0;
+        attendance = student.attendance ?? 1;
+        homework = student.homework ?? 1;
       }
 
       // Always store original english values explicitly so they are not lost after projection!
@@ -728,36 +816,72 @@ function App() {
     engScore?: number,
     mathScore?: number,
     attendance?: number,
-    homework?: number
+    homework?: number,
+    parentPhone?: string
   ) => {
-    // 1. Update local students state for baseline identity edits
+    // 1. Update local students state for baseline identity & progress edits
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
-        return {
+        const updated = {
           ...s,
           name: newName !== undefined ? newName : s.name,
           surname: newSurname !== undefined ? newSurname : s.surname,
           className: newClassName !== undefined ? newClassName : s.className,
+          engScore: engScore !== undefined ? engScore : s.engScore,
+          mathScore: mathScore !== undefined ? mathScore : s.mathScore,
+          attendance: attendance !== undefined ? attendance : s.attendance,
+          homework: homework !== undefined ? homework : s.homework,
+          parentPhone: parentPhone !== undefined ? parentPhone : s.parentPhone
         };
+
+        if (activeSubject === 'ENG') {
+          updated.startingLevel = startingLevel;
+          updated.currentLevel = currentLevel;
+          updated.grandTests = grandTests;
+          // Keep explicit helpers in sync
+          updated.englishStartingLevel = startingLevel;
+          updated.englishCurrentLevel = currentLevel;
+          updated.englishGrandTests = grandTests;
+        } else if (activeSubject === 'MATH') {
+          updated.mathStartingLevel = startingLevel;
+          updated.mathCurrentLevel = currentLevel;
+          updated.mathGrandTests = grandTests;
+        }
+
+        return updated;
       }
       return s;
     }));
 
-    // 2. Update Students table in Supabase for baseline identity
-    if (newName !== undefined || newSurname !== undefined || newClassName !== undefined) {
-      try {
-        const identPayload: any = {};
-        if (newName !== undefined) identPayload.name = newName;
-        if (newSurname !== undefined) identPayload.surname = newSurname;
-        if (newClassName !== undefined) identPayload.class_name = newClassName;
-        
-        await supabase
-          .from('Students')
-          .update(identPayload)
-          .eq('id', studentId);
-      } catch (err) {
-        console.error('Failed to update student identity in Supabase:', err);
+    // 2. Update Students table in Supabase for baseline identity & progress
+    try {
+      const payload: any = {};
+      if (newName !== undefined) payload.name = newName;
+      if (newSurname !== undefined) payload.surname = newSurname;
+      if (newClassName !== undefined) payload.class_name = newClassName;
+      
+      if (engScore !== undefined) payload.eng_score = engScore;
+      if (mathScore !== undefined) payload.math_score = mathScore;
+      if (attendance !== undefined) payload.attendance = attendance;
+      if (homework !== undefined) payload.homework = homework;
+      if (parentPhone !== undefined) payload.parent_phone = parentPhone;
+      
+      if (activeSubject === 'ENG') {
+        payload.starting_level = startingLevel;
+        payload.current_level = currentLevel;
+        payload.grand_tests = grandTests;
+      } else if (activeSubject === 'MATH') {
+        payload.math_starting_level = startingLevel;
+        payload.math_current_level = currentLevel;
+        payload.math_grand_tests = grandTests;
       }
+
+      await supabase
+        .from('Students')
+        .update(payload)
+        .eq('id', studentId);
+    } catch (err) {
+      console.error('Failed to update student baseline in Supabase:', err);
     }
 
     // 3. Update student_weeks table for weekly scores

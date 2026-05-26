@@ -15,7 +15,7 @@ interface GraphModalProps {
 
 const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject, studentWeeks }) => {
   const [isComparing, setIsComparing] = useState(false);
-  const [showProgression, setShowProgression] = useState(false);
+  const [allActiveTab, setAllActiveTab] = useState<'current' | 'progression' | 'terms'>('current');
 
   // Normalize levels to a number for graphing
   const getLevelValue = (levelStr: string): number => {
@@ -128,7 +128,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
   }
 
   // Decide dynamically which scores are visible to scale Y-axis domain
-  const allVisibleScores = isComparing 
+  const allVisibleScores = (isComparing || activeSubject === 'ALL')
     ? [
         ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined),
         ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined),
@@ -382,6 +382,111 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
     return null;
   };
 
+  const renderAreaChart = () => (
+    <div style={{ height: '350px', width: '100%' }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={combinedData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
+          <defs>
+            <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#129f87" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="#129f87" stopOpacity={0.0}/>
+            </linearGradient>
+            <linearGradient id="colorMath" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="#f97316" stopOpacity={0.0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
+          <XAxis 
+            dataKey="date" 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+            dy={15}
+          />
+          <YAxis 
+            domain={[domainMin, domainMax]} 
+            ticks={ticks}
+            tickFormatter={(val) => `${val}%`}
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
+            width={50}
+          />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
+          
+          {domainMin <= 50 && domainMax >= 50 && (
+            <ReferenceLine y={50} stroke="#e2e8f0" strokeWidth={1.5} strokeDasharray="3 3" />
+          )}
+          
+          {/* English Score Area (Teal) */}
+          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
+            <Area 
+              type="monotone" 
+              dataKey="engVal" 
+              stroke="#129f87" 
+              strokeWidth={4.5} 
+              fillOpacity={1}
+              fill="url(#colorEng)"
+              dot={{ r: 5, fill: '#ffffff', stroke: '#129f87', strokeWidth: 3 }}
+              activeDot={{ r: 7, fill: '#129f87', stroke: '#ffffff', strokeWidth: 3 }}
+              isAnimationActive={true}
+              animationDuration={1200}
+            />
+          )}
+
+          {/* English Summer Estimate Segment (Dark Green Long Dashed Line) */}
+          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
+            <Line 
+              type="monotone" 
+              dataKey="engEstimate" 
+              stroke="#166534" 
+              strokeWidth={5.5} 
+              strokeDasharray="35 3"
+              connectNulls={true}
+              dot={{ r: 7, fill: '#f0fdf4', stroke: '#166534', strokeWidth: 4 }}
+              activeDot={{ r: 9, fill: '#166534', stroke: '#ffffff', strokeWidth: 3.5 }}
+              isAnimationActive={true}
+              animationDuration={1200}
+            />
+          )}
+          
+          {/* Math Score Area (Orange) */}
+          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
+            <Area 
+              type="monotone" 
+              dataKey="mathVal" 
+              stroke="#f97316" 
+              strokeWidth={4.5} 
+              fillOpacity={1}
+              fill="url(#colorMath)"
+              dot={{ r: 5, fill: '#ffffff', stroke: '#f97316', strokeWidth: 3 }}
+              activeDot={{ r: 7, fill: '#f97316', stroke: '#ffffff', strokeWidth: 3 }}
+              isAnimationActive={true}
+              animationDuration={1200}
+            />
+          )}
+
+          {/* Math Summer Estimate Segment (Dark Orange Long Dashed Line) */}
+          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
+            <Line 
+              type="monotone" 
+              dataKey="mathEstimate" 
+              stroke="#c2410c" 
+              strokeWidth={5.5} 
+              strokeDasharray="35 3"
+              connectNulls={true}
+              dot={{ r: 7, fill: '#fff7ed', stroke: '#c2410c', strokeWidth: 4 }}
+              activeDot={{ r: 9, fill: '#c2410c', stroke: '#ffffff', strokeWidth: 3.5 }}
+              isAnimationActive={true}
+              animationDuration={1200}
+            />
+          )}
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+
   return (
     <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(4px)', background: 'rgba(0, 0, 0, 0.5)' }}>
       <div 
@@ -504,37 +609,44 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           <div style={{ 
             display: 'flex', 
             justifyContent: 'center',
-            marginBottom: '1.5rem' 
+            gap: '0.5rem',
+            marginBottom: '1.5rem',
+            background: '#f1f5f9',
+            padding: '4px',
+            borderRadius: '9999px',
+            maxWidth: 'fit-content',
+            margin: '0 auto 1.5rem'
           }}>
-            <button
-              onClick={() => setShowProgression(!showProgression)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: showProgression ? 'linear-gradient(135deg, #4f46e5, #4338ca)' : '#ffffff',
-                color: showProgression ? '#ffffff' : '#475569',
-                border: '1.5px solid #e2e8f0',
-                borderRadius: '9999px',
-                padding: '0.6rem 1.5rem',
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                letterSpacing: '0.05em'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1.5px)';
-                if (!showProgression) e.currentTarget.style.borderColor = activeThemeColor;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                if (!showProgression) e.currentTarget.style.borderColor = '#e2e8f0';
-              }}
-            >
-              {showProgression ? '📊 BAR NATIJALARI KO\'RINISHI' : '📈 HAFTALIK O\'ZGARISH DINAMIKASI'}
-            </button>
+            {[
+              { id: 'current', label: '📊 JORIY HAFTA' },
+              { id: 'progression', label: '📈 HAFTALIK O\'ZGARISH' },
+              { id: 'terms', label: '🏆 CHORAKLIK NATIJALAR' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setAllActiveTab(tab.id as any)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: allActiveTab === tab.id 
+                    ? 'linear-gradient(135deg, #4f46e5, #4338ca)' 
+                    : 'transparent',
+                  color: allActiveTab === tab.id ? '#ffffff' : '#64748b',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '0.6rem 1.25rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: allActiveTab === tab.id ? '0 4px 6px -1px rgba(79, 70, 229, 0.2)' : 'none',
+                  transition: 'all 0.2s ease',
+                  letterSpacing: '0.03em'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         )}
 
@@ -573,7 +685,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
           )}
 
           {activeSubject === 'ALL' ? (
-            showProgression ? (
+            allActiveTab === 'progression' ? (
               <div style={{ height: '350px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={progressionData} margin={{ top: 15, right: 30, left: 10, bottom: 10 }}>
@@ -633,7 +745,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-            ) : (
+            ) : allActiveTab === 'current' ? (
               <div style={{ height: '350px', width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={barData} margin={{ top: 25, right: 30, left: 10, bottom: 10 }}>
@@ -663,110 +775,11 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            ) : (
+              renderAreaChart()
             )
           ) : (
-            <div style={{ height: '350px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={combinedData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
-                  <defs>
-                    <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#129f87" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#129f87" stopOpacity={0.0}/>
-                    </linearGradient>
-                    <linearGradient id="colorMath" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#f97316" stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis 
-                    dataKey="date" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
-                    dy={15}
-                  />
-                  <YAxis 
-                    domain={[domainMin, domainMax]} 
-                    ticks={ticks}
-                    tickFormatter={(val) => `${val}%`}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#64748b', fontSize: 13, fontWeight: 700 }}
-                    width={50}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
-                  
-                  {domainMin <= 50 && domainMax >= 50 && (
-                    <ReferenceLine y={50} stroke="#e2e8f0" strokeWidth={1.5} strokeDasharray="3 3" />
-                  )}
-                  
-                  {/* English Score Area (Teal) */}
-                  {(isComparing || activeSubject === 'ENG') && (
-                    <Area 
-                      type="monotone" 
-                      dataKey="engVal" 
-                      stroke="#129f87" 
-                      strokeWidth={4.5} 
-                      fillOpacity={1}
-                      fill="url(#colorEng)"
-                      dot={{ r: 5, fill: '#ffffff', stroke: '#129f87', strokeWidth: 3 }}
-                      activeDot={{ r: 7, fill: '#129f87', stroke: '#ffffff', strokeWidth: 3 }}
-                      isAnimationActive={true}
-                      animationDuration={1200}
-                    />
-                  )}
-
-                  {/* English Summer Estimate Segment (Dark Green Long Dashed Line) */}
-                  {(isComparing || activeSubject === 'ENG') && (
-                    <Line 
-                      type="monotone" 
-                      dataKey="engEstimate" 
-                      stroke="#166534" 
-                      strokeWidth={5.5} 
-                      strokeDasharray="35 3"
-                      connectNulls={true}
-                      dot={{ r: 7, fill: '#f0fdf4', stroke: '#166534', strokeWidth: 4 }}
-                      activeDot={{ r: 9, fill: '#166534', stroke: '#ffffff', strokeWidth: 3.5 }}
-                      isAnimationActive={true}
-                      animationDuration={1200}
-                    />
-                  )}
-                  
-                  {/* Math Score Area (Orange) */}
-                  {(isComparing || activeSubject === 'MATH') && (
-                    <Area 
-                      type="monotone" 
-                      dataKey="mathVal" 
-                      stroke="#f97316" 
-                      strokeWidth={4.5} 
-                      fillOpacity={1}
-                      fill="url(#colorMath)"
-                      dot={{ r: 5, fill: '#ffffff', stroke: '#f97316', strokeWidth: 3 }}
-                      activeDot={{ r: 7, fill: '#f97316', stroke: '#ffffff', strokeWidth: 3 }}
-                      isAnimationActive={true}
-                      animationDuration={1200}
-                    />
-                  )}
-
-                  {/* Math Summer Estimate Segment (Dark Orange Long Dashed Line) */}
-                  {(isComparing || activeSubject === 'MATH') && (
-                    <Line 
-                      type="monotone" 
-                      dataKey="mathEstimate" 
-                      stroke="#c2410c" 
-                      strokeWidth={5.5} 
-                      strokeDasharray="35 3"
-                      connectNulls={true}
-                      dot={{ r: 7, fill: '#fff7ed', stroke: '#c2410c', strokeWidth: 4 }}
-                      activeDot={{ r: 9, fill: '#c2410c', stroke: '#ffffff', strokeWidth: 3.5 }}
-                      isAnimationActive={true}
-                      animationDuration={1200}
-                    />
-                  )}
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            renderAreaChart()
           )}
         </div>
       </div>

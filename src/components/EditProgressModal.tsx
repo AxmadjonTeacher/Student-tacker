@@ -15,7 +15,8 @@ interface EditProgressModalProps {
     engScore?: number,
     mathScore?: number,
     attendance?: number,
-    homework?: number
+    homework?: number,
+    parentPhone?: string
   ) => void;
   activeSubject: 'ENG' | 'MATH' | 'ALL';
 }
@@ -34,6 +35,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const [name, setName] = useState(student.name);
   const [surname, setSurname] = useState(student.surname);
   const [className, setClassName] = useState(student.className);
+  const [parentPhone, setParentPhone] = useState(student.parentPhone || '');
 
   // ALL subject fields
   const [engScore, setEngScore] = useState(student.engScore?.toString() || '0');
@@ -109,7 +111,8 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
         parsedEngScore,
         parsedMathScore,
         parsedAttendance,
-        parsedHomework
+        parsedHomework,
+        parentPhone.trim()
       );
     } else {
       const parseScore = (val: string): number | null => {
@@ -135,7 +138,8 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
         activeSubject === 'ENG' ? parsedEngScore : undefined,
         activeSubject === 'MATH' ? parsedMathScore : undefined,
         parsedAttendance,
-        parsedHomework
+        parsedHomework,
+        parentPhone.trim()
       );
     }
   };
@@ -237,6 +241,26 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
                 color: '#1e293b', background: '#ffffff', outline: 'none'
               }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+              OTA-ONA TELEFON RAQAMI
+            </label>
+            <input 
+              type="text" 
+              value={parentPhone}
+              onChange={e => setParentPhone(e.target.value)}
+              placeholder="+998 90 123 45 67"
+              style={{
+                width: '100%', padding: '0.75rem 1rem', borderRadius: '12px',
+                border: '1.5px solid #e2e8f0', fontSize: '0.95rem',
+                outline: 'none', transition: 'all 0.2s ease',
+                backgroundColor: '#ffffff'
+              }}
+              onFocus={e => e.currentTarget.style.borderColor = activeThemeColor}
+              onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
             />
           </div>
 

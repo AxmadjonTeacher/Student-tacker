@@ -29,7 +29,9 @@ export const mapDbToStudent = (db: any): Student => ({
   mathScore: db.math_score !== null && db.math_score !== undefined ? Number(db.math_score) : 0,
   attendance: db.attendance !== null && db.attendance !== undefined ? Number(db.attendance) : 1,
   homework: db.homework !== null && db.homework !== undefined ? Number(db.homework) : 1,
-  isDeleted: !!db.is_deleted
+  isDeleted: !!db.is_deleted,
+  passcode: db.passcode || '',
+  parentPhone: db.parent_phone || ''
 });
 
 export const mapStudentToDb = (student: Student) => ({
@@ -54,5 +56,7 @@ export const mapStudentToDb = (student: Student) => ({
   math_score: student.mathScore !== undefined ? student.mathScore : 0,
   attendance: student.attendance !== undefined ? student.attendance : 1,
   homework: student.homework !== undefined ? student.homework : 1,
-  is_deleted: student.isDeleted || false
+  is_deleted: student.isDeleted || false,
+  passcode: student.passcode || null,
+  parent_phone: student.parentPhone || null
 });

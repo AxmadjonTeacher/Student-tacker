@@ -21,6 +21,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
   const [startingLevel, setStartingLevel] = useState('Level 1');
   const [currentLevel, setCurrentLevel] = useState('Level 1');
   const [teacher, setTeacher] = useState('');
+  const [parentPhone, setParentPhone] = useState('');
 
   if (!isOpen) return null;
 
@@ -31,6 +32,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
     const studentData: Partial<Student> = {
       name: name.trim(),
       surname: surname.trim(),
+      parentPhone: parentPhone.trim(),
     };
 
     if (activeSubject === 'MATH') {
@@ -64,6 +66,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
     setStartingLevel('Level 1');
     setCurrentLevel('Level 1');
     setTeacher('');
+    setParentPhone('');
     onClose();
   };
 
@@ -171,6 +174,25 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
               value={teacher}
               onChange={e => setTeacher(e.target.value)}
               placeholder="O'qituvchi ismini kiriting..."
+              style={{
+                width: '100%', padding: '0.75rem', borderRadius: '10px',
+                border: '1px solid #cbd5e1', fontSize: '0.95rem',
+                outline: 'none', transition: 'border-color 0.2s ease'
+              }}
+              onFocus={e => e.currentTarget.style.borderColor = '#0d9488'}
+              onBlur={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+            />
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>
+              Ota-ona telefon raqami <span style={{ color: '#94a3b8', fontWeight: 400 }}>(ixtiyoriy)</span>
+            </label>
+            <input 
+              type="text" 
+              value={parentPhone}
+              onChange={e => setParentPhone(e.target.value)}
+              placeholder="+998 90 123 45 67"
               style={{
                 width: '100%', padding: '0.75rem', borderRadius: '10px',
                 border: '1px solid #cbd5e1', fontSize: '0.95rem',

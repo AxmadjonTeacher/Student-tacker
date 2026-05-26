@@ -24,7 +24,8 @@ interface StudentTableProps {
     engScore?: number,
     mathScore?: number,
     attendance?: number,
-    homework?: number
+    homework?: number,
+    parentPhone?: string
   ) => void;
   onRenameTeacherTable?: (oldName: string) => void;
   onDeleteTeacherTable?: (teacherName: string) => void;
@@ -1057,9 +1058,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
           student={editingStudent}
           activeSubject={activeSubject}
           onClose={() => setEditingStudent(null)}
-          onSave={(start, curr, tests, newName, newSurname, newClassName, engScore, mathScore, attendance, homework) => {
+          onSave={(sl, cl, gt, n, s, c, eng, math, att, hw, phone) => {
             if (onUpdateProgress) {
-              onUpdateProgress(editingStudent.id, start, curr, tests, newName, newSurname, newClassName, engScore, mathScore, attendance, homework);
+              onUpdateProgress(editingStudent.id, sl, cl, gt, n, s, c, eng, math, att, hw, phone);
             }
             setEditingStudent(null);
           }}
