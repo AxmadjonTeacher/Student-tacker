@@ -6,6 +6,8 @@ import CustomDialog from './components/CustomDialog';
 import PasscodeModal from './components/PasscodeModal';
 import type { Student } from './types';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
+import LoginScreen from './components/LoginScreen';
+import ParentCabinet from './components/ParentCabinet';
 
 const INITIAL_CLASSES = ['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'];
 
@@ -94,6 +96,8 @@ function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
+  const [authRole, setAuthRole] = useState<'admin' | 'parent' | null>(null);
+  const [loggedInStudent, setLoggedInStudent] = useState<Student | null>(null);
 
   // Custom Dialog DialogState
   const [dialog, setDialog] = useState<{
@@ -216,69 +220,121 @@ function App() {
     };
   }, []);
 
-  // Load from Supabase on mount
-  useEffect(() => {
-    const fetchStudentsAndWeeks = async () => {
-      try {
-        const { data, error } = await supabase.from('Students').select('*');
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          const loaded = data.map(mapDbToStudent);
-          loaded.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from('Students').select('*');
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const loaded = data.map(mapDbToStudent);
+        loaded.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+        setStudents(loaded);
+      } else {
+        setStudents(INITIAL_MOCK_DATA);
+        await supabase.from('Students').insert(INITIAL_MOCK_DATA.map(mapStudentToDb));
+      }
+    } catch (err) {
+      console.error('Supabase fetch error, falling back to LocalStorage:', err);
+      const saved = localStorage.getItem('students_data_v2');
+      if (saved) {
+        try {
+          const loaded = JSON.parse(saved);
+          loaded.sort((a: Student, b: Student) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
           setStudents(loaded);
-        } else {
-          setStudents(INITIAL_MOCK_DATA);
-          await supabase.from('Students').insert(INITIAL_MOCK_DATA.map(mapStudentToDb));
-        }
-      } catch (err) {
-        console.error('Supabase fetch error, falling back to LocalStorage:', err);
-        const saved = localStorage.getItem('students_data_v2');
-        if (saved) {
-          try {
-            const loaded = JSON.parse(saved);
-            loaded.sort((a: Student, b: Student) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
-            setStudents(loaded);
-          } catch (e) {
-            setStudents(INITIAL_MOCK_DATA);
-          }
-        } else {
+        } catch (e) {
           setStudents(INITIAL_MOCK_DATA);
         }
+      } else {
+        setStudents(INITIAL_MOCK_DATA);
       }
+    }
 
-      try {
-        const { data, error } = await supabase.from('student_weeks').select('*');
-        if (error) throw error;
-        if (data) {
-          setStudentWeeks(data);
-          const activeWeeksSet = new Set<string>();
-          data.forEach(sw => {
-            if (sw.week && !sw.is_deleted) activeWeeksSet.add(sw.week);
-          });
-          const sortedActiveWeeks = Array.from(activeWeeksSet).sort((a, b) => {
-            return parseWeekToSortValue(a) - parseWeekToSortValue(b);
-          });
-          if (sortedActiveWeeks.length > 0) {
-            setSelectedWeek(sortedActiveWeeks[sortedActiveWeeks.length - 1]);
+    try {
+      const { data, error } = await supabase.from('student_weeks').select('*');
+      if (error) throw error;
+      if (data) {
+        setStudentWeeks(data);
+        const activeWeeksSet = new Set<string>();
+        data.forEach(sw => {
+          if (sw.week && !sw.is_deleted) activeWeeksSet.add(sw.week);
+        });
+        const sortedActiveWeeks = Array.from(activeWeeksSet).sort((a, b) => {
+          return parseWeekToSortValue(a) - parseWeekToSortValue(b);
+        });
+        if (sortedActiveWeeks.length > 0) {
+          setSelectedWeek(sortedActiveWeeks[sortedActiveWeeks.length - 1]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch student weeks history:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from Supabase on mount / restore session
+  useEffect(() => {
+    const checkSessionAndFetch = async () => {
+      const storedRole = localStorage.getItem('auth_role');
+      
+      if (storedRole === 'admin') {
+        const storedPass = localStorage.getItem('admin_passcode');
+        if (storedPass === 'Azz21alxorazmiy') {
+          setAuthRole('admin');
+          setIsAdminMode(true);
+          await fetchAllData();
+          return;
+        }
+      } else if (storedRole === 'parent') {
+        const storedId = localStorage.getItem('parent_student_id');
+        const storedPasscode = localStorage.getItem('parent_student_passcode');
+        if (storedId && storedPasscode) {
+          try {
+            const { data, error } = await supabase
+              .from('Students')
+              .select('*')
+              .eq('id', storedId)
+              .eq('passcode', storedPasscode)
+              .eq('is_deleted', false)
+              .maybeSingle();
+
+            if (!error && data) {
+              const student = mapDbToStudent(data);
+              setAuthRole('parent');
+              setLoggedInStudent(student);
+              setStudents([student]);
+              
+              const { data: weeksData, error: weeksError } = await supabase
+                .from('student_weeks')
+                .select('*')
+                .eq('student_id', student.id)
+                .eq('is_deleted', false);
+                
+              if (!weeksError && weeksData) {
+                setStudentWeeks(weeksData);
+              }
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.error('Parent session restore failed:', e);
           }
         }
-      } catch (err) {
-        console.error('Failed to fetch student weeks history:', err);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
-    fetchStudentsAndWeeks();
+
+    checkSessionAndFetch();
   }, []);
 
-  // Sync state to LocalStorage as a local offline cache backup
+  // Sync state to LocalStorage as a local offline cache backup (Admin only)
   useEffect(() => {
-    if (!loading) {
+    if (!loading && authRole === 'admin') {
       localStorage.setItem('students_data_v2', JSON.stringify(students));
     }
-  }, [students, loading]);
+  }, [students, loading, authRole]);
 
   // Dynamic theme colors: English = Dark Green, Math = Teal, All = Indigo
   useEffect(() => {
@@ -623,6 +679,48 @@ function App() {
     } else {
       setShowPasscodeModal(true);
     }
+  };
+
+  const handleLoginSuccess = async (role: 'admin' | 'parent', studentData?: any) => {
+    setAuthRole(role);
+    if (role === 'admin') {
+      setIsAdminMode(true);
+      await fetchAllData();
+    } else if (role === 'parent' && studentData) {
+      const student = mapDbToStudent(studentData);
+      setLoggedInStudent(student);
+      setStudents([student]);
+      
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('student_weeks')
+          .select('*')
+          .eq('student_id', student.id)
+          .eq('is_deleted', false);
+          
+        if (!error && data) {
+          setStudentWeeks(data);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_role');
+    localStorage.removeItem('admin_passcode');
+    localStorage.removeItem('parent_student_id');
+    localStorage.removeItem('parent_student_passcode');
+    
+    setAuthRole(null);
+    setLoggedInStudent(null);
+    setStudents([]);
+    setStudentWeeks([]);
+    setIsAdminMode(false);
   };
 
   const handleBulkDeleteClass = () => {
@@ -1384,6 +1482,20 @@ function App() {
     );
   }
 
+  if (authRole === null) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (authRole === 'parent' && loggedInStudent) {
+    return (
+      <ParentCabinet
+        student={loggedInStudent}
+        studentWeeks={studentWeeks}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   return (
     <div className="app-container">
       <Header
@@ -1401,6 +1513,7 @@ function App() {
         weeksList={weeksList}
         onStartNewWeekClick={handleStartNewWeekClick}
         onDeleteWeekClick={handleDeleteWeek}
+        onLogout={handleLogout}
       />
 
       <StudentTable

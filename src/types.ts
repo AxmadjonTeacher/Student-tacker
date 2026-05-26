@@ -34,3 +34,15 @@ export interface Student {
 }
 
 export type ClassName = '5A' | '5B' | '6A' | '6B' | '7A' | '7B' | '8A' | '8B' | string;
+
+export interface NewsEvent {
+  id: number;
+  title: string;
+  message: string;
+  date: string;
+  scheduled_for?: string | null;
+  urgency?: 'low' | 'medium' | 'high' | 'critical';
+  label?: string;
+  picture_urls?: string[];
+  type?: 'news' | 'event' | 'reminder';
+}
