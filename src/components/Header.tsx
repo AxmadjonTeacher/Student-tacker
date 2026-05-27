@@ -1,5 +1,7 @@
 import React from 'react';
 import { Search, Settings, Plus, Trash2, LogOut } from 'lucide-react';
+import iconLight from '../assets/icon-light.png';
+import iconDark from '../assets/icon-dark.png';
 
 interface HeaderProps {
   classes: string[];
@@ -18,12 +20,14 @@ interface HeaderProps {
   onDeleteWeekClick?: (weekName: string) => void;
   onLogout?: () => void;
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings';
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
   selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick, onDeleteWeekClick,
-  onLogout, activeAdminTab = 'home'
+  onLogout, activeAdminTab = 'home', theme = 'light'
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -223,17 +227,20 @@ const Header: React.FC<HeaderProps> = ({
         </h1>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <div className="school-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', padding: '0', background: 'transparent', border: 'none' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '0.05em', color: '#0a1f2e', lineHeight: 1 }}>
-              AL-XORAZMIY
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.2em', color: '#129f87' }}>
-                SCHOOL
+          <div className="school-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0', background: 'transparent', border: 'none' }}>
+            <img 
+              src={theme === 'dark' ? iconDark : iconLight} 
+              alt="Logo" 
+              style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} 
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div className="school-name-text" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '0.05em', color: 'var(--text-primary)', lineHeight: 1 }}>
+                AL-XORAZMIY
               </div>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#129f87' }}></div>
-                <div style={{ width: '30px', height: '2px', backgroundColor: '#129f87', marginLeft: '6px' }}></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.2em', color: 'var(--accent-primary)' }}>
+                  SCHOOL
+                </div>
               </div>
             </div>
           </div>

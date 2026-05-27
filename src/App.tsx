@@ -4,6 +4,7 @@ import Header from './components/Header';
 import StudentTable from './components/StudentTable';
 import SidebarDrawer from './components/SidebarDrawer';
 import CustomDialog from './components/CustomDialog';
+import InstallAppDrawer from './components/InstallAppDrawer';
 import PasscodeModal from './components/PasscodeModal';
 import type { Student } from './types';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
@@ -103,6 +104,37 @@ function App() {
   const [authRole, setAuthRole] = useState<'admin' | 'parent' | null>(null);
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
+
+  // PWA and Theme State
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+  });
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark-theme');
+    } else {
+      root.classList.remove('dark-theme');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   const loggedInStudent = useMemo(() => {
     return parentStudents.find(s => s.id === activeParentStudentId) || null;
@@ -1530,24 +1562,29 @@ function App() {
 
   if (authRole === 'parent' && loggedInStudent) {
     return (
-      <ParentCabinet
-        student={loggedInStudent}
-        studentWeeks={studentWeeks}
-        parentStudents={parentStudents}
-        onSwitchChild={(childId) => setActiveParentStudentId(childId)}
-        onAddChild={(newStudent) => {
-          setParentStudents(prev => {
-            const exists = prev.some(s => s.id === newStudent.id);
-            if (exists) return prev;
-            const updated = [...prev, newStudent];
-            const creds = updated.map(s => ({ id: s.id, passcode: s.passcode }));
-            localStorage.setItem('parent_children', JSON.stringify(creds));
-            return updated;
-          });
-          setActiveParentStudentId(newStudent.id);
-        }}
-        onLogout={handleLogout}
-      />
+      <>
+        <ParentCabinet
+          student={loggedInStudent}
+          studentWeeks={studentWeeks}
+          parentStudents={parentStudents}
+          onSwitchChild={(childId) => setActiveParentStudentId(childId)}
+          onAddChild={(newStudent) => {
+            setParentStudents(prev => {
+              const exists = prev.some(s => s.id === newStudent.id);
+              if (exists) return prev;
+              const updated = [...prev, newStudent];
+              const creds = updated.map(s => ({ id: s.id, passcode: s.passcode }));
+              localStorage.setItem('parent_children', JSON.stringify(creds));
+              return updated;
+            });
+            setActiveParentStudentId(newStudent.id);
+          }}
+          onLogout={handleLogout}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+        <InstallAppDrawer theme={theme} deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
+      </>
     );
   }
 
@@ -1570,6 +1607,8 @@ function App() {
         onStartNewWeekClick={handleStartNewWeekClick}
         onDeleteWeekClick={handleDeleteWeek}
         onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <div className="tab-admin-settings-hide">
@@ -1614,6 +1653,8 @@ function App() {
           deletedWeeks={deletedWeeks}
           onRestoreWeek={handleRestoreWeek}
           onPermanentDeleteWeek={handlePermanentDeleteWeek}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       </div>
 
@@ -1783,6 +1824,8 @@ function App() {
           <span>Sozlamalar</span>
         </button>
       </div>
+
+      <InstallAppDrawer theme={theme} deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
     </div>
   );
 }

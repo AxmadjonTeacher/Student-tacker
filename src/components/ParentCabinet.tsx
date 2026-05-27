@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { LogOut, TrendingUp, Bell, Award, Home, BarChart2, Settings, Plus } from 'lucide-react';
+import { LogOut, TrendingUp, Bell, Home, BarChart2, Settings, Plus } from 'lucide-react';
 import type { Student, NewsEvent } from '../types';
 import { supabase, mapDbToStudent } from '../supabase';
 import GraphModal from './GraphModal';
+import iconLight from '../assets/icon-light.png';
+import iconDark from '../assets/icon-dark.png';
 
 interface ParentCabinetProps {
   student: Student;
@@ -11,6 +13,8 @@ interface ParentCabinetProps {
   onSwitchChild: (childId: string) => void;
   onAddChild: (newStudent: Student) => void;
   onLogout: () => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 const ParentCabinet: React.FC<ParentCabinetProps> = ({ 
@@ -19,7 +23,9 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
   parentStudents, 
   onSwitchChild, 
   onAddChild, 
-  onLogout 
+  onLogout,
+  theme = 'light',
+  onToggleTheme
 }) => {
   const [news, setNews] = useState<NewsEvent[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
@@ -344,13 +350,16 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
             width: '40px',
             height: '40px',
             borderRadius: '10px',
-            background: 'linear-gradient(135deg, #0d9488, #0f766e)',
-            color: 'white',
+            background: 'transparent',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <Award size={22} />
+            <img 
+              src={theme === 'dark' ? iconDark : iconLight} 
+              alt="Logo" 
+              style={{ width: '100%', height: '100%', borderRadius: '10px', objectFit: 'contain' }} 
+            />
           </div>
           <div>
             <h1 className="cabinet-header-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
@@ -821,9 +830,45 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
               flexDirection: 'column',
               gap: '1.5rem'
             }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 SOZLAMALAR
               </h3>
+              
+              {/* Theme Toggle Card */}
+              <div style={{ background: 'var(--bg-card-hover)', padding: '1.25rem', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>QORONG'U REJIM (DARK MODE)</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>Ilova mavzusini almashtirish</div>
+                </div>
+                <button 
+                  onClick={onToggleTheme}
+                  style={{
+                    width: '46px',
+                    height: '24px',
+                    borderRadius: '9999px',
+                    background: theme === 'dark' ? 'var(--accent-primary)' : '#cbd5e1',
+                    border: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    padding: 0,
+                    transition: 'background-color 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    position: 'absolute',
+                    left: theme === 'dark' ? '24px' : '4px',
+                    transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
+                  }} />
+                </button>
+              </div>
               
               {/* Linked Children Card */}
               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>

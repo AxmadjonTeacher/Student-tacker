@@ -28,6 +28,8 @@ interface SidebarDrawerProps {
   onRestoreWeek: (weekName: string) => void;
   onPermanentDeleteWeek: (weekName: string) => void;
   isInline?: boolean;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
@@ -48,7 +50,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   deletedWeeks,
   onRestoreWeek,
   onPermanentDeleteWeek,
-  isInline = false
+  isInline = false,
+  theme = 'light',
+  onToggleTheme
 }) => {
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'trash'>('settings');
@@ -728,6 +732,50 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              <div style={{ height: '1px', background: '#e2e8f0', margin: '1.5rem 0' }} />
+
+              {/* Section 1b: System Theme Toggle */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1e293b', letterSpacing: '0.01em' }}>
+                      TUNGI REJIM
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.15rem', maxWidth: '240px', lineHeight: 1.4 }}>
+                      Ilovaning ko'rinish mavzusini almashtirish
+                    </div>
+                  </div>
+                  <button 
+                    onClick={onToggleTheme}
+                    style={{
+                      width: '46px',
+                      height: '24px',
+                      borderRadius: '9999px',
+                      background: theme === 'dark' ? 'var(--accent-primary)' : '#cbd5e1',
+                      border: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      padding: 0,
+                      transition: 'background-color 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
+                      position: 'absolute',
+                      left: theme === 'dark' ? '24px' : '4px',
+                      transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
+                    }} />
+                  </button>
                 </div>
               </div>
 
