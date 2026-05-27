@@ -26,7 +26,16 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === 'Azz21alxorazmiy') {
+    let isCorrect = false;
+    if (activeSubject === 'ENG' && passcode === 'Azz21eng') {
+      isCorrect = true;
+    } else if (activeSubject === 'MATH' && passcode === 'Azz21math') {
+      isCorrect = true;
+    } else if (activeSubject === 'ALL' && passcode === 'Azz21all') {
+      isCorrect = true;
+    }
+
+    if (isCorrect) {
       onSuccess();
     } else {
       setError(true);

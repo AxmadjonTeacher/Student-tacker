@@ -27,6 +27,7 @@ interface SidebarDrawerProps {
   deletedWeeks: string[];
   onRestoreWeek: (weekName: string) => void;
   onPermanentDeleteWeek: (weekName: string) => void;
+  isInline?: boolean;
 }
 
 const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
@@ -46,7 +47,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   onAddStudent,
   deletedWeeks,
   onRestoreWeek,
-  onPermanentDeleteWeek
+  onPermanentDeleteWeek,
+  isInline = false
 }) => {
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'trash'>('settings');
@@ -515,39 +517,42 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   return (
     <>
       {/* Dark Overlay backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.3)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          zIndex: 999,
-          opacity: isOpen ? 1 : 0,
-          visibility: isOpen ? 'visible' : 'hidden',
-          transition: 'all 0.30s cubic-bezier(0.4, 0, 0.2, 1)'
-        }}
-      />
+      {!isInline && (
+        <div
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.3)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            zIndex: 999,
+            opacity: isOpen ? 1 : 0,
+            visibility: isOpen ? 'visible' : 'hidden',
+            transition: 'all 0.30s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
+        />
+      )}
 
       {/* Slide-in Drawer Container */}
       <div
         style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
+          position: isInline ? 'relative' : 'fixed',
+          top: isInline ? undefined : 0,
+          right: isInline ? undefined : 0,
+          bottom: isInline ? undefined : 0,
           width: '100%',
-          maxWidth: '410px',
+          maxWidth: isInline ? 'none' : '410px',
           boxSizing: 'border-box',
           background: '#fcfcf9',
-          boxShadow: '-10px 0 40px -10px rgba(15, 23, 42, 0.08)',
-          zIndex: 1000,
-          transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: isInline ? 'none' : '-10px 0 40px -10px rgba(15, 23, 42, 0.08)',
+          zIndex: isInline ? 1 : 1000,
+          transform: isInline ? 'none' : (isOpen ? 'translateX(0)' : 'translateX(100%)'),
+          transition: isInline ? 'none' : 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
           flexDirection: 'column',
-          borderLeft: '1px solid #e5e7eb'
+          borderLeft: isInline ? 'none' : '1px solid #e5e7eb',
+          minHeight: isInline ? 'calc(100vh - 120px)' : undefined
         }}
       >
         {/* Drawer Header */}
@@ -564,25 +569,27 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               BOSHQARUV PANELI
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#64748b',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0.25rem',
-              borderRadius: '50%',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
-          >
-            <X size={20} />
-          </button>
+          {!isInline && (
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.25rem',
+                borderRadius: '50%',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
         {/* Navigation Tabs Selector */}

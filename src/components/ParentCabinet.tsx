@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { LogOut, TrendingUp, Bell, Award, Home, Search, BarChart2, Settings, Plus } from 'lucide-react';
+import { LogOut, TrendingUp, Bell, Award, Home, BarChart2, Settings, Plus } from 'lucide-react';
 import type { Student, NewsEvent } from '../types';
 import { supabase, mapDbToStudent } from '../supabase';
 import GraphModal from './GraphModal';
@@ -25,7 +25,6 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
   const [newsLoading, setNewsLoading] = useState(true);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
-  const [announcementSearch, setAnnouncementSearch] = useState('');
   
   // Add child states
   const [addChildId, setAddChildId] = useState('');
@@ -81,13 +80,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
     }
   };
 
-  const filteredNews = useMemo(() => {
-    if (!announcementSearch.trim()) return news;
-    return news.filter(item => 
-      item.title.toLowerCase().includes(announcementSearch.toLowerCase()) || 
-      item.message.toLowerCase().includes(announcementSearch.toLowerCase())
-    );
-  }, [news, announcementSearch]);
+  // News filtered list is just all news
 
   // Find the latest week's record from studentWeeks (sorted by academic week order)
   const latestWeekRecord = useMemo(() => {
@@ -216,6 +209,9 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
         .tab-content-settings {
           display: none;
         }
+        .tab-content-stats {
+          display: none;
+        }
         .mobile-tab-bar {
           display: none;
         }
@@ -270,6 +266,9 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
           }
           .tab-content-search {
             display: ${activeTab === 'search' ? 'block' : 'none'} !important;
+          }
+          .tab-content-stats {
+            display: ${activeTab === 'stats' ? 'block' : 'none'} !important;
           }
           .tab-content-settings {
             display: ${activeTab === 'settings' ? 'block' : 'none'} !important;
@@ -390,7 +389,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
 
       <main className="cabinet-container">
         {/* Child Switcher Pill Bar */}
-        {parentStudents.length > 0 && (
+        {parentStudents.length > 1 && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -671,7 +670,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                     </span>
                   </div>
                   <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${hwPercentage}%`, height: '100%', background: '#10b981', borderRadius: '4px' }} />
+                    <div style={{ width: `${hwPercentage}%`, height: '100%', background: '#15803d', borderRadius: '4px' }} />
                   </div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                     <span>{missedHw > 0 ? `${missedHw} ta vazifa bajarilmagan` : "Barcha vazifalar bajarilgan"}</span>
@@ -684,28 +683,6 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
 
           {/* Right Column: News & Announcements Feed */}
           <section className="tab-content-search">
-            {/* Announcement Search bar */}
-            <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
-              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-              <input 
-                type="text" 
-                placeholder="E'lonlarni qidirish..." 
-                value={announcementSearch}
-                onChange={(e) => setAnnouncementSearch(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 1rem 0.85rem 2.75rem',
-                  borderRadius: '9999px',
-                  border: '1px solid #e5e7eb',
-                  background: '#ffffff',
-                  fontSize: '0.95rem',
-                  color: '#1a1a1a',
-                  outline: 'none',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                }}
-              />
-            </div>
-
             <div style={{
               background: '#ffffff',
               borderRadius: '20px',
@@ -734,14 +711,14 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                     animation: 'spin 1s linear infinite'
                   }} />
                 </div>
-              ) : filteredNews.length === 0 ? (
+              ) : news.length === 0 ? (
                 <div style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', padding: '3rem 0', textAlign: 'center' }}>
                   <Bell size={36} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
-                  <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>Qidiruv bo'yicha e'lonlar topilmadi.</p>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>E'lonlar topilmadi.</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto', maxHeight: '550px', paddingRight: '0.25rem' }}>
-                  {filteredNews.map((item) => {
+                  {news.map((item) => {
                     const badge = getUrgencyColor(item.urgency || 'medium');
                     return (
                       <div
@@ -819,6 +796,17 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 </div>
               )}
             </div>
+          </section>
+
+          {/* Stats Section (Mobile Only) */}
+          <section className="tab-content-stats">
+            <GraphModal
+              student={student}
+              activeSubject="ALL"
+              studentWeeks={studentWeeks}
+              onClose={() => {}}
+              isInline={true}
+            />
           </section>
 
           {/* Settings Section (Mobile Only) */}
@@ -935,7 +923,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                 <div style={{ fontWeight: 800, color: '#1e293b' }}>MAKTAB BILAN BOG'LANISH</div>
                 <div>Savollar va takliflar uchun maktab ma'muriyati bilan bog'laning.</div>
-                <div style={{ fontWeight: 700, color: '#0d9488', marginTop: '0.25rem' }}>Tel: +998 71 200-00-00</div>
+                <div style={{ fontWeight: 700, color: '#0d9488', marginTop: '0.25rem' }}>Tel: +998 94 303 07 07</div>
               </div>
 
               {/* Mobile Logout Button */}
@@ -961,6 +949,20 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 <LogOut size={16} />
                 <span>TIZIMDAN CHIQISH</span>
               </button>
+
+              {/* Small footer text inside settings only */}
+              <div style={{
+                marginTop: '1.5rem',
+                textAlign: 'center',
+                color: '#94a3b8',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                lineHeight: 1.4,
+                textTransform: 'uppercase'
+              }}>
+                © 2026 AL-XORAZMIY SCHOOL. BARCHA HUQUQLAR HIMOYALANGAN.<br />Created by Axmadjon
+              </div>
             </div>
           </section>
         </div>
@@ -980,14 +982,13 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
           onClick={() => setActiveTab('search')}
           className={`tab-item ${activeTab === 'search' ? 'active' : ''}`}
         >
-          <Search size={20} />
-          <span>Qidiruv</span>
+          <Bell size={20} />
+          <span>Yangiliklar</span>
         </button>
         
         <button 
           onClick={() => {
             setActiveTab('stats');
-            setIsGraphOpen(true);
           }}
           className={`tab-item ${activeTab === 'stats' ? 'active' : ''}`}
         >
@@ -1180,29 +1181,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
         </div>
       )}
 
-      {/* Symmetrical Footer */}
-      <footer style={{
-        marginTop: '3rem',
-        padding: '2.5rem 1.5rem 1.5rem 1.5rem',
-        textAlign: 'center',
-        borderTop: '1px solid #e2e8f0',
-        background: '#ffffff',
-        color: '#64748b',
-        fontSize: '0.8rem',
-        fontWeight: 600,
-        letterSpacing: '0.05em',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.35rem',
-        alignItems: 'center'
-      }}>
-        <div style={{ textTransform: 'uppercase' }}>
-          © 2026 Al-Xorazmiy School. Barcha huquqlar himoyalangan.
-        </div>
-        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
-          Created by Axmadjon
-        </div>
-      </footer>
+
 
       {/* Render detailed graph charts in a modal */}
       {isGraphOpen && (

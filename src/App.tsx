@@ -97,6 +97,7 @@ function App() {
   });
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
   const [authRole, setAuthRole] = useState<'admin' | 'parent' | null>(null);
@@ -1553,6 +1554,7 @@ function App() {
   return (
     <div className="app-container">
       <Header
+        activeAdminTab={activeAdminTab}
         classes={availableClasses}
         activeClass={activeClass}
         onClassSelect={setActiveClass}
@@ -1570,40 +1572,50 @@ function App() {
         onLogout={handleLogout}
       />
 
-      <StudentTable
-        students={filteredStudents}
-        isAdminMode={isAdminMode}
-        onUpdatePhoto={handleUpdateStudentPhoto}
-        onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
-        onAssignTeacher={handleAssignTeacher}
-        onMoveStudent={handleMoveStudent}
-        onMoveTeacherTable={handleMoveTeacherTable}
-        activeSubject={activeSubject}
-        onUpdateProgress={handleUpdateProgress}
-        onRenameTeacherTable={handleRenameTeacherTable}
-        onDeleteTeacherTable={handleDeleteTeacherTable}
-        studentWeeks={studentWeeks}
-      />
+      <div className="tab-admin-settings-hide">
+        <StudentTable
+          students={filteredStudents}
+          isAdminMode={isAdminMode}
+          onUpdatePhoto={handleUpdateStudentPhoto}
+          onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
+          onAssignTeacher={handleAssignTeacher}
+          onMoveStudent={handleMoveStudent}
+          onMoveTeacherTable={handleMoveTeacherTable}
+          activeSubject={activeSubject}
+          onUpdateProgress={handleUpdateProgress}
+          onRenameTeacherTable={handleRenameTeacherTable}
+          onDeleteTeacherTable={handleDeleteTeacherTable}
+          studentWeeks={studentWeeks}
+        />
+      </div>
 
-      <SidebarDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        activeSubject={activeSubject}
-        onSubjectChange={setActiveSubject}
-        isAdminMode={isAdminMode}
-        onToggleAdmin={handleToggleAdmin}
-        students={activeStudents}
-        deletedStudents={deletedStudents}
-        onRestoreStudent={handleRestoreStudent}
-        onPermanentDeleteStudent={handlePermanentDeleteStudent}
-        activeClass={activeClass}
-        onStudentsUploaded={handleStudentsUploaded}
-        onBulkDeleteClass={handleBulkDeleteClass}
-        onAddStudent={handleAddStudent}
-        deletedWeeks={deletedWeeks}
-        onRestoreWeek={handleRestoreWeek}
-        onPermanentDeleteWeek={handlePermanentDeleteWeek}
-      />
+      <div className="tab-admin-settings-only">
+        <SidebarDrawer
+          isOpen={isDrawerOpen || activeAdminTab === 'settings'}
+          onClose={() => {
+            setIsDrawerOpen(false);
+            if (activeAdminTab === 'settings') {
+              setActiveAdminTab('home');
+            }
+          }}
+          isInline={activeAdminTab === 'settings'}
+          activeSubject={activeSubject}
+          onSubjectChange={setActiveSubject}
+          isAdminMode={isAdminMode}
+          onToggleAdmin={handleToggleAdmin}
+          students={activeStudents}
+          deletedStudents={deletedStudents}
+          onRestoreStudent={handleRestoreStudent}
+          onPermanentDeleteStudent={handlePermanentDeleteStudent}
+          activeClass={activeClass}
+          onStudentsUploaded={handleStudentsUploaded}
+          onBulkDeleteClass={handleBulkDeleteClass}
+          onAddStudent={handleAddStudent}
+          deletedWeeks={deletedWeeks}
+          onRestoreWeek={handleRestoreWeek}
+          onPermanentDeleteWeek={handlePermanentDeleteWeek}
+        />
+      </div>
 
       {/* Elegant Symmetrical Footer */}
       <footer style={{
@@ -1660,7 +1672,19 @@ function App() {
         .mobile-tab-bar {
           display: none;
         }
+        .tab-admin-settings-only {
+          display: none;
+        }
+        .tab-admin-settings-hide {
+          display: block;
+        }
         @media (max-width: 768px) {
+          .tab-admin-settings-hide {
+            display: ${activeAdminTab === 'settings' ? 'none' : 'block'} !important;
+          }
+          .tab-admin-settings-only {
+            display: ${activeAdminTab === 'settings' ? 'block' : 'none'} !important;
+          }
           .mobile-tab-bar {
             display: flex !important;
             position: fixed;
@@ -1693,7 +1717,7 @@ function App() {
             transition: all 0.15s ease;
           }
           .mobile-tab-bar .tab-item.active {
-            color: #0d9488;
+            color: var(--accent-primary);
           }
           .app-container {
             padding-bottom: 80px !important;
@@ -1703,11 +1727,14 @@ function App() {
       <div className="mobile-tab-bar">
         <button 
           onClick={() => {
-            setActiveSubject('ENG');
+            setActiveAdminTab('home');
+            if (activeSubject === 'ALL') {
+              setActiveSubject('ENG');
+            }
             setSearchTerm('');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`tab-item ${(activeSubject === 'ENG' || activeSubject === 'MATH') ? 'active' : ''}`}
+          className={`tab-item ${activeAdminTab === 'home' ? 'active' : ''}`}
         >
           <Home size={20} />
           <span>Bosh sahifa</span>
@@ -1715,13 +1742,19 @@ function App() {
         
         <button 
           onClick={() => {
-            const input = document.querySelector('.mobile-sticky-search input') as HTMLInputElement;
-            if (input) {
-              input.focus();
-              input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setActiveAdminTab('search');
+            if (activeSubject === 'ALL') {
+              setActiveSubject('ENG');
             }
+            setTimeout(() => {
+              const input = document.querySelector('.mobile-sticky-search input') as HTMLInputElement;
+              if (input) {
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 100);
           }}
-          className="tab-item"
+          className={`tab-item ${activeAdminTab === 'search' ? 'active' : ''}`}
         >
           <Search size={20} />
           <span>Qidiruv</span>
@@ -1729,18 +1762,22 @@ function App() {
         
         <button 
           onClick={() => {
+            setActiveAdminTab('stats');
             setActiveSubject('ALL');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`tab-item ${activeSubject === 'ALL' ? 'active' : ''}`}
+          className={`tab-item ${activeAdminTab === 'stats' ? 'active' : ''}`}
         >
           <BarChart2 size={20} />
           <span>Statistika</span>
         </button>
         
         <button 
-          onClick={() => setIsDrawerOpen(true)}
-          className={`tab-item ${isDrawerOpen ? 'active' : ''}`}
+          onClick={() => {
+            setActiveAdminTab('settings');
+            setIsDrawerOpen(false);
+          }}
+          className={`tab-item ${activeAdminTab === 'settings' ? 'active' : ''}`}
         >
           <Settings size={20} />
           <span>Sozlamalar</span>

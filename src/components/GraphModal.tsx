@@ -26,11 +26,50 @@ interface GraphModalProps {
   onClose: () => void;
   activeSubject: 'ENG' | 'MATH' | 'ALL';
   studentWeeks: any[];
+  isInline?: boolean;
 }
 
-const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject, studentWeeks }) => {
+const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject, studentWeeks, isInline = false }) => {
   const [isComparing, setIsComparing] = useState(false);
   const [allActiveTab, setAllActiveTab] = useState<'current' | 'progression' | 'terms'>('current');
+
+  const renderLegend = (props: any) => {
+    const { payload } = props;
+    return (
+      <ul style={{ 
+        display: 'flex', 
+        flexDirection: 'row', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        gap: '0.85rem',
+        listStyle: 'none',
+        padding: 0,
+        margin: 0,
+        paddingTop: '15px',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        width: '100%',
+        flexWrap: 'nowrap',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        boxSizing: 'border-box'
+      }}>
+        {payload.map((entry: any, index: number) => {
+          let dotColor = entry.color;
+          if (entry.dataKey === 'hwPercent' || entry.value === 'Vazifalar') {
+            dotColor = '#15803d';
+          }
+          return (
+            <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
+              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }} />
+              <span style={{ color: '#475569' }}>{entry.value}</span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   // Normalize levels to a number for graphing
   const getLevelValue = (levelStr: string): number => {
@@ -217,7 +256,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
     {
       name: 'Vazifalar',
       value: Math.round(hwPercent * 100) / 100,
-      color: '#10b981' // Emerald
+      color: '#15803d' // Dark Green
     }
   ];
 
@@ -519,99 +558,105 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
     </div>
   );
 
-  return (
-    <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(4px)', background: 'rgba(0, 0, 0, 0.5)' }}>
-      <style dangerouslySetInnerHTML={{ __html: `
-        .modal-content {
-          padding: 2rem !important;
-          max-height: 90vh;
-          overflow-y: auto;
-        }
-        @media (max-width: 600px) {
-          .modal-content {
-            padding: 1.25rem 1rem !important;
-            border-radius: 16px !important;
-          }
-          .modal-title {
-            font-size: 1.1rem !important;
-            text-align: center;
-          }
-          .modal-tabs {
-            flex-direction: column !important;
-            border-radius: 12px !important;
-            width: 100% !important;
-            max-width: none !important;
-            gap: 4px !important;
-          }
-          .modal-tabs button {
-            width: 100% !important;
-            justify-content: center !important;
-            padding: 0.5rem !important;
-            font-size: 0.75rem !important;
-          }
-          .modal-compare-btn {
-            width: 100% !important;
-            padding: 0.6rem 1rem !important;
-            font-size: 0.75rem !important;
-            text-align: center !important;
-            justify-content: center !important;
-          }
-          .chart-container {
-            height: 240px !important;
-          }
-          .level-info {
-            flex-direction: column !important;
-            align-items: center !important;
-            gap: 0.5rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .level-info div {
-            text-align: center !important;
-          }
-          .modal-tags-container {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            gap: 0.4rem !important;
-            width: 100% !important;
-            justify-content: space-between !important;
-          }
-          .modal-tag {
-            flex: 1 !important;
-            justify-content: center !important;
-            font-size: 0.65rem !important;
-            padding: 0.25rem 0.4rem !important;
-            white-space: nowrap !important;
-            text-align: center !important;
-          }
-        }
-      `}} />
-      <div 
-        className="modal-content" 
-        onClick={e => e.stopPropagation()} 
-        style={{ 
-          maxWidth: '820px', 
-          width: '95%',
-          background: '#fcfcf9', 
-          borderRadius: '24px',
-          padding: '2.5rem'
-        }}
-      >
-        <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '0.75rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} style={{ flexShrink: 0 }} />
-              <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
-                {student.name} {student.surname} — {
-                  activeSubject === 'ALL' 
-                    ? "Umumiy ko'rsatkichlar"
-                    : isComparing 
-                      ? 'Fanlar taqqoslovi' 
-                      : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')
-                }
-              </h2>
-            </div>
-            
+  const modalContentStyle = {
+    maxWidth: isInline ? '100%' : '820px', 
+    width: '100%',
+    background: '#fcfcf9', 
+    borderRadius: isInline ? '20px' : '24px',
+    padding: isInline ? '1.5rem 1rem' : '2.5rem',
+    border: isInline ? '1px solid #e2e8f0' : 'none',
+    boxShadow: isInline ? 'none' : '0 25px 50px -12px rgba(0,0,0,0.25)',
+    boxSizing: 'border-box' as const
+  };
+
+  const styleRules = `
+    .modal-content {
+      padding: 2rem !important;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    @media (max-width: 600px) {
+      .modal-content {
+        padding: 1.25rem 1rem !important;
+        border-radius: 16px !important;
+      }
+      .modal-title {
+        font-size: 1.1rem !important;
+        text-align: center;
+      }
+      .modal-tabs {
+        flex-direction: column !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        max-width: none !important;
+        gap: 4px !important;
+      }
+      .modal-tabs button {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 0.5rem !important;
+        font-size: 0.75rem !important;
+      }
+      .modal-compare-btn {
+        width: 100% !important;
+        padding: 0.6rem 1rem !important;
+        font-size: 0.75rem !important;
+        text-align: center !important;
+        justify-content: center !important;
+      }
+      .chart-container {
+        height: 240px !important;
+      }
+      .level-info {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        margin-bottom: 1rem !important;
+      }
+      .level-info div {
+        text-align: center !important;
+      }
+      .modal-tags-container {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 0.4rem !important;
+        width: 100% !important;
+        justify-content: space-between !important;
+      }
+      .modal-tag {
+        flex: 1 !important;
+        justify-content: center !important;
+        font-size: 0.65rem !important;
+        padding: 0.25rem 0.4rem !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+      }
+    }
+  `;
+
+  const contentJSX = (
+    <div 
+      className={isInline ? "" : "modal-content"} 
+      onClick={e => e.stopPropagation()} 
+      style={modalContentStyle}
+    >
+      <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} style={{ flexShrink: 0 }} />
+            <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
+              {student.name} {student.surname} — {
+                activeSubject === 'ALL' 
+                  ? "Umumiy ko'rsatkichlar"
+                  : isComparing 
+                    ? 'Fanlar taqqoslovi' 
+                    : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')
+              }
+            </h2>
+          </div>
+          
+          {!isInline && (
             <button 
               onClick={onClose}
               style={{ 
@@ -632,260 +677,243 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             >
               <X size={20} />
             </button>
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-            <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sinf: {student.className}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sana: {student.dateJoined}</span>
-          </div>
-
-          <div className="modal-tags-container" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
-            {/* English Improvement Tag */}
-            {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
-              <span className="modal-tag" style={{ 
-                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                background: '#e0f2fe', color: '#0369a1',
-                padding: '0.3rem 0.75rem', borderRadius: '999px',
-                fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.03em'
-              }}>
-                INGLIZ TILI: {engImproved > 0 ? `+${engImproved} daraja` : engImproved < 0 ? `${engImproved} daraja` : 'barqaror'}
-              </span>
-            )}
-
-            {/* Math Improvement Tag */}
-            {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
-              <span className="modal-tag" style={{ 
-                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                background: '#ffedd5', color: '#c2410c',
-                padding: '0.3rem 0.75rem', borderRadius: '999px',
-                fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.03em'
-              }}>
-                MATEMATIKA: {mathImproved > 0 ? `+${mathImproved} daraja` : mathImproved < 0 ? `${mathImproved} daraja` : 'barqaror'}
-              </span>
-            )}
-          </div>
+          )}
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+          <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sinf: {student.className}</span>
+          <span style={{ color: '#cbd5e1' }}>·</span>
+          <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sana: {student.dateJoined}</span>
         </div>
 
-        {/* Real-time Switcher Buttons */}
-        {activeSubject !== 'ALL' ? (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center',
-            marginBottom: '1.5rem' 
-          }}>
+        <div className="modal-tags-container" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
+          {/* English Improvement Tag */}
+          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
+            <span className="modal-tag" style={{ 
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+              background: '#e0f2fe', color: '#0369a1',
+              padding: '0.3rem 0.75rem', borderRadius: '999px',
+              fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.03em'
+            }}>
+              INGLIZ TILI: {engImproved > 0 ? `+${engImproved} daraja` : engImproved < 0 ? `${engImproved} daraja` : 'barqaror'}
+            </span>
+          )}
+
+          {/* Math Improvement Tag */}
+          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
+            <span className="modal-tag" style={{ 
+              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+              background: '#ffedd5', color: '#c2410c',
+              padding: '0.3rem 0.75rem', borderRadius: '999px',
+              fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.03em'
+            }}>
+              MATEMATIKA: {mathImproved > 0 ? `+${mathImproved} daraja` : mathImproved < 0 ? `${mathImproved} daraja` : 'barqaror'}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Real-time Switcher Buttons */}
+      {activeSubject !== 'ALL' ? (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center',
+          marginBottom: '1.5rem' 
+        }}>
+          <button
+            className="modal-compare-btn"
+            onClick={() => setIsComparing(!isComparing)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: isComparing ? 'linear-gradient(135deg, #129f87, #f97316)' : '#ffffff',
+              color: isComparing ? '#ffffff' : '#475569',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '9999px',
+              padding: '0.6rem 1.5rem',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              letterSpacing: '0.05em'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1.5px)';
+              if (!isComparing) e.currentTarget.style.borderColor = activeThemeColor;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              if (!isComparing) e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+          >
+            {isComparing ? '📊 YAKKA KO\'RINISH' : '🆚 MATEMATIKA VA INGLIZ TILI BILAN TAQQOSLASH'}
+          </button>
+        </div>
+      ) : (
+        <div className="modal-tabs" style={{ 
+          display: 'flex', 
+          justifyContent: 'center',
+          gap: '0.5rem',
+          marginBottom: '1.5rem',
+          background: '#f1f5f9',
+          padding: '4px',
+          borderRadius: '9999px',
+          maxWidth: 'fit-content',
+          margin: '0 auto 1.5rem'
+        }}>
+          {[
+            { id: 'current', label: '📊 JORIY HAFTA' },
+            { id: 'progression', label: '📈 HAFTALIK O\'ZGARISH' },
+            { id: 'terms', label: '🏆 CHORAKLIK NATIJALAR' }
+          ].map(tab => (
             <button
-              className="modal-compare-btn"
-              onClick={() => setIsComparing(!isComparing)}
+              key={tab.id}
+              onClick={() => setAllActiveTab(tab.id as any)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                background: isComparing ? 'linear-gradient(135deg, #129f87, #f97316)' : '#ffffff',
-                color: isComparing ? '#ffffff' : '#475569',
-                border: '1.5px solid #e2e8f0',
+                background: allActiveTab === tab.id 
+                  ? 'linear-gradient(135deg, #4f46e5, #4338ca)' 
+                  : 'transparent',
+                color: allActiveTab === tab.id ? '#ffffff' : '#64748b',
+                border: 'none',
                 borderRadius: '9999px',
-                padding: '0.6rem 1.5rem',
+                padding: '0.6rem 1.25rem',
                 fontSize: '0.8rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                letterSpacing: '0.05em'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1.5px)';
-                if (!isComparing) e.currentTarget.style.borderColor = activeThemeColor;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                if (!isComparing) e.currentTarget.style.borderColor = '#e2e8f0';
+                boxShadow: allActiveTab === tab.id ? '0 4px 6px -1px rgba(79, 70, 229, 0.2)' : 'none',
+                transition: 'all 0.2s ease',
+                letterSpacing: '0.03em'
               }}
             >
-              {isComparing ? '📊 YAKKA KO\'RINISH' : '🆚 MATEMATIKA VA INGLIZ TILI BILAN TAQQOSLASH'}
+              {tab.label}
             </button>
-          </div>
-        ) : (
-          <div className="modal-tabs" style={{ 
-            display: 'flex', 
-            justifyContent: 'center',
-            gap: '0.5rem',
-            marginBottom: '1.5rem',
-            background: '#f1f5f9',
-            padding: '4px',
-            borderRadius: '9999px',
-            maxWidth: 'fit-content',
-            margin: '0 auto 1.5rem'
-          }}>
-            {[
-              { id: 'current', label: '📊 JORIY HAFTA' },
-              { id: 'progression', label: '📈 HAFTALIK O\'ZGARISH' },
-              { id: 'terms', label: '🏆 CHORAKLIK NATIJALAR' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setAllActiveTab(tab.id as any)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  background: allActiveTab === tab.id 
-                    ? 'linear-gradient(135deg, #4f46e5, #4338ca)' 
-                    : 'transparent',
-                  color: allActiveTab === tab.id ? '#ffffff' : '#64748b',
-                  border: 'none',
-                  borderRadius: '9999px',
-                  padding: '0.6rem 1.25rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  boxShadow: allActiveTab === tab.id ? '0 4px 6px -1px rgba(79, 70, 229, 0.2)' : 'none',
-                  transition: 'all 0.2s ease',
-                  letterSpacing: '0.03em'
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
+      )}
 
-        <div style={{ 
-          border: '1px solid #e2e8f0', 
-          borderRadius: '24px', 
-          background: '#ffffff',
-          padding: '2rem 1.5rem 1.25rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.01)'
-        }}>
-          {activeSubject !== 'ALL' && (
-            <div className="level-info" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
-                  BOSHLANG'ICH DARAJA
-                </div>
-                <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
-                  {isComparing 
-                    ? `ENG: ${(student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase()} | MATH: ${(student.mathStartingLevel || 'Level 1').toUpperCase()}`
-                    : (activeSubject === 'MATH' ? (student.mathStartingLevel || 'Level 1').toUpperCase() : (student.englishStartingLevel || student.startingLevel || 'Level 1').toUpperCase())
-                  }
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
-                  HOZIRGI DARAJA
-                </div>
-                <div style={{ color: '#1e293b', fontSize: '0.9rem', fontWeight: 700 }}>
-                  {isComparing 
-                    ? `ENG: ${(student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase()} | MATH: ${(student.mathCurrentLevel || 'Level 1').toUpperCase()}`
-                    : (activeSubject === 'MATH' ? (student.mathCurrentLevel || 'Level 1').toUpperCase() : (student.englishCurrentLevel || student.currentLevel || 'Level 1').toUpperCase())
-                  }
-                </div>
-              </div>
+      <div style={{ flex: 1 }}>
+        {activeSubject === 'ALL' ? (
+          allActiveTab === 'progression' ? (
+            <div className="chart-container" style={{ height: '350px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={progressionData} margin={{ top: 15, right: 15, left: -5, bottom: 10 }}>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis 
+                    dataKey="week" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    interval={0}
+                    tickFormatter={formatXAxisWeek}
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                  />
+                  <YAxis 
+                    domain={[0, 100]} 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                    tickFormatter={(val) => `${val}%`}
+                    width={35}
+                  />
+                  <Tooltip content={<ProgressionTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
+                  <Legend content={renderLegend} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="engPercent" 
+                    name="Ingliz tili" 
+                    stroke="#6366f1" 
+                    strokeWidth={3.5} 
+                    dot={{ r: 4, fill: '#ffffff', stroke: '#6366f1', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#6366f1', stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="mathPercent" 
+                    name="Matematika" 
+                    stroke="#14b8a6" 
+                    strokeWidth={3.5} 
+                    dot={{ r: 4, fill: '#ffffff', stroke: '#14b8a6', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#14b8a6', stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="attPercent" 
+                    name="Davomat" 
+                    stroke="#f97316" 
+                    strokeWidth={3.5} 
+                    dot={{ r: 4, fill: '#ffffff', stroke: '#f97316', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#f97316', stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="hwPercent" 
+                    name="Vazifalar" 
+                    stroke="#15803d" 
+                    strokeWidth={3.5} 
+                    dot={{ r: 4, fill: '#ffffff', stroke: '#15803d', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#15803d', stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
-          )}
-
-          {activeSubject === 'ALL' ? (
-            allActiveTab === 'progression' ? (
-              <div className="chart-container" style={{ height: '350px', width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={progressionData} margin={{ top: 15, right: 15, left: -5, bottom: 10 }}>
-                    <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis 
-                      dataKey="week" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      interval={0}
-                      tickFormatter={formatXAxisWeek}
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
-                    />
-                    <YAxis 
-                      domain={[0, 100]} 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
-                      tickFormatter={(val) => `${val}%`}
-                      width={35}
-                    />
-                    <Tooltip content={<ProgressionTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: '15px', fontSize: '0.7rem', fontWeight: 700 }} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="engPercent" 
-                      name="Ingliz tili" 
-                      stroke="#6366f1" 
-                      strokeWidth={3.5} 
-                      dot={{ r: 4, fill: '#ffffff', stroke: '#6366f1', strokeWidth: 2 }}
-                      activeDot={{ r: 6, fill: '#6366f1', stroke: '#ffffff', strokeWidth: 2 }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="mathPercent" 
-                      name="Matematika" 
-                      stroke="#14b8a6" 
-                      strokeWidth={3.5} 
-                      dot={{ r: 4, fill: '#ffffff', stroke: '#14b8a6', strokeWidth: 2 }}
-                      activeDot={{ r: 6, fill: '#14b8a6', stroke: '#ffffff', strokeWidth: 2 }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="attPercent" 
-                      name="Davomat" 
-                      stroke="#f97316" 
-                      strokeWidth={3.5} 
-                      dot={{ r: 4, fill: '#ffffff', stroke: '#f97316', strokeWidth: 2 }}
-                      activeDot={{ r: 6, fill: '#f97316', stroke: '#ffffff', strokeWidth: 2 }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="hwPercent" 
-                      name="Vazifalar" 
-                      stroke="#10b981" 
-                      strokeWidth={3.5} 
-                      dot={{ r: 4, fill: '#ffffff', stroke: '#10b981', strokeWidth: 2 }}
-                      activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 2 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : allActiveTab === 'current' ? (
-              <div className="chart-container" style={{ height: '350px', width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barData} margin={{ top: 25, right: 15, left: -5, bottom: 10 }}>
-                    <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis 
-                      dataKey="name" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      interval={0}
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
-                    />
-                    <YAxis 
-                      domain={[0, 100]} 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
-                      tickFormatter={(val) => `${val}%`}
-                      width={35}
-                    />
-                    <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
-                    <Bar dataKey="value" radius={[10, 10, 10, 10]} maxBarSize={50}>
-                      {barData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                      <LabelList dataKey="value" content={renderCustomizedLabel} />
-                      <LabelList dataKey="name" content={renderInsideLabel} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              renderAreaChart()
-            )
+          ) : allActiveTab === 'current' ? (
+            <div className="chart-container" style={{ height: '350px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData} margin={{ top: 25, right: 15, left: -5, bottom: 10 }}>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    interval={0}
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                  />
+                  <YAxis 
+                    domain={[0, 100]} 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                    tickFormatter={(val) => `${val}%`}
+                    width={35}
+                  />
+                  <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
+                  <Bar dataKey="value" radius={[10, 10, 10, 10]} maxBarSize={50}>
+                    {barData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                    <LabelList dataKey="value" content={renderCustomizedLabel} />
+                    <LabelList dataKey="name" content={renderInsideLabel} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             renderAreaChart()
-          )}
-        </div>
+          )
+        ) : (
+          renderAreaChart()
+        )}
       </div>
+    </div>
+  );
+
+  if (isInline) {
+    return (
+      <div style={{ width: '100%', boxSizing: 'border-box' }}>
+        <style dangerouslySetInnerHTML={{ __html: styleRules }} />
+        {contentJSX}
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(4px)', background: 'rgba(0, 0, 0, 0.5)' }}>
+      <style dangerouslySetInnerHTML={{ __html: styleRules }} />
+      {contentJSX}
     </div>
   );
 };

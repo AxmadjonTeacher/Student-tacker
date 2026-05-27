@@ -17,12 +17,13 @@ interface HeaderProps {
   onStartNewWeekClick?: () => void;
   onDeleteWeekClick?: (weekName: string) => void;
   onLogout?: () => void;
+  activeAdminTab?: 'home' | 'search' | 'stats' | 'settings';
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
   selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick, onDeleteWeekClick,
-  onLogout
+  onLogout, activeAdminTab = 'home'
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -130,6 +131,71 @@ const Header: React.FC<HeaderProps> = ({
             width: 14px !important;
             height: 14px !important;
             left: 0.75rem !important;
+          }
+
+          /* Tab visibility and single-row optimizations on Mobile */
+          .admin-tab-home .admin-controls-wrapper {
+            display: none !important;
+          }
+          .admin-tab-home .class-selector {
+            display: flex !important;
+          }
+
+          .admin-tab-search .admin-week-actions {
+            display: none !important;
+          }
+          .admin-tab-search .class-selector {
+            display: flex !important;
+          }
+          .admin-tab-search .mobile-sticky-search {
+            display: block !important;
+          }
+
+          .admin-tab-stats {
+            margin-top: 1rem !important;
+            margin-bottom: 1.25rem !important;
+          }
+          .admin-tab-stats .class-selector {
+            display: none !important;
+          }
+          .admin-tab-stats .admin-controls-wrapper {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 0.35rem !important;
+            width: 100% !important;
+          }
+          .admin-tab-stats .admin-week-actions {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            width: auto !important;
+            gap: 0.35rem !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+          }
+          .admin-tab-stats .admin-week-actions select {
+            padding: 0.6rem 1.75rem 0.6rem 0.75rem !important;
+            font-size: 0.8rem !important;
+          }
+          .admin-tab-stats .admin-week-actions button {
+            padding: 0.6rem !important;
+            height: 34px !important;
+            width: auto !important;
+          }
+          .admin-tab-stats .admin-week-actions button.delete-week-btn {
+            width: 34px !important;
+          }
+          .admin-tab-stats .mobile-sticky-search {
+            flex-grow: 1 !important;
+            width: auto !important;
+          }
+          .admin-tab-stats .week-btn-text {
+            display: none !important;
+          }
+
+          .admin-tab-settings {
+            display: none !important;
           }
         }
       `}} />
@@ -317,7 +383,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
  
       {/* Bottom Row: Classes & Search */}
-      <div className="admin-header-bottom-row" style={{ 
+      <div className={`admin-header-bottom-row admin-tab-${activeAdminTab}`} style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
@@ -436,6 +502,7 @@ const Header: React.FC<HeaderProps> = ({
                   <button
                     onClick={() => onDeleteWeekClick && onDeleteWeekClick(selectedWeek)}
                     title="Ushbu haftani savatga o'chirish"
+                    className="delete-week-btn"
                     style={{
                       background: '#fee2e2',
                       color: '#ef4444',
@@ -470,6 +537,7 @@ const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={onStartNewWeekClick}
                   title="Yangi o'quv haftasini boshlash"
+                  className="add-week-btn"
                   style={{
                     background: '#ffffff',
                     color: '#10b981',
@@ -498,7 +566,7 @@ const Header: React.FC<HeaderProps> = ({
                   }}
                 >
                   <Plus size={14} />
-                  <span>YANGI HAFTA</span>
+                  <span className="week-btn-text">YANGI HAFTA</span>
                 </button>
               )}
             </div>
