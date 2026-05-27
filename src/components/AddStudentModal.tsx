@@ -72,15 +72,41 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 9999 }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .add-modal-content {
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+          .add-modal-content {
+            padding: 1.25rem 1rem !important;
+            border-radius: 16px !important;
+          }
+          .add-modal-content form {
+            gap: 0.85rem !important;
+          }
+          .add-modal-content label {
+            margin-bottom: 0.25rem !important;
+            font-size: 0.75rem !important;
+          }
+          .add-modal-content input, .add-modal-content select {
+            padding: 0.6rem 0.85rem !important;
+            font-size: 0.85rem !important;
+          }
+        }
+      `}} />
       <div 
-        className="modal-content" 
+        className="modal-content add-modal-content" 
         onClick={e => e.stopPropagation()}
         style={{
           maxWidth: '500px',
+          width: '90%',
           background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.5)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          borderRadius: '24px',
+          padding: '2rem'
         }}
       >
         <div className="modal-header" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.5rem' }}>

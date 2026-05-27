@@ -148,8 +148,32 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(6px)', background: 'rgba(0, 0, 0, 0.45)', zIndex: 1000 }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .edit-modal-content {
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        @media (max-width: 600px) {
+          .edit-modal-content {
+            padding: 1.5rem 1.25rem !important;
+            border-radius: 16px !important;
+          }
+          .edit-modal-content form {
+            gap: 0.85rem !important;
+          }
+          .edit-modal-content label {
+            margin-bottom: 0.25rem !important;
+            font-size: 0.7rem !important;
+          }
+          .edit-modal-content input, .edit-modal-content select {
+            padding: 0.6rem 0.85rem !important;
+            font-size: 0.85rem !important;
+            border-radius: 10px !important;
+          }
+        }
+      `}} />
       <div 
-        className="modal-content" 
+        className="modal-content edit-modal-content" 
         onClick={e => e.stopPropagation()} 
         style={{ 
           maxWidth: '500px', 

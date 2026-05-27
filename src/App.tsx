@@ -91,13 +91,19 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState(() => {
+    return localStorage.getItem('isAdminMode') === 'true';
+  });
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
   const [authRole, setAuthRole] = useState<'admin' | 'parent' | null>(null);
   const [loggedInStudent, setLoggedInStudent] = useState<Student | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('isAdminMode', String(isAdminMode));
+  }, [isAdminMode]);
 
   // Custom Dialog DialogState
   const [dialog, setDialog] = useState<{
