@@ -1,69 +1,59 @@
-const CACHE_NAME = 'student-tracker-v3';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-  '/icon-light.png',
-  '/icon-light-192.png',
-  '/icon-light-512.png'
-];
+// This is the service worker with the combined offline experience (Offline page + Offline copy of pages)
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
-  );
-  self.skipWaiting();
-});
+const CACHE = "pwabuilder-offline-page";
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
-  );
-  self.clients.claim();
-});
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js');
 
-self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url);
+const offlineFallbackPage = "offline.html";
 
-  // Exempt Supabase API traffic and database queries
-  if (url.href.includes('supabase.co') || url.pathname.includes('/rest/v1/')) {
-    e.respondWith(fetch(e.request));
-    return;
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
   }
+});
 
-  // Only handle same-origin or specific external static assets (like fonts)
-  const isSameOrigin = url.origin === self.location.origin;
-  const isGoogleFont = url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com');
+self.addEventListener('install', async (event) => {
+  event.waitUntil(
+    caches.open(CACHE)
+      .then((cache) => cache.add(offlineFallbackPage))
+  );
+});
 
-  if (isSameOrigin || isGoogleFont) {
-    e.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(e.request).then((cachedResponse) => {
-          // Fetch from network in background
-          const fetchPromise = fetch(e.request).then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              cache.put(e.request, networkResponse.clone());
-            }
-            return networkResponse;
-          }).catch((err) => {
-            console.log('Background fetch failed:', err);
-          });
+if (workbox.navigationPreload.isSupported()) {
+  workbox.navigationPreload.enable();
+}
 
-          // Return cached response instantly if available, otherwise wait for network fetch
-          return cachedResponse || fetchPromise;
-        });
-      })
-    );
+// Stale-While-Revalidate caching strategy for same-origin resources, bypassing Supabase API/REST calls
+workbox.routing.registerRoute(
+  ({url}) => !url.href.includes('supabase.co') && !url.pathname.includes('/rest/v1/'),
+  new workbox.strategies.StaleWhileRevalidate({
+    cacheName: CACHE
+  })
+);
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    const url = new URL(event.request.url);
+    // Bypass intercepting Supabase / REST API traffic
+    if (url.href.includes('supabase.co') || url.pathname.includes('/rest/v1/')) {
+      return;
+    }
+
+    event.respondWith((async () => {
+      try {
+        const preloadResp = await event.preloadResponse;
+
+        if (preloadResp) {
+          return preloadResp;
+        }
+
+        const networkResp = await fetch(event.request);
+        return networkResp;
+      } catch (error) {
+        const cache = await caches.open(CACHE);
+        const cachedResp = await cache.match(offlineFallbackPage);
+        return cachedResp;
+      }
+    })());
   }
 });

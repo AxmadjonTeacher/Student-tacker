@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oflayn Rejim | Al-Xorazmiy School</title>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-primary: #f9f8f3;
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --accent-primary: #0d9488;
+      --accent-hover: #0f766e;
+      --card-bg: rgba(255, 255, 255, 0.88);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e1b4b 0%, #0d9488 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Decorative background blur shapes */
+    .bg-shape-1 {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: rgba(13, 148, 136, 0.2);
+      border-radius: 50%;
+      top: -50px;
+      left: -50px;
+      filter: blur(80px);
+      z-index: 1;
+    }
+
+    .bg-shape-2 {
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      background: rgba(79, 70, 229, 0.2);
+      border-radius: 50%;
+      bottom: -50px;
+      right: -50px;
+      filter: blur(90px);
+      z-index: 1;
+    }
+
+    .offline-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      padding: 2.5rem 2rem;
+      z-index: 10;
+      text-align: center;
+      box-sizing: border-box;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .icon-container {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: rgba(13, 148, 136, 0.1);
+      color: var(--accent-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem auto;
+      box-shadow: 0 8px 16px rgba(13, 148, 136, 0.1);
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0 0 0.75rem 0;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      line-height: 1.5;
+      margin: 0 0 2rem 0;
+    }
+
+    .retry-button {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      padding: 0.95rem;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+      transition: all 0.2s ease;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .retry-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(13, 148, 136, 0.3);
+    }
+
+    .retry-button:active {
+      transform: translateY(0);
+    }
+
+    .footer-note {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 1.5rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-shape-1"></div>
+  <div class="bg-shape-2"></div>
+
+  <div class="offline-card">
+    <div class="icon-container">
+      <!-- Custom SVG Wifi-Off Icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.5"></path>
+        <path d="M5 12.5a10.94 10.94 0 0 1 5.83-2.84"></path>
+        <path d="M7.34 7.34A15.6 15.6 0 0 1 12 6c2.8 0 5.4 1 7.34 2.66"></path>
+        <path d="M12 18h.01"></path>
+      </svg>
+    </div>
+
+    <h1>Internet Aloqasi Yo'q</h1>
+    <p>
+      Siz hozirda oflayn rejimdasiz. Al-Xorazmiy baholash tizimidan foydalanish uchun tarmoq aloqasini tekshiring va qayta urinib ko'ring.
+    </p>
+
+    <button class="retry-button" onclick="window.location.reload()">
+      QAYTADAN YUKLASH
+    </button>
+
+    <div class="footer-note">
+      Al-Xorazmiy School • Baholash Tizimi
+    </div>
+  </div>
+</body>
+</html>
