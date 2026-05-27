@@ -1,7 +1,6 @@
 import React from 'react';
 import { Search, Settings, Plus, Trash2, LogOut } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
-import iconDark from '../assets/icon-dark.png';
 
 interface HeaderProps {
   classes: string[];
@@ -20,19 +19,31 @@ interface HeaderProps {
   onDeleteWeekClick?: (weekName: string) => void;
   onLogout?: () => void;
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings';
-  theme?: 'light' | 'dark';
-  onToggleTheme?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
   selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick, onDeleteWeekClick,
-  onLogout, activeAdminTab = 'home', theme = 'light'
+  onLogout, activeAdminTab = 'home'
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   return (
-    <>
+    <header className="sticky-header-container" style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 999,
+      background: 'rgba(249, 248, 243, 0.95)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      borderBottom: '1px solid rgba(229, 231, 235, 0.5)',
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      marginTop: '0',
+      paddingLeft: '0.25rem',
+      paddingRight: '0.25rem'
+    }}>
       <style dangerouslySetInnerHTML={{ __html: `
         .mobile-header-menu-container {
           display: none;
@@ -203,24 +214,16 @@ const Header: React.FC<HeaderProps> = ({
           }
         }
       `}} />
-      
-      {/* Top Row: Heading & Logo (Sticky Transparent Header) */}
+      {/* Top Row: Heading & Logo */}
       <div className="admin-header-top-row" style={{ 
-        position: 'sticky', 
-        top: 0, 
-        zIndex: 100, 
-        background: 'rgba(249, 248, 243, 0.9)', 
-        backdropFilter: 'blur(16px)', 
-        WebkitBackdropFilter: 'blur(16px)',
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
         width: '100%', 
         flexWrap: 'wrap', 
         gap: '1rem',
-        paddingTop: '2rem',
-        paddingBottom: '1rem',
-        borderBottom: '1px solid rgba(229, 231, 235, 0.5)'
+        paddingTop: '1.25rem',
+        paddingBottom: '0.75rem'
       }}>
         <h1 className="admin-header-title" style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
           NATIJALAR TAHLILI
@@ -229,7 +232,7 @@ const Header: React.FC<HeaderProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <div className="school-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0', background: 'transparent', border: 'none' }}>
             <img 
-              src={theme === 'dark' ? iconDark : iconLight} 
+              src={iconLight} 
               alt="Logo" 
               style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} 
             />
@@ -397,8 +400,8 @@ const Header: React.FC<HeaderProps> = ({
         width: '100%', 
         gap: '1.5rem', 
         flexWrap: 'wrap',
-        marginTop: '2rem',
-        marginBottom: '2.5rem'
+        marginTop: '0.5rem',
+        marginBottom: '1rem'
       }}>
         <div className="class-selector" style={{ 
           display: 'flex', 
@@ -601,7 +604,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
-    </>
+    </header>
   );
 };
 

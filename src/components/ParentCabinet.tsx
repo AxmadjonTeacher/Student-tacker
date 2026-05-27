@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { LogOut, TrendingUp, Bell, Home, BarChart2, Settings, Plus } from 'lucide-react';
+import { LogOut, TrendingUp, Bell, Home, BarChart2, Settings, Plus, Trash2 } from 'lucide-react';
 import type { Student, NewsEvent } from '../types';
 import { supabase, mapDbToStudent } from '../supabase';
 import GraphModal from './GraphModal';
 import iconLight from '../assets/icon-light.png';
-import iconDark from '../assets/icon-dark.png';
 
 interface ParentCabinetProps {
   student: Student;
@@ -13,8 +12,7 @@ interface ParentCabinetProps {
   onSwitchChild: (childId: string) => void;
   onAddChild: (newStudent: Student) => void;
   onLogout: () => void;
-  theme?: 'light' | 'dark';
-  onToggleTheme?: () => void;
+  onRemoveChild: (childId: string) => void;
 }
 
 const ParentCabinet: React.FC<ParentCabinetProps> = ({ 
@@ -24,8 +22,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
   onSwitchChild, 
   onAddChild, 
   onLogout,
-  theme = 'light',
-  onToggleTheme
+  onRemoveChild
 }) => {
   const [news, setNews] = useState<NewsEvent[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
@@ -356,7 +353,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
             justifyContent: 'center'
           }}>
             <img 
-              src={theme === 'dark' ? iconDark : iconLight} 
+              src={iconLight} 
               alt="Logo" 
               style={{ width: '100%', height: '100%', borderRadius: '10px', objectFit: 'contain' }} 
             />
@@ -834,42 +831,6 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 SOZLAMALAR
               </h3>
               
-              {/* Theme Toggle Card */}
-              <div style={{ background: 'var(--bg-card-hover)', padding: '1.25rem', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>QORONG'U REJIM (DARK MODE)</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>Ilova mavzusini almashtirish</div>
-                </div>
-                <button 
-                  onClick={onToggleTheme}
-                  style={{
-                    width: '46px',
-                    height: '24px',
-                    borderRadius: '9999px',
-                    background: theme === 'dark' ? 'var(--accent-primary)' : '#cbd5e1',
-                    border: 'none',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    padding: 0,
-                    transition: 'background-color 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexShrink: 0
-                  }}
-                >
-                  <div style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    background: '#ffffff',
-                    position: 'absolute',
-                    left: theme === 'dark' ? '24px' : '4px',
-                    transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
-                  }} />
-                </button>
-              </div>
-              
               {/* Linked Children Card */}
               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', marginBottom: '0.5rem' }}>ULANGAN FARZANDLAR</div>
@@ -882,7 +843,29 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                         </div>
                         <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{child.name} {child.surname}</span>
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>ID: {child.id}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>ID: {child.id}</span>
+                        <button
+                          onClick={() => onRemoveChild(child.id)}
+                          title="Farzandni o'chirish"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '0.25rem',
+                            borderRadius: '6px',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

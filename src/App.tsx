@@ -105,10 +105,7 @@ function App() {
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
 
-  // PWA and Theme State
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
-  });
+  // PWA State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -121,20 +118,6 @@ function App() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem('theme', theme);
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark-theme');
-    } else {
-      root.classList.remove('dark-theme');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
 
   const loggedInStudent = useMemo(() => {
     return parentStudents.find(s => s.id === activeParentStudentId) || null;
@@ -1580,10 +1563,25 @@ function App() {
             setActiveParentStudentId(newStudent.id);
           }}
           onLogout={handleLogout}
-          theme={theme}
-          onToggleTheme={toggleTheme}
+          onRemoveChild={(childId) => {
+            if (window.confirm("Haqiqatan ham ushbu farzandni o'chirmoqchisiz?")) {
+              setParentStudents(prev => {
+                const updated = prev.filter(s => s.id !== childId);
+                const creds = updated.map(s => ({ id: s.id, passcode: s.passcode }));
+                localStorage.setItem('parent_children', JSON.stringify(creds));
+                if (activeParentStudentId === childId) {
+                  if (updated.length > 0) {
+                    setActiveParentStudentId(updated[0].id);
+                  } else {
+                    handleLogout();
+                  }
+                }
+                return updated;
+              });
+            }
+          }}
         />
-        <InstallAppDrawer theme={theme} deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
+        <InstallAppDrawer deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
       </>
     );
   }
@@ -1607,8 +1605,6 @@ function App() {
         onStartNewWeekClick={handleStartNewWeekClick}
         onDeleteWeekClick={handleDeleteWeek}
         onLogout={handleLogout}
-        theme={theme}
-        onToggleTheme={toggleTheme}
       />
 
       <div className="tab-admin-settings-hide">
@@ -1653,34 +1649,35 @@ function App() {
           deletedWeeks={deletedWeeks}
           onRestoreWeek={handleRestoreWeek}
           onPermanentDeleteWeek={handlePermanentDeleteWeek}
-          theme={theme}
-          onToggleTheme={toggleTheme}
+          onLogout={handleLogout}
         />
       </div>
 
-      {/* Elegant Symmetrical Footer */}
-      <footer style={{
-        marginTop: 'auto',
-        paddingTop: '3rem',
-        paddingBottom: '1.5rem',
-        textAlign: 'center',
-        borderTop: '1px solid #e2e8f0',
-        color: '#64748b',
-        fontSize: '0.8rem',
-        fontWeight: 600,
-        letterSpacing: '0.05em',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.35rem',
-        alignItems: 'center'
-      }}>
-        <div style={{ textTransform: 'uppercase' }}>
-          © 2026 Al-Xorazmiy School. Barcha huquqlar himoyalangan.
-        </div>
-        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
-          Created by Axmadjon
-        </div>
-      </footer>
+      {/* Elegant Symmetrical Footer - Settings Only */}
+      {activeAdminTab === 'settings' && (
+        <footer style={{
+          marginTop: 'auto',
+          paddingTop: '3rem',
+          paddingBottom: '1.5rem',
+          textAlign: 'center',
+          borderTop: '1px solid #e2e8f0',
+          color: '#64748b',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          letterSpacing: '0.05em',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.35rem',
+          alignItems: 'center'
+        }}>
+          <div style={{ textTransform: 'uppercase' }}>
+            © 2026 Al-Xorazmiy School. Barcha huquqlar himoyalangan.
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
+            Created by Axmadjon
+          </div>
+        </footer>
+      )}
 
       {/* Modern Custom Dialog Pop-up */}
       <CustomDialog
@@ -1773,7 +1770,7 @@ function App() {
               setActiveSubject('ENG');
             }
             setSearchTerm('');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo(0, 0);
           }}
           className={`tab-item ${activeAdminTab === 'home' ? 'active' : ''}`}
         >
@@ -1805,7 +1802,7 @@ function App() {
           onClick={() => {
             setActiveAdminTab('stats');
             setActiveSubject('ALL');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo(0, 0);
           }}
           className={`tab-item ${activeAdminTab === 'stats' ? 'active' : ''}`}
         >
@@ -1825,7 +1822,7 @@ function App() {
         </button>
       </div>
 
-      <InstallAppDrawer theme={theme} deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
+      <InstallAppDrawer deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
     </div>
   );
 }

@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Share, PlusSquare, Smartphone } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
-import iconDark from '../assets/icon-dark.png';
 
 interface InstallAppDrawerProps {
-  theme: 'light' | 'dark';
   deferredPrompt: any;
   onClearPrompt: () => void;
 }
 
 const InstallAppDrawer: React.FC<InstallAppDrawerProps> = ({
-  theme,
   deferredPrompt,
   onClearPrompt
 }) => {
@@ -136,7 +133,7 @@ const InstallAppDrawer: React.FC<InstallAppDrawerProps> = ({
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <img
-            src={theme === 'dark' ? iconDark : iconLight}
+            src={iconLight}
             alt="App Icon"
             style={{
               width: '48px',

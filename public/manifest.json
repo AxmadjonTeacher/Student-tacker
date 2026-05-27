@@ -1,6 +1,6 @@
 {
-  "name": "Students Progress Tracker",
-  "short_name": "Student Tracker",
+  "name": "Al-Xorazmiy",
+  "short_name": "Al-Xorazmiy",
   "description": "Professional presentation and tracking system for student progress.",
   "start_url": "/",
   "display": "standalone",
@@ -17,18 +17,6 @@
       "src": "/icon-light-512.png",
       "sizes": "512x512",
       "type": "image/png"
-    },
-    {
-      "src": "/icon-dark-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-dark-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
     }
   ]
 }
