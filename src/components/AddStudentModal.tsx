@@ -21,7 +21,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
   const [startingLevel, setStartingLevel] = useState('Level 1');
   const [currentLevel, setCurrentLevel] = useState('Level 1');
   const [teacher, setTeacher] = useState('');
-  const [parentPhone, setParentPhone] = useState('');
+  const [parentPhone, setParentPhone] = useState('+998');
 
   if (!isOpen) return null;
 
@@ -32,7 +32,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
     const studentData: Partial<Student> = {
       name: name.trim(),
       surname: surname.trim(),
-      parentPhone: parentPhone.trim(),
+      parentPhone: parentPhone.trim() === '+998' ? '' : parentPhone.trim(),
     };
 
     if (activeSubject === 'MATH') {
@@ -66,7 +66,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
     setStartingLevel('Level 1');
     setCurrentLevel('Level 1');
     setTeacher('');
-    setParentPhone('');
+    setParentPhone('+998');
     onClose();
   };
 
@@ -217,7 +217,14 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
             <input 
               type="text" 
               value={parentPhone}
-              onChange={e => setParentPhone(e.target.value)}
+              onChange={e => {
+                const val = e.target.value;
+                if (!val.startsWith('+998')) {
+                  setParentPhone('+998');
+                } else {
+                  setParentPhone(val);
+                }
+              }}
               placeholder="+998 90 123 45 67"
               style={{
                 width: '100%', padding: '0.75rem', borderRadius: '10px',
