@@ -283,7 +283,7 @@ function App() {
         const storedPass = localStorage.getItem('admin_passcode');
         if (storedPass === 'Azz21alxorazmiy') {
           setAuthRole('admin');
-          setIsAdminMode(true);
+          setIsAdminMode(false);
           await fetchAllData();
           return;
         }
@@ -684,7 +684,7 @@ function App() {
   const handleLoginSuccess = async (role: 'admin' | 'parent', studentData?: any) => {
     setAuthRole(role);
     if (role === 'admin') {
-      setIsAdminMode(true);
+      setIsAdminMode(false);
       await fetchAllData();
     } else if (role === 'parent' && studentData) {
       const student = mapDbToStudent(studentData);
