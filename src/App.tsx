@@ -1716,7 +1716,7 @@ function App() {
           display: none;
         }
         .tab-admin-settings-only {
-          display: none;
+          display: ${isDrawerOpen || activeAdminTab === 'settings' ? 'block' : 'none'};
         }
         .tab-admin-settings-hide {
           display: block;
@@ -1726,7 +1726,7 @@ function App() {
             display: ${activeAdminTab === 'settings' ? 'none' : 'block'} !important;
           }
           .tab-admin-settings-only {
-            display: ${activeAdminTab === 'settings' ? 'block' : 'none'} !important;
+            display: ${isDrawerOpen || activeAdminTab === 'settings' ? 'block' : 'none'} !important;
           }
           .mobile-tab-bar {
             display: flex !important;

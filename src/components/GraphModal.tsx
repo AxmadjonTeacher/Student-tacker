@@ -299,7 +299,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
       return parseWeekVal(a.week) - parseWeekVal(b.week);
     });
 
-    return [
+    const allWeeks = [
       ...compiledHistorical,
       {
         week: "Faol hafta",
@@ -309,6 +309,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
         hwPercent: Math.round(hwPercent * 100) / 100
       }
     ];
+    return allWeeks.slice(-4);
   })();
 
   const ProgressionTooltip = ({ active, payload, label }: any) => {
