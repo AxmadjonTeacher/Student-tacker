@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Home, Search, BarChart2, Settings } from 'lucide-react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
 import SidebarDrawer from './components/SidebarDrawer';
@@ -99,11 +100,33 @@ function App() {
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
   const [authRole, setAuthRole] = useState<'admin' | 'parent' | null>(null);
-  const [loggedInStudent, setLoggedInStudent] = useState<Student | null>(null);
+  const [parentStudents, setParentStudents] = useState<Student[]>([]);
+  const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
+
+  const loggedInStudent = useMemo(() => {
+    return parentStudents.find(s => s.id === activeParentStudentId) || null;
+  }, [parentStudents, activeParentStudentId]);
 
   useEffect(() => {
     localStorage.setItem('isAdminMode', String(isAdminMode));
   }, [isAdminMode]);
+
+  // Sync active parent weeks
+  useEffect(() => {
+    if (authRole === 'parent' && activeParentStudentId) {
+      const fetchActiveWeeks = async () => {
+        const { data, error } = await supabase
+          .from('student_weeks')
+          .select('*')
+          .eq('student_id', activeParentStudentId)
+          .eq('is_deleted', false);
+        if (!error && data) {
+          setStudentWeeks(data);
+        }
+      };
+      fetchActiveWeeks();
+    }
+  }, [authRole, activeParentStudentId]);
 
   // Custom Dialog DialogState
   const [dialog, setDialog] = useState<{
@@ -294,38 +317,48 @@ function App() {
           return;
         }
       } else if (storedRole === 'parent') {
-        const storedId = localStorage.getItem('parent_student_id');
-        const storedPasscode = localStorage.getItem('parent_student_passcode');
-        if (storedId && storedPasscode) {
+        const storedChildrenJson = localStorage.getItem('parent_children');
+        let childrenList = [];
+        if (storedChildrenJson) {
           try {
-            const { data, error } = await supabase
-              .from('Students')
-              .select('*')
-              .eq('id', storedId)
-              .eq('passcode', storedPasscode)
-              .eq('is_deleted', false)
-              .maybeSingle();
+            childrenList = JSON.parse(storedChildrenJson);
+          } catch (e) {}
+        }
+        
+        if (childrenList.length === 0) {
+          const storedId = localStorage.getItem('parent_student_id');
+          const storedPasscode = localStorage.getItem('parent_student_passcode');
+          if (storedId && storedPasscode) {
+            childrenList = [{ id: storedId, passcode: storedPasscode }];
+            localStorage.setItem('parent_children', JSON.stringify(childrenList));
+          }
+        }
 
-            if (!error && data) {
-              const student = mapDbToStudent(data);
-              setAuthRole('parent');
-              setLoggedInStudent(student);
-              setStudents([student]);
-              
-              const { data: weeksData, error: weeksError } = await supabase
-                .from('student_weeks')
+        if (childrenList.length > 0) {
+          try {
+            const fetchedStudents: Student[] = [];
+            for (const item of childrenList) {
+              const { data, error } = await supabase
+                .from('Students')
                 .select('*')
-                .eq('student_id', student.id)
-                .eq('is_deleted', false);
-                
-              if (!weeksError && weeksData) {
-                setStudentWeeks(weeksData);
+                .eq('id', item.id)
+                .eq('passcode', item.passcode)
+                .eq('is_deleted', false)
+                .maybeSingle();
+              if (!error && data) {
+                fetchedStudents.push(mapDbToStudent(data));
               }
+            }
+
+            if (fetchedStudents.length > 0) {
+              setAuthRole('parent');
+              setParentStudents(fetchedStudents);
+              setActiveParentStudentId(fetchedStudents[0].id);
               setLoading(false);
               return;
             }
-          } catch (e) {
-            console.error('Parent session restore failed:', e);
+          } catch (err) {
+            console.error('Parent session restore failed:', err);
           }
         }
       }
@@ -694,8 +727,9 @@ function App() {
       await fetchAllData();
     } else if (role === 'parent' && studentData) {
       const student = mapDbToStudent(studentData);
-      setLoggedInStudent(student);
-      setStudents([student]);
+      setParentStudents([student]);
+      setActiveParentStudentId(student.id);
+      localStorage.setItem('parent_children', JSON.stringify([{ id: student.id, passcode: student.passcode }]));
       
       setLoading(true);
       try {
@@ -721,10 +755,11 @@ function App() {
     localStorage.removeItem('admin_passcode');
     localStorage.removeItem('parent_student_id');
     localStorage.removeItem('parent_student_passcode');
+    localStorage.removeItem('parent_children');
     
     setAuthRole(null);
-    setLoggedInStudent(null);
-    setStudents([]);
+    setParentStudents([]);
+    setActiveParentStudentId(null);
     setStudentWeeks([]);
     setIsAdminMode(false);
   };
@@ -1497,6 +1532,19 @@ function App() {
       <ParentCabinet
         student={loggedInStudent}
         studentWeeks={studentWeeks}
+        parentStudents={parentStudents}
+        onSwitchChild={(childId) => setActiveParentStudentId(childId)}
+        onAddChild={(newStudent) => {
+          setParentStudents(prev => {
+            const exists = prev.some(s => s.id === newStudent.id);
+            if (exists) return prev;
+            const updated = [...prev, newStudent];
+            const creds = updated.map(s => ({ id: s.id, passcode: s.passcode }));
+            localStorage.setItem('parent_children', JSON.stringify(creds));
+            return updated;
+          });
+          setActiveParentStudentId(newStudent.id);
+        }}
         onLogout={handleLogout}
       />
     );
@@ -1606,6 +1654,98 @@ function App() {
           }}
         />
       )}
+
+      {/* Sticky Bottom Tab Bar for PWAs */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .mobile-tab-bar {
+          display: none;
+        }
+        @media (max-width: 768px) {
+          .mobile-tab-bar {
+            display: flex !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 998;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
+            padding-bottom: env(safe-area-inset-bottom);
+          }
+          .mobile-tab-bar .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 700;
+            gap: 0.25rem;
+            flex: 1;
+            height: 100%;
+            transition: all 0.15s ease;
+          }
+          .mobile-tab-bar .tab-item.active {
+            color: #0d9488;
+          }
+          .app-container {
+            padding-bottom: 80px !important;
+          }
+        }
+      `}} />
+      <div className="mobile-tab-bar">
+        <button 
+          onClick={() => {
+            setActiveSubject('ENG');
+            setSearchTerm('');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className={`tab-item ${(activeSubject === 'ENG' || activeSubject === 'MATH') ? 'active' : ''}`}
+        >
+          <Home size={20} />
+          <span>Bosh sahifa</span>
+        </button>
+        
+        <button 
+          onClick={() => {
+            const input = document.querySelector('.mobile-sticky-search input') as HTMLInputElement;
+            if (input) {
+              input.focus();
+              input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }}
+          className="tab-item"
+        >
+          <Search size={20} />
+          <span>Qidiruv</span>
+        </button>
+        
+        <button 
+          onClick={() => {
+            setActiveSubject('ALL');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className={`tab-item ${activeSubject === 'ALL' ? 'active' : ''}`}
+        >
+          <BarChart2 size={20} />
+          <span>Statistika</span>
+        </button>
+        
+        <button 
+          onClick={() => setIsDrawerOpen(true)}
+          className={`tab-item ${isDrawerOpen ? 'active' : ''}`}
+        >
+          <Settings size={20} />
+          <span>Sozlamalar</span>
+        </button>
+      </div>
     </div>
   );
 }

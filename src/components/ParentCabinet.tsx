@@ -1,19 +1,93 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { LogOut, TrendingUp, Bell, Award } from 'lucide-react';
+import { LogOut, TrendingUp, Bell, Award, Home, Search, BarChart2, Settings, Plus } from 'lucide-react';
 import type { Student, NewsEvent } from '../types';
-import { supabase } from '../supabase';
+import { supabase, mapDbToStudent } from '../supabase';
 import GraphModal from './GraphModal';
 
 interface ParentCabinetProps {
   student: Student;
   studentWeeks: any[];
+  parentStudents: Student[];
+  onSwitchChild: (childId: string) => void;
+  onAddChild: (newStudent: Student) => void;
   onLogout: () => void;
 }
 
-const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, onLogout }) => {
+const ParentCabinet: React.FC<ParentCabinetProps> = ({ 
+  student, 
+  studentWeeks, 
+  parentStudents, 
+  onSwitchChild, 
+  onAddChild, 
+  onLogout 
+}) => {
   const [news, setNews] = useState<NewsEvent[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
+  const [announcementSearch, setAnnouncementSearch] = useState('');
+  
+  // Add child states
+  const [addChildId, setAddChildId] = useState('');
+  const [addChildPasscode, setAddChildPasscode] = useState('');
+  const [addError, setAddError] = useState('');
+  const [addSuccess, setAddSuccess] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+
+  const handleAddChildSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddError('');
+    setAddSuccess('');
+    if (!addChildId.trim() || !addChildPasscode.trim()) {
+      setAddError("Iltimos, barcha maydonlarni to'ldiring.");
+      return;
+    }
+    
+    // Check if child already added
+    const alreadyAdded = parentStudents.some(s => s.id === addChildId.trim());
+    if (alreadyAdded) {
+      setAddError("Ushbu o'quvchi allaqachon qo'shilgan.");
+      return;
+    }
+
+    setAddLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('Students')
+        .select('*')
+        .eq('id', addChildId.trim())
+        .eq('passcode', addChildPasscode.trim())
+        .eq('is_deleted', false)
+        .maybeSingle();
+
+      if (error || !data) {
+        setAddError("Student ID yoki parol noto'g'ri.");
+      } else {
+        const newStudent = mapDbToStudent(data);
+        onAddChild(newStudent);
+        setAddSuccess(`${newStudent.name} muvaffaqiyatli qo'shildi!`);
+        setAddChildId('');
+        setAddChildPasscode('');
+        setTimeout(() => {
+          setActiveTab('home');
+        }, 1500);
+      }
+    } catch (err) {
+      setAddError("Aloqa o'rnatishda xatolik yuz berdi.");
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  const filteredNews = useMemo(() => {
+    if (!announcementSearch.trim()) return news;
+    return news.filter(item => 
+      item.title.toLowerCase().includes(announcementSearch.toLowerCase()) || 
+      item.message.toLowerCase().includes(announcementSearch.toLowerCase())
+    );
+  }, [news, announcementSearch]);
 
   // Find the latest week's record from studentWeeks (sorted by academic week order)
   const latestWeekRecord = useMemo(() => {
@@ -139,9 +213,66 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
           gap: 1.25rem;
           margin-top: 1.5rem;
         }
+        .tab-content-settings {
+          display: none;
+        }
+        .mobile-tab-bar {
+          display: none;
+        }
         @media (max-width: 900px) {
           .cabinet-grid {
             grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .desktop-only-btn {
+            display: none !important;
+          }
+          .mobile-tab-bar {
+            display: flex !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 998;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
+            padding-bottom: env(safe-area-inset-bottom);
+          }
+          .mobile-tab-bar .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 700;
+            gap: 0.25rem;
+            flex: 1;
+            height: 100%;
+            transition: all 0.15s ease;
+          }
+          .mobile-tab-bar .tab-item.active {
+            color: #0d9488;
+          }
+          .cabinet-grid {
+            margin-bottom: 80px !important;
+          }
+          .tab-content-home {
+            display: ${activeTab === 'home' ? 'block' : 'none'} !important;
+          }
+          .tab-content-search {
+            display: ${activeTab === 'search' ? 'block' : 'none'} !important;
+          }
+          .tab-content-settings {
+            display: ${activeTab === 'settings' ? 'block' : 'none'} !important;
           }
         }
         @media (max-width: 600px) {
@@ -234,7 +365,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
 
         <button
           onClick={onLogout}
-          className="cabinet-header-btn"
+          className="cabinet-header-btn desktop-only-btn"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -258,6 +389,91 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
       </header>
 
       <main className="cabinet-container">
+        {/* Child Switcher Pill Bar */}
+        {parentStudents.length > 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginBottom: '1.5rem',
+            flexWrap: 'wrap'
+          }}>
+            {parentStudents.map((child) => {
+              const isActive = child.id === student.id;
+              return (
+                <button
+                  key={child.id}
+                  onClick={() => onSwitchChild(child.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '9999px',
+                    border: isActive ? '2px solid #0d9488' : '1px solid #e2e8f0',
+                    background: isActive ? '#f0fdfa' : '#ffffff',
+                    color: isActive ? '#0f766e' : '#475569',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: isActive ? '0 4px 6px -1px rgba(13, 148, 136, 0.1)' : 'none',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <span style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: isActive ? '#0d9488' : '#e2e8f0',
+                    color: isActive ? '#ffffff' : '#475569',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.7rem',
+                    fontWeight: 800
+                  }}>
+                    {getInitials(child.name, child.surname)}
+                  </span>
+                  <span>{child.name}</span>
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => {
+                if (window.innerWidth <= 768) {
+                  setActiveTab('settings');
+                  setTimeout(() => {
+                    const input = document.getElementById('add-child-id-input');
+                    if (input) {
+                      input.focus();
+                      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }, 100);
+                } else {
+                  setIsAddModalOpen(true);
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                border: '1px dashed #0d9488',
+                background: '#f0fdfa',
+                color: '#0d9488',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              title="Yangi farzand qo'shish"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+        )}
         {/* Child Banner */}
         <div className="cabinet-banner" style={{
           background: 'linear-gradient(135deg, #1e1b4b 0%, #0d9488 100%)',
@@ -312,7 +528,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
 
         <div className="cabinet-grid">
           {/* Left Column: Metrics & Charts */}
-          <section>
+          <section className="tab-content-home">
             {/* Info Cards */}
             <div style={{
               background: '#ffffff',
@@ -467,7 +683,29 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
           </section>
 
           {/* Right Column: News & Announcements Feed */}
-          <section>
+          <section className="tab-content-search">
+            {/* Announcement Search bar */}
+            <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
+              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+              <input 
+                type="text" 
+                placeholder="E'lonlarni qidirish..." 
+                value={announcementSearch}
+                onChange={(e) => setAnnouncementSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem 1rem 0.85rem 2.75rem',
+                  borderRadius: '9999px',
+                  border: '1px solid #e5e7eb',
+                  background: '#ffffff',
+                  fontSize: '0.95rem',
+                  color: '#1a1a1a',
+                  outline: 'none',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                }}
+              />
+            </div>
+
             <div style={{
               background: '#ffffff',
               borderRadius: '20px',
@@ -496,14 +734,14 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
                     animation: 'spin 1s linear infinite'
                   }} />
                 </div>
-              ) : news.length === 0 ? (
+              ) : filteredNews.length === 0 ? (
                 <div style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', padding: '3rem 0', textAlign: 'center' }}>
                   <Bell size={36} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
-                  <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>Hozircha e'lonlar mavjud emas.</p>
+                  <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>Qidiruv bo'yicha e'lonlar topilmadi.</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto', maxHeight: '550px', paddingRight: '0.25rem' }}>
-                  {news.map((item) => {
+                  {filteredNews.map((item) => {
                     const badge = getUrgencyColor(item.urgency || 'medium');
                     return (
                       <div
@@ -582,8 +820,365 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
               )}
             </div>
           </section>
+
+          {/* Settings Section (Mobile Only) */}
+          <section className="tab-content-settings">
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              border: '1px solid #e2e8f0',
+              padding: '1.5rem',
+              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                SOZLAMALAR
+              </h3>
+              
+              {/* Linked Children Card */}
+              <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', marginBottom: '0.5rem' }}>ULANGAN FARZANDLAR</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {parentStudents.map(child => (
+                    <div key={child.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#ccfbf1', color: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>
+                          {getInitials(child.name, child.surname)}
+                        </div>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{child.name} {child.surname}</span>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>ID: {child.id}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add Child Form */}
+              <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '16px', border: '1.5px dashed #cbd5e1' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>YANGI FARZAND QO'SHISH</div>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 1rem 0' }}>Boshqa farzandingiz ma'lumotlarini ko'rish uchun uning ID va parolini kiriting.</p>
+                
+                <form onSubmit={handleAddChildSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div>
+                    <label htmlFor="add-child-id-input" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Student ID</label>
+                    <input
+                      id="add-child-id-input"
+                      type="text"
+                      placeholder="Student ID kiriting"
+                      value={addChildId}
+                      onChange={(e) => setAddChildId(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: '0.25rem' }}>Parol (Passcode)</label>
+                    <input
+                      type="password"
+                      placeholder="Parolni kiriting"
+                      value={addChildPasscode}
+                      onChange={(e) => setAddChildPasscode(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                  
+                  {addError && <div style={{ fontSize: '0.8rem', color: '#b91c1c', fontWeight: 700 }}>{addError}</div>}
+                  {addSuccess && <div style={{ fontSize: '0.8rem', color: '#166534', fontWeight: 700 }}>{addSuccess}</div>}
+
+                  <button
+                    type="submit"
+                    disabled={addLoading}
+                    style={{
+                      background: 'linear-gradient(135deg, #0d9488, #0f766e)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '0.75rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      transition: 'opacity 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    {addLoading ? "Kutilmoqda..." : (
+                      <>
+                        <Plus size={16} />
+                        <span>Farzandni ulash</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+              
+              {/* Contact Card */}
+              <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div style={{ fontWeight: 800, color: '#1e293b' }}>MAKTAB BILAN BOG'LANISH</div>
+                <div>Savollar va takliflar uchun maktab ma'muriyati bilan bog'laning.</div>
+                <div style={{ fontWeight: 700, color: '#0d9488', marginTop: '0.25rem' }}>Tel: +998 71 200-00-00</div>
+              </div>
+
+              {/* Mobile Logout Button */}
+              <button
+                onClick={onLogout}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  background: '#fef2f2',
+                  color: '#b91c1c',
+                  border: '1px solid #fee2e2',
+                  borderRadius: '12px',
+                  padding: '0.85rem 1.25rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  width: '100%',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <LogOut size={16} />
+                <span>TIZIMDAN CHIQISH</span>
+              </button>
+            </div>
+          </section>
         </div>
       </main>
+
+      {/* Sticky Bottom Tab Bar for Mobile viewports */}
+      <div className="mobile-tab-bar">
+        <button 
+          onClick={() => setActiveTab('home')}
+          className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
+        >
+          <Home size={20} />
+          <span>Bosh sahifa</span>
+        </button>
+        
+        <button 
+          onClick={() => setActiveTab('search')}
+          className={`tab-item ${activeTab === 'search' ? 'active' : ''}`}
+        >
+          <Search size={20} />
+          <span>Qidiruv</span>
+        </button>
+        
+        <button 
+          onClick={() => {
+            setActiveTab('stats');
+            setIsGraphOpen(true);
+          }}
+          className={`tab-item ${activeTab === 'stats' ? 'active' : ''}`}
+        >
+          <BarChart2 size={20} />
+          <span>Statistika</span>
+        </button>
+        
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className={`tab-item ${activeTab === 'settings' ? 'active' : ''}`}
+        >
+          <Settings size={20} />
+          <span>Sozlamalar</span>
+        </button>
+      </div>
+
+      {/* Desktop/Mobile Modal Dialog for Adding Child */}
+      {isAddModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '24px',
+            border: '1px solid #e2e8f0',
+            width: '100%',
+            maxWidth: '440px',
+            padding: '2rem',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem'
+          }}>
+            <button
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setAddError('');
+                setAddSuccess('');
+              }}
+              style={{
+                position: 'absolute',
+                top: '1.25rem',
+                right: '1.25rem',
+                background: '#f1f5f9',
+                color: '#64748b',
+                border: 'none',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '0.95rem'
+              }}
+            >
+              ✕
+            </button>
+
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 850, color: '#0f172a', margin: '0 0 0.25rem 0' }}>
+                Farzand qo'shish
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                Yangi farzand ulash uchun maktab tomonidan berilgan Student ID va parolni kiriting.
+              </p>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setAddError('');
+              setAddSuccess('');
+              if (!addChildId.trim() || !addChildPasscode.trim()) {
+                setAddError("Iltimos, barcha maydonlarni to'ldiring.");
+                return;
+              }
+              const alreadyAdded = parentStudents.some(s => s.id === addChildId.trim());
+              if (alreadyAdded) {
+                setAddError("Ushbu o'quvchi allaqachon qo'shilgan.");
+                return;
+              }
+
+              setAddLoading(true);
+              try {
+                const { data, error } = await supabase
+                  .from('Students')
+                  .select('*')
+                  .eq('id', addChildId.trim())
+                  .eq('passcode', addChildPasscode.trim())
+                  .eq('is_deleted', false)
+                  .maybeSingle();
+
+                if (error || !data) {
+                  setAddError("Student ID yoki parol noto'g'ri.");
+                } else {
+                  const newStudent = mapDbToStudent(data);
+                  onAddChild(newStudent);
+                  setAddSuccess(`${newStudent.name} muvaffaqiyatli qo'shildi!`);
+                  setAddChildId('');
+                  setAddChildPasscode('');
+                  setTimeout(() => {
+                    setIsAddModalOpen(false);
+                    setAddSuccess('');
+                  }, 1500);
+                }
+              } catch (err) {
+                setAddError("Aloqa o'rnatishda xatolik yuz berdi.");
+              } finally {
+                setAddLoading(false);
+              }
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem' }}>Student ID</label>
+                <input
+                  type="text"
+                  placeholder="Student ID kiriting"
+                  value={addChildId}
+                  onChange={(e) => setAddChildId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem 1rem',
+                    borderRadius: '12px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem' }}>Parol (Passcode)</label>
+                <input
+                  type="password"
+                  placeholder="Parolni kiriting"
+                  value={addChildPasscode}
+                  onChange={(e) => setAddChildPasscode(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem 1rem',
+                    borderRadius: '12px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              {addError && <div style={{ fontSize: '0.85rem', color: '#b91c1c', fontWeight: 700 }}>{addError}</div>}
+              {addSuccess && <div style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 700 }}>{addSuccess}</div>}
+
+              <button
+                type="submit"
+                disabled={addLoading}
+                style={{
+                  background: 'linear-gradient(135deg, #0d9488, #0f766e)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '0.85rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  transition: 'opacity 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  marginTop: '0.5rem'
+                }}
+              >
+                {addLoading ? "Kutilmoqda..." : "Farzandni ulash"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Symmetrical Footer */}
       <footer style={{
@@ -615,7 +1210,10 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({ student, studentWeeks, on
           student={student}
           activeSubject="ALL"
           studentWeeks={studentWeeks}
-          onClose={() => setIsGraphOpen(false)}
+          onClose={() => {
+            setIsGraphOpen(false);
+            setActiveTab('home');
+          }}
         />
       )}
     </div>

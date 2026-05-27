@@ -37,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({
             display: none !important;
           }
           .mobile-header-menu-container {
-            display: block !important;
+            display: none !important;
           }
           .admin-header-top-row {
             padding-top: 0.75rem !important;
