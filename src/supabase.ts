@@ -34,29 +34,38 @@ export const mapDbToStudent = (db: any): Student => ({
   parentPhone: db.parent_phone || ''
 });
 
-export const mapStudentToDb = (student: Student) => ({
-  id: student.id,
-  name: student.name,
-  surname: student.surname,
-  class_name: student.className,
-  date_joined: student.dateJoined,
-  starting_level: student.startingLevel,
-  current_level: student.currentLevel,
-  picture_url: student.pictureUrl || null,
-  grand_tests: student.grandTests || null,
-  teacher: student.teacher || null,
-  order_index: student.orderIndex !== undefined ? student.orderIndex : null,
-  teacher_order: student.teacherOrder !== undefined ? student.teacherOrder : 0,
-  math_teacher: student.mathTeacher || null,
-  math_starting_level: student.mathStartingLevel || null,
-  math_current_level: student.mathCurrentLevel || null,
-  math_grand_tests: student.mathGrandTests || null,
-  math_teacher_order: student.mathTeacherOrder !== undefined ? student.mathTeacherOrder : 0,
-  eng_score: student.engScore !== undefined ? student.engScore : 0,
-  math_score: student.mathScore !== undefined ? student.mathScore : 0,
-  attendance: student.attendance !== undefined ? student.attendance : 1,
-  homework: student.homework !== undefined ? student.homework : 1,
-  is_deleted: student.isDeleted || false,
-  passcode: student.passcode || null,
-  parent_phone: student.parentPhone || null
-});
+export const mapStudentToDb = (student: Student) => {
+  const dbRecord: any = {
+    id: student.id,
+    name: student.name,
+    surname: student.surname,
+    class_name: student.className,
+    date_joined: student.dateJoined,
+    starting_level: student.startingLevel,
+    current_level: student.currentLevel,
+    picture_url: student.pictureUrl || null,
+    grand_tests: student.grandTests || null,
+    teacher: student.teacher || null,
+    order_index: student.orderIndex !== undefined ? student.orderIndex : null,
+    teacher_order: student.teacherOrder !== undefined ? student.teacherOrder : 0,
+    math_teacher: student.mathTeacher || null,
+    math_starting_level: student.mathStartingLevel || null,
+    math_current_level: student.mathCurrentLevel || null,
+    math_grand_tests: student.mathGrandTests || null,
+    math_teacher_order: student.mathTeacherOrder !== undefined ? student.mathTeacherOrder : 0,
+    eng_score: student.engScore !== undefined ? student.engScore : 0,
+    math_score: student.mathScore !== undefined ? student.mathScore : 0,
+    attendance: student.attendance !== undefined ? student.attendance : 1,
+    homework: student.homework !== undefined ? student.homework : 1,
+    is_deleted: student.isDeleted || false
+  };
+
+  if (student.passcode !== undefined && student.passcode !== null && student.passcode !== '') {
+    dbRecord.passcode = student.passcode;
+  }
+  if (student.parentPhone !== undefined && student.parentPhone !== null && student.parentPhone !== '') {
+    dbRecord.parent_phone = student.parentPhone;
+  }
+
+  return dbRecord;
+};

@@ -8,6 +8,7 @@ import Papa from 'papaparse';
 import type { Student } from '../types';
 import AddStudentModal from './AddStudentModal';
 import { supabase } from '../supabase';
+import CustomDialog from './CustomDialog';
 
 interface SidebarDrawerProps {
   isOpen: boolean;
@@ -83,6 +84,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [isSubmittingNews, setIsSubmittingNews] = useState(false);
   const [newsType, setNewsType] = useState<'news' | 'event' | 'reminder'>('news');
   const newsImageInputRef = useRef<HTMLInputElement>(null);
+  const [deleteNewsId, setDeleteNewsId] = useState<number | null>(null);
 
   // Group deleted students by class
   const groupedDeleted = useMemo(() => {
@@ -487,8 +489,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   };
 
   // Delete News/Event
-  const handleDeleteNews = async (id: number) => {
-    if (!confirm('Ushbu yangilikni o\'chirib yubormoqchimisiz? Uni mobil ilovadan qaytarib bo\'lmaydi.')) return;
+  const handleDeleteNews = (id: number) => {
+    setDeleteNewsId(id);
+  };
+
+  const performDeleteNews = async (id: number) => {
     try {
       const { error } = await supabase
         .from('news_events')
@@ -1847,6 +1852,23 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         onClose={() => setIsAddStudentOpen(false)}
         onAddStudent={onAddStudent}
         activeSubject={activeSubject}
+      />
+
+      <CustomDialog
+        isOpen={deleteNewsId !== null}
+        type="confirm"
+        title="Yangilikni o'chirish"
+        message="Ushbu e'lon yoki yangilikni o'chirmoqchimisiz? Uni qayta tiklab bo'lmaydi."
+        confirmText="O'chirish"
+        cancelText="Bekor qilish"
+        danger={true}
+        onConfirm={() => {
+          if (deleteNewsId !== null) {
+            performDeleteNews(deleteNewsId);
+            setDeleteNewsId(null);
+          }
+        }}
+        onClose={() => setDeleteNewsId(null)}
       />
     </>
   );
