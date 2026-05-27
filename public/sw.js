@@ -1,4 +1,4 @@
-const CACHE_NAME = 'student-tracker-v2';
+const CACHE_NAME = 'student-tracker-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -36,52 +36,34 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Network-first for navigation requests (HTML pages)
-  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
-    e.respondWith(
-      fetch(e.request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, clone);
-          });
-          return response;
-        })
-        .catch(() => {
-          return caches.match(e.request) || caches.match('/index.html');
-        })
-    );
+  // Exempt Supabase API traffic and database queries
+  if (url.href.includes('supabase.co') || url.pathname.includes('/rest/v1/')) {
+    e.respondWith(fetch(e.request));
     return;
   }
 
-  // Cache-first with dynamic fallback caching for static assets
-  const isStaticAsset = 
-    url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.svg') ||
-    url.pathname.endsWith('.ico') ||
-    url.pathname.endsWith('.json') ||
-    url.pathname.includes('/assets/');
+  // Only handle same-origin or specific external static assets (like fonts)
+  const isSameOrigin = url.origin === self.location.origin;
+  const isGoogleFont = url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com');
 
-  if (isStaticAsset) {
+  if (isSameOrigin || isGoogleFont) {
     e.respondWith(
-      caches.match(e.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(e.request).then((response) => {
-          if (response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(e.request, clone);
-            });
-          }
-          return response;
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(e.request).then((cachedResponse) => {
+          // Fetch from network in background
+          const fetchPromise = fetch(e.request).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(e.request, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch((err) => {
+            console.log('Background fetch failed:', err);
+          });
+
+          // Return cached response instantly if available, otherwise wait for network fetch
+          return cachedResponse || fetchPromise;
         });
       })
     );
-    return;
   }
-
-  // Default: Network only
-  e.respondWith(fetch(e.request));
 });

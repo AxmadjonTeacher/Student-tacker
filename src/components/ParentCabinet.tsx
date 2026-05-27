@@ -29,6 +29,9 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
   
+  const tabIndices = { home: 0, search: 1, stats: 2, settings: 3 };
+  const activeIndex = tabIndices[activeTab] || 0;
+  
   // Add child states
   const [addChildId, setAddChildId] = useState('');
   const [addChildPasscode, setAddChildPasscode] = useState('');
@@ -242,6 +245,18 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
             box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
             padding-bottom: env(safe-area-inset-bottom);
           }
+          .tab-capsule {
+            position: absolute;
+            top: 8px;
+            height: 48px;
+            width: calc(25% - 16px);
+            background: rgba(13, 148, 136, 0.08);
+            border: 1px solid rgba(13, 148, 136, 0.15);
+            border-radius: 16px;
+            z-index: 1;
+            transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(4px);
+          }
           .mobile-tab-bar .tab-item {
             display: flex;
             flex-direction: column;
@@ -257,6 +272,8 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
             flex: 1;
             height: 100%;
             transition: all 0.15s ease;
+            position: relative;
+            z-index: 2;
           }
           .mobile-tab-bar .tab-item.active {
             color: #0d9488;
@@ -998,6 +1015,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
 
       {/* Sticky Bottom Tab Bar for Mobile viewports */}
       <div className="mobile-tab-bar">
+        <div className="tab-capsule" style={{ left: `calc(${activeIndex} * 25% + 8px)` }} />
         <button 
           onClick={() => setActiveTab('home')}
           className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
