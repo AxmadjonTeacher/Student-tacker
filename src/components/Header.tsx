@@ -45,35 +45,79 @@ const Header: React.FC<HeaderProps> = ({
             gap: 0.5rem !important;
           }
           .admin-header-title {
-            font-size: 1rem !important;
+            font-size: 1.15rem !important;
             text-align: left;
-            max-width: 50% !important;
+            max-width: 65% !important;
             line-height: 1.2 !important;
           }
           .school-logo {
             display: none !important; /* Hide full logo on mobile top row to make room for menu */
           }
           .class-selector {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
             flex-wrap: nowrap !important;
             overflow-x: auto !important;
             white-space: nowrap !important;
             scrollbar-width: none !important; /* Firefox */
+            padding: 0.25rem 1.5rem 0.25rem 0.25rem !important;
+            -webkit-overflow-scrolling: touch;
+            width: 100% !important;
+            mask-image: linear-gradient(to right, black 85%, transparent 100%) !important;
+            -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%) !important;
           }
           .class-selector::-webkit-scrollbar {
             display: none !important; /* Safari and Chrome */
           }
-          /* Sticky Search Bar on Mobile */
-          .mobile-sticky-search {
-            position: sticky !important;
-            top: 55px !important; /* height of sticky header top row */
-            z-index: 99 !important;
+          .class-selector button {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
+            color: #475569 !important;
+          }
+          .class-selector button.active-pill {
+            background: #0d9488 !important;
+            border: 1px solid #0d9488 !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(13, 148, 136, 0.15) !important;
+          }
+          .admin-header-bottom-row {
+            margin-top: 1rem !important;
+            margin-bottom: 1.25rem !important;
+            gap: 1rem !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .admin-controls-wrapper {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0.75rem !important;
             width: 100% !important;
-            background: rgba(249, 248, 243, 0.96) !important;
-            padding: 0.5rem 0.25rem 0.75rem !important;
+            align-items: stretch !important;
+          }
+          .admin-week-actions {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 0.5rem !important;
+            width: 100% !important;
+            align-items: center !important;
+          }
+          .admin-week-actions > div {
+            width: auto !important;
+          }
+          /* Sticky Search Bar on Mobile - nested styling override */
+          .mobile-sticky-search {
+            position: relative !important;
+            top: auto !important;
+            z-index: 1 !important;
+            width: 100% !important;
+            background: transparent !important;
+            padding: 0 !important;
             margin: 0 !important;
-            border-bottom: 1px solid rgba(229, 231, 235, 0.4) !important;
-            backdrop-filter: blur(16px) !important;
-            WebkitBackdropFilter: blur(16px) !important;
+            border-bottom: none !important;
+            backdrop-filter: none !important;
+            WebkitBackdropFilter: none !important;
           }
           .mobile-sticky-search > div {
             width: 100% !important;
@@ -86,11 +130,6 @@ const Header: React.FC<HeaderProps> = ({
             width: 14px !important;
             height: 14px !important;
             left: 0.75rem !important;
-          }
-          .admin-header-bottom-row {
-            margin-top: 1rem !important;
-            margin-bottom: 1.25rem !important;
-            gap: 1rem !important;
           }
         }
       `}} />
@@ -114,7 +153,7 @@ const Header: React.FC<HeaderProps> = ({
         borderBottom: '1px solid rgba(229, 231, 235, 0.5)'
       }}>
         <h1 className="admin-header-title" style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
-          O'QUVCHILAR NATIJALARI TAHLILI
+          NATIJALAR TAHLILI
         </h1>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
@@ -306,6 +345,7 @@ const Header: React.FC<HeaderProps> = ({
               <button
                 key={cls}
                 onClick={() => onClassSelect(cls)}
+                className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -342,9 +382,9 @@ const Header: React.FC<HeaderProps> = ({
           })}
         </div>
  
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
+        <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
           {activeSubject === 'ALL' && (
-            <>
+            <div className="admin-week-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               {/* Week Selector Dropdown */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{ position: 'relative' }}>
@@ -461,7 +501,7 @@ const Header: React.FC<HeaderProps> = ({
                   <span>YANGI HAFTA</span>
                 </button>
               )}
-            </>
+            </div>
           )}
 
           <div className="mobile-sticky-search" style={{ position: 'relative', width: '320px' }}>

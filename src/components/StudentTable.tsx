@@ -253,12 +253,36 @@ const StudentTable: React.FC<StudentTableProps> = ({
           .table-header-row {
             display: none !important;
           }
+          .table-card-container {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            margin-bottom: 0 !important;
+          }
+          .teacher-group-header {
+            display: block !important;
+            background: transparent !important;
+            border-bottom: none !important;
+            padding: 0.5rem 0.25rem !important;
+            margin-top: 1rem !important;
+            margin-bottom: 0.5rem !important;
+          }
+          .teacher-group-header > div:first-child {
+            font-size: 0.95rem !important;
+            font-weight: 850 !important;
+            color: #0f172a !important;
+            letter-spacing: 0.02em !important;
+          }
+          .teacher-group-header > div:not(:first-child) {
+            display: none !important;
+          }
           .student-row {
             display: flex !important;
             flex-direction: column !important;
             align-items: stretch !important;
             border: 1.5px solid #e5e7eb !important;
-            border-radius: 20px !important;
+            border-radius: 16px !important;
             margin-bottom: 1.25rem !important;
             padding: 1.25rem 1rem !important;
             gap: 0.75rem !important;
@@ -278,6 +302,19 @@ const StudentTable: React.FC<StudentTableProps> = ({
           }
           .table-cell:last-child, .table-cell.no-border {
             border-bottom: none !important;
+          }
+          .chart-cell {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+            padding: 0.75rem 0 !important;
+          }
+          .chart-cell svg {
+            width: 74px !important;
+            margin-right: 0 !important;
+            flex-shrink: 0 !important;
           }
           .mobile-label {
             display: inline-block !important;
@@ -308,6 +345,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           <>
             {activeSubject === 'ALL' ? (
               <div 
+                className="table-card-container"
                 style={{
                   background: '#ffffff',
                   borderRadius: '16px',
@@ -529,7 +567,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                       {/* Chart block */}
                       <div 
-                        className="table-cell"
+                        className="table-cell chart-cell"
                         onClick={() => setSelectedStudent(student)}
                         style={{ 
                           padding: '0 1.5rem', 
@@ -551,7 +589,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         title="Grafikni ko'rish"
                       >
                         <span className="mobile-label">Grafik tahlil</span>
-                        <svg width="100" height="42" style={{ overflow: 'visible' }}>
+                        <svg width="74" height="42" style={{ overflow: 'visible' }}>
                           {/* Eng Bar */}
                           <g>
                             <rect 
@@ -685,6 +723,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
               return groups.map((group, groupIdx) => (
                 <div 
                   key={group.teacher || `unassigned-${groupIdx}`}
+                  className="table-card-container"
                   style={{
                     background: '#ffffff',
                     borderRadius: '16px',
@@ -695,7 +734,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   }}
                 >
                   {/* Clean and Small but Noticeable Column Headers (With Integrated Teacher Name in All Caps) */}
-                  <div className="table-header-row" style={{
+                  <div className="table-header-row teacher-group-header" style={{
                     display: 'grid',
                     gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr 1.5fr',
                     alignItems: 'center',

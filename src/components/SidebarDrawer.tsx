@@ -537,8 +537,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           top: 0,
           right: 0,
           bottom: 0,
-          width: '410px',
-          maxWidth: '100%',
+          width: '100%',
+          maxWidth: '410px',
+          boxSizing: 'border-box',
           background: '#fcfcf9',
           boxShadow: '-10px 0 40px -10px rgba(15, 23, 42, 0.08)',
           zIndex: 1000,
@@ -628,7 +629,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               transition: 'all 0.2s'
             }}
           >
-            News and Events
+            YANGILIKLAR
           </button>
           {isAdminMode && (
             <button

@@ -598,38 +598,40 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
         }}
       >
         <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-          <button 
-            onClick={onClose}
-            style={{ 
-              position: 'absolute', right: '-15px', top: '-15px', 
-              background: 'transparent', border: `2px solid ${activeThemeColor}`, 
-              borderRadius: '50%', padding: '4px', cursor: 'pointer',
-              color: activeThemeColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.08)';
-              e.currentTarget.style.background = `${activeThemeColor}10`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.background = 'transparent';
-            }}
-          >
-            <X size={20} />
-          </button>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} />
-            <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
-              {student.name} {student.surname} — {
-                activeSubject === 'ALL' 
-                  ? "Umumiy ko'rsatkichlar"
-                  : isComparing 
-                    ? 'Fanlar taqqoslovi' 
-                    : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')
-              }
-            </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} style={{ flexShrink: 0 }} />
+              <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
+                {student.name} {student.surname} — {
+                  activeSubject === 'ALL' 
+                    ? "Umumiy ko'rsatkichlar"
+                    : isComparing 
+                      ? 'Fanlar taqqoslovi' 
+                      : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')
+                }
+              </h2>
+            </div>
+            
+            <button 
+              onClick={onClose}
+              style={{ 
+                background: 'transparent', border: `2px solid ${activeThemeColor}`, 
+                borderRadius: '50%', padding: '4px', cursor: 'pointer',
+                color: activeThemeColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                flexShrink: 0
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.08)';
+                e.currentTarget.style.background = `${activeThemeColor}10`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <X size={20} />
+            </button>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
