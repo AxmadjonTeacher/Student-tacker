@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings, Plus, Trash2, LogOut } from 'lucide-react';
+import { Search, Settings, Plus, Trash2 } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
 import type { ActiveSubject } from '../types';
 
@@ -18,14 +18,13 @@ interface HeaderProps {
   weeksList: string[];
   onStartNewWeekClick?: () => void;
   onDeleteWeekClick?: (weekName: string) => void;
-  onLogout?: () => void;
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings';
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
   selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick, onDeleteWeekClick,
-  onLogout, activeAdminTab = 'home'
+  activeAdminTab = 'home'
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -283,40 +282,6 @@ const Header: React.FC<HeaderProps> = ({
               <Settings size={15} />
               <span>SOZLAMALAR</span>
             </button>
-
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                title="Tizimdan chiqish"
-                style={{
-                  background: '#fef2f2',
-                  color: '#b91c1c',
-                  border: '1.5px solid #fee2e2',
-                  borderRadius: '9999px',
-                  padding: '0.5rem 1.1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontSize: '0.8rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.04em',
-                  height: '40px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#fee2e2';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#fef2f2';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                <LogOut size={15} />
-                <span>CHIQISH</span>
-              </button>
-            )}
           </div>
 
           {/* Hamburger Menu button */}
@@ -368,19 +333,6 @@ const Header: React.FC<HeaderProps> = ({
                   <Settings size={14} />
                   <span>SOZLAMALAR</span>
                 </button>
-                {onLogout && (
-                  <button
-                    onClick={() => { setIsMenuOpen(false); onLogout(); }}
-                    style={{
-                      background: '#fef2f2', border: '1px solid #fee2e2', padding: '0.6rem 0.75rem',
-                      borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, color: '#b91c1c', cursor: 'pointer',
-                      textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%'
-                    }}
-                  >
-                    <LogOut size={14} />
-                    <span>CHIQISH</span>
-                  </button>
-                )}
               </div>
             )}
           </div>

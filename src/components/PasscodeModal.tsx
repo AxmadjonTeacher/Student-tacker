@@ -17,7 +17,8 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
 
   const isMath = activeSubject === 'MATH';
   const isAll = activeSubject === 'ALL';
-  const activeThemeColor = isMath ? '#0d9488' : isAll ? '#4f46e5' : '#166534';
+  const isDetails = activeSubject === 'DETAILS';
+  const activeThemeColor = isMath ? '#0d9488' : isAll ? '#4f46e5' : isDetails ? '#db2777' : '#166534';
 
   useEffect(() => {
     // Autofocus input on open
@@ -28,14 +29,7 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    let isCorrect = false;
-    if (activeSubject === 'ENG' && passcode === 'Azz21eng') {
-      isCorrect = true;
-    } else if (activeSubject === 'MATH' && passcode === 'Azz21math') {
-      isCorrect = true;
-    } else if (activeSubject === 'ALL' && passcode === 'Azz21all') {
-      isCorrect = true;
-    }
+    const isCorrect = passcode === 'Azz21admin';
 
     if (isCorrect) {
       onSuccess();

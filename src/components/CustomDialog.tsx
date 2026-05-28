@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 interface CustomDialogProps {
   isOpen: boolean;
-  type: 'confirm' | 'prompt' | 'date-prompt';
+  type: 'confirm' | 'prompt' | 'date-prompt' | 'alert';
   title: string;
   message: string;
   defaultValue?: string;
@@ -21,13 +21,14 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
   message,
   defaultValue = '',
   placeholder = '',
-  confirmText = 'Tasdiqlash',
+  confirmText,
   cancelText = 'Bekor qilish',
   danger = false,
   onConfirm,
   onClose
 }) => {
   const [inputValue, setInputValue] = useState(defaultValue);
+  const finalConfirmText = confirmText || (type === 'alert' ? 'OK' : 'Tasdiqlash');
 
   // Sync state if default value changes
   useEffect(() => {
@@ -185,31 +186,33 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           justifyContent: 'flex-end'
         }}>
           {/* Cancel button */}
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: '1.5px solid #e2e8f0',
-              borderRadius: '9999px',
-              padding: '0.65rem 1.5rem',
-              fontSize: '0.9rem',
-              fontWeight: 700,
-              color: '#64748b',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#f8fafc';
-              e.currentTarget.style.color = '#0f172a';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#64748b';
-            }}
-          >
-            {cancelText}
-          </button>
+          {type !== 'alert' && (
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '9999px',
+                padding: '0.65rem 1.5rem',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                color: '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f8fafc';
+                e.currentTarget.style.color = '#0f172a';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#64748b';
+              }}
+            >
+              {cancelText}
+            </button>
+          )}
 
           {/* Confirm/Submit button */}
           <button
@@ -237,7 +240,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
-            {confirmText}
+            {finalConfirmText}
           </button>
         </div>
       </form>

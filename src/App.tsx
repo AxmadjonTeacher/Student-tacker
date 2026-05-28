@@ -6,7 +6,7 @@ import SidebarDrawer from './components/SidebarDrawer';
 import CustomDialog from './components/CustomDialog';
 import InstallAppDrawer from './components/InstallAppDrawer';
 import PasscodeModal from './components/PasscodeModal';
-import type { Student, ActiveSubject } from './types';
+import type { Student, ActiveSubject, Teacher } from './types';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
 import LoginScreen from './components/LoginScreen';
 import ParentCabinet from './components/ParentCabinet';
@@ -124,6 +124,7 @@ function App() {
   const [authRole, setAuthRole] = useState<'admin' | 'parent' | null>(null);
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
 
   // PWA State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -167,7 +168,7 @@ function App() {
   // Custom Dialog DialogState
   const [dialog, setDialog] = useState<{
     isOpen: boolean;
-    type: 'confirm' | 'prompt' | 'date-prompt';
+    type: 'confirm' | 'prompt' | 'date-prompt' | 'alert';
     title: string;
     message: string;
     defaultValue?: string;
@@ -183,6 +184,21 @@ function App() {
     message: '',
     onConfirm: () => {}
   });
+
+  const showAlert = (title: string, message: string, onConfirm?: () => void) => {
+    setDialog({
+      isOpen: true,
+      type: 'alert',
+      title,
+      message,
+      confirmText: 'OK',
+      danger: false,
+      onConfirm: () => {
+        if (onConfirm) onConfirm();
+        closeDialog();
+      }
+    });
+  };
 
   const showConfirm = (title: string, message: string, danger: boolean, onConfirm: () => void) => {
     setDialog({
@@ -334,6 +350,16 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to fetch student weeks history:', err);
+    }
+
+    try {
+      const { data, error } = await supabase.from('teachers').select('*');
+      if (error) throw error;
+      if (data) {
+        setTeachers(data as Teacher[]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch teachers:', err);
     } finally {
       setLoading(false);
     }
@@ -715,6 +741,45 @@ function App() {
     }
   };
 
+  const handleAddTeacher = async (name: string, subject: 'ENG' | 'MATH') => {
+    try {
+      const { data, error } = await supabase
+        .from('teachers')
+        .insert([{ name, subject }])
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setTeachers(prev => [...prev, data[0] as Teacher]);
+        showAlert("Muvaffaqiyatli", "Yangi o'qituvchi muvaffaqiyatli qo'shildi!");
+      }
+    } catch (err: any) {
+      console.error('Failed to add teacher:', err);
+      showAlert("Xatolik", "O'qituvchini qo'shishda xatolik yuz berdi: " + err.message);
+    }
+  };
+
+  const handleDeleteTeacher = async (id: number) => {
+    showConfirm(
+      "O'qituvchini o'chirish",
+      "Haqiqatan ham ushbu o'qituvchini o'chirmoqchimisiz?",
+      true,
+      async () => {
+        try {
+          const { error } = await supabase
+            .from('teachers')
+            .delete()
+            .eq('id', id);
+          if (error) throw error;
+          setTeachers(prev => prev.filter(t => t.id !== id));
+          showAlert("Muvaffaqiyatli", "O'qituvchi muvaffaqiyatli o'chirildi!");
+        } catch (err: any) {
+          console.error('Failed to delete teacher:', err);
+          showAlert("Xatolik", "O'qituvchini o'chirishda xatolik yuz berdi: " + err.message);
+        }
+      }
+    );
+  };
+
   const handleUpdateStudentPhoto = async (studentId: string, photoUrl: string) => {
     setStudents(prev => prev.map(s =>
       s.id === studentId ? { ...s, pictureUrl: photoUrl } : s
@@ -795,7 +860,22 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = (force?: boolean) => {
+    if (force === true) {
+      performLogout();
+    } else {
+      showConfirm(
+        "Tizimdan chiqish",
+        "Haqiqatan ham tizimdan chiqmoqchimisiz?",
+        false,
+        () => {
+          performLogout();
+        }
+      );
+    }
+  };
+
+  const performLogout = () => {
     localStorage.removeItem('auth_role');
     localStorage.removeItem('admin_passcode');
     localStorage.removeItem('parent_student_id');
@@ -1112,7 +1192,7 @@ function App() {
     for (const [oldId, edits] of Object.entries(changes)) {
       if (edits.id && edits.id !== oldId) {
         if (newIds.has(edits.id)) {
-          alert(`Xatolik: Bir xil yangi ID (${edits.id}) kiritildi.`);
+          showAlert("Xatolik", `Bir xil yangi ID (${edits.id}) kiritildi.`);
           return false;
         }
         newIds.add(edits.id);
@@ -1120,7 +1200,7 @@ function App() {
         // Check if this new ID already exists in another student (not being edited to something else)
         const collidingStudent = students.find(s => s.id === edits.id && !changes[s.id]?.id);
         if (collidingStudent) {
-          alert(`Xatolik: Yangi kiritilgan ID (${edits.id}) boshqa o'quvchida (${collidingStudent.name} ${collidingStudent.surname}) allaqachon mavjud.`);
+          showAlert("Xatolik", `Yangi kiritilgan ID (${edits.id}) boshqa o'quvchida (${collidingStudent.name} ${collidingStudent.surname}) allaqachon mavjud.`);
           return false;
         }
       }
@@ -1200,11 +1280,11 @@ function App() {
         return sw;
       }));
 
-      alert("Ma'lumotlar muvaffaqiyatli saqlandi!");
+      showAlert("Muvaffaqiyatli", "Ma'lumotlar muvaffaqiyatli saqlandi!");
       return true;
     } catch (err: any) {
       console.error("Xatolik yuz berdi:", err);
-      alert("Ma'lumotlarni saqlashda xatolik: " + err.message);
+      showAlert("Xatolik", "Ma'lumotlarni saqlashda xatolik: " + err.message);
       return false;
     } finally {
       setLoading(false);
@@ -1219,7 +1299,7 @@ function App() {
     const targetStudents = students.filter(s => !s.isDeleted && (targetClass === null || getClassGroup(s.className.toUpperCase()) === targetClass));
     
     if (targetStudents.length === 0) {
-      alert("Yangilash uchun o'quvchilar topilmadi.");
+      showAlert("Xatolik", "Yangilash uchun o'quvchilar topilmadi.");
       return false;
     }
 
@@ -1491,7 +1571,7 @@ function App() {
           // 1. Prepare snapshot payload (initializing all active students with 0 scores and 100% attendance/homework)
           const activeStudentsList = students.filter(s => !s.isDeleted);
           if (activeStudentsList.length === 0) {
-            alert("Faol o'quvchilar mavjud emas!");
+            showAlert("Xatolik", "Faol o'quvchilar mavjud emas!");
             return;
           }
 
@@ -1526,10 +1606,10 @@ function App() {
           }
 
           setSelectedWeek(weekName);
-          alert(`"${weekName}" muvaffaqiyatli boshlandi! Yangi hafta barcha o'quvchilar uchun 0 ball bilan ochildi.`);
+          showAlert("Muvaffaqiyatli", `"${weekName}" muvaffaqiyatli boshlandi! Yangi hafta barcha o'quvchilar uchun 0 ball bilan ochildi.`);
         } catch (err) {
           console.error("Yangi haftani boshlashda xatolik:", err);
-          alert("Haftani arxivlashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
+          showAlert("Xatolik", "Haftani arxivlashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
         }
       }
     );
@@ -1737,21 +1817,26 @@ function App() {
           }}
           onLogout={handleLogout}
           onRemoveChild={(childId) => {
-            if (window.confirm("Haqiqatan ham ushbu farzandni o'chirmoqchisiz?")) {
-              setParentStudents(prev => {
-                const updated = prev.filter(s => s.id !== childId);
-                const creds = updated.map(s => ({ id: s.id, passcode: s.passcode }));
-                localStorage.setItem('parent_children', JSON.stringify(creds));
-                if (activeParentStudentId === childId) {
-                  if (updated.length > 0) {
-                    setActiveParentStudentId(updated[0].id);
-                  } else {
-                    handleLogout();
+            showConfirm(
+              "Farzandni o'chirish",
+              "Haqiqatan ham ushbu farzandni o'chirmoqchisiz?",
+              true,
+              () => {
+                setParentStudents(prev => {
+                  const updated = prev.filter(s => s.id !== childId);
+                  const creds = updated.map(s => ({ id: s.id, passcode: s.passcode }));
+                  localStorage.setItem('parent_children', JSON.stringify(creds));
+                  if (activeParentStudentId === childId) {
+                    if (updated.length > 0) {
+                      setActiveParentStudentId(updated[0].id);
+                    } else {
+                      handleLogout(true);
+                    }
                   }
-                }
-                return updated;
-              });
-            }
+                  return updated;
+                });
+              }
+            );
           }}
         />
         <InstallAppDrawer deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
@@ -1780,7 +1865,6 @@ function App() {
         weeksList={weeksList}
         onStartNewWeekClick={handleStartNewWeekClick}
         onDeleteWeekClick={handleDeleteWeek}
-        onLogout={handleLogout}
       />
 
       <div className="tab-admin-settings-hide">
@@ -1799,6 +1883,7 @@ function App() {
           studentWeeks={studentWeeks}
           onSaveCredentials={handleSaveCredentials}
           onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
+          teachers={teachers}
         />
       </div>
 
@@ -1828,6 +1913,9 @@ function App() {
           onRestoreWeek={handleRestoreWeek}
           onPermanentDeleteWeek={handlePermanentDeleteWeek}
           onLogout={handleLogout}
+          teachers={teachers}
+          onAddTeacher={handleAddTeacher}
+          onDeleteTeacher={handleDeleteTeacher}
         />
       </div>
 

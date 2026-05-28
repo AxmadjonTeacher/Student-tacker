@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Student, ActiveSubject } from '../types';
+import type { Student, ActiveSubject, Teacher } from '../types';
 import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, Key, Phone, Save, RotateCw, Download, X } from 'lucide-react';
 import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
@@ -33,6 +33,7 @@ interface StudentTableProps {
   studentWeeks?: any[];
   onSaveCredentials?: (changes: Record<string, Partial<Student>>) => Promise<boolean>;
   onBatchRegenerateCredentials?: (regenerateIds: boolean, regeneratePasscodes: boolean, targetClass: string | null) => Promise<boolean>;
+  teachers?: Teacher[];
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -49,7 +50,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onMoveTeacherTable,
   studentWeeks = [],
   onSaveCredentials,
-  onBatchRegenerateCredentials
+  onBatchRegenerateCredentials,
+  teachers = []
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -64,11 +66,24 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [editingValue, setEditingValue] = useState<string>('');
   const [unsavedChanges, setUnsavedChanges] = useState<Record<string, Partial<Student>>>({});
 
+  // Copy to clipboard notification toast state
+  const [copiedId, setCopiedId] = useState<{ id: string; field: string } | null>(null);
+
+  // Teacher assignment modal choice dropdown state
+  const [assigningStudent, setAssigningStudent] = useState<{ id: string; currentTeacher: string } | null>(null);
+
   // States for batch regenerate modal
   const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
   const [regenIds, setRegenIds] = useState(true);
   const [regenPasscodes, setRegenPasscodes] = useState(true);
   const [regenTarget, setRegenTarget] = useState<'class' | 'all'>('class');
+
+  const handleCopyText = (text: string, studentId: string, field: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedId({ id: studentId, field });
+    setTimeout(() => setCopiedId(null), 1500);
+  };
 
   const sortedStudents = React.useMemo(() => {
     if (activeSubject !== 'ALL') return students;
@@ -93,14 +108,22 @@ const StudentTable: React.FC<StudentTableProps> = ({
   }, [students, sortBy, activeSubject]);
 
   const handleCellSave = (studentId: string, field: 'name' | 'id' | 'passcode' | 'parentPhone', value: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) {
+      setEditingCell(null);
+      return;
+    }
+
     setUnsavedChanges(prev => {
       const studentEdits = prev[studentId] || {};
       const updatedEdits = { ...studentEdits };
 
       if (field === 'name') {
         const parts = value.trim().split(/\s+/);
-        updatedEdits.name = parts[0] || '';
-        updatedEdits.surname = parts.slice(1).join(' ') || '';
+        const newName = parts[0] || '';
+        const newSurname = parts.slice(1).join(' ') || '';
+        updatedEdits.name = newName;
+        updatedEdits.surname = newSurname;
       } else if (field === 'id') {
         updatedEdits.id = value.trim();
       } else if (field === 'passcode') {
@@ -114,10 +137,28 @@ const StudentTable: React.FC<StudentTableProps> = ({
         }
       }
 
-      return {
-        ...prev,
-        [studentId]: updatedEdits
-      };
+      // If the field is identical to original, remove from edits
+      if (updatedEdits.name === student.name && updatedEdits.surname === student.surname) {
+        delete updatedEdits.name;
+        delete updatedEdits.surname;
+      }
+      if (updatedEdits.id === student.id) {
+        delete updatedEdits.id;
+      }
+      if (updatedEdits.passcode === student.passcode) {
+        delete updatedEdits.passcode;
+      }
+      if (updatedEdits.parentPhone === (student.parentPhone || '')) {
+        delete updatedEdits.parentPhone;
+      }
+
+      const newPrev = { ...prev };
+      if (Object.keys(updatedEdits).length === 0) {
+        delete newPrev[studentId];
+      } else {
+        newPrev[studentId] = updatedEdits;
+      }
+      return newPrev;
     });
     setEditingCell(null);
   };
@@ -823,20 +864,22 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <Download size={12} />
                       <span>Excel</span>
                     </button>
-                    <button
-                      onClick={() => setIsRegenerateModalOpen(true)}
-                      title="ID/Parollarni yangilash"
-                      style={{
-                        background: '#fdf2f8', color: '#db2777', border: '1px solid #fbcfe8',
-                        padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', transition: 'all 0.15s ease'
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#fce7f3'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = '#fdf2f8'; }}
-                    >
-                      <RotateCw size={12} />
-                      <span>Yangilash</span>
-                    </button>
+                    {isAdminMode && (
+                      <button
+                        onClick={() => setIsRegenerateModalOpen(true)}
+                        title="ID/Parollarni yangilash"
+                        style={{
+                          background: '#fdf2f8', color: '#db2777', border: '1px solid #fbcfe8',
+                          padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fce7f3'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#fdf2f8'; }}
+                      >
+                        <RotateCw size={12} />
+                        <span>Yangilash</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -857,6 +900,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     editingCell?.studentId === student.id && editingCell?.field === field;
 
                   const handleDoubleClick = (field: 'name' | 'id' | 'passcode' | 'parentPhone', currentVal: string) => {
+                    if (!isAdminMode) return;
                     setEditingCell({ studentId: student.id, field });
                     setEditingValue(currentVal);
                   };
@@ -939,7 +983,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <div 
                         className="table-cell" 
                         style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                        onClick={() => { if(!isEditing('id') && idVal) navigator.clipboard.writeText(idVal); }}
+                        onClick={() => { if(!isEditing('id') && idVal) handleCopyText(idVal, student.id, 'id'); }}
                         onDoubleClick={() => handleDoubleClick('id', idVal)}
                         title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                       >
@@ -962,7 +1006,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           />
                         ) : (
                           <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
-                            {idVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Bo'sh</span>}
+                            {copiedId?.id === student.id && copiedId?.field === 'id' ? (
+                              <span style={{ color: '#16a34a', fontWeight: 800 }}>Nusxalandi! ✓</span>
+                            ) : (
+                              idVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Bo'sh</span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -971,7 +1019,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <div 
                         className="table-cell" 
                         style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                        onClick={() => { if(!isEditing('passcode') && passcodeVal) navigator.clipboard.writeText(passcodeVal); }}
+                        onClick={() => { if(!isEditing('passcode') && passcodeVal) handleCopyText(passcodeVal, student.id, 'passcode'); }}
                         onDoubleClick={() => handleDoubleClick('passcode', passcodeVal || '')}
                         title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                       >
@@ -994,8 +1042,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           />
                         ) : (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: '#475569', fontFamily: 'monospace' }}>
-                            <Key size={13} style={{ color: '#94a3b8' }} />
-                            <span>{passcodeVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Bo'sh</span>}</span>
+                            {copiedId?.id === student.id && copiedId?.field === 'passcode' ? (
+                              <span style={{ color: '#16a34a', fontWeight: 800 }}>Nusxalandi! ✓</span>
+                            ) : (
+                              <>
+                                <Key size={13} style={{ color: '#94a3b8' }} />
+                                <span>{passcodeVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Bo'sh</span>}</span>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1004,7 +1058,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <div 
                         className="table-cell" 
                         style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                        onClick={() => { if(!isEditing('parentPhone') && phoneVal) navigator.clipboard.writeText(phoneVal); }}
+                        onClick={() => { if(!isEditing('parentPhone') && phoneVal) handleCopyText(phoneVal, student.id, 'parentPhone'); }}
                         onDoubleClick={() => handleDoubleClick('parentPhone', phoneVal || '+998')}
                         title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                       >
@@ -1033,29 +1087,37 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           />
                         ) : (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>
-                            <Phone size={13} style={{ color: '#94a3b8' }} />
-                            <span>{phoneVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Kiritilmagan</span>}</span>
+                            {copiedId?.id === student.id && copiedId?.field === 'parentPhone' ? (
+                              <span style={{ color: '#16a34a', fontWeight: 800 }}>Nusxalandi! ✓</span>
+                            ) : (
+                              <>
+                                <Phone size={13} style={{ color: '#94a3b8' }} />
+                                <span>{phoneVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Kiritilmagan</span>}</span>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
 
                       {/* Delete Action Cell */}
                       <div className="table-cell no-border" style={{ padding: '0 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <button 
-                          onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
-                          title="O'quvchini o'chirish"
-                          style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: '#fee2e2', color: '#b91c1c',
-                            border: '1px solid #fca5a5', borderRadius: '50%',
-                            width: '32px', height: '32px',
-                            cursor: 'pointer', transition: 'all 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.08)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {isAdminMode && (
+                          <button 
+                            onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
+                            title="O'quvchini o'chirish"
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: '#fee2e2', color: '#b91c1c',
+                              border: '1px solid #fca5a5', borderRadius: '50%',
+                              width: '32px', height: '32px',
+                              cursor: 'pointer', transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.08)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -1485,7 +1547,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               <Pencil size={16} />
                             </button>
                             <button 
-                              onClick={() => onAssignTeacher && onAssignTeacher(student.id, student.teacher || '')}
+                              onClick={() => setAssigningStudent({ id: student.id, currentTeacher: student.teacher || '' })}
                               title="O'qituvchi biriktirish"
                               style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1787,6 +1849,97 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 onMouseLeave={(e) => { if (regenIds || regenPasscodes) e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 Tasdiqlash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {assigningStudent && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(8px)',
+        }}>
+          <div style={{
+            background: '#ffffff',
+            width: '90%',
+            maxWidth: '400px',
+            borderRadius: '24px',
+            padding: '2rem',
+            border: '1.5px solid #f1f5f9',
+            boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem'
+          }}>
+            <div>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                O'qituvchini biriktirish
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
+                Quyidagi ro'yxatdan o'qituvchini tanlang:
+              </p>
+            </div>
+
+            <select
+              value={assigningStudent.currentTeacher}
+              onChange={(e) => {
+                if (onAssignTeacher) {
+                  onAssignTeacher(assigningStudent.id, e.target.value);
+                }
+                setAssigningStudent(null);
+              }}
+              style={{
+                width: '100%',
+                background: '#f8fafc',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '0.85rem 1rem',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                color: '#0f172a',
+                outline: 'none',
+                appearance: 'none',
+                backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/%3e%3c/svg%3e")',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 1rem center',
+                backgroundSize: '1em'
+              }}
+            >
+              <option value="">-- O'qituvchi tanlanmagan --</option>
+              {teachers
+                .filter(t => t.subject === (activeSubject === 'MATH' ? 'MATH' : 'ENG'))
+                .map(t => (
+                  <option key={t.id} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
+            </select>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button
+                onClick={() => setAssigningStudent(null)}
+                style={{
+                  background: 'transparent',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '9999px',
+                  padding: '0.65rem 1.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                Bekor qilish
               </button>
             </div>
           </div>

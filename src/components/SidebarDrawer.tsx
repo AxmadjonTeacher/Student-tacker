@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut
 } from 'lucide-react';
 import Papa from 'papaparse';
-import type { Student, ActiveSubject } from '../types';
+import type { Student, ActiveSubject, Teacher } from '../types';
 import AddStudentModal from './AddStudentModal';
 import { supabase } from '../supabase';
 import CustomDialog from './CustomDialog';
@@ -30,7 +30,16 @@ interface SidebarDrawerProps {
   onPermanentDeleteWeek: (weekName: string) => void;
   isInline?: boolean;
   onLogout?: () => void;
+  teachers: Teacher[];
+  onAddTeacher: (name: string, subject: 'ENG' | 'MATH') => Promise<void>;
+  onDeleteTeacher: (id: number) => Promise<void>;
 }
+
+const getClassGroupLocal = (clsName: string): string => {
+  const trimmed = clsName?.toString().trim() || '';
+  const match = trimmed.match(/^(\d+)/);
+  return match ? `${match[1]}-Sinf` : trimmed;
+};
 
 const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   isOpen,
@@ -51,16 +60,20 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   onRestoreWeek,
   onPermanentDeleteWeek,
   isInline = false,
-  onLogout
+  onLogout,
+  teachers,
+  onAddTeacher,
+  onDeleteTeacher
 }) => {
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'trash'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'teachers' | 'trash'>('settings');
 
   // CSV and Student Upload states
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const newsImageInputRef = useRef<HTMLInputElement>(null);
 
   // News and Events states
   const [newsEvents, setNewsEvents] = useState<any[]>([]);
@@ -83,8 +96,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [uploadedPics, setUploadedPics] = useState<string[]>([]);
   const [isSubmittingNews, setIsSubmittingNews] = useState(false);
   const [newsType, setNewsType] = useState<'news' | 'event' | 'reminder'>('news');
-  const newsImageInputRef = useRef<HTMLInputElement>(null);
   const [deleteNewsId, setDeleteNewsId] = useState<number | null>(null);
+
+  // Teachers Form states
+  const [newTeacherName, setNewTeacherName] = useState('');
+  const [newTeacherSubject, setNewTeacherSubject] = useState<'ENG' | 'MATH'>('ENG');
+  const [isAddingTeacher, setIsAddingTeacher] = useState(false);
 
   // Group deleted students by class
   const groupedDeleted = useMemo(() => {
@@ -647,6 +664,26 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           </button>
           {isAdminMode && (
             <button
+              onClick={() => setActiveTab('teachers')}
+              style={{
+                flex: 1,
+                background: activeTab === 'teachers' ? '#ffffff' : 'transparent',
+                color: activeTab === 'teachers' ? '#0f172a' : '#64748b',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.5rem',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: activeTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              O'QITUVCHILAR
+            </button>
+          )}
+          {isAdminMode && (
+            <button
               onClick={() => setActiveTab('trash')}
               style={{
                 flex: 1,
@@ -684,11 +721,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     const subjects = [
                       { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: '#166534', bg: '#f0fdf4' },
                       { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: '#0d9488', bg: '#f0fdfa' },
-                      { id: 'ALL', title: 'Umumiy Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' }
+                      { id: 'ALL', title: 'Umumiy Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' },
+                      { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: '#db2777', bg: '#fdf2f8' }
                     ];
-                    if (isAdminMode) {
-                      subjects.push({ id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: '#db2777', bg: '#fdf2f8' });
-                    }
                     return subjects;
                   })().map(subj => {
                     const isSelected = activeSubject === subj.id;
@@ -810,14 +845,21 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       marginBottom: '1.25rem',
                       boxShadow: '0 1px 3px rgba(0,0,0,0.01)'
                     }}>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Faol sinf:</span>
-                        <strong style={{ color: '#0f172a' }}>{activeClass}</strong>
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', justifyContent: 'space-between', marginTop: '0.35rem' }}>
-                        <span>Jami o'quvchilar:</span>
-                        <strong style={{ color: '#0f172a' }}>{students.length} ta</strong>
-                      </div>
+                      {(() => {
+                        const activeClassCount = students.filter(s => getClassGroupLocal(s.className) === activeClass).length;
+                        return (
+                          <>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                              <span>Faol sinf ({activeClass}):</span>
+                              <strong style={{ color: '#0f172a' }}>{activeClassCount} ta</strong>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', justifyContent: 'space-between', marginTop: '0.35rem' }}>
+                              <span>Jami o'quvchilar:</span>
+                              <strong style={{ color: '#0f172a' }}>{students.length} ta</strong>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -1573,6 +1615,260 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     );
                   })
                 )}
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB: Teachers / O'qituvchilar */}
+          {activeTab === 'teachers' && isAdminMode && (
+            <div style={{ animation: 'fadeIn 0.2s ease-out', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              
+              {/* Form to Add Teacher */}
+              <form 
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!newTeacherName.trim()) return;
+                  setIsAddingTeacher(true);
+                  try {
+                    await onAddTeacher(newTeacherName.trim(), newTeacherSubject);
+                    setNewTeacherName('');
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setIsAddingTeacher(false);
+                  }
+                }}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '16px',
+                  padding: '1.25rem',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.01)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}
+              >
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em' }}>
+                  YANGI O'QITUVCHI QO'SHISH
+                </div>
+                
+                <div>
+                  <label htmlFor="teacher-name" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                    O'QITUVCHI ISMI VA FAMILIYASI
+                  </label>
+                  <input
+                    id="teacher-name"
+                    type="text"
+                    required
+                    placeholder="Ism va familiya..."
+                    value={newTeacherName}
+                    onChange={(e) => setNewTeacherName(e.target.value)}
+                    disabled={isAddingTeacher}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      color: '#0f172a',
+                      background: '#f8fafc',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'var(--accent-primary)';
+                      e.target.style.background = '#ffffff';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e2e8f0';
+                      e.target.style.background = '#f8fafc';
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="teacher-subject" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                    MUTAXASSISLIK FANI
+                  </label>
+                  <select
+                    id="teacher-subject"
+                    value={newTeacherSubject}
+                    onChange={(e) => setNewTeacherSubject(e.target.value as 'ENG' | 'MATH')}
+                    disabled={isAddingTeacher}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      color: '#0f172a',
+                      background: '#f8fafc',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease',
+                      appearance: 'none',
+                      backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/%3e%3c/svg%3e")',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 1rem center',
+                      backgroundSize: '1em'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'var(--accent-primary)';
+                      e.target.style.background = '#ffffff';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e2e8f0';
+                      e.target.style.background = '#f8fafc';
+                    }}
+                  >
+                    <option value="ENG">Ingliz Tili (English)</option>
+                    <option value="MATH">Matematika (Math)</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isAddingTeacher}
+                  style={{
+                    width: '100%',
+                    background: 'var(--accent-primary)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '0.75rem',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: isAddingTeacher ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                    transition: 'all 0.2s ease',
+                    letterSpacing: '0.05em',
+                    marginTop: '0.25rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isAddingTeacher) {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                  }}
+                >
+                  {isAddingTeacher ? 'QO\'SHILMOQDA...' : 'O\'QITUVCHINI QO\'SHISH'}
+                </button>
+              </form>
+
+              {/* Teachers List Grouped by Subject */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                
+                {/* English Teachers */}
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#166534', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#166534' }} />
+                    INGLIZ TILI O'QITUVCHILARI ({teachers.filter(t => t.subject === 'ENG').length} ta)
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {teachers.filter(t => t.subject === 'ENG').length === 0 ? (
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', padding: '0.5rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                        Ro'yxat bo'sh
+                      </div>
+                    ) : (
+                      teachers.filter(t => t.subject === 'ENG').map(teacher => (
+                        <div 
+                          key={teacher.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            padding: '0.65rem 0.85rem',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.01)'
+                          }}
+                        >
+                          <span style={{ fontSize: '0.82rem', fontWeight: 650, color: '#1f2937' }}>{teacher.name}</span>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                onDeleteTeacher(teacher.id);
+                              }
+                            }}
+                            style={{
+                              background: '#fef2f2', color: '#ef4444', border: '1px solid #fee2e2',
+                              borderRadius: '8px', padding: '0.3rem', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              transition: 'all 0.15s'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#fef2f2'; }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Math Teachers */}
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#0d9488', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#0d9488' }} />
+                    MATEMATIKA O'QITUVCHILARI ({teachers.filter(t => t.subject === 'MATH').length} ta)
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {teachers.filter(t => t.subject === 'MATH').length === 0 ? (
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', padding: '0.5rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                        Ro'yxat bo'sh
+                      </div>
+                    ) : (
+                      teachers.filter(t => t.subject === 'MATH').map(teacher => (
+                        <div 
+                          key={teacher.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            padding: '0.65rem 0.85rem',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.01)'
+                          }}
+                        >
+                          <span style={{ fontSize: '0.82rem', fontWeight: 650, color: '#1f2937' }}>{teacher.name}</span>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                onDeleteTeacher(teacher.id);
+                              }
+                            }}
+                            style={{
+                              background: '#fef2f2', color: '#ef4444', border: '1px solid #fee2e2',
+                              borderRadius: '8px', padding: '0.3rem', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              transition: 'all 0.15s'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#fef2f2'; }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
               </div>
 
             </div>

@@ -49,3 +49,10 @@ export interface NewsEvent {
 
 export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS';
 
+export interface Teacher {
+  id: number;
+  name: string;
+  subject: 'ENG' | 'MATH';
+  created_at?: string;
+}
+
