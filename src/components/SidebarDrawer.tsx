@@ -728,7 +728,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         </div>
 
         {/* Navigation Tabs Selector */}
-        {authRole !== 'publish' && authRole !== 'admin123' && (
+        {authRole !== 'admin123' && (
           <div style={{
             display: 'flex',
             background: '#f1f5f9',

@@ -382,7 +382,7 @@ function App() {
         const storedPass = localStorage.getItem('admin_passcode');
         if (storedPass === 'Azz21admin') {
           setAuthRole('admin123');
-          setIsAdminMode(true);
+          setIsAdminMode(false);
           await fetchAllData();
           return;
         }
@@ -853,11 +853,7 @@ function App() {
   const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent', studentData?: any) => {
     setAuthRole(role);
     if (role === 'admin' || role === 'admin123' || role === 'publish') {
-      if (role === 'admin123') {
-        setIsAdminMode(true);
-      } else {
-        setIsAdminMode(false);
-      }
+      setIsAdminMode(false);
       await fetchAllData();
     } else if (role === 'parent' && studentData) {
       const student = mapDbToStudent(studentData);
