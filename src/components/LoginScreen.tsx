@@ -3,7 +3,7 @@ import { Lock, User, Eye, EyeOff, GraduationCap, Loader2 } from 'lucide-react';
 import { supabase } from '../supabase';
 
 interface LoginScreenProps {
-  onLoginSuccess: (role: 'admin' | 'parent', studentData?: any) => void;
+  onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent', studentData?: any) => void;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
@@ -37,6 +37,32 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           localStorage.setItem('auth_role', 'admin');
           localStorage.setItem('admin_passcode', trimmedPasscode);
           onLoginSuccess('admin');
+        } else {
+          setError("Noto'g'ri admin paroli.");
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Check Limited Admin Credentials (admin123)
+      if (trimmedId.toLowerCase() === 'admin123') {
+        if (trimmedPasscode === 'Azz21admin') {
+          localStorage.setItem('auth_role', 'admin123');
+          localStorage.setItem('admin_passcode', trimmedPasscode);
+          onLoginSuccess('admin123');
+        } else {
+          setError("Noto'g'ri admin paroli.");
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Check Publish Admin Credentials (publish)
+      if (trimmedId.toLowerCase() === 'publish') {
+        if (trimmedPasscode === 'Azz21publish') {
+          localStorage.setItem('auth_role', 'publish');
+          localStorage.setItem('admin_passcode', trimmedPasscode);
+          onLoginSuccess('publish');
         } else {
           setError("Noto'g'ri admin paroli.");
         }

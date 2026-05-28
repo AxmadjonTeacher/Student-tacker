@@ -121,7 +121,7 @@ function App() {
   const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
-  const [authRole, setAuthRole] = useState<'admin' | 'parent' | null>(null);
+  const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | null>(null);
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -378,6 +378,22 @@ function App() {
           await fetchAllData();
           return;
         }
+      } else if (storedRole === 'admin123') {
+        const storedPass = localStorage.getItem('admin_passcode');
+        if (storedPass === 'Azz21admin') {
+          setAuthRole('admin123');
+          setIsAdminMode(true);
+          await fetchAllData();
+          return;
+        }
+      } else if (storedRole === 'publish') {
+        const storedPass = localStorage.getItem('admin_passcode');
+        if (storedPass === 'Azz21publish') {
+          setAuthRole('publish');
+          setIsAdminMode(false);
+          await fetchAllData();
+          return;
+        }
       } else if (storedRole === 'parent') {
         const storedChildrenJson = localStorage.getItem('parent_children');
         let childrenList = [];
@@ -432,7 +448,7 @@ function App() {
 
   // Sync state to LocalStorage as a local offline cache backup (Admin only)
   useEffect(() => {
-    if (!loading && authRole === 'admin') {
+    if (!loading && (authRole === 'admin' || authRole === 'admin123' || authRole === 'publish')) {
       localStorage.setItem('students_data_v2', JSON.stringify(students));
     }
   }, [students, loading, authRole]);
@@ -826,14 +842,22 @@ function App() {
         setActiveSubject('ENG');
       }
     } else {
-      setShowPasscodeModal(true);
+      if (authRole === 'admin123') {
+        setIsAdminMode(true);
+      } else {
+        setShowPasscodeModal(true);
+      }
     }
   };
 
-  const handleLoginSuccess = async (role: 'admin' | 'parent', studentData?: any) => {
+  const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent', studentData?: any) => {
     setAuthRole(role);
-    if (role === 'admin') {
-      setIsAdminMode(false);
+    if (role === 'admin' || role === 'admin123' || role === 'publish') {
+      if (role === 'admin123') {
+        setIsAdminMode(true);
+      } else {
+        setIsAdminMode(false);
+      }
       await fetchAllData();
     } else if (role === 'parent' && studentData) {
       const student = mapDbToStudent(studentData);
@@ -1897,6 +1921,7 @@ function App() {
         weeksList={weeksList}
         onStartNewWeekClick={handleStartNewWeekClick}
         onDeleteWeekClick={handleDeleteWeek}
+        authRole={authRole}
       />
 
       <div className="tab-admin-settings-hide">
@@ -1916,6 +1941,7 @@ function App() {
           onSaveCredentials={handleSaveCredentials}
           onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
           teachers={teachers}
+          authRole={authRole}
         />
       </div>
 
@@ -1948,6 +1974,7 @@ function App() {
           teachers={teachers}
           onAddTeacher={handleAddTeacher}
           onDeleteTeacher={handleDeleteTeacher}
+          authRole={authRole}
         />
       </div>
 

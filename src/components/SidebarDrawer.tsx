@@ -33,6 +33,7 @@ interface SidebarDrawerProps {
   teachers: Teacher[];
   onAddTeacher: (name: string, subject: 'ENG' | 'MATH') => Promise<void>;
   onDeleteTeacher: (id: number) => Promise<void>;
+  authRole?: string | null;
 }
 
 const getClassGroupLocal = (clsName: string): string => {
@@ -63,10 +64,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   onLogout,
   teachers,
   onAddTeacher,
-  onDeleteTeacher
+  onDeleteTeacher,
+  authRole
 }) => {
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'teachers' | 'trash'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'teachers' | 'trash'>(() => {
+    return authRole === 'publish' ? 'news' : 'settings';
+  });
 
   // CSV and Student Upload states
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
@@ -724,104 +728,106 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         </div>
 
         {/* Navigation Tabs Selector */}
-        <div style={{
-          display: 'flex',
-          background: '#f1f5f9',
-          borderRadius: '12px',
-          padding: '0.25rem',
-          margin: '0 1.5rem 1rem',
-          border: '1px solid #e2e8f0',
-          flexShrink: 0
-        }}>
-          <button
-            onClick={() => setActiveTab('settings')}
-            style={{
-              flex: 1,
-              background: activeTab === 'settings' ? '#ffffff' : 'transparent',
-              color: activeTab === 'settings' ? '#0f172a' : '#64748b',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.5rem 0.25rem',
-              fontSize: '0.68rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: activeTab === 'settings' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}
-          >
-            SOZLAMALAR
-          </button>
-          <button
-            onClick={() => setActiveTab('news')}
-            style={{
-              flex: 1,
-              background: activeTab === 'news' ? '#ffffff' : 'transparent',
-              color: activeTab === 'news' ? '#0f172a' : '#64748b',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.5rem 0.25rem',
-              fontSize: '0.68rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: activeTab === 'news' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}
-          >
-            YANGILIKLAR
-          </button>
-          {isAdminMode && (
+        {authRole !== 'publish' && authRole !== 'admin123' && (
+          <div style={{
+            display: 'flex',
+            background: '#f1f5f9',
+            borderRadius: '12px',
+            padding: '0.25rem',
+            margin: '0 1.5rem 1rem',
+            border: '1px solid #e2e8f0',
+            flexShrink: 0
+          }}>
             <button
-              onClick={() => setActiveTab('teachers')}
+              onClick={() => setActiveTab('settings')}
               style={{
                 flex: 1,
-                background: activeTab === 'teachers' ? '#ffffff' : 'transparent',
-                color: activeTab === 'teachers' ? '#0f172a' : '#64748b',
+                background: activeTab === 'settings' ? '#ffffff' : 'transparent',
+                color: activeTab === 'settings' ? '#0f172a' : '#64748b',
                 border: 'none',
                 borderRadius: '8px',
                 padding: '0.5rem 0.25rem',
                 fontSize: '0.68rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: activeTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                boxShadow: activeTab === 'settings' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
                 transition: 'all 0.2s',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}
             >
-              O'QITUVCHILAR
+              SOZLAMALAR
             </button>
-          )}
-          {isAdminMode && (
             <button
-              onClick={() => setActiveTab('trash')}
+              onClick={() => setActiveTab('news')}
               style={{
                 flex: 1,
-                background: activeTab === 'trash' ? '#ffffff' : 'transparent',
-                color: activeTab === 'trash' ? '#0f172a' : '#64748b',
+                background: activeTab === 'news' ? '#ffffff' : 'transparent',
+                color: activeTab === 'news' ? '#0f172a' : '#64748b',
                 border: 'none',
                 borderRadius: '8px',
                 padding: '0.5rem 0.25rem',
                 fontSize: '0.68rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: activeTab === 'trash' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                boxShadow: activeTab === 'news' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
                 transition: 'all 0.2s',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}
             >
-              SAVAT ({deletedStudents.length + deletedWeeks.length})
+              YANGILIKLAR
             </button>
-          )}
-        </div>
+            {isAdminMode && (
+              <button
+                onClick={() => setActiveTab('teachers')}
+                style={{
+                  flex: 1,
+                  background: activeTab === 'teachers' ? '#ffffff' : 'transparent',
+                  color: activeTab === 'teachers' ? '#0f172a' : '#64748b',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.5rem 0.25rem',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: activeTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+              >
+                O'QITUVCHILAR
+              </button>
+            )}
+            {isAdminMode && (
+              <button
+                onClick={() => setActiveTab('trash')}
+                style={{
+                  flex: 1,
+                  background: activeTab === 'trash' ? '#ffffff' : 'transparent',
+                  color: activeTab === 'trash' ? '#0f172a' : '#64748b',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.5rem 0.25rem',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: activeTab === 'trash' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
+              >
+                SAVAT ({deletedStudents.length + deletedWeeks.length})
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Drawer Scrollable Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 1.5rem 1.5rem' }}>
@@ -899,46 +905,48 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               </div>
 
               {/* Section 2: Admin Mode Toggle */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1e293b', letterSpacing: '0.01em' }}>
-                      ADMIN REJIMI
+              {authRole !== 'publish' && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1e293b', letterSpacing: '0.01em' }}>
+                        ADMIN REJIMI
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.15rem', maxWidth: '240px', lineHeight: 1.4 }}>
+                        O'quvchi qo'shish, o'chirish va tahrirlash imkoniyatlari
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.15rem', maxWidth: '240px', lineHeight: 1.4 }}>
-                      O'quvchi qo'shish, o'chirish va tahrirlash imkoniyatlari
-                    </div>
+                    <button 
+                      onClick={onToggleAdmin}
+                      style={{
+                        width: '46px',
+                        height: '24px',
+                        borderRadius: '9999px',
+                        background: isAdminMode ? 'var(--accent-primary)' : '#cbd5e1',
+                        border: 'none',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        padding: 0,
+                        transition: 'background-color 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexShrink: 0
+                      }}
+                    >
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        position: 'absolute',
+                        left: isAdminMode ? '24px' : '4px',
+                        transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
+                      }} />
+                    </button>
                   </div>
-                  <button 
-                    onClick={onToggleAdmin}
-                    style={{
-                      width: '46px',
-                      height: '24px',
-                      borderRadius: '9999px',
-                      background: isAdminMode ? 'var(--accent-primary)' : '#cbd5e1',
-                      border: 'none',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      padding: 0,
-                      transition: 'background-color 0.2s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexShrink: 0
-                    }}
-                  >
-                    <div style={{
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      background: '#ffffff',
-                      position: 'absolute',
-                      left: isAdminMode ? '24px' : '4px',
-                      transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
-                    }} />
-                  </button>
                 </div>
-              </div>
+              )}
 
               {/* Section 3: Admin Actions */}
               {isAdminMode && (
@@ -1048,37 +1056,39 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         <span>GURUHLI YUKLASH (CSV)</span>
                       </button>
 
-                      <button
-                        onClick={onBulkDeleteClass}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem',
-                          width: '100%',
-                          padding: '0.75rem 1.25rem',
-                          borderRadius: '12px',
-                          background: '#fef2f2',
-                          color: '#b91c1c',
-                          border: '1.5px solid #fca5a5',
-                          fontSize: '0.8rem',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          marginTop: '0.75rem'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#fee2e2';
-                          e.currentTarget.style.borderColor = '#ef4444';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#fef2f2';
-                          e.currentTarget.style.borderColor = '#fca5a5';
-                        }}
-                      >
-                        <Trash2 size={15} />
-                        <span>{activeClass} SINFINI O'CHIRISH</span>
-                      </button>
+                      {authRole !== 'admin123' && (
+                        <button
+                          onClick={onBulkDeleteClass}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            width: '100%',
+                            padding: '0.75rem 1.25rem',
+                            borderRadius: '12px',
+                            background: '#fef2f2',
+                            color: '#b91c1c',
+                            border: '1.5px solid #fca5a5',
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            marginTop: '0.75rem'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#fee2e2';
+                            e.currentTarget.style.borderColor = '#ef4444';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#fef2f2';
+                            e.currentTarget.style.borderColor = '#fca5a5';
+                          }}
+                        >
+                          <Trash2 size={15} />
+                          <span>{activeClass} SINFINI O'CHIRISH</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1738,6 +1748,43 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 )}
               </div>
 
+              {/* Logout button for publish admin since they have no settings tab */}
+              {authRole === 'publish' && onLogout && (
+                <div style={{ marginTop: '2rem' }}>
+                  <div style={{ height: '1px', background: '#e2e8f0', margin: '1.5rem 0' }} />
+                  <button
+                    onClick={onLogout}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.6rem',
+                      width: '100%',
+                      padding: '0.85rem',
+                      borderRadius: '16px',
+                      background: '#fef2f2',
+                      border: '1.5px solid #fee2e2',
+                      color: '#ef4444',
+                      fontWeight: 800,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 2px 4px rgba(239, 68, 68, 0.02)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fee2e2';
+                      e.currentTarget.style.borderColor = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#fef2f2';
+                      e.currentTarget.style.borderColor = '#fee2e2';
+                    }}
+                  >
+                    <LogOut size={16} />
+                    TIZIMDAN CHIQISH
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

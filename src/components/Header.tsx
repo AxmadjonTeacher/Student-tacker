@@ -19,12 +19,13 @@ interface HeaderProps {
   onStartNewWeekClick?: () => void;
   onDeleteWeekClick?: (weekName: string) => void;
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings';
+  authRole?: string | null;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
   selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick, onDeleteWeekClick,
-  activeAdminTab = 'home'
+  activeAdminTab = 'home', authRole
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -509,7 +510,7 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            {isAdminMode && selectedWeek && (
+            {isAdminMode && selectedWeek && authRole !== 'admin123' && (
               <button
                 onClick={() => onDeleteWeekClick && onDeleteWeekClick(selectedWeek)}
                 title="Ushbu haftani savatga o'chirish"

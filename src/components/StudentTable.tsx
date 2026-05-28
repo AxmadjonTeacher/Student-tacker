@@ -34,6 +34,7 @@ interface StudentTableProps {
   onSaveCredentials?: (changes: Record<string, Partial<Student>>) => Promise<boolean>;
   onBatchRegenerateCredentials?: (regenerateIds: boolean, regeneratePasscodes: boolean, targetClass: string | null) => Promise<boolean>;
   teachers?: Teacher[];
+  authRole?: string | null;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -51,7 +52,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
   studentWeeks = [],
   onSaveCredentials,
   onBatchRegenerateCredentials,
-  teachers = []
+  teachers = [],
+  authRole
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -881,7 +883,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <Download size={10} />
                       <span>Excel</span>
                     </button>
-                    {isAdminMode && (
+                    {isAdminMode && authRole !== 'admin123' && (
                       <button
                         onClick={() => setIsRegenerateModalOpen(true)}
                         title="ID/Parollarni yangilash"
@@ -919,6 +921,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                   const handleDoubleClick = (field: 'name' | 'id' | 'passcode' | 'parentPhone', currentVal: string) => {
                     if (!isAdminMode) return;
+                    if (authRole === 'admin123' && field !== 'parentPhone') return;
                     setEditingCell({ studentId: student.id, field });
                     setEditingValue(currentVal);
                   };
@@ -1119,7 +1122,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                       {/* Delete Action Cell */}
                       <div className="table-cell no-border" style={{ padding: '0 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        {isAdminMode && (
+                        {isAdminMode && authRole !== 'admin123' && (
                           <button 
                             onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
                             title="O'quvchini o'chirish"
