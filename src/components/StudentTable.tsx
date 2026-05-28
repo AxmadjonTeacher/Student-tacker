@@ -85,6 +85,82 @@ const StudentTable: React.FC<StudentTableProps> = ({
     setTimeout(() => setCopiedId(null), 1500);
   };
 
+  const renderAllSectionMenu = () => {
+    const dropdownId = 'all-section-menu';
+    const isOpen = openDropdownId === dropdownId;
+    return (
+      <div 
+        className="table-actions-dropdown-container" 
+        style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+      >
+        <button 
+          onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isOpen ? null : dropdownId); }}
+          style={{
+            background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer',
+            padding: '0.25rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+        >
+          <MoreVertical size={16} />
+        </button>
+        
+        <div 
+          className="table-actions-menu"
+          style={{
+            position: 'absolute', top: '100%', right: 0, paddingTop: '6px',
+            display: isOpen ? 'flex' : 'none', zIndex: 100,
+          }}
+          onMouseEnter={() => setOpenDropdownId(dropdownId)}
+          onMouseLeave={() => setOpenDropdownId(null)}
+        >
+          <div style={{
+            width: '190px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0',
+            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+            padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'left'
+          }}>
+            <button
+              onClick={() => { setOpenDropdownId(null); setSortBy('HL'); }}
+              style={{
+                background: sortBy === 'HL' ? '#f1f5f9' : 'transparent', border: 'none', padding: '0.5rem 0.75rem',
+                borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', cursor: 'pointer',
+                textAlign: 'left', width: '100%'
+              }}
+            >
+              Sort bu highest to lowest
+            </button>
+            <button
+              onClick={() => { setOpenDropdownId(null); setSortBy('AZ'); }}
+              style={{
+                background: sortBy === 'AZ' ? '#f1f5f9' : 'transparent', border: 'none', padding: '0.5rem 0.75rem',
+                borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', cursor: 'pointer',
+                textAlign: 'left', width: '100%'
+              }}
+            >
+              Sort by A to Z
+            </button>
+            <button
+              onClick={() => { setOpenDropdownId(null); handleExportAllToExcel(sortedStudents); }}
+              style={{
+                background: 'transparent', border: 'none', padding: '0.5rem 0.75rem',
+                borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', cursor: 'pointer',
+                textAlign: 'left', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem'
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Excel Yuklash
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const sortedStudents = React.useMemo(() => {
     if (activeSubject !== 'ALL') return students;
 
@@ -483,8 +559,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 <div className="table-header-row" style={{
                   display: 'grid',
                   gridTemplateColumns: isAdminMode ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
-                  alignItems: 'center',
-                  padding: '0.9rem 1.5rem',
+                  alignItems: 'stretch',
+                  padding: '0 1.5rem',
                   borderBottom: '1px solid #f1f5f9',
                   background: '#fafaf9',
                   color: '#64748b',
@@ -492,15 +568,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   fontWeight: 700,
                   letterSpacing: '0.08em'
                 }}>
-                  <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em' }}>
+                  <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', padding: '0.9rem 0' }}>
                     O'QUVCHILAR NATIJALARI TAHLILI
                   </div>
-                  <div style={{ padding: '0 1.5rem' }}>ENG SCORE</div>
-                  <div style={{ padding: '0 1.5rem' }}>MATH SCORE</div>
-                  <div style={{ padding: '0 1.5rem' }}>ATTENDANCE</div>
-                  <div style={{ padding: '0 1.5rem' }}>HOMEWORK</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>ENG SCORE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>MATH SCORE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>ATTENDANCE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>HOMEWORK</div>
                   <div style={{ 
-                    padding: '0 1.5rem', 
+                    padding: '0.9rem 1.5rem', 
+                    borderRight: isAdminMode ? '1px solid #e5e7eb' : 'none',
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
@@ -508,83 +585,21 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     position: 'relative'
                   }}>
                     <span style={{ textAlign: 'center', flexGrow: 1 }}>CHART</span>
-                    {(() => {
-                      const dropdownId = 'all-section-menu';
-                      const isOpen = openDropdownId === dropdownId;
-                      return (
-                        <div 
-                          className="table-actions-dropdown-container" 
-                          style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
-                        >
-                          <button 
-                            onClick={() => setOpenDropdownId(isOpen ? null : dropdownId)}
-                            style={{
-                              background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer',
-                              padding: '0.25rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              transition: 'all 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-                          
-                          <div 
-                            className="table-actions-menu"
-                            style={{
-                              position: 'absolute', top: '100%', right: 0, paddingTop: '6px',
-                              display: isOpen ? 'flex' : 'none', zIndex: 100,
-                            }}
-                            onMouseEnter={() => setOpenDropdownId(dropdownId)}
-                            onMouseLeave={() => setOpenDropdownId(null)}
-                          >
-                            <div style={{
-                              width: '190px', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0',
-                              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
-                              padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'left'
-                            }}>
-                              <button
-                                onClick={() => { setOpenDropdownId(null); setSortBy('HL'); }}
-                                style={{
-                                  background: sortBy === 'HL' ? '#f1f5f9' : 'transparent', border: 'none', padding: '0.5rem 0.75rem',
-                                  borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', cursor: 'pointer',
-                                  textAlign: 'left', width: '100%'
-                                }}
-                              >
-                                Sort by H/L (Highest to Lowest)
-                              </button>
-                              <button
-                                onClick={() => { setOpenDropdownId(null); setSortBy('AZ'); }}
-                                style={{
-                                  background: sortBy === 'AZ' ? '#f1f5f9' : 'transparent', border: 'none', padding: '0.5rem 0.75rem',
-                                  borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', cursor: 'pointer',
-                                  textAlign: 'left', width: '100%'
-                                }}
-                              >
-                                Sort by A/Z (Alphabetical)
-                              </button>
-                              <button
-                                onClick={() => { setOpenDropdownId(null); handleExportAllToExcel(sortedStudents); }}
-                                style={{
-                                  background: 'transparent', border: 'none', padding: '0.5rem 0.75rem',
-                                  borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: '#334155', cursor: 'pointer',
-                                  textAlign: 'left', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem'
-                                }}
-                              >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                  <polyline points="7 10 12 15 17 10" />
-                                  <line x1="12" y1="15" x2="12" y2="3" />
-                                </svg>
-                                Excel Yuklash
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    {!isAdminMode && renderAllSectionMenu()}
                   </div>
-                  {isAdminMode && <div style={{ padding: '0 1.5rem', textAlign: 'center' }}>AMALLAR</div>}
+                  {isAdminMode && (
+                    <div style={{ 
+                      padding: '0.9rem 1.5rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      position: 'relative'
+                    }}>
+                      <span style={{ textAlign: 'center', flexGrow: 1 }}>AMALLAR</span>
+                      {renderAllSectionMenu()}
+                    </div>
+                  )}
                 </div>
 
                 {/* Rows */}
@@ -827,8 +842,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 <div className="table-header-row" style={{
                   display: 'grid',
                   gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2fr 1fr',
-                  alignItems: 'center',
-                  padding: '0.9rem 1.5rem',
+                  alignItems: 'stretch',
+                  padding: '0 1.5rem',
                   borderBottom: '1px solid #f1f5f9',
                   background: '#fafaf9',
                   color: '#64748b',
@@ -836,18 +851,19 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   fontWeight: 700,
                   letterSpacing: '0.08em'
                 }}>
-                  <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em' }}>
+                  <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', padding: '0.9rem 0' }}>
                     TAFSILOTLAR VA ID/PAROLLAR
                   </div>
-                  <div style={{ padding: '0 1rem' }}>ID RAQAMI</div>
-                  <div style={{ padding: '0 1rem' }}>PAROL (PASSCODE)</div>
-                  <div style={{ padding: '0 1rem' }}>TELEFON RAQAMI</div>
+                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>ID RAQAMI</div>
+                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>PAROL (PASSCODE)</div>
+                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>TELEFON RAQAMI</div>
                   <div style={{ 
-                    padding: '0 1rem', 
+                    padding: '0.5rem 1rem', 
                     display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'flex-end',
-                    gap: '0.5rem',
+                    flexDirection: 'column', 
+                    alignItems: 'stretch', 
+                    justifyContent: 'center',
+                    gap: '0.25rem',
                     position: 'relative'
                   }}>
                     <button
@@ -855,13 +871,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       title="Excel fayl yuklash"
                       style={{
                         background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0',
-                        padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', transition: 'all 0.15s ease'
+                        padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', transition: 'all 0.15s ease',
+                        width: '100%', whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
                     >
-                      <Download size={12} />
+                      <Download size={10} />
                       <span>Excel</span>
                     </button>
                     {isAdminMode && (
@@ -870,13 +887,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         title="ID/Parollarni yangilash"
                         style={{
                           background: '#fdf2f8', color: '#db2777', border: '1px solid #fbcfe8',
-                          padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700,
-                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', transition: 'all 0.15s ease'
+                          padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', transition: 'all 0.15s ease',
+                          width: '100%', whiteSpace: 'nowrap'
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = '#fce7f3'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = '#fdf2f8'; }}
                       >
-                        <RotateCw size={12} />
+                        <RotateCw size={10} />
                         <span>Yangilash</span>
                       </button>
                     )}
@@ -1173,8 +1191,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   <div className="table-header-row teacher-group-header" style={{
                     display: 'grid',
                     gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr 1.5fr',
-                    alignItems: 'center',
-                    padding: '0.9rem 1.5rem',
+                    alignItems: 'stretch',
+                    padding: '0 1.5rem',
                     borderBottom: '1px solid #f1f5f9',
                     background: '#fafaf9',
                     color: '#64748b',
@@ -1182,14 +1200,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     fontWeight: 700,
                     letterSpacing: '0.08em'
                   }}>
-                    <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em' }}>
+                    <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', padding: '0.9rem 0' }}>
                       {group.teacher ? `O'QITUVCHI: ${group.teacher.toUpperCase()}` : "O'QITUVCHI BIRIKTIRILMAGAN"}
                     </div>
-                    <div style={{ padding: '0 1.5rem' }}>AVVALGI DARAJA</div>
-                    <div style={{ padding: '0 1.5rem' }}>HOZIRGI DARAJA</div>
-                    <div style={{ padding: '0 1.5rem', color: '#ea580c', fontWeight: 800 }}>☀️ YOZGI REJA</div>
+                    <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>AVVALGI DARAJA</div>
+                    <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>HOZIRGI DARAJA</div>
+                    <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', color: '#ea580c', fontWeight: 800 }}>☀️ YOZGI REJA</div>
                     <div style={{ 
-                      padding: '0 1.5rem', 
+                      padding: '0.9rem 1.5rem', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',

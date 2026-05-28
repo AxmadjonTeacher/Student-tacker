@@ -634,12 +634,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               color: activeTab === 'settings' ? '#0f172a' : '#64748b',
               border: 'none',
               borderRadius: '8px',
-              padding: '0.5rem',
-              fontSize: '0.75rem',
+              padding: '0.5rem 0.25rem',
+              fontSize: '0.68rem',
               fontWeight: 800,
               cursor: 'pointer',
               boxShadow: activeTab === 'settings' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
             }}
           >
             SOZLAMALAR
@@ -652,12 +655,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               color: activeTab === 'news' ? '#0f172a' : '#64748b',
               border: 'none',
               borderRadius: '8px',
-              padding: '0.5rem',
-              fontSize: '0.75rem',
+              padding: '0.5rem 0.25rem',
+              fontSize: '0.68rem',
               fontWeight: 800,
               cursor: 'pointer',
               boxShadow: activeTab === 'news' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
             }}
           >
             YANGILIKLAR
@@ -671,12 +677,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 color: activeTab === 'teachers' ? '#0f172a' : '#64748b',
                 border: 'none',
                 borderRadius: '8px',
-                padding: '0.5rem',
-                fontSize: '0.75rem',
+                padding: '0.5rem 0.25rem',
+                fontSize: '0.68rem',
                 fontWeight: 800,
                 cursor: 'pointer',
                 boxShadow: activeTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
             >
               O'QITUVCHILAR
@@ -691,12 +700,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 color: activeTab === 'trash' ? '#0f172a' : '#64748b',
                 border: 'none',
                 borderRadius: '8px',
-                padding: '0.5rem',
-                fontSize: '0.75rem',
+                padding: '0.5rem 0.25rem',
+                fontSize: '0.68rem',
                 fontWeight: 800,
                 cursor: 'pointer',
                 boxShadow: activeTab === 'trash' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
             >
               SAVAT ({deletedStudents.length + deletedWeeks.length})

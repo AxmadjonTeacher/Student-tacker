@@ -1465,16 +1465,35 @@ function App() {
             return (t || '') === oldTeacherName;
           });
 
-          if (matchingStudents.length === 0) return;
+          if (matchingStudents.length > 0) {
+            const ids = matchingStudents.map(s => s.id);
 
-          const ids = matchingStudents.map(s => s.id);
+            const { error } = await supabase
+              .from('Students')
+              .update({ [field]: trimmedNew || null })
+              .in('id', ids);
 
-          const { error } = await supabase
-            .from('Students')
-            .update({ [field]: trimmedNew || null })
-            .in('id', ids);
+            if (error) throw error;
+          }
 
-          if (error) throw error;
+          // Sync rename to the global teachers table in Supabase & local state
+          if (trimmedNew) {
+            const subjectVal = activeSubject === 'MATH' ? 'MATH' : 'ENG';
+            const { error: teacherError } = await supabase
+              .from('teachers')
+              .update({ name: trimmedNew })
+              .eq('name', oldTeacherName)
+              .eq('subject', subjectVal);
+
+            if (teacherError) throw teacherError;
+
+            setTeachers(prev => prev.map(t => {
+              if (t.name === oldTeacherName && t.subject === subjectVal) {
+                return { ...t, name: trimmedNew };
+              }
+              return t;
+            }));
+          }
         } catch (err) {
           console.error('Failed to rename teacher table in Supabase:', err);
         }
@@ -1884,7 +1903,7 @@ function App() {
         <StudentTable
           students={filteredStudents}
           isAdminMode={isAdminMode}
-          onUpdatePhoto={handleUpdateStudentPhoto}
+          onUpdatePhoto={isAdminMode ? handleUpdateStudentPhoto : undefined}
           onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
           onAssignTeacher={handleAssignTeacher}
           onMoveStudent={handleMoveStudent}

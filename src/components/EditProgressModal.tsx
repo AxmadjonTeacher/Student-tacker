@@ -35,11 +35,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const [name, setName] = useState(student.name);
   const [surname, setSurname] = useState(student.surname);
   const [className, setClassName] = useState(student.className);
-  const [parentPhone, setParentPhone] = useState(
-    student.parentPhone && student.parentPhone.trim() !== '' 
-      ? student.parentPhone 
-      : '+998'
-  );
+
 
   const [copiedId, setCopiedId] = useState(false);
   const [copiedPass, setCopiedPass] = useState(false);
@@ -107,7 +103,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
     const parsedAttendance = isNaN(parseInt(attendance)) ? 1 : parseInt(attendance);
     const parsedHomework = isNaN(parseInt(homework)) ? 1 : parseInt(homework);
 
-    const finalParentPhone = parentPhone.trim() === '+998' ? '' : parentPhone.trim();
+    const finalParentPhone = student.parentPhone || '';
 
     if (isAll) {
       onSave(
@@ -277,105 +273,101 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             />
           </div>
 
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-              OTA-ONA TELEFON RAQAMI
-            </label>
-            <input 
-              type="text" 
-              value={parentPhone}
-              onChange={e => {
-                const val = e.target.value;
-                if (!val.startsWith('+998')) {
-                  setParentPhone('+998');
-                } else {
-                  setParentPhone(val);
-                }
-              }}
-              placeholder="+998 90 123 45 67"
-              style={{
-                width: '100%', padding: '0.75rem 1rem', borderRadius: '12px',
-                border: '1.5px solid #e2e8f0', fontSize: '0.95rem',
-                outline: 'none', transition: 'all 0.2s ease',
-                backgroundColor: '#ffffff'
-              }}
-              onFocus={e => e.currentTarget.style.borderColor = activeThemeColor}
-              onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
-            />
-          </div>
+          {isAll && (
+            <>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  OTA-ONA TELEFON RAQAMI
+                </label>
+                <input 
+                  type="text" 
+                  value={student.parentPhone && student.parentPhone.trim() !== '' ? student.parentPhone : 'Kiritilmagan'}
+                  readOnly
+                  style={{
+                    width: '100%', padding: '0.75rem 1rem', borderRadius: '12px',
+                    border: '1.5px solid #e2e8f0', fontSize: '0.95rem',
+                    outline: 'none', transition: 'all 0.2s ease',
+                    backgroundColor: '#f1f5f9',
+                    color: '#64748b',
+                    cursor: 'not-allowed'
+                  }}
+                />
+              </div>
 
-          {/* Kirish ma'lumotlari (ota-onalar uchun) */}
-          <div style={{ 
-            background: '#f8fafc', 
-            borderRadius: '12px', 
-            padding: '1rem', 
-            marginBottom: '1rem',
-            border: '1.5px dashed #cbd5e1',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem'
-          }}>
-            <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              Kirish Ma'lumotlari (Ota-onalar uchun)
-            </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
-                  STUDENT ID: <strong style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '0.95rem' }}>{student.id}</strong>
+              {/* Kirish ma'lumotlari (ota-onalar uchun) */}
+              <div style={{ 
+                background: '#f8fafc', 
+                borderRadius: '12px', 
+                padding: '1rem', 
+                marginBottom: '1rem',
+                border: '1.5px dashed #cbd5e1',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
+              }}>
+                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  Kirish Ma'lumotlari (Ota-onalar uchun)
                 </span>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(student.id);
-                    setCopiedId(true);
-                    setTimeout(() => setCopiedId(false), 2000);
-                  }}
-                  style={{
-                    fontSize: '0.75rem', 
-                    color: copiedId ? '#16a34a' : activeThemeColor, 
-                    background: 'transparent', 
-                    border: 'none', 
-                    fontWeight: 700, 
-                    cursor: 'pointer',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    transition: 'color 0.2s ease'
-                  }}
-                >
-                  {copiedId ? "Nusxalandi!" : "Nusxalash"}
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
+                      STUDENT ID: <strong style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '0.95rem' }}>{student.id}</strong>
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(student.id);
+                        setCopiedId(true);
+                        setTimeout(() => setCopiedId(false), 2000);
+                      }}
+                      style={{
+                        fontSize: '0.75rem', 
+                        color: copiedId ? '#16a34a' : activeThemeColor, 
+                        background: 'transparent', 
+                        border: 'none', 
+                        fontWeight: 700, 
+                        cursor: 'pointer',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        transition: 'color 0.2s ease'
+                      }}
+                    >
+                      {copiedId ? "Nusxalandi!" : "Nusxalash"}
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
+                      PAROL (PASSCODE): <strong style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '0.95rem' }}>{student.passcode || '—'}</strong>
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (student.passcode) {
+                          navigator.clipboard.writeText(student.passcode);
+                          setCopiedPass(true);
+                          setTimeout(() => setCopiedPass(false), 2000);
+                        }
+                      }}
+                      disabled={!student.passcode}
+                      style={{
+                        fontSize: '0.75rem', 
+                        color: !student.passcode ? '#94a3b8' : copiedPass ? '#16a34a' : activeThemeColor, 
+                        background: 'transparent', 
+                        border: 'none', 
+                        fontWeight: 700, 
+                        cursor: student.passcode ? 'pointer' : 'not-allowed',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        transition: 'color 0.2s ease'
+                      }}
+                    >
+                      {copiedPass ? "Nusxalandi!" : "Nusxalash"}
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
-                  PAROL (PASSCODE): <strong style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '0.95rem' }}>{student.passcode || '—'}</strong>
-                </span>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    if (student.passcode) {
-                      navigator.clipboard.writeText(student.passcode);
-                      setCopiedPass(true);
-                      setTimeout(() => setCopiedPass(false), 2000);
-                    }
-                  }}
-                  disabled={!student.passcode}
-                  style={{
-                    fontSize: '0.75rem', 
-                    color: !student.passcode ? '#94a3b8' : copiedPass ? '#16a34a' : activeThemeColor, 
-                    background: 'transparent', 
-                    border: 'none', 
-                    fontWeight: 700, 
-                    cursor: student.passcode ? 'pointer' : 'not-allowed',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    transition: 'color 0.2s ease'
-                  }}
-                >
-                  {copiedPass ? "Nusxalandi!" : "Nusxalash"}
-                </button>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {isAll ? (
             <>
@@ -584,71 +576,6 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     </div>
                   );
                 })()}
-              </div>
-
-              {/* Weekly Subject Score, Attendance, and Homework */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-                    {activeSubject === 'ENG' ? 'ENG SCORE (0-15) *' : 'MATH SCORE (0-15) *'}
-                  </label>
-                  <input 
-                    type="number" 
-                    min="0"
-                    max="15"
-                    value={activeSubject === 'ENG' ? engScore : mathScore}
-                    onChange={e => activeSubject === 'ENG' ? setEngScore(e.target.value) : setMathScore(e.target.value)}
-                    required
-                    style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
-                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: '#1e293b', background: '#ffffff', outline: 'none'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-                    ATTENDANCE (1, -1, -2...) *
-                  </label>
-                  <input 
-                    type="number" 
-                    max="1"
-                    value={attendance}
-                    onChange={e => setAttendance(e.target.value)}
-                    required
-                    style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
-                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: '#1e293b', background: '#ffffff', outline: 'none'
-                    }}
-                  />
-                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.35rem', lineHeight: 1.3 }}>
-                    1 = 100% · -1 = 83.3% · -2 = 66.7%
-                  </div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-                    HOMEWORK (1, -1, -2...) *
-                  </label>
-                  <input 
-                    type="number" 
-                    max="1"
-                    value={homework}
-                    onChange={e => setHomework(e.target.value)}
-                    required
-                    style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
-                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: '#1e293b', background: '#ffffff', outline: 'none'
-                    }}
-                  />
-                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.35rem', lineHeight: 1.3 }}>
-                    1 = 100% · -1 = 80.0% · -2 = 60.0%
-                  </div>
-                </div>
               </div>
             </>
           )}
