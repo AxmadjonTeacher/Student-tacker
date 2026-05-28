@@ -13,19 +13,27 @@ self.addEventListener("message", (event) => {
 });
 
 self.addEventListener('install', async (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE)
       .then((cache) => cache.add(offlineFallbackPage))
   );
 });
 
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
 if (workbox.navigationPreload.isSupported()) {
   workbox.navigationPreload.enable();
 }
 
-// Stale-While-Revalidate caching strategy for same-origin resources, bypassing Supabase API/REST calls
+// Stale-While-Revalidate caching strategy for same-origin resources, bypassing Supabase API/REST calls and navigation requests
 workbox.routing.registerRoute(
-  ({url}) => !url.href.includes('supabase.co') && !url.pathname.includes('/rest/v1/'),
+  ({url, request}) => 
+    !url.href.includes('supabase.co') && 
+    !url.pathname.includes('/rest/v1/') && 
+    request.mode !== 'navigate',
   new workbox.strategies.StaleWhileRevalidate({
     cacheName: CACHE
   })

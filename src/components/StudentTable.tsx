@@ -1327,7 +1327,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     const isLast = idx === group.students.length - 1;
                     
                     const getTheme = () => {
-                      switch (activeSubject) {
+                      switch (activeSubject as string) {
                         case 'ENG': return { primary: '#166534', lightBg: '#dcfce7', text: '#166534', badgeText: '#14532d' };
                         case 'MATH': return { primary: '#0d9488', lightBg: '#ccfbf1', text: '#0d9488', badgeText: '#0f766e' };
                         case 'ALL': return { primary: '#4f46e5', lightBg: '#e0e7ff', text: '#4f46e5', badgeText: '#3730a3' };
