@@ -1840,6 +1840,19 @@ function App() {
           }}
         />
         <InstallAppDrawer deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
+        <CustomDialog
+          isOpen={dialog.isOpen}
+          type={dialog.type}
+          title={dialog.title}
+          message={dialog.message}
+          defaultValue={dialog.defaultValue}
+          placeholder={dialog.placeholder}
+          confirmText={dialog.confirmText}
+          cancelText={dialog.cancelText}
+          danger={dialog.danger}
+          onConfirm={dialog.onConfirm}
+          onClose={closeDialog}
+        />
       </>
     );
   }

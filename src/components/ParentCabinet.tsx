@@ -40,6 +40,15 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
   const [addLoading, setAddLoading] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyId = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
+
 
   const handleAddChildSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -850,38 +859,98 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
               
               {/* Linked Children Card */}
               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', marginBottom: '0.5rem' }}>ULANGAN FARZANDLAR</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', marginBottom: '0.75rem' }}>ULANGAN FARZANDLAR</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {parentStudents.map(child => (
-                    <div key={child.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#ccfbf1', color: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800 }}>
-                          {getInitials(child.name, child.surname)}
+                    <div 
+                      key={child.id} 
+                      style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '0.75rem', 
+                        background: '#ffffff', 
+                        padding: '1rem', 
+                        borderRadius: '14px', 
+                        border: '1px solid #f1f5f9',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#ccfbf1', color: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800 }}>
+                            {getInitials(child.name, child.surname)}
+                          </div>
+                          <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{child.name} {child.surname}</span>
                         </div>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{child.name} {child.surname}</span>
+                        {parentStudents.length > 1 && (
+                          <button
+                            onClick={() => onRemoveChild(child.id)}
+                            title="Farzandni o'chirish"
+                            style={{
+                              background: '#fef2f2',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: '0.5rem',
+                              borderRadius: '8px',
+                              transition: 'all 0.2s',
+                              width: '32px',
+                              height: '32px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>ID: {child.id}</span>
-                        <button
-                          onClick={() => onRemoveChild(child.id)}
-                          title="Farzandni o'chirish"
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#ef4444',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '0.25rem',
-                            borderRadius: '6px',
-                            transition: 'all 0.2s'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #f1f5f9', paddingTop: '0.65rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 650 }}>Student ID:</span>
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyId(e, child.id)}
+                            style={{
+                              background: '#f1f5f9',
+                              border: 'none',
+                              borderRadius: '8px',
+                              padding: '0.35rem 0.75rem',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              color: '#475569',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                          >
+                            {child.id}
+                          </button>
+                          
+                          {copiedId === child.id && (
+                            <div style={{
+                              position: 'absolute',
+                              bottom: '100%',
+                              left: '50%',
+                              transform: 'translateX(-50%) translateY(-6px)',
+                              background: '#10b981',
+                              color: '#ffffff',
+                              padding: '0.25rem 0.5rem',
+                              borderRadius: '6px',
+                              fontSize: '0.65rem',
+                              fontWeight: 800,
+                              whiteSpace: 'nowrap',
+                              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.2)',
+                              zIndex: 10
+                            }}>
+                              Nusxalandi! ✓
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

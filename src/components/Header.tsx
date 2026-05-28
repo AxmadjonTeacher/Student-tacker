@@ -67,7 +67,18 @@ const Header: React.FC<HeaderProps> = ({
             line-height: 1.2 !important;
           }
           .school-logo {
-            display: none !important; /* Hide full logo on mobile top row to make room for menu */
+            display: flex !important; /* Show logo on mobile top row */
+          }
+          .school-logo img {
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 8px !important;
+          }
+          .cabinet-header-title {
+            font-size: 1rem !important;
+          }
+          .cabinet-header-subtitle {
+            font-size: 0.65rem !important;
           }
           .class-selector {
             background: transparent !important;
@@ -229,15 +240,13 @@ const Header: React.FC<HeaderProps> = ({
             alt="Logo" 
             style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} 
           />
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-            <div className="school-name-text" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '0.05em', color: 'var(--text-primary)', lineHeight: 1 }}>
-              AL-XORAZMIY
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.2em', color: 'var(--accent-primary)' }}>
-                SCHOOL
-              </div>
-            </div>
+          <div>
+            <h1 className="cabinet-header-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0, textAlign: 'left' }}>
+              AL-XORAZMIY SCHOOL
+            </h1>
+            <p className="cabinet-header-subtitle" style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, margin: 0, textAlign: 'left' }}>
+              ADMIN KABINETI
+            </p>
           </div>
         </div>
         
