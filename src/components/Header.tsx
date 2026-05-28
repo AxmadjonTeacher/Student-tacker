@@ -88,10 +88,10 @@ const Header: React.FC<HeaderProps> = ({
             display: none !important; /* Safari and Chrome */
           }
           .class-selector button {
-            background: #ffffff !important;
-            border: 1px solid #e2e8f0 !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
-            color: #475569 !important;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            color: #475569;
           }
           .class-selector button.active-pill {
             color: #ffffff !important;
@@ -434,10 +434,10 @@ const Header: React.FC<HeaderProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  background: isActive ? subjectColor : 'transparent',
+                  background: isActive ? subjectColor : '#ffffff',
                   color: isActive ? '#ffffff' : '#6b7280',
-                  border: isActive ? `1px solid ${subjectColor}` : 'none',
-                  boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : 'none',
+                  border: isActive ? `1px solid ${subjectColor}` : '1px solid #e2e8f0',
+                  boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : '0 1px 2px rgba(0,0,0,0.02)',
                   padding: '0.5rem 1rem',
                   borderRadius: '9999px',
                   cursor: 'pointer',

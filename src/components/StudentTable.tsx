@@ -939,8 +939,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <div 
                         className="table-cell" 
                         style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        onClick={() => { if(!isEditing('id') && idVal) navigator.clipboard.writeText(idVal); }}
                         onDoubleClick={() => handleDoubleClick('id', idVal)}
-                        title="Tahrirlash uchun ikki marta bosing"
+                        title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                       >
                         {isEditing('id') ? (
                           <input
@@ -970,8 +971,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <div 
                         className="table-cell" 
                         style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        onClick={() => { if(!isEditing('passcode') && passcodeVal) navigator.clipboard.writeText(passcodeVal); }}
                         onDoubleClick={() => handleDoubleClick('passcode', passcodeVal || '')}
-                        title="Tahrirlash uchun ikki marta bosing"
+                        title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                       >
                         {isEditing('passcode') ? (
                           <input
@@ -1002,8 +1004,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <div 
                         className="table-cell" 
                         style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        onClick={() => { if(!isEditing('parentPhone') && phoneVal) navigator.clipboard.writeText(phoneVal); }}
                         onDoubleClick={() => handleDoubleClick('parentPhone', phoneVal || '+998')}
-                        title="Tahrirlash uchun ikki marta bosing"
+                        title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                       >
                         {isEditing('parentPhone') ? (
                           <input
@@ -1322,6 +1325,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   {group.students.map((student, idx) => {
                     const improvement = calculateImprovement(student.startingLevel, student.currentLevel);
                     const isLast = idx === group.students.length - 1;
+                    
+                    const getTheme = () => {
+                      switch (activeSubject) {
+                        case 'ENG': return { primary: '#166534', lightBg: '#dcfce7', text: '#166534', badgeText: '#14532d' };
+                        case 'MATH': return { primary: '#0d9488', lightBg: '#ccfbf1', text: '#0d9488', badgeText: '#0f766e' };
+                        case 'ALL': return { primary: '#4f46e5', lightBg: '#e0e7ff', text: '#4f46e5', badgeText: '#3730a3' };
+                        case 'DETAILS': return { primary: '#db2777', lightBg: '#fce7f3', text: '#db2777', badgeText: '#9d174d' };
+                        default: return { primary: '#0d9488', lightBg: '#ccfbf1', text: '#0d9488', badgeText: '#0f766e' };
+                      }
+                    };
+                    const theme = getTheme();
 
                     return (
                       <div 
@@ -1352,7 +1366,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
                             style={{ 
                               width: '52px', height: '52px', borderRadius: '50%', 
-                              background: '#0d9488', color: '#ffffff',
+                              background: theme.primary, color: '#ffffff',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontSize: '1.1rem', fontWeight: 600, flexShrink: 0,
                               cursor: onUpdatePhoto ? 'pointer' : 'default',
@@ -1394,7 +1408,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           {improvement.includes('+') ? (
                             <div style={{ 
                               display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
-                              background: '#ccfbf1', color: '#0f766e', 
+                              background: theme.lightBg, color: theme.badgeText, 
                               padding: '0.15rem 0.4rem', borderRadius: '9999px',
                               fontSize: '0.7rem', fontWeight: 600, width: 'max-content'
                             }}>
@@ -1440,12 +1454,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               onClick={() => setSelectedStudent(student)}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                background: 'transparent', color: '#0d9488',
-                                border: '1px solid #0d9488', borderRadius: '9999px',
+                                background: 'transparent', color: theme.primary,
+                                border: `1px solid ${theme.primary}`, borderRadius: '9999px',
                                 padding: '0.35rem 0.85rem', fontSize: '0.8rem', fontWeight: 600,
                                 cursor: 'pointer', transition: 'all 0.2s ease', width: 'max-content'
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#ccfbf1'; }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = theme.lightBg; }}
                               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                             >
                               <LineChart size={14} />
