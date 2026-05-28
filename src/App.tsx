@@ -487,8 +487,8 @@ function App() {
           mathScore: existing.mathScore,
           attendance: existing.attendance,
           homework: existing.homework,
-          passcode: existing.passcode,
-          parentPhone: existing.parentPhone || newS.parentPhone
+          passcode: newS.passcode || existing.passcode,
+          parentPhone: newS.parentPhone || existing.parentPhone
         };
         localUpdatedList[matchIndex] = merged;
         existingUpserts.push(merged);

@@ -195,6 +195,22 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               name = rawNameStr;
             }
 
+            const className = (
+              row['sinf'] || 
+              row['Sinf'] || 
+              row['class'] || 
+              row['Class'] || 
+              row['className'] || '5A'
+            ).toString().trim().toUpperCase();
+
+            const dateJoined = (
+              row['qabul qilingan sana'] || 
+              row['Qabul qilingan sana'] || 
+              row['when'] || 
+              row['When'] || 
+              row['date joined'] || 'Sentyabr 2024'
+            ).toString().trim();
+
             const parseImportScore = (val: any): number | null => {
               if (val === undefined || val === null) return null;
               const s = val.toString().trim();
@@ -203,104 +219,121 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               return isNaN(p) ? null : p;
             };
 
-            const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
-            const term2 = row['Grant 2 eng'] || row['Grant 2 ENG'] || row['grant 2 eng'] || row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'] || '';
-            const term3 = row['Grant 3 eng'] || row['Grant 3 ENG'] || row['grant 3 eng'] || row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'] || '';
-            const term4 = row['Grant 4 eng'] || row['Grant 4 ENG'] || row['grant 4 eng'] || row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'] || '';
+            // Initialize all fields to defaults
+            let finalEngStarting = 'Level 1';
+            let finalEngCurrent = 'Level 1';
+            let finalEngTests: { name: string; score: number | null }[] | undefined = undefined;
+            let teacherName: string | undefined = undefined;
 
-            const hasAnyEngScore = [term1, term2, term3, term4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
-            const grandTests = hasAnyEngScore ? [
-              { name: 'Grant 1', score: parseImportScore(term1) },
-              { name: 'Grant 2', score: parseImportScore(term2) },
-              { name: 'Grant 3', score: parseImportScore(term3) },
-              { name: 'Grant 4', score: parseImportScore(term4) }
-            ] : [];
+            let finalMathStarting = 'Level 1';
+            let finalMathCurrent = 'Level 1';
+            let finalMathTests: { name: string; score: number | null }[] | undefined = undefined;
+            let mathTeacherName: string | undefined = undefined;
 
-            const mTerm1 = row['Grant 1 math'] || row['Grant 1 MATH'] || row['grant 1 math'] || row['1-chorak matematika'] || row['math term 1 score'] || '';
-            const mTerm2 = row['Grant 2 math'] || row['Grant 2 MATH'] || row['grant 2 math'] || row['2-chorak matematika'] || row['math term 2 score'] || '';
-            const mTerm3 = row['Grant 3 math'] || row['Grant 3 MATH'] || row['grant 3 math'] || row['3-chorak matematika'] || row['math term 3 score'] || '';
-            const mTerm4 = row['Grant 4 math'] || row['Grant 4 MATH'] || row['grant 4 math'] || row['4-chorak matematika'] || row['math term 4 score'] || '';
+            let engScore = 0;
+            let mathScore = 0;
+            let attendance = 1;
+            let homework = 1;
+            let parentPhone = '';
+            let customId = '';
+            let customPasscode = '';
 
-            const hasAnyMathScore = [mTerm1, mTerm2, mTerm3, mTerm4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
-            const mathGrandTests = hasAnyMathScore ? [
-              { name: 'Grant 1', score: parseImportScore(mTerm1) },
-              { name: 'Grant 2', score: parseImportScore(mTerm2) },
-              { name: 'Grant 3', score: parseImportScore(mTerm3) },
-              { name: 'Grant 4', score: parseImportScore(mTerm4) }
-            ] : [];
+            if (activeSubject === 'ENG') {
+              const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
+              const term2 = row['Grant 2 eng'] || row['Grant 2 ENG'] || row['grant 2 eng'] || row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'] || '';
+              const term3 = row['Grant 3 eng'] || row['Grant 3 ENG'] || row['grant 3 eng'] || row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'] || '';
+              const term4 = row['Grant 4 eng'] || row['Grant 4 ENG'] || row['grant 4 eng'] || row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'] || '';
 
-            const rawEngStarting = row['boshlang\'ich daraja eng'] || row['Boshlang\'ich daraja eng'] || row['StartingLevelENG'] || row['boshlang\'ich daraja'] || row['Boshlang\'ich daraja'] || row['avvalgi daraja'] || row['Avvalgi daraja'] || row['initial level'] || row['initial level eng'] || row['Level'] || row['level'] || row['StartingLevel'] || '';
-            const rawEngCurrent = row['hozirgi daraja eng'] || row['Hozirgi daraja eng'] || row['CurrentLevelENG'] || row['hozirgi daraja'] || row['Hozirgi daraja'] || row['current level'] || row['CurrentLevel'] || row['currentLevel'] || row['current level eng'] || '';
+              const hasAnyEngScore = [term1, term2, term3, term4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
+              finalEngTests = hasAnyEngScore ? [
+                { name: 'Grant 1', score: parseImportScore(term1) },
+                { name: 'Grant 2', score: parseImportScore(term2) },
+                { name: 'Grant 3', score: parseImportScore(term3) },
+                { name: 'Grant 4', score: parseImportScore(term4) }
+              ] : [];
 
-            const rawMathStarting = row['boshlang\'ich daraja math'] || row['Boshlang\'ich daraja math'] || row['StartingLevelMATH'] || row['initial level math'] || row['avvalgi daraja math'] || row['Avvalgi daraja math'] || '';
-            const rawMathCurrent = row['hozirgi daraja math'] || row['Hozirgi daraja math'] || row['CurrentLevelMATH'] || row['current level math'] || '';
+              const rawEngStarting = row['boshlang\'ich daraja eng'] || row['Boshlang\'ich daraja eng'] || row['StartingLevelENG'] || row['boshlang\'ich daraja'] || row['Boshlang\'ich daraja'] || row['avvalgi daraja'] || row['Avvalgi daraja'] || row['initial level'] || row['initial level eng'] || row['Level'] || row['level'] || row['StartingLevel'] || '';
+              const rawEngCurrent = row['hozirgi daraja eng'] || row['Hozirgi daraja eng'] || row['CurrentLevelENG'] || row['hozirgi daraja'] || row['Hozirgi daraja'] || row['current level'] || row['CurrentLevel'] || row['currentLevel'] || row['current level eng'] || '';
 
-            const normEngStarting = normalizeLevel(rawEngStarting);
-            const normEngCurrent = normalizeLevel(rawEngCurrent);
-            const normMathStarting = normalizeLevel(rawMathStarting);
-            const normMathCurrent = normalizeLevel(rawMathCurrent);
+              finalEngStarting = normalizeLevel(rawEngStarting) || 'Level 1';
+              finalEngCurrent = normalizeLevel(rawEngCurrent) || 'Level 1';
+              
+              const rawT = row['O\'qituvchi'] || row['o\'qituvchi'] || row['teacher'] || row['Teacher'] || '';
+              if (rawT.toString().trim()) {
+                teacherName = rawT.toString().trim();
+              }
+            } else if (activeSubject === 'MATH') {
+              const mTerm1 = row['Grant 1 math'] || row['Grant 1 MATH'] || row['grant 1 math'] || row['1-chorak matematika'] || row['math term 1 score'] || '';
+              const mTerm2 = row['Grant 2 math'] || row['Grant 2 MATH'] || row['grant 2 math'] || row['2-chorak matematika'] || row['math term 2 score'] || '';
+              const mTerm3 = row['Grant 3 math'] || row['Grant 3 MATH'] || row['grant 3 math'] || row['3-chorak matematika'] || row['math term 3 score'] || '';
+              const mTerm4 = row['Grant 4 math'] || row['Grant 4 MATH'] || row['grant 4 math'] || row['4-chorak matematika'] || row['math term 4 score'] || '';
 
-            const hasExplicitMathColumns = !!(rawMathStarting || rawMathCurrent || mTerm1 || mTerm2 || mTerm3 || mTerm4);
+              const hasAnyMathScore = [mTerm1, mTerm2, mTerm3, mTerm4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
+              finalMathTests = hasAnyMathScore ? [
+                { name: 'Grant 1', score: parseImportScore(mTerm1) },
+                { name: 'Grant 2', score: parseImportScore(mTerm2) },
+                { name: 'Grant 3', score: parseImportScore(mTerm3) },
+                { name: 'Grant 4', score: parseImportScore(mTerm4) }
+              ] : [];
 
-            let finalEngStarting = normEngStarting || 'Level 1';
-            let finalEngCurrent = normEngCurrent || 'Level 1';
-            let finalEngTests: { name: string; score: number | null }[] | undefined = grandTests.length > 0 ? grandTests : undefined;
+              const rawMathStarting = row['boshlang\'ich daraja math'] || row['Boshlang\'ich daraja math'] || row['StartingLevelMATH'] || row['initial level math'] || row['avvalgi daraja math'] || row['Avvalgi daraja math'] || '';
+              const rawMathCurrent = row['hozirgi daraja math'] || row['Hozirgi daraja math'] || row['CurrentLevelMATH'] || row['current level math'] || '';
 
-            let finalMathStarting = normMathStarting || 'Level 1';
-            let finalMathCurrent = normMathCurrent || 'Level 1';
-            let finalMathTests: { name: string; score: number | null }[] | undefined = mathGrandTests.length > 0 ? mathGrandTests : undefined;
+              finalMathStarting = normalizeLevel(rawMathStarting) || 'Level 1';
+              finalMathCurrent = normalizeLevel(rawMathCurrent) || 'Level 1';
 
-            if (!hasExplicitMathColumns && activeSubject === 'MATH') {
-              finalMathStarting = normEngStarting || 'Level 1';
-              finalMathCurrent = normEngCurrent || 'Level 1';
-              finalMathTests = grandTests.length > 0 ? grandTests : undefined;
+              const rawT = row['O\'qituvchi'] || row['o\'qituvchi'] || row['teacher'] || row['Teacher'] || '';
+              if (rawT.toString().trim()) {
+                mathTeacherName = rawT.toString().trim();
+              }
+            } else if (activeSubject === 'DETAILS') {
+              const rawPhone = row['Ota-ona telefon raqami'] || row['Phone number'] || row['phone'] || row['parent phone'] || row['Phone'] || '';
+              parentPhone = rawPhone.toString().trim();
+              if (parentPhone && !parentPhone.startsWith('+')) {
+                if (parentPhone.startsWith('998')) parentPhone = '+' + parentPhone;
+                else if (parentPhone.length === 9) parentPhone = '+998' + parentPhone;
+              }
 
-              finalEngStarting = 'Level 1';
-              finalEngCurrent = 'Level 1';
-              finalEngTests = undefined;
+              const rawId = row['ID'] || row['id'] || row['Id'] || row['O\'quvchi ID'] || '';
+              customId = rawId.toString().trim();
+
+              const rawPass = row['Passcode'] || row['passcode'] || row['Parol'] || row['parol'] || '';
+              customPasscode = rawPass.toString().trim();
+            } else if (activeSubject === 'ALL') {
+              const rawEngScore = row['Eng score'] || row['English score'] || row['eng_score'] || row['eng score'] || '';
+              engScore = rawEngScore !== '' ? Math.min(15, Math.max(0, parseInt(rawEngScore) || 0)) : 0;
+
+              const rawMathScore = row['Math score'] || row['math_score'] || row['math score'] || '';
+              mathScore = rawMathScore !== '' ? Math.min(15, Math.max(0, parseInt(rawMathScore) || 0)) : 0;
+
+              const rawAttendance = row['Attendance'] || row['attendance'] || '';
+              attendance = rawAttendance !== '' ? parseInt(rawAttendance) || 1 : 1;
+
+              const rawHomework = row['Homework'] || row['homework'] || '';
+              homework = rawHomework !== '' ? parseInt(rawHomework) || 1 : 1;
             }
 
-            const rawEngScore = row['Eng score'] || row['English score'] || row['eng_score'] || row['eng score'] || '';
-            const engScore = rawEngScore !== '' ? Math.min(15, Math.max(0, parseInt(rawEngScore) || 0)) : 0;
-
-            const rawMathScore = row['Math score'] || row['math_score'] || row['math score'] || '';
-            const mathScore = rawMathScore !== '' ? Math.min(15, Math.max(0, parseInt(rawMathScore) || 0)) : 0;
-
-            const rawAttendance = row['Attendance'] || row['attendance'] || '';
-            const attendance = rawAttendance !== '' ? parseInt(rawAttendance) || 1 : 1;
-
-            const rawHomework = row['Homework'] || row['homework'] || '';
-            const homework = rawHomework !== '' ? parseInt(rawHomework) || 1 : 1;
-
             return {
-              id: Math.random().toString(36).substr(2, 9),
+              id: customId || Math.random().toString(36).substr(2, 9),
               name,
               surname,
-              className: (
-                row['sinf'] || 
-                row['Sinf'] || 
-                row['class'] || 
-                row['Class'] || 
-                row['className'] || '5A'
-              ).toString().trim().toUpperCase(),
-              dateJoined: (
-                row['qabul qilingan sana'] || 
-                row['Qabul qilingan sana'] || 
-                row['when'] || 
-                row['When'] || 
-                row['date joined'] || 'Sentyabr 2024'
-              ).toString().trim(),
+              className,
+              dateJoined,
               startingLevel: finalEngStarting,
               currentLevel: finalEngCurrent,
               grandTests: finalEngTests,
-              pictureUrl: row['PictureUrl'] || row['pictureUrl'] || '',
+              teacher: teacherName,
               mathStartingLevel: finalMathStarting,
               mathCurrentLevel: finalMathCurrent,
               mathGrandTests: finalMathTests,
+              mathTeacher: mathTeacherName,
               engScore,
               mathScore,
               attendance,
               homework,
+              parentPhone,
+              passcode: customPasscode,
+              pictureUrl: row['PictureUrl'] || row['pictureUrl'] || '',
             };
           })
           .filter((s: Student) => s.name.trim() !== '' || s.surname.trim() !== '');
@@ -363,54 +396,128 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       return;
     }
 
-    const headers = [
-      "O'quvchining ismi va familiyasi",
-      "sinf",
-      "boshlang'ich daraja eng",
-      "hozirgi daraja eng",
-      "Grant 1 eng",
-      "Grant 2 eng",
-      "Grant 3 eng",
-      "Grant 4 eng",
-      "boshlang'ich daraja math",
-      "hozirgi daraja math",
-      "Grant 1 math",
-      "Grant 2 math",
-      "Grant 3 math",
-      "Grant 4 math"
-    ].join(",");
+    if (activeSubject === 'ENG') {
+      const headers = [
+        "O'quvchining ismi va familiyasi",
+        "sinf",
+        "boshlang'ich daraja eng",
+        "hozirgi daraja eng",
+        "O'qituvchi",
+        "Grant 1 eng",
+        "Grant 2 eng",
+        "Grant 3 eng",
+        "Grant 4 eng"
+      ].join(",");
 
-    const row1 = [
-      "Yodgorov Axmadjon",
-      "5A",
-      "1",
-      "5",
-      "70", "72", "90", "67",
-      "2",
-      "4",
-      "60", "68", "75", "82"
-    ].join(",");
+      const row1 = [
+        "Yodgorov Axmadjon",
+        "5A",
+        "1",
+        "5",
+        "Aliyev Vali",
+        "70", "72", "90", "67"
+      ].join(",");
 
-    const row2 = [
-      "Salohiddinov Otabek",
-      "5B",
-      "3",
-      "5",
-      "55", "40", "68", "90",
-      "1",
-      "3",
-      "45", "55", "62", "70"
-    ].join(",");
+      const row2 = [
+        "Salohiddinov Otabek",
+        "5B",
+        "3",
+        "5",
+        "Karimova Laylo",
+        "55", "40", "68", "90"
+      ].join(",");
 
-    const csvContent = headers + "\n" + row1 + "\n" + row2;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "o_quvchilar_kombinatsiyalangan_namuna.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = headers + "\n" + row1 + "\n" + row2;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "o_quvchilar_english_namuna.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    if (activeSubject === 'MATH') {
+      const headers = [
+        "O'quvchining ismi va familiyasi",
+        "sinf",
+        "boshlang'ich daraja math",
+        "hozirgi daraja math",
+        "O'qituvchi",
+        "Grant 1 math",
+        "Grant 2 math",
+        "Grant 3 math",
+        "Grant 4 math"
+      ].join(",");
+
+      const row1 = [
+        "Yodgorov Axmadjon",
+        "5A",
+        "2",
+        "4",
+        "Toshmatov Dilshod",
+        "60", "68", "75", "82"
+      ].join(",");
+
+      const row2 = [
+        "Salohiddinov Otabek",
+        "5B",
+        "1",
+        "3",
+        "Sodiqov Jasur",
+        "45", "55", "62", "70"
+      ].join(",");
+
+      const csvContent = headers + "\n" + row1 + "\n" + row2;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "o_quvchilar_math_namuna.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    if (activeSubject === 'DETAILS') {
+      const headers = [
+        "O'quvchining ismi va familiyasi",
+        "sinf",
+        "Ota-ona telefon raqami",
+        "ID",
+        "Passcode"
+      ].join(",");
+
+      const row1 = [
+        "Yodgorov Axmadjon",
+        "5A",
+        "+998901234567",
+        "ALabc12",
+        "1234567"
+      ].join(",");
+
+      const row2 = [
+        "Salohiddinov Otabek",
+        "5B",
+        "+998907654321",
+        "ALxyz89",
+        "7654321"
+      ].join(",");
+
+      const csvContent = headers + "\n" + row1 + "\n" + row2;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "o_quvchilar_tafsilotlar_namuna.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
   };
 
   // News Images Upload and Compression helper
@@ -875,37 +982,39 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <button
-                        onClick={() => setIsAddStudentOpen(true)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem',
-                          width: '100%',
-                          padding: '0.75rem 1.25rem',
-                          borderRadius: '12px',
-                          background: '#ffffff',
-                          color: 'var(--accent-primary)',
-                          border: '1.5px solid var(--accent-primary)',
-                          fontSize: '0.8rem',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'var(--accent-primary)';
-                          e.currentTarget.style.color = '#ffffff';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#ffffff';
-                          e.currentTarget.style.color = 'var(--accent-primary)';
-                        }}
-                      >
-                        <UserPlus size={15} />
-                        <span>YANGI O'QUVCHI QO'SHISH</span>
-                      </button>
+                      {activeSubject !== 'ALL' && (
+                        <button
+                          onClick={() => setIsAddStudentOpen(true)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            width: '100%',
+                            padding: '0.75rem 1.25rem',
+                            borderRadius: '12px',
+                            background: '#ffffff',
+                            color: 'var(--accent-primary)',
+                            border: '1.5px solid var(--accent-primary)',
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'var(--accent-primary)';
+                            e.currentTarget.style.color = '#ffffff';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#ffffff';
+                            e.currentTarget.style.color = 'var(--accent-primary)';
+                          }}
+                        >
+                          <UserPlus size={15} />
+                          <span>YANGI O'QUVCHI QO'SHISH</span>
+                        </button>
+                      )}
 
                       <button
                         onClick={() => { setUploadStatus(null); setIsCsvModalOpen(true); }}
@@ -2166,6 +2275,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         onClose={() => setIsAddStudentOpen(false)}
         onAddStudent={onAddStudent}
         activeSubject={activeSubject}
+        teachers={teachers}
       />
 
       <CustomDialog
