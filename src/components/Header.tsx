@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Settings, Plus, Trash2, LogOut } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
+import type { ActiveSubject } from '../types';
 
 interface HeaderProps {
   classes: string[];
@@ -12,7 +13,7 @@ interface HeaderProps {
   onOpenDrawer: () => void;
   selectedWeek: string;
   onWeekChange: (week: string) => void;
-  activeSubject: 'ENG' | 'MATH' | 'ALL';
+  activeSubject: ActiveSubject;
   isAdminMode: boolean;
   weeksList: string[];
   onStartNewWeekClick?: () => void;

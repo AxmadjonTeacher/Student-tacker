@@ -46,3 +46,6 @@ export interface NewsEvent {
   picture_urls?: string[];
   type?: 'news' | 'event' | 'reminder';
 }
+
+export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS';
+

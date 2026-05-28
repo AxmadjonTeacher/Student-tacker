@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Lock, KeyRound } from 'lucide-react';
 
+import type { ActiveSubject } from '../types';
+
 interface PasscodeModalProps {
   onClose: () => void;
   onSuccess: () => void;
-  activeSubject: 'ENG' | 'MATH' | 'ALL';
+  activeSubject: ActiveSubject;
 }
 
 const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activeSubject }) => {

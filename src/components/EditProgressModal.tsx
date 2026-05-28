@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
-import type { Student } from '../types';
+import type { Student, ActiveSubject } from '../types';
 
 interface EditProgressModalProps {
   student: Student;
@@ -18,7 +18,7 @@ interface EditProgressModalProps {
     homework?: number,
     parentPhone?: string
   ) => void;
-  activeSubject: 'ENG' | 'MATH' | 'ALL';
+  activeSubject: ActiveSubject;
 }
 
 const EditProgressModal: React.FC<EditProgressModalProps> = ({ 

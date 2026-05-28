@@ -4,7 +4,7 @@ import {
   AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
   BarChart, Bar, Cell, LabelList, LineChart, Legend
 } from 'recharts';
-import type { Student } from '../types';
+import type { Student, ActiveSubject } from '../types';
 
 const formatXAxisWeek = (tick: string) => {
   if (tick === "Faol hafta") return "Faol";
@@ -24,7 +24,7 @@ const formatXAxisTerm = (tick: string) => {
 interface GraphModalProps {
   student: Student;
   onClose: () => void;
-  activeSubject: 'ENG' | 'MATH' | 'ALL';
+  activeSubject: ActiveSubject;
   studentWeeks: any[];
   isInline?: boolean;
 }

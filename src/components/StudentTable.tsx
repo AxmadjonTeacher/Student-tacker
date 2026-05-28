@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { Student } from '../types';
-import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import type { Student, ActiveSubject } from '../types';
+import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, Key, Phone, Save, RotateCw, Download, X } from 'lucide-react';
 import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
 import * as XLSX from 'xlsx';
@@ -12,7 +12,7 @@ interface StudentTableProps {
   onDeleteStudent?: (studentId: string) => void;
   onAssignTeacher?: (studentId: string, teacherName: string) => void;
   onMoveStudent?: (draggedId: string, targetId: string) => void;
-  activeSubject?: 'ENG' | 'MATH' | 'ALL';
+  activeSubject?: ActiveSubject;
   onUpdateProgress?: (
     studentId: string,
     startingLevel: string,
@@ -31,6 +31,8 @@ interface StudentTableProps {
   onDeleteTeacherTable?: (teacherName: string) => void;
   onMoveTeacherTable?: (teacherName: string, direction: 'up' | 'down') => void;
   studentWeeks?: any[];
+  onSaveCredentials?: (changes: Record<string, Partial<Student>>) => Promise<boolean>;
+  onBatchRegenerateCredentials?: (regenerateIds: boolean, regeneratePasscodes: boolean, targetClass: string | null) => Promise<boolean>;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -45,7 +47,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onRenameTeacherTable,
   onDeleteTeacherTable,
   onMoveTeacherTable,
-  studentWeeks = []
+  studentWeeks = [],
+  onSaveCredentials,
+  onBatchRegenerateCredentials
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -54,6 +58,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'HL' | 'AZ' | 'DEFAULT'>('DEFAULT');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // States for inline credentials editing
+  const [editingCell, setEditingCell] = useState<{ studentId: string, field: 'name' | 'id' | 'passcode' | 'parentPhone' } | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+  const [unsavedChanges, setUnsavedChanges] = useState<Record<string, Partial<Student>>>({});
+
+  // States for batch regenerate modal
+  const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
+  const [regenIds, setRegenIds] = useState(true);
+  const [regenPasscodes, setRegenPasscodes] = useState(true);
+  const [regenTarget, setRegenTarget] = useState<'class' | 'all'>('class');
 
   const sortedStudents = React.useMemo(() => {
     if (activeSubject !== 'ALL') return students;
@@ -76,6 +91,74 @@ const StudentTable: React.FC<StudentTableProps> = ({
     }
     return list.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
   }, [students, sortBy, activeSubject]);
+
+  const handleCellSave = (studentId: string, field: 'name' | 'id' | 'passcode' | 'parentPhone', value: string) => {
+    setUnsavedChanges(prev => {
+      const studentEdits = prev[studentId] || {};
+      const updatedEdits = { ...studentEdits };
+
+      if (field === 'name') {
+        const parts = value.trim().split(/\s+/);
+        updatedEdits.name = parts[0] || '';
+        updatedEdits.surname = parts.slice(1).join(' ') || '';
+      } else if (field === 'id') {
+        updatedEdits.id = value.trim();
+      } else if (field === 'passcode') {
+        updatedEdits.passcode = value.trim();
+      } else if (field === 'parentPhone') {
+        let phoneVal = value.trim();
+        if (phoneVal === '+998' || phoneVal === '') {
+          updatedEdits.parentPhone = '';
+        } else {
+          updatedEdits.parentPhone = phoneVal;
+        }
+      }
+
+      return {
+        ...prev,
+        [studentId]: updatedEdits
+      };
+    });
+    setEditingCell(null);
+  };
+
+  const handleExportCredentialsToExcel = (studentsList: Student[]) => {
+    const data = studentsList.map(student => {
+      const edits = unsavedChanges[student.id] || {};
+      const name = edits.name !== undefined ? edits.name : student.name;
+      const surname = edits.surname !== undefined ? edits.surname : student.surname;
+      const idVal = edits.id || student.id;
+      const passcodeVal = edits.passcode !== undefined ? edits.passcode : student.passcode;
+      const phoneVal = edits.parentPhone !== undefined ? edits.parentPhone : student.parentPhone;
+
+      return {
+        "O'quvchining ismi va familiyasi": `${name} ${surname}`.trim(),
+        "Sinf": student.className,
+        "ID raqami": idVal,
+        "Parol (Passcode)": passcodeVal || '',
+        "Telefon raqami": phoneVal || ''
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+
+    worksheet['!cols'] = [
+      { wch: 30 }, // O'quvchining ismi va familiyasi
+      { wch: 10 }, // Sinf
+      { wch: 15 }, // ID raqami
+      { wch: 15 }, // Parol
+      { wch: 20 }  // Telefon raqami
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "O'quvchilar Ma'lumotlari");
+
+    const firstStudentClass = studentsList[0]?.className || '';
+    const match = firstStudentClass.match(/^(\d+)/);
+    const classLabel = match ? `${match[1]}-sinf` : 'Barcha';
+    const filename = `${classLabel}_oquvchilar_tafsilotlari.xlsx`;
+    XLSX.writeFile(workbook, filename);
+  };
 
   const handleExportTableToExcel = (teacherName: string, studentsList: Student[]) => {
     const suffix = activeSubject.toLowerCase(); // 'eng' or 'math'
@@ -687,6 +770,282 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   );
                 })}
               </div>
+            ) : activeSubject === 'DETAILS' ? (
+              <div 
+                className="table-card-container"
+                style={{
+                  background: '#ffffff',
+                  borderRadius: '16px',
+                  border: '1px solid #e5e7eb',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
+                  overflow: 'hidden',
+                  marginBottom: '2rem'
+                }}
+              >
+                {/* Header row */}
+                <div className="table-header-row" style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2fr 1fr',
+                  alignItems: 'center',
+                  padding: '0.9rem 1.5rem',
+                  borderBottom: '1px solid #f1f5f9',
+                  background: '#fafaf9',
+                  color: '#64748b',
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em'
+                }}>
+                  <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em' }}>
+                    O'QUVCHILAR TAFSILOTLARI VA ID/PAROLLARI
+                  </div>
+                  <div style={{ padding: '0 1rem' }}>ID RAQAMI</div>
+                  <div style={{ padding: '0 1rem' }}>PAROL (PASSCODE)</div>
+                  <div style={{ padding: '0 1rem' }}>TELEFON RAQAMI</div>
+                  <div style={{ 
+                    padding: '0 1rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'flex-end',
+                    gap: '0.5rem',
+                    position: 'relative'
+                  }}>
+                    <button
+                      onClick={() => handleExportCredentialsToExcel(sortedStudents)}
+                      title="Excel fayl yuklash"
+                      style={{
+                        background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0',
+                        padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
+                    >
+                      <Download size={12} />
+                      <span>Excel</span>
+                    </button>
+                    <button
+                      onClick={() => setIsRegenerateModalOpen(true)}
+                      title="ID/Parollarni yangilash"
+                      style={{
+                        background: '#fdf2f8', color: '#db2777', border: '1px solid #fbcfe8',
+                        padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#fce7f3'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#fdf2f8'; }}
+                    >
+                      <RotateCw size={12} />
+                      <span>Yangilash</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rows list */}
+                {sortedStudents.map((student, idx) => {
+                  const isLast = idx === sortedStudents.length - 1;
+                  const edits = unsavedChanges[student.id] || {};
+                  
+                  const nameVal = edits.name !== undefined ? edits.name : student.name;
+                  const surnameVal = edits.surname !== undefined ? edits.surname : student.surname;
+                  const idVal = edits.id !== undefined ? edits.id : student.id;
+                  const passcodeVal = edits.passcode !== undefined ? edits.passcode : student.passcode;
+                  const phoneVal = edits.parentPhone !== undefined ? edits.parentPhone : student.parentPhone;
+
+                  const fullName = `${nameVal} ${surnameVal}`.trim();
+
+                  const isEditing = (field: 'name' | 'id' | 'passcode' | 'parentPhone') => 
+                    editingCell?.studentId === student.id && editingCell?.field === field;
+
+                  const handleDoubleClick = (field: 'name' | 'id' | 'passcode' | 'parentPhone', currentVal: string) => {
+                    setEditingCell({ studentId: student.id, field });
+                    setEditingValue(currentVal);
+                  };
+
+                  return (
+                    <div 
+                      key={student.id}
+                      className="student-row"
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2fr 1fr',
+                        alignItems: 'center',
+                        padding: '1.1rem 1.5rem',
+                        borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
+                        background: '#ffffff',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#fafaf9'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                    >
+                      {/* Name/Surname Block */}
+                      <div 
+                        className="name-block" 
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid #e5e7eb', height: '100%', cursor: 'pointer' }}
+                        onDoubleClick={() => handleDoubleClick('name', fullName)}
+                        title="Tahrirlash uchun ikki marta bosing"
+                      >
+                        <div style={{
+                          width: '40px', height: '40px', borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #fbcfe8, #f472b6)', color: '#be185d',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.9rem', fontWeight: 700, flexShrink: 0
+                        }}>
+                          {getInitials(nameVal, surnameVal)}
+                        </div>
+                        <div style={{ flexGrow: 1, paddingRight: '0.5rem' }}>
+                          {isEditing('name') ? (
+                            <input
+                              type="text"
+                              value={editingValue}
+                              autoFocus
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              onBlur={(e) => handleCellSave(student.id, 'name', e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleCellSave(student.id, 'name', e.currentTarget.value);
+                                if (e.key === 'Escape') setEditingCell(null);
+                              }}
+                              style={{
+                                width: '90%', padding: '0.25rem 0.5rem', borderRadius: '6px',
+                                border: '2px solid #db2777', fontSize: '0.9rem', outline: 'none',
+                                fontWeight: 600, color: '#1f2937'
+                              }}
+                            />
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 650, color: '#1f2937' }}>
+                                {fullName || <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Ism kiritilmagan</span>}
+                              </h3>
+                              <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: 700, textTransform: 'uppercase', marginTop: '0.1rem' }}>
+                                Sinf: {student.className.toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ID Number Cell */}
+                      <div 
+                        className="table-cell" 
+                        style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        onDoubleClick={() => handleDoubleClick('id', idVal)}
+                        title="Tahrirlash uchun ikki marta bosing"
+                      >
+                        {isEditing('id') ? (
+                          <input
+                            type="text"
+                            value={editingValue}
+                            autoFocus
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={(e) => handleCellSave(student.id, 'id', e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave(student.id, 'id', e.currentTarget.value);
+                              if (e.key === 'Escape') setEditingCell(null);
+                            }}
+                            style={{
+                              width: '90%', padding: '0.25rem 0.5rem', borderRadius: '6px',
+                              border: '2px solid #db2777', fontSize: '0.9rem', outline: 'none',
+                              fontWeight: 700, color: '#1f2937', fontFamily: 'monospace'
+                            }}
+                          />
+                        ) : (
+                          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                            {idVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Bo'sh</span>}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Passcode Cell */}
+                      <div 
+                        className="table-cell" 
+                        style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        onDoubleClick={() => handleDoubleClick('passcode', passcodeVal || '')}
+                        title="Tahrirlash uchun ikki marta bosing"
+                      >
+                        {isEditing('passcode') ? (
+                          <input
+                            type="text"
+                            value={editingValue}
+                            autoFocus
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={(e) => handleCellSave(student.id, 'passcode', e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave(student.id, 'passcode', e.currentTarget.value);
+                              if (e.key === 'Escape') setEditingCell(null);
+                            }}
+                            style={{
+                              width: '90%', padding: '0.25rem 0.5rem', borderRadius: '6px',
+                              border: '2px solid #db2777', fontSize: '0.9rem', outline: 'none',
+                              fontWeight: 600, color: '#1f2937', fontFamily: 'monospace'
+                            }}
+                          />
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: '#475569', fontFamily: 'monospace' }}>
+                            <Key size={13} style={{ color: '#94a3b8' }} />
+                            <span>{passcodeVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Bo'sh</span>}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Parent Phone Number Cell */}
+                      <div 
+                        className="table-cell" 
+                        style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        onDoubleClick={() => handleDoubleClick('parentPhone', phoneVal || '+998')}
+                        title="Tahrirlash uchun ikki marta bosing"
+                      >
+                        {isEditing('parentPhone') ? (
+                          <input
+                            type="text"
+                            value={editingValue}
+                            autoFocus
+                            onChange={(e) => {
+                              let val = e.target.value;
+                              if (!val.startsWith('+998') && val !== '' && val !== '+') {
+                                val = '+998' + val.replace(/^\+?998?/, '');
+                              }
+                              setEditingValue(val);
+                            }}
+                            onBlur={(e) => handleCellSave(student.id, 'parentPhone', e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave(student.id, 'parentPhone', e.currentTarget.value);
+                              if (e.key === 'Escape') setEditingCell(null);
+                            }}
+                            style={{
+                              width: '90%', padding: '0.25rem 0.5rem', borderRadius: '6px',
+                              border: '2px solid #db2777', fontSize: '0.9rem', outline: 'none',
+                              fontWeight: 600, color: '#1f2937'
+                            }}
+                          />
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>
+                            <Phone size={13} style={{ color: '#94a3b8' }} />
+                            <span>{phoneVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Kiritilmagan</span>}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Delete Action Cell */}
+                      <div className="table-cell no-border" style={{ padding: '0 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <button 
+                          onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
+                          title="O'quvchini o'chirish"
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: '#fee2e2', color: '#b91c1c',
+                            border: '1px solid #fca5a5', borderRadius: '50%',
+                            width: '32px', height: '32px',
+                            cursor: 'pointer', transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.08)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (() => {
               const groupsMap: { [teacher: string]: Student[] } = {};
               students.forEach((student) => {
@@ -1170,6 +1529,242 @@ const StudentTable: React.FC<StudentTableProps> = ({
             setEditingStudent(null);
           }}
         />
+      )}
+
+      {/* Floating Action Banner for Unsaved Cell Changes */}
+      {Object.keys(unsavedChanges).length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1.5px solid #db2777',
+          boxShadow: '0 10px 25px -5px rgba(219, 39, 119, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+          padding: '1rem 2rem',
+          borderRadius: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2rem',
+          zIndex: 9999,
+          animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          whiteSpace: 'nowrap'
+        }}>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes slideUp {
+              from { transform: translate(-50%, 100px); opacity: 0; }
+              to { transform: translate(-50%, 0); opacity: 1; }
+            }
+          `}} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: '10px', height: '10px', borderRadius: '50%', background: '#db2777',
+              animation: 'pulse 1.5s infinite'
+            }}>
+              <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes pulse {
+                  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(219, 39, 119, 0.7); }
+                  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(219, 39, 119, 0); }
+                  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(219, 39, 119, 0); }
+                }
+              `}} />
+            </div>
+            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#374151' }}>
+              Tafsilotlar o'zgartirildi. Saqlashni xohlaysizmi?
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              onClick={() => setUnsavedChanges({})}
+              style={{
+                background: '#f3f4f6', color: '#4b5563', border: '1px solid #e5e7eb',
+                padding: '0.5rem 1.25rem', borderRadius: '12px', fontSize: '0.85rem',
+                fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#e5e7eb'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+            >
+              Bekor qilish
+            </button>
+            <button
+              onClick={async () => {
+                if (onSaveCredentials) {
+                  const success = await onSaveCredentials(unsavedChanges);
+                  if (success) {
+                    setUnsavedChanges({});
+                  }
+                }
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #db2777, #be185d)', color: '#ffffff', border: 'none',
+                padding: '0.5rem 1.5rem', borderRadius: '12px', fontSize: '0.85rem',
+                fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(219, 39, 119, 0.2)',
+                display: 'flex', alignItems: 'center', gap: '0.4rem', transition: 'all 0.15s'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <Save size={14} />
+              Saqlash
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Credentials Rotation Modal */}
+      {isRegenerateModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.3)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '1.5rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '24px',
+            border: '1px solid #fbcfe8',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            width: '100%',
+            maxWidth: '480px',
+            padding: '2rem',
+            animation: 'modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <style dangerouslySetInnerHTML={{ __html: `
+              @keyframes modalFadeIn {
+                from { transform: scale(0.95); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+              }
+            `}} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#db2777' }}>
+                <RotateCw size={20} />
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.01em' }}>
+                  ID VA PAROLLARNI YANGILASH
+                </h3>
+              </div>
+              <button 
+                onClick={() => setIsRegenerateModalOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0.25rem' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              Ushbu bo'lim orqali o'quvchilarning tizimga kirish kodlarini ommaviy ravishda avtomatik yangilashingiz mumkin.
+            </p>
+
+            {/* Checkbox Options */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                <input
+                  type="checkbox"
+                  checked={regenIds}
+                  onChange={(e) => setRegenIds(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: '#db2777', cursor: 'pointer' }}
+                />
+                <span>Yangi ID raqamlarini yaratish (AL + 5 ta belgi)</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                <input
+                  type="checkbox"
+                  checked={regenPasscodes}
+                  onChange={(e) => setRegenPasscodes(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: '#db2777', cursor: 'pointer' }}
+                />
+                <span>Yangi parollarni yaratish (7 ta belgi)</span>
+              </label>
+            </div>
+
+            {/* Target Select */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Yangilash doirasi (Target)
+              </span>
+              <select
+                value={regenTarget}
+                onChange={(e) => setRegenTarget(e.target.value as any)}
+                style={{
+                  width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1.5px solid #e2e8f0',
+                  fontSize: '0.9rem', fontWeight: 600, outline: 'none', color: '#1e293b', cursor: 'pointer'
+                }}
+              >
+                <option value="class">Faqat ushbu sinf o'quvchilari uchun</option>
+                <option value="all">Barcha sinf o'quvchilari uchun</option>
+              </select>
+            </div>
+
+            {/* Warning Box */}
+            <div style={{
+              background: '#fef2f2', border: '1.5px solid #fee2e2', borderRadius: '16px',
+              padding: '1rem', marginBottom: '2rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start'
+            }}>
+              <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>⚠️</span>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: '#991b1b', textTransform: 'uppercase' }}>
+                  DIQQAT!
+                </span>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#b91c1c', fontWeight: 550, lineHeight: 1.4 }}>
+                  Ushbu o'zgarish o'quvchilar va ularning ota-onalari uchun kirish ma'lumotlarini darhol o'zgartiradi. Ushbu amalni ortga qaytarib bo'lmaydi.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => setIsRegenerateModalOpen(false)}
+                style={{
+                  background: '#f3f4f6', color: '#4b5563', border: 'none',
+                  padding: '0.65rem 1.25rem', borderRadius: '12px', fontSize: '0.85rem',
+                  fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#e5e7eb'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+              >
+                Bekor qilish
+              </button>
+              <button
+                disabled={!regenIds && !regenPasscodes}
+                onClick={async () => {
+                  if (onBatchRegenerateCredentials) {
+                    const firstStudentClass = students[0]?.className || '';
+                    const match = firstStudentClass.match(/^(\d+)/);
+                    const currentClassGroup = match ? `${match[1]}-Sinf` : null;
+                    const targetClassVal = regenTarget === 'class' ? currentClassGroup : null;
+                    
+                    setIsRegenerateModalOpen(false);
+                    const success = await onBatchRegenerateCredentials(regenIds, regenPasscodes, targetClassVal);
+                    if (success) {
+                      setUnsavedChanges({});
+                    }
+                  }
+                }}
+                style={{
+                  background: (!regenIds && !regenPasscodes) ? '#cbd5e1' : 'linear-gradient(135deg, #db2777, #be185d)',
+                  color: '#ffffff', border: 'none',
+                  padding: '0.65rem 1.5rem', borderRadius: '12px', fontSize: '0.85rem',
+                  fontWeight: 700, cursor: (!regenIds && !regenPasscodes) ? 'not-allowed' : 'pointer',
+                  boxShadow: (!regenIds && !regenPasscodes) ? 'none' : '0 4px 10px rgba(219, 39, 119, 0.2)',
+                  transition: 'all 0.15s'
+                }}
+                onMouseEnter={(e) => { if (regenIds || regenPasscodes) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={(e) => { if (regenIds || regenPasscodes) e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                Tasdiqlash
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

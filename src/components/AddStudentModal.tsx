@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { X, UserPlus } from 'lucide-react';
-import type { Student } from '../types';
+import type { Student, ActiveSubject } from '../types';
 
 interface AddStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddStudent: (studentData: Partial<Student>) => void;
-  activeSubject: 'ENG' | 'MATH' | 'ALL';
+  activeSubject: ActiveSubject;
 }
 
 const LEVELS = [

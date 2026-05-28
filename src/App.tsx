@@ -6,7 +6,7 @@ import SidebarDrawer from './components/SidebarDrawer';
 import CustomDialog from './components/CustomDialog';
 import InstallAppDrawer from './components/InstallAppDrawer';
 import PasscodeModal from './components/PasscodeModal';
-import type { Student } from './types';
+import type { Student, ActiveSubject } from './types';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
 import LoginScreen from './components/LoginScreen';
 import ParentCabinet from './components/ParentCabinet';
@@ -58,6 +58,26 @@ export const formatDateLabel = (dateStr: string): string => {
   return `${day}-${monthName}`;
 };
 
+// Helper to generate a random ID (AL + 5 uppercase letters/numbers)
+export const generateRandomId = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = 'AL';
+  for (let i = 0; i < 5; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+// Helper to generate a random passcode (7 alphanumeric characters)
+export const generateRandomPasscode = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 7; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 // Helper to get local date string YYYY-MM-DD
 export const getLocalDateString = (): string => {
   const d = new Date();
@@ -89,7 +109,7 @@ export const parseWeekToSortValue = (weekStr: string): number => {
 
 function App() {
   const [students, setStudents] = useState<Student[]>([]);
-  const [activeSubject, setActiveSubject] = useState<'ENG' | 'MATH' | 'ALL'>('ENG');
+  const [activeSubject, setActiveSubject] = useState<ActiveSubject>('ENG');
   const [loading, setLoading] = useState(true);
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
   const [searchTerm, setSearchTerm] = useState('');
@@ -401,6 +421,10 @@ function App() {
       document.documentElement.style.setProperty('--accent-primary', '#4f46e5'); // Premium Indigo
       document.documentElement.style.setProperty('--accent-hover', '#4338ca');
       document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #4f46e5, #4338ca)');
+    } else if (activeSubject === 'DETAILS') {
+      document.documentElement.style.setProperty('--accent-primary', '#db2777'); // Rose/Pink
+      document.documentElement.style.setProperty('--accent-hover', '#be185d');
+      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #db2777, #be185d)');
     } else {
       document.documentElement.style.setProperty('--accent-primary', '#166534'); // Premium Dark Green
       document.documentElement.style.setProperty('--accent-hover', '#14532d');
@@ -733,6 +757,9 @@ function App() {
   const handleToggleAdmin = () => {
     if (isAdminMode) {
       setIsAdminMode(false);
+      if (activeSubject === 'DETAILS') {
+        setActiveSubject('ENG');
+      }
     } else {
       setShowPasscodeModal(true);
     }
@@ -936,7 +963,7 @@ function App() {
           grandTests: mathGrandTests || [],
           teacherOrder: student.mathTeacherOrder || 0
         };
-      } else if (activeSubject === 'ALL') {
+      } else if (activeSubject === 'ALL' || activeSubject === 'DETAILS') {
         return {
           ...studentWithEng,
           teacher: '',
@@ -1075,6 +1102,150 @@ function App() {
         console.error('Failed to sync student week progress to Supabase:', err);
       }
     }
+  };
+
+  const handleSaveCredentials = async (changes: Record<string, Partial<Student>>): Promise<boolean> => {
+    // 1. Validation for duplicate IDs
+    const newIds = new Set<string>();
+    const currentStudentsMap = new Map(students.map(s => [s.id, s]));
+    
+    for (const [oldId, edits] of Object.entries(changes)) {
+      if (edits.id && edits.id !== oldId) {
+        if (newIds.has(edits.id)) {
+          alert(`Xatolik: Bir xil yangi ID (${edits.id}) kiritildi.`);
+          return false;
+        }
+        newIds.add(edits.id);
+        
+        // Check if this new ID already exists in another student (not being edited to something else)
+        const collidingStudent = students.find(s => s.id === edits.id && !changes[s.id]?.id);
+        if (collidingStudent) {
+          alert(`Xatolik: Yangi kiritilgan ID (${edits.id}) boshqa o'quvchida (${collidingStudent.name} ${collidingStudent.surname}) allaqachon mavjud.`);
+          return false;
+        }
+      }
+    }
+
+    setLoading(true);
+    try {
+      for (const [oldId, edits] of Object.entries(changes)) {
+        const student = currentStudentsMap.get(oldId);
+        if (!student) continue;
+
+        const newId = edits.id || oldId;
+        const name = edits.name !== undefined ? edits.name : student.name;
+        const surname = edits.surname !== undefined ? edits.surname : student.surname;
+        const passcode = edits.passcode !== undefined ? edits.passcode : student.passcode;
+        const parentPhone = edits.parentPhone !== undefined ? edits.parentPhone : student.parentPhone;
+
+        if (newId !== oldId) {
+          // A: Update student_weeks first to point to the new ID
+          const { error: weeksError } = await supabase
+            .from('student_weeks')
+            .update({ student_id: newId })
+            .eq('student_id', oldId);
+          if (weeksError) throw weeksError;
+
+          // B: Update Students table
+          const { error: studentError } = await supabase
+            .from('Students')
+            .update({
+              id: newId,
+              name,
+              surname,
+              passcode,
+              parent_phone: parentPhone
+            })
+            .eq('id', oldId);
+          if (studentError) throw studentError;
+        } else {
+          // ID didn't change, just update name, surname, passcode, parent_phone
+          const { error: studentError } = await supabase
+            .from('Students')
+            .update({
+              name,
+              surname,
+              passcode,
+              parent_phone: parentPhone
+            })
+            .eq('id', oldId);
+          if (studentError) throw studentError;
+        }
+      }
+
+      // Sync local state
+      setStudents(prev => prev.map(s => {
+        const edits = changes[s.id];
+        if (edits) {
+          return {
+            ...s,
+            id: edits.id || s.id,
+            name: edits.name !== undefined ? edits.name : s.name,
+            surname: edits.surname !== undefined ? edits.surname : s.surname,
+            passcode: edits.passcode !== undefined ? edits.passcode : s.passcode,
+            parentPhone: edits.parentPhone !== undefined ? edits.parentPhone : s.parentPhone
+          };
+        }
+        return s;
+      }));
+
+      setStudentWeeks(prev => prev.map(sw => {
+        const edits = changes[sw.student_id];
+        if (edits && edits.id) {
+          return {
+            ...sw,
+            student_id: edits.id
+          };
+        }
+        return sw;
+      }));
+
+      alert("Ma'lumotlar muvaffaqiyatli saqlandi!");
+      return true;
+    } catch (err: any) {
+      console.error("Xatolik yuz berdi:", err);
+      alert("Ma'lumotlarni saqlashda xatolik: " + err.message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBatchRegenerateCredentials = async (
+    regenerateIds: boolean,
+    regeneratePasscodes: boolean,
+    targetClass: string | null
+  ): Promise<boolean> => {
+    const targetStudents = students.filter(s => !s.isDeleted && (targetClass === null || getClassGroup(s.className.toUpperCase()) === targetClass));
+    
+    if (targetStudents.length === 0) {
+      alert("Yangilash uchun o'quvchilar topilmadi.");
+      return false;
+    }
+
+    const changes: Record<string, Partial<Student>> = {};
+    const existingIds = new Set(students.map(s => s.id));
+    const newlyGeneratedIds = new Set<string>();
+
+    for (const student of targetStudents) {
+      const edits: Partial<Student> = {};
+      if (regenerateIds) {
+        let newId = generateRandomId();
+        while (existingIds.has(newId) || newlyGeneratedIds.has(newId)) {
+          newId = generateRandomId();
+        }
+        newlyGeneratedIds.add(newId);
+        edits.id = newId;
+      }
+      if (regeneratePasscodes) {
+        edits.passcode = generateRandomPasscode();
+      }
+      if (Object.keys(edits).length > 0) {
+        changes[student.id] = edits;
+      }
+    }
+
+    return await handleSaveCredentials(changes);
   };
 
   const handleAssignTeacher = (studentId: string, currentTeacher: string) => {
@@ -1626,6 +1797,8 @@ function App() {
           onRenameTeacherTable={handleRenameTeacherTable}
           onDeleteTeacherTable={handleDeleteTeacherTable}
           studentWeeks={studentWeeks}
+          onSaveCredentials={handleSaveCredentials}
+          onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
         />
       </div>
 

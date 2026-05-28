@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut
 } from 'lucide-react';
 import Papa from 'papaparse';
-import type { Student } from '../types';
+import type { Student, ActiveSubject } from '../types';
 import AddStudentModal from './AddStudentModal';
 import { supabase } from '../supabase';
 import CustomDialog from './CustomDialog';
@@ -13,8 +13,8 @@ import CustomDialog from './CustomDialog';
 interface SidebarDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  activeSubject: 'ENG' | 'MATH' | 'ALL';
-  onSubjectChange: (subj: 'ENG' | 'MATH' | 'ALL') => void;
+  activeSubject: ActiveSubject;
+  onSubjectChange: (subj: ActiveSubject) => void;
   isAdminMode: boolean;
   onToggleAdmin: () => void;
   students: Student[];
@@ -680,11 +680,17 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                  {[
-                    { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: '#166534', bg: '#f0fdf4' },
-                    { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: '#0d9488', bg: '#f0fdfa' },
-                    { id: 'ALL', title: 'Umumiy Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' }
-                  ].map(subj => {
+                  {(() => {
+                    const subjects = [
+                      { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: '#166534', bg: '#f0fdf4' },
+                      { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: '#0d9488', bg: '#f0fdfa' },
+                      { id: 'ALL', title: 'Umumiy Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' }
+                    ];
+                    if (isAdminMode) {
+                      subjects.push({ id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: '#db2777', bg: '#fdf2f8' });
+                    }
+                    return subjects;
+                  })().map(subj => {
                     const isSelected = activeSubject === subj.id;
                     return (
                       <button
