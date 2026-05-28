@@ -94,10 +94,8 @@ const Header: React.FC<HeaderProps> = ({
             color: #475569 !important;
           }
           .class-selector button.active-pill {
-            background: #0d9488 !important;
-            border: 1px solid #0d9488 !important;
             color: #ffffff !important;
-            box-shadow: 0 4px 10px rgba(13, 148, 136, 0.15) !important;
+            /* background, border and box-shadow are now set dynamically inline */
           }
           .admin-header-bottom-row {
             margin-top: 1rem !important;
@@ -226,28 +224,25 @@ const Header: React.FC<HeaderProps> = ({
         paddingTop: '1.25rem',
         paddingBottom: '0.75rem'
       }}>
-        <h1 className="admin-header-title" style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
-          NATIJALAR TAHLILI
-        </h1>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-          <div className="school-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0', background: 'transparent', border: 'none' }}>
-            <img 
-              src={iconLight} 
-              alt="Logo" 
-              style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} 
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <div className="school-name-text" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '0.05em', color: 'var(--text-primary)', lineHeight: 1 }}>
-                AL-XORAZMIY
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.2em', color: 'var(--accent-primary)' }}>
-                  SCHOOL
-                </div>
+        <div className="school-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0', background: 'transparent', border: 'none' }}>
+          <img 
+            src={iconLight} 
+            alt="Logo" 
+            style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} 
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <div className="school-name-text" style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '0.05em', color: 'var(--text-primary)', lineHeight: 1 }}>
+              AL-XORAZMIY
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.2em', color: 'var(--accent-primary)' }}>
+                SCHOOL
               </div>
             </div>
           </div>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
 
           {/* Desktop buttons */}
           <div className="desktop-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -418,6 +413,18 @@ const Header: React.FC<HeaderProps> = ({
         }}>
           {classes.map(cls => {
             const isActive = activeClass === cls;
+            
+            const getSubjectColor = (subj: ActiveSubject) => {
+              switch(subj) {
+                case 'ENG': return '#166534'; // green
+                case 'MATH': return '#0d9488'; // teal
+                case 'ALL': return '#4f46e5'; // indigo
+                case 'DETAILS': return '#db2777'; // pink
+                default: return '#0d9488';
+              }
+            };
+            const subjectColor = getSubjectColor(activeSubject);
+
             return (
               <button
                 key={cls}
@@ -427,9 +434,10 @@ const Header: React.FC<HeaderProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  background: isActive ? '#0d9488' : 'transparent',
+                  background: isActive ? subjectColor : 'transparent',
                   color: isActive ? '#ffffff' : '#6b7280',
-                  border: 'none',
+                  border: isActive ? `1px solid ${subjectColor}` : 'none',
+                  boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : 'none',
                   padding: '0.5rem 1rem',
                   borderRadius: '9999px',
                   cursor: 'pointer',

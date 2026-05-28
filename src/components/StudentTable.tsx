@@ -796,7 +796,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   letterSpacing: '0.08em'
                 }}>
                   <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em' }}>
-                    O'QUVCHILAR TAFSILOTLARI VA ID/PAROLLARI
+                    TAFSILOTLAR VA ID/PAROLLAR
                   </div>
                   <div style={{ padding: '0 1rem' }}>ID RAQAMI</div>
                   <div style={{ padding: '0 1rem' }}>PAROL (PASSCODE)</div>
@@ -884,14 +884,26 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onDoubleClick={() => handleDoubleClick('name', fullName)}
                         title="Tahrirlash uchun ikki marta bosing"
                       >
-                        <div style={{
-                          width: '40px', height: '40px', borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #fbcfe8, #f472b6)', color: '#be185d',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.9rem', fontWeight: 700, flexShrink: 0
-                        }}>
-                          {getInitials(nameVal, surnameVal)}
-                        </div>
+                        {student.pictureUrl ? (
+                          <img 
+                            src={student.pictureUrl} 
+                            alt={fullName} 
+                            style={{
+                              width: '40px', height: '40px', borderRadius: '50%',
+                              objectFit: 'cover', flexShrink: 0,
+                              border: '1px solid #fbcfe8'
+                            }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: '40px', height: '40px', borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #fbcfe8, #f472b6)', color: '#be185d',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.9rem', fontWeight: 700, flexShrink: 0
+                          }}>
+                            {getInitials(nameVal, surnameVal)}
+                          </div>
+                        )}
                         <div style={{ flexGrow: 1, paddingRight: '0.5rem' }}>
                           {isEditing('name') ? (
                             <input
