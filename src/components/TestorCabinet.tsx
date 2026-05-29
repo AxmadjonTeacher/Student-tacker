@@ -127,7 +127,7 @@ interface TestorCabinetProps {
   students: Student[];
   studentWeeks: any[];
   teachers: Teacher[];
-  onLogout: () => void;
+  onLogout: (force?: boolean) => void;
 }
 
 const TestorCabinet: React.FC<TestorCabinetProps> = ({
@@ -1181,7 +1181,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             <button
               onClick={() => {
                 setShowLogoutConfirm(false);
-                onLogout();
+                onLogout(true);
               }}
               style={{
                 flex: 1,
