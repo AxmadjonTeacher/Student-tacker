@@ -3,7 +3,7 @@ import { Lock, User, Eye, EyeOff, GraduationCap, Loader2 } from 'lucide-react';
 import { supabase } from '../supabase';
 
 interface LoginScreenProps {
-  onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent', studentData?: any) => void;
+  onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor', studentData?: any) => void;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
@@ -63,6 +63,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           localStorage.setItem('auth_role', 'publish');
           localStorage.setItem('admin_passcode', trimmedPasscode);
           onLoginSuccess('publish');
+        } else {
+          setError("Noto'g'ri admin paroli.");
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Check Testor Admin Credentials (testor)
+      if (trimmedId.toLowerCase() === 'testor') {
+        if (trimmedPasscode === 'Azz21testor') {
+          localStorage.setItem('auth_role', 'testor');
+          localStorage.setItem('admin_passcode', trimmedPasscode);
+          onLoginSuccess('testor');
         } else {
           setError("Noto'g'ri admin paroli.");
         }

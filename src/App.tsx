@@ -10,6 +10,7 @@ import type { Student, ActiveSubject, Teacher } from './types';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
 import LoginScreen from './components/LoginScreen';
 import ParentCabinet from './components/ParentCabinet';
+import TestorCabinet from './components/TestorCabinet';
 
 const INITIAL_CLASSES = ['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'];
 
@@ -121,7 +122,7 @@ function App() {
   const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
-  const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | null>(null);
+  const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | null>(null);
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -394,6 +395,14 @@ function App() {
           await fetchAllData();
           return;
         }
+      } else if (storedRole === 'testor') {
+        const storedPass = localStorage.getItem('admin_passcode');
+        if (storedPass === 'Azz21testor') {
+          setAuthRole('testor');
+          setIsAdminMode(false);
+          await fetchAllData();
+          return;
+        }
       } else if (storedRole === 'parent') {
         const storedChildrenJson = localStorage.getItem('parent_children');
         let childrenList = [];
@@ -448,7 +457,7 @@ function App() {
 
   // Sync state to LocalStorage as a local offline cache backup (Admin only)
   useEffect(() => {
-    if (!loading && (authRole === 'admin' || authRole === 'admin123' || authRole === 'publish')) {
+    if (!loading && (authRole === 'admin' || authRole === 'admin123' || authRole === 'publish' || authRole === 'testor')) {
       localStorage.setItem('students_data_v2', JSON.stringify(students));
     }
   }, [students, loading, authRole]);
@@ -852,9 +861,9 @@ function App() {
     }
   };
 
-  const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent', studentData?: any) => {
+  const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor', studentData?: any) => {
     setAuthRole(role);
-    if (role === 'admin' || role === 'admin123' || role === 'publish') {
+    if (role === 'admin' || role === 'admin123' || role === 'publish' || role === 'testor') {
       setIsAdminMode(false);
       await fetchAllData();
     } else if (role === 'parent' && studentData) {
@@ -1835,6 +1844,17 @@ function App() {
 
   if (authRole === null) {
     return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (authRole === 'testor') {
+    return (
+      <TestorCabinet
+        students={students}
+        studentWeeks={studentWeeks}
+        teachers={teachers}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   if (authRole === 'parent' && loggedInStudent) {
