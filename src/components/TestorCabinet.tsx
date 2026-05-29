@@ -124,6 +124,25 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     setShowAddTestModal(true);
   };
 
+  // States for folder tree expansion in "Papkalar" section
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
+  const [expandedTeachers, setExpandedTeachers] = useState<Record<string, boolean>>({});
+
+  const toggleSubject = (subj: string) => {
+    setExpandedSubjects(prev => ({
+      ...prev,
+      [subj]: !prev[subj]
+    }));
+  };
+
+  const toggleTeacher = (subj: string, teacher: string) => {
+    const key = `${subj}_${teacher}`;
+    setExpandedTeachers(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   const handleCreateTest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTestName.trim()) {
@@ -267,6 +286,17 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     fetchTests();
   }, []);
 
+  const getScannedCount = (testId: string) => {
+    const saved = localStorage.getItem(`testor_scans_${testId}`);
+    if (saved) {
+      try {
+        const scans = JSON.parse(saved);
+        if (Array.isArray(scans)) return scans.length;
+      } catch {}
+    }
+    return 0;
+  };
+
   // Sync / local saves for answer key updates
   const handleSaveAnswerKey = async (testId: string, updatedKeys: string[]) => {
     // Update local state first
@@ -317,11 +347,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
   // Weekly Tests Tab States
   const [testsSearch, setTestsSearch] = useState('');
-  const [testsClassFilter, setTestsClassFilter] = useState('ALL');
+  const testsClassFilter = 'ALL';
   const [selectedTest, setSelectedTest] = useState<any | null>(null);
-
-  // Folders Tab States (Dynamic Filesystem Browser)
-  const [currentPath, setCurrentPath] = useState<string[]>([]); // e.g. [] -> Subject -> Teacher
 
   // Dynamic grouping computed values
   const subjects = useMemo(() => {
@@ -345,11 +372,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const getTestsForTeacher = (subj: string, teacher: string) => {
     return dbTests.filter(t => t.subject === subj && t.teacher_name === teacher);
   };
-
-  // Breadcrumbs representation
-  const folderPath = useMemo(() => {
-    return currentPath;
-  }, [currentPath]);
 
   // Options views & Camera scanning states
   const [showEditKeyModal, setShowEditKeyModal] = useState(false);
@@ -750,7 +772,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             </div>
             <div style={{ fontSize: '0.92rem', display: 'flex', gap: '0.5rem' }}>
               <span style={{ color: '#94a3b8', fontWeight: 600 }}>Papers:</span>
-              <span style={{ fontWeight: 800, color: '#ffffff' }}>{test.student_count} ta varaq</span>
+              <span style={{ fontWeight: 800, color: '#ffffff' }}>{getScannedCount(test.id)} ta varaq</span>
             </div>
             <div style={{ fontSize: '0.92rem', display: 'flex', gap: '0.5rem' }}>
               <span style={{ color: '#94a3b8', fontWeight: 600 }}>Number Of Questions:</span>
@@ -897,26 +919,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               }}
             />
           </div>
-          <select
-            value={testsClassFilter}
-            onChange={(e) => setTestsClassFilter(e.target.value)}
-            style={{
-              padding: '0.65rem 1rem',
-              borderRadius: '10px',
-              border: '1.5px solid #e2e8f0',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              color: '#475569',
-              outline: 'none',
-              background: '#ffffff',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="ALL">Barcha sinflar</option>
-            {['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'].map(cls => (
-              <option key={cls} value={cls}>{cls}</option>
-            ))}
-          </select>
           <button
             onClick={openAddTestModal}
             style={{
@@ -1084,7 +1086,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#475569' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <FileText size={12} />
-                    <span>{test.student_count} ta topshirildi</span>
+                    <span>{getScannedCount(test.id)} ta topshirildi</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <BookOpen size={12} />
@@ -1121,227 +1123,281 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           background: '#ffffff',
           border: '1.5px solid #e2e8f0',
           borderRadius: '24px',
-          padding: '1.25rem',
+          padding: '1.5rem',
           boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01)',
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
           minHeight: '340px'
         }}>
-          {/* Navigation / Path header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #f1f5f9',
-            paddingBottom: '0.75rem',
-            flexWrap: 'wrap',
-            gap: '0.5rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {currentPath.length > 0 && (
-                <button
-                  onClick={() => setCurrentPath(prev => prev.slice(0, -1))}
-                  style={{
-                    background: '#f1f5f9',
-                    border: 'none',
-                    color: '#475569',
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'background 0.15s'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
-                >
-                  <ArrowLeft size={14} />
-                </button>
-              )}
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem', fontWeight: 800, color: '#64748b' }}>
-                <span 
-                  onClick={() => setCurrentPath([])} 
-                  style={{ cursor: 'pointer', color: colors.primary }}
-                >ROOT</span>
-                {folderPath.map((folderName, idx) => (
-                  <React.Fragment key={idx}>
-                    <ChevronRight size={12} color="#cbd5e1" />
-                    <span style={{ color: idx === folderPath.length - 1 ? '#1e293b' : '#64748b' }}>
-                      {folderName.toUpperCase()}
-                    </span>
-                  </React.Fragment>
-                ))}
+          {dbLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', color: colors.primary, gap: '0.5rem' }}>
+              <RefreshCw size={20} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
+              <span style={{ fontWeight: 800 }}>Mundarija yangilanmoqda...</span>
+            </div>
+          ) : subjects.length === 0 ? (
+            <div style={{
+              padding: '4rem 2rem',
+              textAlign: 'center',
+              color: '#475569',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1rem'
+            }}>
+              <FolderOpen size={48} color="#cbd5e1" style={{ strokeWidth: 1.5 }} />
+              <div>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.25rem 0' }}>
+                  Papka mundarijasi bo'sh
+                </h4>
+                <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, maxWidth: '280px', lineHeight: 1.4 }}>
+                  Tizimda testlar yo'qligi sababli papkalar yaratilmadi. Dastlab "Testlar" bo'limida yangi test qo'shing.
+                </p>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Tree View Hierarchy */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {subjects.map((subj, sIdx) => {
+                const isSubjExpanded = !!expandedSubjects[subj];
+                const subjectTeachers = getTeachersForSubject(subj);
+                
+                return (
+                  <div key={sIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {/* Subject Folder Row */}
+                    <div
+                      onClick={() => toggleSubject(subj)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '12px',
+                        border: isSubjExpanded ? `1.5px solid ${colors.primary}` : '1.5px solid #e2e8f0',
+                        background: isSubjExpanded ? colors.bg : '#ffffff',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
+                      }}
+                      onMouseEnter={e => {
+                        if (!isSubjExpanded) {
+                          e.currentTarget.style.borderColor = colors.border;
+                          e.currentTarget.style.background = colors.bg;
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isSubjExpanded) {
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                          e.currentTarget.style.background = '#ffffff';
+                        }
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{
+                          color: colors.primary,
+                          transform: isSubjExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          <ChevronRight size={16} style={{ strokeWidth: 2.5 }} />
+                        </div>
+                        <FolderOpen size={18} color={colors.primary} />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: isSubjExpanded ? colors.text : '#1e293b', letterSpacing: '0.01em' }}>
+                          {subj.toLowerCase()}
+                        </span>
+                      </div>
+                      
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>
+                        {subjectTeachers.length} ta o'qituvchi
+                      </span>
+                    </div>
 
-          {/* Directory browser list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {dbLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', color: colors.primary, gap: '0.5rem' }}>
-                <RefreshCw size={20} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
-                <span style={{ fontWeight: 800 }}>Mundarija yangilanmoqda...</span>
-              </div>
-            ) : currentPath.length === 0 ? (
-              /* Root: Subject Folders */
-              subjects.length === 0 ? (
-                <div style={{
-                  padding: '4rem 2rem',
-                  textAlign: 'center',
-                  color: '#475569',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '1rem'
-                }}>
-                  <FolderOpen size={48} color="#cbd5e1" style={{ strokeWidth: 1.5 }} />
-                  <div>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.25rem 0' }}>
-                      Papka mundarijasi bo'sh
-                    </h4>
-                    <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, maxWidth: '280px', lineHeight: 1.4 }}>
-                      Tizimda testlar yo'qligi sababli papkalar yaratilmadi. Dastlab "Testlar" bo'limida yangi test qo'shing.
-                    </p>
+                    {/* Subject Children (Teachers) */}
+                    {isSubjExpanded && (
+                      <div style={{
+                        borderLeft: '2px solid #cbd5e1',
+                        marginLeft: '1.25rem',
+                        paddingLeft: '1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                        position: 'relative',
+                        paddingTop: '0.25rem',
+                        paddingBottom: '0.25rem'
+                      }}>
+                        {subjectTeachers.length === 0 ? (
+                          <div style={{ position: 'relative' }}>
+                            {/* Horizontal line for empty state */}
+                            <div style={{
+                              position: 'absolute',
+                              left: '-1.5rem',
+                              top: '50%',
+                              width: '1.25rem',
+                              height: '2px',
+                              background: '#cbd5e1'
+                            }} />
+                            <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '0.5rem' }}>
+                              O'qituvchilar mavjud emas
+                            </div>
+                          </div>
+                        ) : (
+                          subjectTeachers.map((teacher, tIdx) => {
+                            const teacherKey = `${subj}_${teacher}`;
+                            const isTeacherExpanded = !!expandedTeachers[teacherKey];
+                            const teacherTests = getTestsForTeacher(subj, teacher);
+
+                            return (
+                              <div key={tIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
+                                {/* Horizontal connector branch line to this teacher folder */}
+                                <div style={{
+                                  position: 'absolute',
+                                  left: '-1.5rem',
+                                  top: '1.25rem',
+                                  width: '1.25rem',
+                                  height: '2px',
+                                  background: '#cbd5e1'
+                                }} />
+
+                                {/* Teacher Folder Row */}
+                                <div
+                                  onClick={() => toggleTeacher(subj, teacher)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '0.65rem 0.85rem',
+                                    borderRadius: '10px',
+                                    border: isTeacherExpanded ? `1.5px solid ${colors.primary}` : '1.5px solid #e2e8f0',
+                                    background: isTeacherExpanded ? colors.bg : '#ffffff',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={e => {
+                                    if (!isTeacherExpanded) {
+                                      e.currentTarget.style.borderColor = colors.border;
+                                      e.currentTarget.style.background = colors.bg;
+                                    }
+                                  }}
+                                  onMouseLeave={e => {
+                                    if (!isTeacherExpanded) {
+                                      e.currentTarget.style.borderColor = '#e2e8f0';
+                                      e.currentTarget.style.background = '#ffffff';
+                                    }
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                                    <div style={{
+                                      color: colors.primary,
+                                      transform: isTeacherExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                      transition: 'transform 0.2s ease',
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}>
+                                      <ChevronRight size={14} style={{ strokeWidth: 2.5 }} />
+                                    </div>
+                                    <FolderOpen size={16} color={colors.primary} />
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 750, color: isTeacherExpanded ? colors.text : '#334155' }}>
+                                      {teacher}
+                                    </span>
+                                  </div>
+                                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>
+                                    {teacherTests.length} ta test
+                                  </span>
+                                </div>
+
+                                {/* Teacher Children (Tests list) */}
+                                {isTeacherExpanded && (
+                                  <div style={{
+                                    borderLeft: '2px solid #cbd5e1',
+                                    marginLeft: '1.1rem',
+                                    paddingLeft: '1.5rem',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.4rem',
+                                    position: 'relative',
+                                    paddingTop: '0.25rem',
+                                    paddingBottom: '0.25rem',
+                                    marginTop: '0.1rem'
+                                  }}>
+                                    {teacherTests.length === 0 ? (
+                                      <div style={{ position: 'relative' }}>
+                                        <div style={{
+                                          position: 'absolute',
+                                          left: '-1.5rem',
+                                          top: '50%',
+                                          width: '1.25rem',
+                                          height: '2px',
+                                          background: '#cbd5e1'
+                                        }} />
+                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '0.5rem' }}>
+                                          Testlar mavjud emas
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      teacherTests.map((test) => (
+                                        <div key={test.id} style={{ position: 'relative' }}>
+                                          {/* Horizontal connector branch line to this test */}
+                                          <div style={{
+                                            position: 'absolute',
+                                            left: '-1.5rem',
+                                            top: '1.1rem',
+                                            width: '1.25rem',
+                                            height: '2px',
+                                            background: '#cbd5e1'
+                                          }} />
+
+                                          {/* Test File Row */}
+                                          <div
+                                            onClick={() => setSelectedTest(test)}
+                                            style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'space-between',
+                                              padding: '0.6rem 0.85rem',
+                                              borderRadius: '10px',
+                                              border: '1.5px solid #e2e8f0',
+                                              background: '#ffffff',
+                                              cursor: 'pointer',
+                                              transition: 'all 0.15s ease'
+                                            }}
+                                            onMouseEnter={e => {
+                                              e.currentTarget.style.borderColor = colors.border;
+                                              e.currentTarget.style.background = colors.bg;
+                                            }}
+                                            onMouseLeave={e => {
+                                              e.currentTarget.style.borderColor = '#e2e8f0';
+                                              e.currentTarget.style.background = '#ffffff';
+                                            }}
+                                          >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                                              <FileText size={16} color="#94a3b8" />
+                                              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>
+                                                {test.name}
+                                              </span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
+                                              <span>{test.level} · {test.questions_json.length} ta kalit · {getScannedCount(test.id)} topshirildi</span>
+                                              <ChevronRight size={12} color="#cbd5e1" />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ) : (
-                subjects.map((subj, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => setCurrentPath([subj])}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '12px',
-                      border: '1px solid #f1f5f9',
-                      background: '#f8fafc',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = colors.border;
-                      e.currentTarget.style.background = colors.bg;
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = '#f1f5f9';
-                      e.currentTarget.style.background = '#f8fafc';
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <FolderOpen size={18} color={colors.primary} />
-                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>
-                        {subj}
-                      </span>
-                    </div>
-                    <ChevronRight size={14} color="#cbd5e1" />
-                  </div>
-                ))
-              )
-            ) : currentPath.length === 1 ? (
-              /* Level 1: Teacher Folders under Subject */
-              (() => {
-                const subject = currentPath[0];
-                const subjectTeachers = getTeachersForSubject(subject);
-                if (subjectTeachers.length === 0) {
-                  return (
-                    <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
-                      Ushbu fan ostida o'qituvchilar topilmadi
-                    </div>
-                  );
-                }
-                return subjectTeachers.map((teacher, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => setCurrentPath([subject, teacher])}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '12px',
-                      border: '1px solid #f1f5f9',
-                      background: '#f8fafc',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = colors.border;
-                      e.currentTarget.style.background = colors.bg;
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = '#f1f5f9';
-                      e.currentTarget.style.background = '#f8fafc';
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <FolderOpen size={18} color={colors.primary} />
-                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>
-                        {teacher}
-                      </span>
-                    </div>
-                    <ChevronRight size={14} color="#cbd5e1" />
-                  </div>
-                ));
-              })()
-            ) : (
-              /* Level 2: Tests under Teacher */
-              (() => {
-                const subject = currentPath[0];
-                const teacher = currentPath[1];
-                const teacherTests = getTestsForTeacher(subject, teacher);
-                if (teacherTests.length === 0) {
-                  return (
-                    <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
-                      Ushbu o'qituvchiga bog'liq testlar topilmadi
-                    </div>
-                  );
-                }
-                return teacherTests.map((test, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => setSelectedTest(test)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '12px',
-                      border: '1px solid #f1f5f9',
-                      background: '#f8fafc',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = colors.border;
-                      e.currentTarget.style.background = colors.bg;
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = '#f1f5f9';
-                      e.currentTarget.style.background = '#f8fafc';
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <FileText size={18} color="#94a3b8" />
-                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>
-                        {test.name}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
-                      <span>{test.level} · {test.questions_json.length} kalit</span>
-                      <ChevronRight size={14} color="#cbd5e1" />
-                    </div>
-                  </div>
-                ));
-              })()
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );
