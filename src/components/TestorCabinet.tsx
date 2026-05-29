@@ -52,49 +52,7 @@ const parseWeekToSortValue = (weekStr: string): number => {
   return 1000 + monthIdx * 100 + day;
 };
 
-// Fallback tests in case database has no data yet
-const DEFAULT_TESTS = [
-  { 
-    id: '1', 
-    name: 'Algebra - 1-Haftalik Test', 
-    subject: 'Matematika', 
-    created_at: new Date('2026-05-10').toISOString(), 
-    teacher_name: 'Mr. Alisher', 
-    level: '5-Sinf', 
-    questions_json: ["A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C", "D", "A", "B", "C"], 
-    student_count: 24 
-  },
-  { 
-    id: '2', 
-    name: 'Grammar - Grand Test 1', 
-    subject: 'Ingliz Tili', 
-    created_at: new Date('2026-05-15').toISOString(), 
-    teacher_name: 'Mrs. Elena', 
-    level: '6-Sinf', 
-    questions_json: ["A", "A", "B", "B", "C", "C", "D", "D", "A", "B", "C", "D", "A", "A", "B"], 
-    student_count: 18 
-  },
-  { 
-    id: '3', 
-    name: 'Geometriya - Choraklik Test', 
-    subject: 'Matematika', 
-    created_at: new Date('2026-05-20').toISOString(), 
-    teacher_name: 'Mrs. Nodira', 
-    level: '7-Sinf', 
-    questions_json: ["B", "B", "C", "C", "D", "D", "A", "A", "B", "B", "C", "C", "D", "D", "A"], 
-    student_count: 22 
-  },
-  { 
-    id: '4', 
-    name: 'Vocabulary - Weekly Quiz', 
-    subject: 'Ingliz Tili', 
-    created_at: new Date('2026-05-25').toISOString(), 
-    teacher_name: 'Mr. Jasur', 
-    level: '5-Sinf', 
-    questions_json: ["D", "C", "B", "A", "D", "C", "B", "A", "D", "C", "B", "A", "D", "C", "B"], 
-    student_count: 15 
-  }
-];
+// Fallback tests in case database has no data yet - REMOVED
 
 interface TestorCabinetProps {
   students: Student[];
@@ -129,6 +87,124 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   // Database tests state
   const [dbTests, setDbTests] = useState<any[]>([]);
   const [dbLoading, setDbLoading] = useState(true);
+
+  // States for adding a new test
+  const [showAddTestModal, setShowAddTestModal] = useState(false);
+  const [newTestName, setNewTestName] = useState('');
+  const [newTestSubject, setNewTestSubject] = useState<'Matematika' | 'Ingliz Tili'>('Matematika');
+  const [newTestTeacher, setNewTestTeacher] = useState('');
+  const [newTestLevel, setNewTestLevel] = useState('5-Sinf');
+  const [newTestQuestionsCount, setNewTestQuestionsCount] = useState(15);
+  const [isCreatingTest, setIsCreatingTest] = useState(false);
+
+  // Filter teachers list based on active subject selection in the modal
+  const filteredTeachersForNewTest = useMemo(() => {
+    const filterSubject = newTestSubject === 'Matematika' ? 'MATH' : 'ENG';
+    return teachers.filter(t => t.subject === filterSubject);
+  }, [newTestSubject, teachers]);
+
+  // Set default teacher when filtered list changes or when modal is opened
+  useEffect(() => {
+    if (filteredTeachersForNewTest.length > 0) {
+      if (!filteredTeachersForNewTest.some(t => t.name === newTestTeacher)) {
+        setNewTestTeacher(filteredTeachersForNewTest[0].name);
+      }
+    } else {
+      setNewTestTeacher('');
+    }
+  }, [filteredTeachersForNewTest]);
+
+  const openAddTestModal = () => {
+    setNewTestName('');
+    setNewTestSubject('Matematika');
+    const mathTeachers = teachers.filter(t => t.subject === 'MATH');
+    setNewTestTeacher(mathTeachers.length > 0 ? mathTeachers[0].name : '');
+    setNewTestLevel('5-Sinf');
+    setNewTestQuestionsCount(15);
+    setShowAddTestModal(true);
+  };
+
+  const handleCreateTest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTestName.trim()) {
+      alert("Iltimos, test nomini kiriting!");
+      return;
+    }
+    if (!newTestTeacher) {
+      alert("Iltimos, o'qituvchini tanlang!");
+      return;
+    }
+    if (newTestQuestionsCount < 1 || newTestQuestionsCount > 100) {
+      alert("Savollar soni 1 va 100 oralig'ida bo'lishi kerak!");
+      return;
+    }
+
+    setIsCreatingTest(true);
+    const questionsArray = Array(newTestQuestionsCount).fill("A");
+
+    const newTestData = {
+      name: newTestName.trim(),
+      subject: newTestSubject,
+      teacher_name: newTestTeacher,
+      level: newTestLevel,
+      questions_json: questionsArray,
+      student_count: 0
+    };
+
+    try {
+      // 1. Try to insert to database
+      const { data, error } = await supabaseTestor
+        .from('public_tests')
+        .insert([newTestData])
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      // If database insert succeeded:
+      if (data && data.length > 0) {
+        const created = {
+          id: data[0].id.toString(),
+          name: data[0].name || newTestData.name,
+          subject: data[0].subject || newTestData.subject,
+          created_at: data[0].created_at || new Date().toISOString(),
+          teacher_name: data[0].teacher_name || newTestData.teacher_name,
+          level: data[0].level || newTestData.level,
+          questions_json: Array.isArray(data[0].questions_json) 
+            ? data[0].questions_json 
+            : newTestData.questions_json,
+          student_count: data[0].student_count || 0
+        };
+        setDbTests(prev => [created, ...prev]);
+        alert("Yangi test muvaffaqiyatli yaratildi va ma'lumotlar bazasiga saqlandi!");
+      } else {
+        // Fallback in case of no returning data but no error
+        const localId = 'local_' + Date.now();
+        const localCreated = {
+          id: localId,
+          ...newTestData,
+          created_at: new Date().toISOString()
+        };
+        setDbTests(prev => [localCreated, ...prev]);
+        alert("Yangi test muvaffaqiyatli yaratildi!");
+      }
+    } catch (err: any) {
+      console.warn("DB insert failed, falling back to local session memory:", err.message || err);
+      // Fallback: create locally
+      const localId = 'local_' + Date.now();
+      const localCreated = {
+        id: localId,
+        ...newTestData,
+        created_at: new Date().toISOString()
+      };
+      setDbTests(prev => [localCreated, ...prev]);
+      alert("Eslatma: Ma'lumotlar bazasiga yozish imkoni bo'lmadi (RLS ruxsati). Test vaqtinchalik xotiraga saqlandi va ushbu seans davomida ishlatilishi mumkin!");
+    } finally {
+      setIsCreatingTest(false);
+      setShowAddTestModal(false);
+    }
+  };
 
   // Sync isMobile on resizing
   useEffect(() => {
@@ -177,11 +253,11 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         });
         setDbTests(formatted);
       } else {
-        setDbTests(DEFAULT_TESTS);
+        setDbTests([]);
       }
     } catch (err) {
       console.error('Error fetching tests from secondary DB:', err);
-      setDbTests(DEFAULT_TESTS);
+      setDbTests([]);
     } finally {
       setDbLoading(false);
     }
@@ -837,11 +913,32 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             }}
           >
             <option value="ALL">Barcha sinflar</option>
-            <option value="5-Sinf">5-sinf</option>
-            <option value="6-Sinf">6-sinf</option>
-            <option value="7-Sinf">7-sinf</option>
-            <option value="8-Sinf">8-sinf</option>
+            {['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'].map(cls => (
+              <option key={cls} value={cls}>{cls}</option>
+            ))}
           </select>
+          <button
+            onClick={openAddTestModal}
+            style={{
+              background: colors.primary,
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '0.65rem 1.25rem',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'background 0.2s',
+              boxShadow: `0 4px 12px ${colors.primary}20`
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = `${colors.primary}dd`}
+            onMouseLeave={e => e.currentTarget.style.background = colors.primary}
+          >
+            <span>+ Yangi test</span>
+          </button>
         </div>
 
         {/* Tests grid list */}
@@ -849,6 +946,64 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', color: colors.primary, gap: '0.5rem' }}>
             <RefreshCw size={20} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
             <span style={{ fontWeight: 800 }}>Ma'lumotlar yuklanmoqda...</span>
+          </div>
+        ) : dbTests.length === 0 ? (
+          <div style={{
+            padding: '4rem 2rem',
+            textAlign: 'center',
+            background: '#ffffff',
+            border: '2px dashed #cbd5e1',
+            borderRadius: '24px',
+            color: '#475569',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '1.25rem',
+            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01)'
+          }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              background: colors.bg,
+              color: colors.primary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <BookOpen size={28} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 850, margin: '0 0 0.35rem 0', color: '#0f172a' }}>
+                Hozircha testlar mavjud emas
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0, maxWidth: '320px', lineHeight: 1.4 }}>
+                Ma'lumotlar bazasida hech qanday test topilmadi. OMR varaqlarini skanerlashdan oldin yangi test yarating.
+              </p>
+            </div>
+            <button
+              onClick={openAddTestModal}
+              style={{
+                background: colors.primary,
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '0.7rem 1.5rem',
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'background 0.2s',
+                boxShadow: `0 4px 12px ${colors.primary}20`
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = `${colors.primary}dd`}
+              onMouseLeave={e => e.currentTarget.style.background = colors.primary}
+            >
+              <span>+ Yangi test yaratish</span>
+            </button>
           </div>
         ) : filteredTests.length === 0 ? (
           <div style={{
@@ -859,7 +1014,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             borderRadius: '18px',
             color: '#64748b'
           }}>
-            Yozuvlar topilmadi. Qidiruv so'zini o'zgartirib ko'ring.
+            Filter bo'yicha hech qanday test topilmadi. Qidiruv so'zini yoki sinfni o'zgartirib ko'ring.
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
@@ -1034,8 +1189,25 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             ) : currentPath.length === 0 ? (
               /* Root: Subject Folders */
               subjects.length === 0 ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
-                  Hozircha fanlar topilmadi
+                <div style={{
+                  padding: '4rem 2rem',
+                  textAlign: 'center',
+                  color: '#475569',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '1rem'
+                }}>
+                  <FolderOpen size={48} color="#cbd5e1" style={{ strokeWidth: 1.5 }} />
+                  <div>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.25rem 0' }}>
+                      Papka mundarijasi bo'sh
+                    </h4>
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, maxWidth: '280px', lineHeight: 1.4 }}>
+                      Tizimda testlar yo'qligi sababli papkalar yaratilmadi. Dastlab "Testlar" bo'limida yangi test qo'shing.
+                    </p>
+                  </div>
                 </div>
               ) : (
                 subjects.map((subj, idx) => (
@@ -1872,6 +2044,14 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                       50% { top: 85%; }
                       100% { top: 15%; }
                     }
+                    @keyframes fadeIn {
+                      from { opacity: 0; }
+                      to { opacity: 1; }
+                    }
+                    @keyframes slideUp {
+                      from { transform: translateY(16px); opacity: 0; }
+                      to { transform: translateY(0); opacity: 1; }
+                    }
                   `}</style>
                 </div>
               </div>
@@ -2241,6 +2421,233 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     );
   };
 
+  // MODAL D: ADD NEW TEST MODAL
+  const renderAddTestModal = () => {
+    if (!showAddTestModal) return null;
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(15, 23, 42, 0.5)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1100,
+        padding: '1rem',
+        animation: 'fadeIn 0.2s ease-out'
+      }} onClick={() => setShowAddTestModal(false)}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          width: '100%',
+          maxWidth: '460px',
+          maxHeight: '90vh',
+          padding: '1.75rem',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+          boxSizing: 'border-box',
+          animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+        }} onClick={e => e.stopPropagation()}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: colors.primary }}>
+              <BookOpen size={18} />
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 850, color: '#0f172a', margin: 0 }}>Yangi test qo'shish</h3>
+            </div>
+            <button 
+              onClick={() => setShowAddTestModal(false)}
+              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Form Content */}
+          <form onSubmit={handleCreateTest} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', flex: 1, paddingRight: '0.25rem' }}>
+            {/* Test nomi */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Test nomi:</label>
+              <input
+                type="text"
+                placeholder="Masalan: Algebra - 2-Haftalik Test"
+                value={newTestName}
+                onChange={(e) => setNewTestName(e.target.value)}
+                required
+                style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid #e2e8f0',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  background: '#f8fafc'
+                }}
+                onFocus={e => e.target.style.borderColor = colors.primary}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+              />
+            </div>
+
+            {/* Subject */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Fan yo'nalishi:</label>
+              <select
+                value={newTestSubject}
+                onChange={(e) => setNewTestSubject(e.target.value as 'Matematika' | 'Ingliz Tili')}
+                style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid #e2e8f0',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  color: '#334155',
+                  background: '#ffffff',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="Matematika">Matematika</option>
+                <option value="Ingliz Tili">Ingliz Tili</option>
+              </select>
+            </div>
+
+            {/* Teacher */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>O'qituvchi:</label>
+              {filteredTeachersForNewTest.length === 0 ? (
+                <div style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 600 }}>
+                  Ushbu fan bo'yicha o'qituvchilar topilmadi. Avval o'qituvchilarni qo'shing.
+                </div>
+              ) : (
+                <select
+                  value={newTestTeacher}
+                  onChange={(e) => setNewTestTeacher(e.target.value)}
+                  style={{
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: '1.5px solid #e2e8f0',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    color: '#334155',
+                    background: '#ffffff',
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  {filteredTeachersForNewTest.map(t => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Level/Class */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Sinf / Guruh:</label>
+              <select
+                value={newTestLevel}
+                onChange={(e) => setNewTestLevel(e.target.value)}
+                style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid #e2e8f0',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  color: '#334155',
+                  background: '#ffffff',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                {['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'].map(cls => (
+                  <option key={cls} value={cls}>{cls}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Questions count */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Savollar soni:</label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={newTestQuestionsCount}
+                onChange={(e) => setNewTestQuestionsCount(parseInt(e.target.value, 10) || 15)}
+                required
+                style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid #e2e8f0',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  background: '#f8fafc'
+                }}
+                onFocus={e => e.target.style.borderColor = colors.primary}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+              />
+            </div>
+
+            {/* Form Actions */}
+            <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowAddTestModal(false)}
+                style={{
+                  flex: 1,
+                  background: '#f1f5f9',
+                  color: '#475569',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '0.75rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: 'pointer'
+                }}
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="submit"
+                disabled={isCreatingTest || filteredTeachersForNewTest.length === 0}
+                style={{
+                  flex: 1,
+                  background: (isCreatingTest || filteredTeachersForNewTest.length === 0) ? '#cbd5e1' : colors.primary,
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '0.75rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: (isCreatingTest || filteredTeachersForNewTest.length === 0) ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {isCreatingTest ? (
+                  <>
+                    <RefreshCw size={14} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                    <span>Yaratilmoqda...</span>
+                  </>
+                ) : (
+                  <span>Yaratish</span>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   const currentTabContent = () => {
     switch (activeTab) {
       case 'tests': return renderTestsView();
@@ -2356,6 +2763,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         {renderEditKeyModal()}
         {renderScanModal()}
         {renderReviewModal()}
+        {renderAddTestModal()}
       </div>
     );
   }
@@ -2479,6 +2887,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       {renderEditKeyModal()}
       {renderScanModal()}
       {renderReviewModal()}
+      {renderAddTestModal()}
     </div>
   );
 };
