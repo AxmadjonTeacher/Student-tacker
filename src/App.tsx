@@ -499,10 +499,10 @@ function App() {
           mathGrandTests: newS.mathGrandTests || existing.mathGrandTests,
           teacher: newS.teacher || existing.teacher,
           mathTeacher: newS.mathTeacher || existing.mathTeacher,
-          engScore: existing.engScore,
-          mathScore: existing.mathScore,
-          attendance: existing.attendance,
-          homework: existing.homework,
+          engScore: activeSubject === 'ALL' ? newS.engScore : existing.engScore,
+          mathScore: activeSubject === 'ALL' ? newS.mathScore : existing.mathScore,
+          attendance: activeSubject === 'ALL' ? newS.attendance : existing.attendance,
+          homework: activeSubject === 'ALL' ? newS.homework : existing.homework,
           passcode: newS.passcode || existing.passcode,
           parentPhone: newS.parentPhone || existing.parentPhone
         };
@@ -565,10 +565,10 @@ function App() {
               finalUpsertedWeeks.push({
                 student_id: s.id,
                 week: selectedWeek,
-                eng_score: newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score ?? s.engScore ?? 0),
-                math_score: newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score ?? s.mathScore ?? 0),
-                attendance: newS.attendance !== undefined ? newS.attendance : (existingWeekRecord?.attendance ?? s.attendance ?? 1),
-                homework: newS.homework !== undefined ? newS.homework : (existingWeekRecord?.homework ?? s.homework ?? 1),
+                eng_score: activeSubject === 'ALL' && newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score ?? s.engScore ?? 0),
+                math_score: activeSubject === 'ALL' && newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score ?? s.mathScore ?? 0),
+                attendance: activeSubject === 'ALL' && newS.attendance !== undefined ? newS.attendance : (existingWeekRecord?.attendance ?? s.attendance ?? 1),
+                homework: activeSubject === 'ALL' && newS.homework !== undefined ? newS.homework : (existingWeekRecord?.homework ?? s.homework ?? 1),
                 starting_level: activeSubject === 'ENG' ? (newS.startingLevel || existingWeekRecord?.starting_level || s.startingLevel || 'Level 1') : (existingWeekRecord?.starting_level || s.startingLevel || 'Level 1'),
                 current_level: activeSubject === 'ENG' ? (newS.currentLevel || existingWeekRecord?.current_level || s.currentLevel || 'Level 1') : (existingWeekRecord?.current_level || s.currentLevel || 'Level 1'),
                 grand_tests: activeSubject === 'ENG' ? (newS.grandTests || existingWeekRecord?.grand_tests || s.grandTests || []) : (existingWeekRecord?.grand_tests || s.grandTests || []),
@@ -616,18 +616,18 @@ function App() {
                 finalUpsertedWeeks.push({
                   student_id: matchedDb.id,
                   week: selectedWeek,
-                  eng_score: newS?.engScore ?? 0,
-                  math_score: newS?.mathScore ?? 0,
-                  attendance: newS?.attendance ?? 1,
-                  homework: newS?.homework ?? 1,
-                  starting_level: newS?.startingLevel || 'Level 1',
-                  current_level: newS?.currentLevel || 'Level 1',
-                  grand_tests: newS?.grandTests || [],
-                  math_starting_level: newS?.mathStartingLevel || 'Level 1',
-                  math_current_level: newS?.mathCurrentLevel || 'Level 1',
-                  math_grand_tests: newS?.mathGrandTests || []
-                });
-              }
+                eng_score: activeSubject === 'ALL' ? (newS?.engScore ?? 0) : 0,
+                math_score: activeSubject === 'ALL' ? (newS?.mathScore ?? 0) : 0,
+                attendance: activeSubject === 'ALL' ? (newS?.attendance ?? 1) : 1,
+                homework: activeSubject === 'ALL' ? (newS?.homework ?? 1) : 1,
+                starting_level: newS?.startingLevel || 'Level 1',
+                current_level: newS?.currentLevel || 'Level 1',
+                grand_tests: newS?.grandTests || [],
+                math_starting_level: newS?.mathStartingLevel || 'Level 1',
+                math_current_level: newS?.mathCurrentLevel || 'Level 1',
+                math_grand_tests: newS?.mathGrandTests || []
+              });
+            }
             }
           });
         }
