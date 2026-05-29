@@ -817,6 +817,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         setCameraStream(stream);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(e => console.error("Camera video play error:", e));
         }
       } catch (err) {
         console.error('Camera capture error:', err);
@@ -2538,22 +2539,23 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         {/* Render Scanner Viewfinder View */}
         {scanStatus !== 'success' && (
           <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-            {/* Real Video Frame */}
-            {cameraStream ? (
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  position: 'absolute',
-                  top: 0, left: 0
-                }}
-              />
-            ) : (
+            {/* Real Video Frame (always mounted to guarantee Ref is bound correctly) */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                position: 'absolute',
+                top: 0, left: 0,
+                display: cameraStream ? 'block' : 'none'
+              }}
+            />
+
+            {!cameraStream && (
               // Camera fallback simulation panel
               <div style={{
                 flex: 1,
@@ -2565,7 +2567,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 padding: '2rem',
                 gap: '1.5rem',
                 background: '#0f172a',
-                textAlign: 'center'
+                textAlign: 'center',
+                zIndex: 5
               }}>
                 <div style={{
                   width: '64px',
