@@ -24,6 +24,22 @@ import type { Student, Teacher } from '../types';
 import StudentTable from './StudentTable';
 import iconLight from '../assets/icon-light.png';
 import { supabaseTestor } from '../supabase_testor';
+import { 
+  findMarkerCentroid, 
+  warpQuadrilateral, 
+  parseOMRSheet, 
+  QUESTIONS_LEFT_X,
+  QUESTIONS_LEFT_Y_START,
+  QUESTIONS_LEFT_Y_STEP,
+  QUESTIONS_RIGHT_X,
+  QUESTIONS_RIGHT_Y_START,
+  QUESTIONS_RIGHT_Y_STEP,
+  STUDENT_ID_X,
+  STUDENT_ID_Y_START,
+  STUDENT_ID_Y_STEP,
+  BUBBLE_RADIUS
+} from '../utils/omrScanner';
+import type { Point } from '../utils/omrScanner';
 
 // Normalization and sorting helpers
 const getClassGroup = (cls: string): string => {
@@ -741,6 +757,14 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const [scanStatus, setScanStatus] = useState<'aligning' | 'scanning' | 'success'>('aligning');
   const [scanProgress, setScanProgress] = useState(0);
 
+  // Corner markers detection feedback
+  const [detectedCorners, setDetectedCorners] = useState<{
+    tl: Point | null;
+    tr: Point | null;
+    bl: Point | null;
+    br: Point | null;
+  }>({ tl: null, tr: null, bl: null, br: null });
+
   // Scan OMR validation state
   const [scannedOMRSheet, setScannedOMRSheet] = useState<any | null>(null);
   const [selectedStudentForScan, setSelectedStudentForScan] = useState<string>('');
@@ -785,6 +809,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       try {
         setScanStatus('aligning');
         setScanProgress(0);
+        setDetectedCorners({ tl: null, tr: null, bl: null, br: null });
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
         });
@@ -808,6 +833,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         cameraStream.getTracks().forEach(track => track.stop());
         setCameraStream(null);
       }
+      setDetectedCorners({ tl: null, tr: null, bl: null, br: null });
     }
 
     return () => {
@@ -817,12 +843,75 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     };
   }, [showScanModal]);
 
-  // Simulate OMR scan timeline (Runs for camera stream OR simulation fallback)
+  // Real-time camera frames loop using RequestAnimationFrame
+  useEffect(() => {
+    if (!showScanModal || !cameraStream || scanStatus !== 'aligning') {
+      setDetectedCorners({ tl: null, tr: null, bl: null, br: null });
+      return;
+    }
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    let active = true;
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 800;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+
+    // We will require stable lock for 5 consecutive frames
+    let consecutiveSuccessFrames = 0;
+
+    // Search centers in 600x800 coordinate space
+    const searchTL = { x: 90, y: 110 };
+    const searchTR = { x: 510, y: 110 };
+    const searchBL = { x: 90, y: 690 };
+    const searchBR = { x: 510, y: 690 };
+    const radius = 75;
+
+    const processFrame = () => {
+      if (!active) return;
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        // Draw video frame to our 600x800 processing canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Find markers
+        const tl = findMarkerCentroid(ctx, searchTL.x, searchTL.y, radius);
+        const tr = findMarkerCentroid(ctx, searchTR.x, searchTR.y, radius);
+        const bl = findMarkerCentroid(ctx, searchBL.x, searchBL.y, radius);
+        const br = findMarkerCentroid(ctx, searchBR.x, searchBR.y, radius);
+
+        setDetectedCorners({ tl, tr, bl, br });
+
+        if (tl && tr && bl && br) {
+          consecutiveSuccessFrames++;
+          if (consecutiveSuccessFrames >= 5) {
+            // Success! Stop loop, perform warp and parse
+            active = false;
+            handleGradeOMRFrame(ctx, [tl, tr, bl, br]);
+            return;
+          }
+        } else {
+          consecutiveSuccessFrames = 0;
+        }
+      }
+
+      requestAnimationFrame(processFrame);
+    };
+
+    requestAnimationFrame(processFrame);
+
+    return () => {
+      active = false;
+    };
+  }, [showScanModal, cameraStream, scanStatus]);
+
+  // Trigger OMR parser simulation if camera stream is not available
   useEffect(() => {
     let timer: any = null;
     let progressTimer: any = null;
     
-    if (showScanModal && scanStatus === 'aligning') {
+    if (showScanModal && !cameraStream && scanStatus === 'aligning') {
       timer = setTimeout(() => {
         setScanStatus('scanning');
         
@@ -844,42 +933,61 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       if (timer) clearTimeout(timer);
       if (progressTimer) clearInterval(progressTimer);
     };
-  }, [showScanModal, scanStatus]);
+  }, [showScanModal, cameraStream, scanStatus, selectedSampleSheet]);
 
-  // Perform grading and student association simulation
-  const handleTriggerOMRGrade = (sample?: any) => {
+  // Dynamic grading frame processor
+  const handleGradeOMRFrame = (ctx: CanvasRenderingContext2D, corners: [Point, Point, Point, Point]) => {
     if (!selectedTest) return;
 
-    const sheet = sample || selectedSampleSheet || SAMPLE_OMR_SHEETS[0];
+    // 1. Create a 646 x 903 destination canvas
+    const warpCanvas = document.createElement('canvas');
+    warpCanvas.width = 646;
+    warpCanvas.height = 903;
+    
+    // 2. Warp the frame to the destination canvas
+    warpQuadrilateral(ctx, corners, warpCanvas);
+    
+    // 3. Parse the bubbled answers & ID
+    const parsed = parseOMRSheet(warpCanvas);
+    
+    // 4. Grade against the selected test key
     const testKeys = selectedTest.questions_json || Array(15).fill("A");
     const numQuestions = testKeys.length;
-
-    let studentAnswers = [...sheet.answers];
+    
+    let studentAnswers = [...parsed.answers];
     if (studentAnswers.length < numQuestions) {
       studentAnswers = [...studentAnswers, ...Array(numQuestions - studentAnswers.length).fill("A")];
     } else if (studentAnswers.length > numQuestions) {
       studentAnswers = studentAnswers.slice(0, numQuestions);
     }
-
-    // Grade OMR
+    
     let correct = 0;
     studentAnswers.forEach((ans, idx) => {
-      if (ans === testKeys[idx]) correct++;
+      if (ans && ans === testKeys[idx]) correct++;
     });
 
+    // 5. Crop the signature region from the warped canvas
+    const sigCanvas = document.createElement('canvas');
+    sigCanvas.width = 560;
+    sigCanvas.height = 60;
+    const sigCtx = sigCanvas.getContext('2d')!;
+    sigCtx.drawImage(warpCanvas, 40, 30, 560, 60, 0, 0, 560, 60);
+    const signatureDataURL = sigCanvas.toDataURL('image/jpeg', 0.85);
+
+    // 6. Set results state
     setScannedOMRSheet({
-      studentIdCode: sheet.id,
+      studentIdCode: parsed.studentIdCode,
       answers: studentAnswers,
       correctCount: correct,
       totalQuestions: numQuestions,
       percentage: Math.round((correct / numQuestions) * 100),
-      signatureImg: sheet.signatureImg
+      signatureImg: signatureDataURL
     });
 
-    // Auto-map student in class list: AL + 3 digit code (e.g. AL557)
+    // 7. Auto-map student in class list: AL + 3 digit code (e.g. AL557)
     const matchingStudent = students.find(s => {
       const matchNum = s.id.match(/^AL(\d{3})$/);
-      return matchNum && matchNum[1] === sheet.id;
+      return matchNum && matchNum[1] === parsed.studentIdCode;
     });
 
     if (matchingStudent) {
@@ -890,6 +998,133 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     setScanStatus('success');
   };
+
+  // Perform grading and student association simulation using real OMR Canvas Parser
+  const handleTriggerOMRGrade = (sample?: any) => {
+    if (!selectedTest) return;
+
+    const sheet = sample || selectedSampleSheet || SAMPLE_OMR_SHEETS[0];
+    const testKeys = selectedTest.questions_json || Array(15).fill("A");
+    const numQuestions = testKeys.length;
+
+    // Load OMR template image, draw mock answers onto it, then parse
+    const img = new Image();
+    img.src = '/media__1780067393687.jpg';
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 646;
+      canvas.height = 903;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+
+      // Draw bubbles
+      ctx.fillStyle = '#1e293b';
+      const options = ['A', 'B', 'C', 'D'];
+
+      // Draw answers
+      const numQs = Math.min(sheet.answers.length, 15);
+      for (let i = 0; i < numQs; i++) {
+        const ans = sheet.answers[i];
+        if (!ans) continue;
+        
+        const colIdx = options.indexOf(ans);
+        if (colIdx === -1) continue;
+        
+        let cx = 0;
+        let cy = 0;
+        if (i < 13) {
+          cx = QUESTIONS_LEFT_X[colIdx];
+          cy = QUESTIONS_LEFT_Y_START + i * QUESTIONS_LEFT_Y_STEP;
+        } else {
+          cx = QUESTIONS_RIGHT_X[colIdx];
+          cy = QUESTIONS_RIGHT_Y_START + (i - 13) * QUESTIONS_RIGHT_Y_STEP;
+        }
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, BUBBLE_RADIUS - 1.5, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      
+      // Draw student ID digits
+      const digits = sheet.id.split('');
+      for (let col = 0; col < Math.min(digits.length, 3); col++) {
+        const digit = parseInt(digits[col], 10);
+        if (isNaN(digit)) continue;
+        
+        const cx = STUDENT_ID_X[col];
+        const cy = STUDENT_ID_Y_START + digit * STUDENT_ID_Y_STEP;
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, BUBBLE_RADIUS - 2, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+
+      // Parse with the real OMR Scanner!
+      const parsed = parseOMRSheet(canvas);
+
+      let studentAnswers = [...parsed.answers];
+      if (studentAnswers.length < numQuestions) {
+        studentAnswers = [...studentAnswers, ...Array(numQuestions - studentAnswers.length).fill("A")];
+      } else if (studentAnswers.length > numQuestions) {
+        studentAnswers = studentAnswers.slice(0, numQuestions);
+      }
+
+      let correct = 0;
+      studentAnswers.forEach((ans, idx) => {
+        if (ans && ans === testKeys[idx]) correct++;
+      });
+
+      // Crop the signature area or generate text-drawn signature
+      const sigCanvas = document.createElement('canvas');
+      sigCanvas.width = 560;
+      sigCanvas.height = 60;
+      const sigCtx = sigCanvas.getContext('2d')!;
+
+      // Render simulated signature
+      sigCtx.fillStyle = '#ffffff';
+      sigCtx.fillRect(0, 0, 560, 60);
+      sigCtx.font = '28px Caveat, cursive';
+      sigCtx.fillStyle = '#1e3a8a';
+      sigCtx.textAlign = 'center';
+      sigCtx.textBaseline = 'middle';
+      sigCtx.fillText(sheet.name || 'Simulated Signature', 280, 30);
+
+      // If the template image is loaded and it's a specific student, crop signature from a signature region if possible
+      if (sheet.id === '557') {
+        const sigImg = new Image();
+        sigImg.src = '/media__1780067393687.jpg';
+        sigImg.onload = () => {
+          sigCtx.drawImage(sigImg, 40, 30, 560, 60, 0, 0, 560, 60);
+          setScannedOMRSheet((prev: any) => prev ? { ...prev, signatureImg: sigCanvas.toDataURL('image/jpeg', 0.85) } : prev);
+        };
+      }
+
+      setScannedOMRSheet({
+        studentIdCode: parsed.studentIdCode,
+        answers: studentAnswers,
+        correctCount: correct,
+        totalQuestions: numQuestions,
+        percentage: Math.round((correct / numQuestions) * 100),
+        signatureImg: sigCanvas.toDataURL('image/jpeg', 0.85)
+      });
+
+      // Auto-map student in class list: AL + 3 digit code (e.g. AL557)
+      const matchingStudent = students.find(s => {
+        const matchNum = s.id.match(/^AL(\d{3})$/);
+        return matchNum && matchNum[1] === parsed.studentIdCode;
+      });
+
+      if (matchingStudent) {
+        setSelectedStudentForScan(matchingStudent.id);
+      } else {
+        setSelectedStudentForScan('');
+      }
+
+      setScanStatus('success');
+    };
+  };
+
 
   // Save scanned paper sheet results
   const handleSaveScannedSheet = async () => {
@@ -2469,40 +2704,88 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     top: 0, left: 0,
                     width: '56px', height: '56px',
-                    borderTop: '3px solid #22c55e',
-                    borderLeft: '3px solid #22c55e',
-                    borderTopLeftRadius: '16px'
-                  }} />
+                    borderTop: `3.5px solid ${detectedCorners.tl ? '#10b981' : '#ef4444'}`,
+                    borderLeft: `3.5px solid ${detectedCorners.tl ? '#10b981' : '#ef4444'}`,
+                    borderTopLeftRadius: '16px',
+                    transition: 'border-color 0.15s'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '-6px', left: '-6px',
+                      width: '12px', height: '12px',
+                      borderRadius: '50%',
+                      background: detectedCorners.tl ? '#10b981' : '#ef4444',
+                      border: '2px solid #ffffff',
+                      boxShadow: '0 0 6px rgba(0,0,0,0.3)',
+                      animation: detectedCorners.tl ? 'none' : 'pulse 1.5s infinite'
+                    }} />
+                  </div>
                   
                   {/* Top-Right Bracket */}
                   <div style={{
                     position: 'absolute',
                     top: 0, right: 0,
                     width: '56px', height: '56px',
-                    borderTop: '3px solid #22c55e',
-                    borderRight: '3px solid #22c55e',
-                    borderTopRightRadius: '16px'
-                  }} />
+                    borderTop: `3.5px solid ${detectedCorners.tr ? '#10b981' : '#ef4444'}`,
+                    borderRight: `3.5px solid ${detectedCorners.tr ? '#10b981' : '#ef4444'}`,
+                    borderTopRightRadius: '16px',
+                    transition: 'border-color 0.15s'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '-6px', right: '-6px',
+                      width: '12px', height: '12px',
+                      borderRadius: '50%',
+                      background: detectedCorners.tr ? '#10b981' : '#ef4444',
+                      border: '2px solid #ffffff',
+                      boxShadow: '0 0 6px rgba(0,0,0,0.3)',
+                      animation: detectedCorners.tr ? 'none' : 'pulse 1.5s infinite'
+                    }} />
+                  </div>
 
                   {/* Bottom-Left Bracket */}
                   <div style={{
                     position: 'absolute',
                     bottom: 0, left: 0,
                     width: '56px', height: '56px',
-                    borderBottom: '3px solid #22c55e',
-                    borderLeft: '3px solid #22c55e',
-                    borderBottomLeftRadius: '16px'
-                  }} />
+                    borderBottom: `3.5px solid ${detectedCorners.bl ? '#10b981' : '#ef4444'}`,
+                    borderLeft: `3.5px solid ${detectedCorners.bl ? '#10b981' : '#ef4444'}`,
+                    borderBottomLeftRadius: '16px',
+                    transition: 'border-color 0.15s'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '-6px', left: '-6px',
+                      width: '12px', height: '12px',
+                      borderRadius: '50%',
+                      background: detectedCorners.bl ? '#10b981' : '#ef4444',
+                      border: '2px solid #ffffff',
+                      boxShadow: '0 0 6px rgba(0,0,0,0.3)',
+                      animation: detectedCorners.bl ? 'none' : 'pulse 1.5s infinite'
+                    }} />
+                  </div>
 
                   {/* Bottom-Right Bracket */}
                   <div style={{
                     position: 'absolute',
                     bottom: 0, right: 0,
                     width: '56px', height: '56px',
-                    borderBottom: '3px solid #22c55e',
-                    borderRight: '3px solid #22c55e',
-                    borderBottomRightRadius: '16px'
-                  }} />
+                    borderBottom: `3.5px solid ${detectedCorners.br ? '#10b981' : '#ef4444'}`,
+                    borderRight: `3.5px solid ${detectedCorners.br ? '#10b981' : '#ef4444'}`,
+                    borderBottomRightRadius: '16px',
+                    transition: 'border-color 0.15s'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '-6px', right: '-6px',
+                      width: '12px', height: '12px',
+                      borderRadius: '50%',
+                      background: detectedCorners.br ? '#10b981' : '#ef4444',
+                      border: '2px solid #ffffff',
+                      boxShadow: '0 0 6px rgba(0,0,0,0.3)',
+                      animation: detectedCorners.br ? 'none' : 'pulse 1.5s infinite'
+                    }} />
+                  </div>
 
                   {/* Guide instruction card */}
                   <div style={{
@@ -2546,6 +2829,11 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                       0% { top: 15%; }
                       50% { top: 85%; }
                       100% { top: 15%; }
+                    }
+                    @keyframes pulse {
+                      0% { transform: scale(0.85); opacity: 0.5; }
+                      50% { transform: scale(1.15); opacity: 1; }
+                      100% { transform: scale(0.85); opacity: 0.5; }
                     }
                   `}</style>
                 </div>
