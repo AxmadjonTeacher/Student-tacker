@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap');
+
 :root {
   --bg-main: #f9f8f3; /* Creamy beige background */
   --bg-card: #ffffff;
@@ -11,6 +13,11 @@
   --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   --backdrop-blur: blur(12px);
   --font-main: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+.handwritten-signature {
+  font-family: 'Caveat', cursive, sans-serif;
+  font-weight: 700;
 }
 
 * {

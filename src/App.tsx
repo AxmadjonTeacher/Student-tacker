@@ -59,14 +59,10 @@ export const formatDateLabel = (dateStr: string): string => {
   return `${day}-${monthName}`;
 };
 
-// Helper to generate a random ID (AL + 5 uppercase letters/numbers)
+// Helper to generate a random ID (AL + 3 digits from 100 to 999)
 export const generateRandomId = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = 'AL';
-  for (let i = 0; i < 5; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+  const num = Math.floor(Math.random() * 900) + 100; // 100 to 999
+  return `AL${num}`;
 };
 
 // Helper to generate a random passcode (7 alphanumeric characters)
@@ -302,8 +298,100 @@ function App() {
     };
   }, []);
 
-  const fetchAllData = async () => {
+  const migrateStudentIdsIfNeeded = async (loadedStudents: Student[]) => {
+    const oldStudents = loadedStudents.filter(s => !/^AL\d{3}$/.test(s.id));
+    if (oldStudents.length === 0) return;
+
+    console.log(`Starting migration for ${oldStudents.length} students with old ID formats...`);
+    
+    const usedDigits = new Set<string>();
+    loadedStudents.forEach(s => {
+      const match = s.id.match(/^AL(\d{3})$/);
+      if (match) usedDigits.add(match[1]);
+    });
+
+    const generateUnique3DigitId = () => {
+      let num = Math.floor(Math.random() * 900) + 100;
+      while (usedDigits.has(num.toString())) {
+        num = Math.floor(Math.random() * 900) + 100;
+      }
+      usedDigits.add(num.toString());
+      return `AL${num}`;
+    };
+
+    const updates: { oldId: string, newId: string }[] = [];
+    
+    for (const student of oldStudents) {
+      let newId = '';
+      const fullName = `${student.name} ${student.surname}`.toLowerCase();
+      
+      if (fullName.includes('muhammadiso') || fullName.includes('iso')) {
+        newId = 'AL557';
+      } else if (fullName.includes('sobitxanov')) {
+        newId = 'AL110';
+      } else if (fullName.includes('omadullayev')) {
+        newId = 'AL120';
+      } else if (fullName.includes('abdurahmonov')) {
+        newId = 'AL105';
+      } else if (fullName.includes('nomonov') || fullName.includes('no\'monov')) {
+        newId = 'AL141';
+      } else if (fullName.includes('ne’matov') || fullName.includes('ne\'matov')) {
+        newId = 'AL125';
+      } else {
+        newId = generateUnique3DigitId();
+      }
+      
+      if (usedDigits.has(newId.replace('AL', ''))) {
+        newId = generateUnique3DigitId();
+      } else {
+        usedDigits.add(newId.replace('AL', ''));
+      }
+      
+      updates.push({
+        oldId: student.id,
+        newId
+      });
+    }
+
+    console.log("Migration updates queue:", updates);
+
+    for (const update of updates) {
+      try {
+        // 1. Update student_weeks table
+        const { error: weeksError } = await supabase
+          .from('student_weeks')
+          .update({ student_id: update.newId })
+          .eq('student_id', update.oldId);
+        
+        if (weeksError) {
+          console.error(`Weeks migration error for ${update.oldId}:`, weeksError);
+          continue;
+        }
+
+        // 2. Update Students table
+        const { error: studentError } = await supabase
+          .from('Students')
+          .update({ id: update.newId })
+          .eq('id', update.oldId);
+
+        if (studentError) {
+          console.error(`Student migration error for ${update.oldId}:`, studentError);
+          continue;
+        }
+
+        console.log(`Migrated ID: ${update.oldId} -> ${update.newId}`);
+      } catch (err) {
+        console.error(`Error during migration loop for ${update.oldId}:`, err);
+      }
+    }
+
+    // Trigger full refetch
+    await fetchAllData(true);
+  };
+
+  const fetchAllData = async (skipMigration = false) => {
     setLoading(true);
+    let loadedStudents: Student[] = [];
     try {
       const { data, error } = await supabase.from('Students').select('*');
       
@@ -313,8 +401,10 @@ function App() {
         const loaded = data.map(mapDbToStudent);
         loaded.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
         setStudents(loaded);
+        loadedStudents = loaded;
       } else {
         setStudents(INITIAL_MOCK_DATA);
+        loadedStudents = INITIAL_MOCK_DATA;
         await supabase.from('Students').insert(INITIAL_MOCK_DATA.map(mapStudentToDb));
       }
     } catch (err) {
@@ -325,11 +415,14 @@ function App() {
           const loaded = JSON.parse(saved);
           loaded.sort((a: Student, b: Student) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
           setStudents(loaded);
+          loadedStudents = loaded;
         } catch (e) {
           setStudents(INITIAL_MOCK_DATA);
+          loadedStudents = INITIAL_MOCK_DATA;
         }
       } else {
         setStudents(INITIAL_MOCK_DATA);
+        loadedStudents = INITIAL_MOCK_DATA;
       }
     }
 
@@ -363,6 +456,14 @@ function App() {
       console.error('Failed to fetch teachers:', err);
     } finally {
       setLoading(false);
+    }
+
+    // Trigger migration if old format student IDs exist and skipMigration is false
+    if (!skipMigration && loadedStudents.length > 0) {
+      const oldStudents = loadedStudents.filter(s => !/^AL\d{3}$/.test(s.id));
+      if (oldStudents.length > 0) {
+        await migrateStudentIdsIfNeeded(loadedStudents);
+      }
     }
   };
 
@@ -690,7 +791,10 @@ function App() {
       if (mathStudent) inheritedMathOrder = mathStudent.mathTeacherOrder || 0;
     }
 
-    const tempId = Math.random().toString(36).substr(2, 9);
+    let tempId = generateRandomId();
+    while (students.some(s => s.id === tempId)) {
+      tempId = generateRandomId();
+    }
     const brandNew: Student = {
       id: tempId,
       name: studentData.name || '',
@@ -765,6 +869,92 @@ function App() {
       console.error('Failed to add student manually to Supabase:', err);
       // Rollback optimistic add
       setStudents(prev => prev.filter(s => s.id !== tempId));
+    }
+  };
+
+  const handleUpdateStudentScore = async (studentId: string, subjectName: string, scorePercent: number, weekName: string) => {
+    const targetWeek = weekName || selectedWeek || '1-Hafta';
+    const isMath = subjectName.toLowerCase().includes('matem') || subjectName.toLowerCase().includes('math');
+
+    // Update local students list
+    setStudents(prev => prev.map(s => {
+      if (s.id === studentId) {
+        return {
+          ...s,
+          mathScore: isMath ? scorePercent : (s.mathScore ?? 0),
+          engScore: !isMath ? scorePercent : (s.engScore ?? 0)
+        };
+      }
+      return s;
+    }));
+
+    // Update local studentWeeks list
+    setStudentWeeks(prev => {
+      const idx = prev.findIndex(sw => sw.student_id === studentId && sw.week === targetWeek && !sw.is_deleted);
+      const updated = [...prev];
+      if (idx !== -1) {
+        updated[idx] = {
+          ...updated[idx],
+          math_score: isMath ? scorePercent : (updated[idx].math_score ?? 0),
+          eng_score: !isMath ? scorePercent : (updated[idx].eng_score ?? 0)
+        };
+      } else {
+        updated.push({
+          id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          student_id: studentId,
+          week: targetWeek,
+          eng_score: isMath ? 0 : scorePercent,
+          math_score: isMath ? scorePercent : 0,
+          attendance: 1,
+          homework: 1,
+          is_deleted: false,
+          created_at: new Date().toISOString()
+        });
+      }
+      return updated;
+    });
+
+    // Update Database
+    try {
+      const { data: dbRec, error: fetchErr } = await supabase
+        .from('student_weeks')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('week', targetWeek)
+        .eq('is_deleted', false);
+
+      if (fetchErr) {
+        console.error('Error fetching student week record:', fetchErr);
+      }
+
+      if (dbRec && dbRec.length > 0) {
+        const recordId = dbRec[0].id;
+        const updateObj: any = {};
+        if (isMath) {
+          updateObj.math_score = scorePercent;
+        } else {
+          updateObj.eng_score = scorePercent;
+        }
+        await supabase
+          .from('student_weeks')
+          .update(updateObj)
+          .eq('id', recordId);
+      } else {
+        const newDbRec = {
+          student_id: studentId,
+          week: targetWeek,
+          eng_score: isMath ? 0 : scorePercent,
+          math_score: isMath ? scorePercent : 0,
+          attendance: 1,
+          homework: 1,
+          is_deleted: false
+        };
+        await supabase
+          .from('student_weeks')
+          .insert([newDbRec]);
+      }
+    } catch (err) {
+      console.error('Failed to sync scanned score to database:', err);
     }
   };
 
@@ -1853,6 +2043,7 @@ function App() {
         studentWeeks={studentWeeks}
         teachers={teachers}
         onLogout={handleLogout}
+        onUpdateStudentScore={handleUpdateStudentScore}
       />
     );
   }

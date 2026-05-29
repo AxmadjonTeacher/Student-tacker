@@ -54,18 +54,375 @@ const parseWeekToSortValue = (weekStr: string): number => {
 
 // Fallback tests in case database has no data yet - REMOVED
 
+const SAMPLE_OMR_SHEETS = [
+  {
+    id: '557',
+    name: 'Maxmudjonov Muhammadiso',
+    correctCount: 11,
+    percentage: 73.3,
+    answers: ['D', 'C', 'C', 'C', 'B', 'D', 'A', 'B', 'B', 'A', 'D', 'D', 'D', 'B', 'B'],
+    signatureImg: '/media__1780067393687.jpg',
+    label: 'Muhammad iso (Math - 11/15, ID 557)'
+  },
+  {
+    id: '105',
+    name: 'Abdurahmonov MuhammadMustafo',
+    correctCount: 14,
+    percentage: 93.3,
+    answers: ['A', 'A', 'C', 'C', 'B', 'D', 'A', 'B', 'C', 'A', 'D', 'D', 'D', 'B', 'B'],
+    signatureImg: '',
+    label: 'Abdurahmonov M. (Eng - 14/15, ID 105)'
+  },
+  {
+    id: '120',
+    name: 'Omadullayev Muhammadqodir',
+    correctCount: 12,
+    percentage: 80.0,
+    answers: ['D', 'C', 'C', 'C', 'B', 'D', 'A', 'B', 'A', 'A', 'D', 'D', 'D', 'B', 'B'],
+    signatureImg: '',
+    label: 'Omadullayev M. (Math - 12/15, ID 120)'
+  },
+  {
+    id: '110',
+    name: 'Sobitxanov Nurmuhammad',
+    correctCount: 8,
+    percentage: 53.3,
+    answers: ['A', 'B', 'B', 'C', 'B', 'D', 'A', 'B', 'C', 'A', 'C', 'A', 'D', 'B', 'C'],
+    signatureImg: '',
+    label: 'Sobitxanov N. (Eng - 8/15, ID 110)'
+  }
+];
+
+interface OMRSheetMockupProps {
+  studentIdCode: string;
+  answers: string[];
+  testKeys: string[];
+  students: Student[];
+}
+
+const OMRSheetMockup: React.FC<OMRSheetMockupProps> = ({ studentIdCode, answers, testKeys, students }) => {
+  const options = ['A', 'B', 'C', 'D'];
+  
+  // Find mapped student name
+  const student = students.find(s => {
+    const match = s.id.match(/^AL(\d{3})$/);
+    return match && match[1] === studentIdCode;
+  });
+  const studentName = student ? `${student.name} ${student.surname}` : 'Noma’lum talaba';
+
+  return (
+    <div style={{
+      background: '#fcfcf9',
+      border: '1.5px solid #cbd5e1',
+      borderRadius: '24px',
+      padding: '1.25rem',
+      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.01), 0 8px 24px -10px rgba(0,0,0,0.05)',
+      fontFamily: "'Inter', sans-serif",
+      position: 'relative',
+      width: '100%',
+      maxWidth: '380px',
+      margin: '0 auto',
+      boxSizing: 'border-box'
+    }}>
+      {/* Corner markers */}
+      <div style={{ position: 'absolute', top: '8px', left: '8px', width: '10px', height: '10px', background: '#0f172a' }} />
+      <div style={{ position: 'absolute', top: '8px', right: '8px', width: '10px', height: '10px', background: '#0f172a' }} />
+      <div style={{ position: 'absolute', bottom: '8px', left: '8px', width: '10px', height: '10px', background: '#0f172a' }} />
+      <div style={{ position: 'absolute', bottom: '8px', right: '8px', width: '10px', height: '10px', background: '#0f172a' }} />
+
+      {/* Name signature field */}
+      <div style={{ marginBottom: '1.2rem', marginTop: '0.25rem' }}>
+        <div style={{ fontSize: '0.58rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.2rem', textAlign: 'center' }}>
+          Ism va familiya (To`rtburchak tashqarisiga yozmang)
+        </div>
+        <div style={{
+          height: '46px',
+          border: '1.5px solid #0f172a',
+          background: '#ffffff',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          {studentIdCode === '557' ? (
+            <img 
+              src="/media__1780067393687.jpg" 
+              style={{
+                position: 'absolute',
+                top: '-32px',
+                left: '-15px',
+                width: '420px',
+                height: 'auto',
+                opacity: 0.95
+              }}
+              alt="Muhammad iso"
+            />
+          ) : (
+            <span className="handwritten-signature" style={{
+              fontSize: '1.65rem',
+              color: '#1e3a8a',
+              letterSpacing: '0.03em'
+            }}>
+              {studentName}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Grid container */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: '0.75rem' }}>
+        
+        {/* Left Column: Questions 1 to 13 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {Array.from({ length: 13 }).map((_, i) => {
+            const qNum = i + 1;
+            const correctKey = testKeys[qNum - 1] || 'A';
+            const studentAns = answers[qNum - 1] || '';
+            const isCorrect = studentAns === correctKey;
+
+            return (
+              <div key={qNum} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '22px' }}>
+                <span style={{ 
+                  fontSize: '0.62rem', 
+                  fontWeight: 900, 
+                  color: isCorrect ? '#22c55e' : '#ef4444', 
+                  width: '10px',
+                  textAlign: 'center'
+                }}>
+                  {isCorrect ? 'C' : 'X'}
+                </span>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#475569', minWidth: '12px' }}>{qNum}</span>
+                
+                {/* Bubble set */}
+                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  {options.map(opt => {
+                    const isSelected = studentAns === opt;
+                    const isCorrectOpt = correctKey === opt;
+                    let bubbleBg = '#ffffff';
+                    let bubbleColor = '#475569';
+                    let bubbleBorder = '1px solid #94a3b8';
+                    
+                    if (isSelected) {
+                      bubbleBg = '#1e293b'; // filled pencil color
+                      bubbleColor = '#ffffff';
+                      bubbleBorder = '1px solid #1e293b';
+                    }
+
+                    return (
+                      <div 
+                        key={opt}
+                        style={{
+                          width: '17px',
+                          height: '17px',
+                          borderRadius: '50%',
+                          fontSize: '0.58rem',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: bubbleBg,
+                          color: bubbleColor,
+                          border: bubbleBorder,
+                          position: 'relative'
+                        }}
+                      >
+                        {opt}
+                        {isCorrectOpt && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '-2.5px', left: '-2.5px', right: '-2.5px', bottom: '-2.5px',
+                            border: '1.5px solid #22c55e',
+                            borderRadius: '50%'
+                          }} />
+                        )}
+                        {isSelected && !isCorrect && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '-2.5px', left: '-2.5px', right: '-2.5px', bottom: '-2.5px',
+                            border: '1.5px solid #ef4444',
+                            borderRadius: '50%'
+                          }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right Column: Questions 14, 15 and Student ID Grid */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          
+          {/* Questions 14 & 15 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {[14, 15].map(qNum => {
+              const correctKey = testKeys[qNum - 1] || 'A';
+              const studentAns = answers[qNum - 1] || '';
+              const isCorrect = studentAns === correctKey;
+
+              return (
+                <div key={qNum} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '22px' }}>
+                  <span style={{ 
+                    fontSize: '0.62rem', 
+                    fontWeight: 900, 
+                    color: isCorrect ? '#22c55e' : '#ef4444', 
+                    width: '10px',
+                    textAlign: 'center'
+                  }}>
+                    {isCorrect ? 'C' : 'X'}
+                  </span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#475569', minWidth: '12px' }}>{qNum}</span>
+                  
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    {options.map(opt => {
+                      const isSelected = studentAns === opt;
+                      const isCorrectOpt = correctKey === opt;
+                      let bubbleBg = '#ffffff';
+                      let bubbleColor = '#475569';
+                      let bubbleBorder = '1px solid #94a3b8';
+                      
+                      if (isSelected) {
+                        bubbleBg = '#1e293b';
+                        bubbleColor = '#ffffff';
+                        bubbleBorder = '1px solid #1e293b';
+                      }
+
+                      return (
+                        <div 
+                          key={opt}
+                          style={{
+                            width: '17px',
+                            height: '17px',
+                            borderRadius: '50%',
+                            fontSize: '0.58rem',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: bubbleBg,
+                            color: bubbleColor,
+                            border: bubbleBorder,
+                            position: 'relative'
+                          }}
+                        >
+                          {opt}
+                          {isCorrectOpt && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '-2.5px', left: '-2.5px', right: '-2.5px', bottom: '-2.5px',
+                              border: '1.5px solid #22c55e',
+                              borderRadius: '50%'
+                            }} />
+                          )}
+                          {isSelected && !isCorrect && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '-2.5px', left: '-2.5px', right: '-2.5px', bottom: '-2.5px',
+                              border: '1.5px solid #ef4444',
+                              borderRadius: '50%'
+                            }} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Student ID Bubble Grid */}
+          <div style={{ 
+            border: '1.5px solid #475569', 
+            borderRadius: '10px', 
+            padding: '0.45rem 0.35rem',
+            background: '#ffffff',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.3rem'
+          }}>
+            <div style={{ fontSize: '0.55rem', fontWeight: 900, color: '#334155', textAlign: 'center', marginBottom: '0.1rem' }}>
+              O`quvchi IDsi
+            </div>
+            
+            {/* 3 Header digit boxes */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px', marginBottom: '2px' }}>
+              {Array.from({ length: 3 }).map((_, colIdx) => {
+                const digit = studentIdCode.charAt(colIdx) || '0';
+                return (
+                  <div key={colIdx} style={{
+                    border: '1px solid #475569',
+                    borderRadius: '3px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 900,
+                    color: '#0f172a',
+                    background: '#f8fafc'
+                  }}>
+                    {digit}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bubble columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
+              {Array.from({ length: 3 }).map((_, colIdx) => {
+                const activeDigit = parseInt(studentIdCode.charAt(colIdx) || '0', 10);
+                return (
+                  <div key={colIdx} style={{ display: 'flex', flexDirection: 'column', gap: '1px', alignItems: 'center' }}>
+                    {Array.from({ length: 10 }).map((_, rowIdx) => {
+                      const isBubbled = rowIdx === activeDigit;
+                      return (
+                        <div key={rowIdx} style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          border: '1px solid #94a3b8',
+                          background: isBubbled ? '#1e293b' : '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.45rem',
+                          fontWeight: 800,
+                          color: isBubbled ? '#ffffff' : '#64748b'
+                        }}>
+                          {rowIdx}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface TestorCabinetProps {
   students: Student[];
   studentWeeks: any[];
   teachers: Teacher[];
   onLogout: (force?: boolean) => void;
+  onUpdateStudentScore?: (studentId: string, subject: string, score: number, week: string) => Promise<void>;
 }
 
 const TestorCabinet: React.FC<TestorCabinetProps> = ({
   students,
   studentWeeks,
   teachers,
-  onLogout
+  onLogout,
+  onUpdateStudentScore
 }) => {
   // Mobile UI vs Desktop UI states
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -391,6 +748,22 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   // localStorage persistence of OMR scans
   const [currentTestScans, setCurrentTestScans] = useState<any[]>([]);
 
+  // OMR scan helper states
+  const [selectedWeek, setSelectedWeek] = useState<string>('');
+  const [selectedWeekForSaving, setSelectedWeekForSaving] = useState<string>('');
+  const [syncingScore, setSyncingScore] = useState<boolean>(false);
+  const [selectedScanDetail, setSelectedScanDetail] = useState<any | null>(null);
+  const [reviewFilterTab, setReviewFilterTab] = useState<'Last' | 'First' | 'ID' | 'Ext'>('Last');
+  const [reviewSearchTerm, setReviewSearchTerm] = useState('');
+  const [selectedSampleSheet, setSelectedSampleSheet] = useState<any>(SAMPLE_OMR_SHEETS[0]);
+
+  // Sync selectedWeekForSaving with selectedWeek
+  useEffect(() => {
+    if (selectedWeek) {
+      setSelectedWeekForSaving(selectedWeek);
+    }
+  }, [selectedWeek]);
+
   useEffect(() => {
     if (selectedTest) {
       const saved = localStorage.getItem(`testor_scans_${selectedTest.id}`);
@@ -422,8 +795,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         }
       } catch (err) {
         console.error('Camera capture error:', err);
-        // Fallback if mediaDevice getUserMedia fails in sandbox / browser blocked permissions
+        // Fallback: Camera not allowed, keep cameraStream null
         setScanStatus('aligning');
+        setCameraStream(null);
       }
     };
 
@@ -443,13 +817,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     };
   }, [showScanModal]);
 
-  // Simulate OMR scan timeline
+  // Simulate OMR scan timeline (Runs for camera stream OR simulation fallback)
   useEffect(() => {
     let timer: any = null;
     let progressTimer: any = null;
     
-    if (showScanModal && cameraStream) {
-      // 1.5 seconds aligning, then 2.5 seconds scanning
+    if (showScanModal && scanStatus === 'aligning') {
       timer = setTimeout(() => {
         setScanStatus('scanning');
         
@@ -460,7 +833,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               handleTriggerOMRGrade();
               return 100;
             }
-            return prev + 8;
+            return prev + 10;
           });
         }, 150);
 
@@ -471,43 +844,21 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       if (timer) clearTimeout(timer);
       if (progressTimer) clearInterval(progressTimer);
     };
-  }, [showScanModal, cameraStream]);
+  }, [showScanModal, scanStatus]);
 
   // Perform grading and student association simulation
-  const handleTriggerOMRGrade = () => {
+  const handleTriggerOMRGrade = (sample?: any) => {
     if (!selectedTest) return;
 
-    // Filter students belonging to this class/grade level (e.g. 5-Sinf, etc.)
-    const classStudents = students.filter(s => {
-      const group = getClassGroup(s.className);
-      const testGroup = getClassGroup(selectedTest.level);
-      return group === testGroup && !s.isDeleted;
-    });
-
-    if (classStudents.length === 0) {
-      alert("Ushbu sinfda o'quvchilar topilmadi!");
-      setShowScanModal(false);
-      return;
-    }
-
-    // Pick a random student initially
-    const randomIndex = Math.floor(Math.random() * classStudents.length);
-    const chosenStudent = classStudents[randomIndex];
-    setSelectedStudentForScan(chosenStudent.id);
-
-    // Generate random OMR responses mostly correct (11 - 14 correct keys out of 15)
+    const sheet = sample || selectedSampleSheet || SAMPLE_OMR_SHEETS[0];
     const testKeys = selectedTest.questions_json || Array(15).fill("A");
     const numQuestions = testKeys.length;
-    const studentAnswers = [...testKeys];
-    
-    // Intentionally mismatch 1-3 keys
-    const wrongCount = Math.floor(Math.random() * 3) + 1;
-    const options = ["A", "B", "C", "D"];
-    for (let i = 0; i < wrongCount; i++) {
-      const wrongIdx = Math.floor(Math.random() * numQuestions);
-      const correctOption = testKeys[wrongIdx];
-      const wrongOptions = options.filter(o => o !== correctOption);
-      studentAnswers[wrongIdx] = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+
+    let studentAnswers = [...sheet.answers];
+    if (studentAnswers.length < numQuestions) {
+      studentAnswers = [...studentAnswers, ...Array(numQuestions - studentAnswers.length).fill("A")];
+    } else if (studentAnswers.length > numQuestions) {
+      studentAnswers = studentAnswers.slice(0, numQuestions);
     }
 
     // Grade OMR
@@ -517,47 +868,80 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     });
 
     setScannedOMRSheet({
-      studentIdCode: (Math.floor(Math.random() * 900) + 100).toString(), // mock OMR bubble 3-digit student ID
+      studentIdCode: sheet.id,
       answers: studentAnswers,
       correctCount: correct,
       totalQuestions: numQuestions,
-      percentage: Math.round((correct / numQuestions) * 100)
+      percentage: Math.round((correct / numQuestions) * 100),
+      signatureImg: sheet.signatureImg
     });
+
+    // Auto-map student in class list: AL + 3 digit code (e.g. AL557)
+    const matchingStudent = students.find(s => {
+      const matchNum = s.id.match(/^AL(\d{3})$/);
+      return matchNum && matchNum[1] === sheet.id;
+    });
+
+    if (matchingStudent) {
+      setSelectedStudentForScan(matchingStudent.id);
+    } else {
+      setSelectedStudentForScan('');
+    }
 
     setScanStatus('success');
   };
 
   // Save scanned paper sheet results
-  const handleSaveScannedSheet = () => {
+  const handleSaveScannedSheet = async () => {
     if (!selectedTest || !scannedOMRSheet) return;
 
     const matchedStudent = students.find(s => s.id === selectedStudentForScan);
     if (!matchedStudent) return;
 
-    const newScan = {
-      id: Date.now().toString(),
-      studentId: selectedStudentForScan,
-      studentName: `${matchedStudent.name} ${matchedStudent.surname}`,
-      studentIdCode: scannedOMRSheet.studentIdCode,
-      scannedAt: new Date().toLocaleTimeString() + ' ' + new Date().toLocaleDateString(),
-      answers: scannedOMRSheet.answers,
-      correctCount: scannedOMRSheet.correctCount,
-      totalQuestions: scannedOMRSheet.totalQuestions,
-      percentage: scannedOMRSheet.percentage
-    };
+    setSyncingScore(true);
+    try {
+      // Call onUpdateStudentScore to sync with Supabase
+      if (onUpdateStudentScore) {
+        const weekName = selectedWeekForSaving || selectedWeek || '1-Hafta';
+        await onUpdateStudentScore(
+          matchedStudent.id,
+          selectedTest.subject,
+          scannedOMRSheet.percentage,
+          weekName
+        );
+      }
 
-    // Prevent duplicates for the same student in this session scans
-    const updatedScans = [newScan, ...currentTestScans.filter(s => s.studentId !== selectedStudentForScan)];
-    setCurrentTestScans(updatedScans);
-    localStorage.setItem(`testor_scans_${selectedTest.id}`, JSON.stringify(updatedScans));
+      const newScan = {
+        id: Date.now().toString(),
+        studentId: selectedStudentForScan,
+        studentName: `${matchedStudent.name} ${matchedStudent.surname}`,
+        studentIdCode: scannedOMRSheet.studentIdCode,
+        scannedAt: new Date().toLocaleTimeString() + ' ' + new Date().toLocaleDateString(),
+        answers: scannedOMRSheet.answers,
+        correctCount: scannedOMRSheet.correctCount,
+        totalQuestions: scannedOMRSheet.totalQuestions,
+        percentage: scannedOMRSheet.percentage,
+        week: selectedWeekForSaving || selectedWeek || '1-Hafta'
+      };
 
-    // Update database & local test student count
-    handleIncrementStudentCount(selectedTest.id, updatedScans.length);
+      // Prevent duplicates for the same student in this session scans
+      const updatedScans = [newScan, ...currentTestScans.filter(s => s.studentId !== selectedStudentForScan)];
+      setCurrentTestScans(updatedScans);
+      localStorage.setItem(`testor_scans_${selectedTest.id}`, JSON.stringify(updatedScans));
 
-    // Reset scanner states
-    setShowScanModal(false);
-    setScannedOMRSheet(null);
-    setSelectedStudentForScan('');
+      // Update database & local test student count
+      handleIncrementStudentCount(selectedTest.id, updatedScans.length);
+
+      // Reset scanner states
+      setShowScanModal(false);
+      setScannedOMRSheet(null);
+      setSelectedStudentForScan('');
+    } catch (err) {
+      console.error("Failed to save OMR scan score:", err);
+      alert("Natijani saqlashda xatolik yuz berdi!");
+    } finally {
+      setSyncingScore(false);
+    }
   };
 
   // Remove a scanned sheet
@@ -571,7 +955,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
   // Analysis Tab States
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
-  const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // Settings Tab States
@@ -743,68 +1126,66 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
         {/* Sketch phone mockup or screen container */}
         <div style={{
-          background: '#0f172a',
-          border: `2px solid ${colors.primary}`,
-          borderRadius: '32px',
+          background: '#ffffff',
+          border: `1.5px solid #cbd5e1`,
+          borderRadius: '24px',
           width: '100%',
           maxWidth: '420px',
-          padding: '2.5rem 2rem',
-          boxShadow: `0 20px 40px -15px ${colors.primary}30`,
+          padding: '2rem',
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '2.25rem',
-          color: '#ffffff',
+          gap: '1.75rem',
+          color: '#0f172a',
           boxSizing: 'border-box'
         }}>
           {/* Properties summary */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div style={{ fontSize: '0.92rem', display: 'flex', gap: '0.5rem' }}>
-              <span style={{ color: '#94a3b8', fontWeight: 600 }}>Teacher:</span>
-              <span style={{ fontWeight: 800, color: '#ffffff' }}>{test.teacher_name}</span>
+            <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Teacher:</span>
+              <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.teacher_name}</span>
             </div>
-            <div style={{ fontSize: '0.92rem', display: 'flex', gap: '0.5rem' }}>
-              <span style={{ color: '#94a3b8', fontWeight: 600 }}>Form:</span>
-              <span style={{ fontWeight: 800, color: '#ffffff' }}>{test.level}</span>
+            <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Form:</span>
+              <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.level}</span>
             </div>
-            <div style={{ fontSize: '0.92rem', display: 'flex', gap: '0.5rem' }}>
-              <span style={{ color: '#94a3b8', fontWeight: 600 }}>Date:</span>
-              <span style={{ fontWeight: 800, color: '#ffffff' }}>{formattedDate}</span>
+            <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Date:</span>
+              <span style={{ fontWeight: 800, color: '#0f172a' }}>{formattedDate}</span>
             </div>
-            <div style={{ fontSize: '0.92rem', display: 'flex', gap: '0.5rem' }}>
-              <span style={{ color: '#94a3b8', fontWeight: 600 }}>Papers:</span>
-              <span style={{ fontWeight: 800, color: '#ffffff' }}>{getScannedCount(test.id)} ta varaq</span>
+            <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Papers:</span>
+              <span style={{ fontWeight: 800, color: '#0f172a' }}>{getScannedCount(test.id)} ta varaq</span>
             </div>
-            <div style={{ fontSize: '0.92rem', display: 'flex', gap: '0.5rem' }}>
-              <span style={{ color: '#94a3b8', fontWeight: 600 }}>Number Of Questions:</span>
-              <span style={{ fontWeight: 800, color: '#ffffff' }}>{numQuestions} ta</span>
+            <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between' }}>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Number Of Questions:</span>
+              <span style={{ fontWeight: 800, color: '#0f172a' }}>{numQuestions} ta</span>
             </div>
           </div>
 
           {/* Action Buttons styled like the sketch outlines */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '0.5rem' }}>
             <button
               onClick={() => setShowEditKeyModal(true)}
               style={{
                 background: 'transparent',
-                border: '2px solid #fda4af',
-                color: '#fda4af',
-                borderRadius: '16px',
-                padding: '0.85rem',
-                fontSize: '1.05rem',
-                fontWeight: 750,
+                border: `2.5px solid ${colors.primary}`,
+                color: colors.primary,
+                borderRadius: '14px',
+                padding: '0.75rem',
+                fontSize: '1rem',
+                fontWeight: 800,
                 cursor: 'pointer',
                 textAlign: 'center',
-                letterSpacing: '0.03em',
+                letterSpacing: '0.02em',
                 transition: 'all 0.2s',
                 textTransform: 'lowercase'
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = '#fda4af20';
-                e.currentTarget.style.boxShadow = '0 0 15px #fda4af40';
+                e.currentTarget.style.background = `${colors.primary}10`;
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.boxShadow = 'none';
               }}
             >
               edit key
@@ -813,25 +1194,24 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             <button
               onClick={() => setShowScanModal(true)}
               style={{
-                background: 'transparent',
-                border: '2px solid #fda4af',
-                color: '#fda4af',
-                borderRadius: '16px',
-                padding: '0.85rem',
-                fontSize: '1.05rem',
-                fontWeight: 750,
+                background: colors.primary,
+                border: `2.5px solid ${colors.primary}`,
+                color: '#ffffff',
+                borderRadius: '14px',
+                padding: '0.75rem',
+                fontSize: '1rem',
+                fontWeight: 800,
                 cursor: 'pointer',
                 textAlign: 'center',
-                letterSpacing: '0.03em',
+                letterSpacing: '0.02em',
+                boxShadow: `0 4px 12px ${colors.primary}20`,
                 transition: 'all 0.2s'
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = '#fda4af20';
-                e.currentTarget.style.boxShadow = '0 0 15px #fda4af40';
+                e.currentTarget.style.background = `${colors.primary}dd`;
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.background = colors.primary;
               }}
             >
               Scan the paper
@@ -841,25 +1221,23 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               onClick={() => setShowReviewModal(true)}
               style={{
                 background: 'transparent',
-                border: '2px solid #fda4af',
-                color: '#fda4af',
-                borderRadius: '16px',
-                padding: '0.85rem',
-                fontSize: '1.05rem',
-                fontWeight: 750,
+                border: `2.5px solid ${colors.primary}`,
+                color: colors.primary,
+                borderRadius: '14px',
+                padding: '0.75rem',
+                fontSize: '1rem',
+                fontWeight: 800,
                 cursor: 'pointer',
                 textAlign: 'center',
-                letterSpacing: '0.03em',
+                letterSpacing: '0.02em',
                 transition: 'all 0.2s',
                 textTransform: 'lowercase'
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = '#fda4af20';
-                e.currentTarget.style.boxShadow = '0 0 15px #fda4af40';
+                e.currentTarget.style.background = `${colors.primary}10`;
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.boxShadow = 'none';
               }}
             >
               review paper
@@ -1639,7 +2017,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
       {/* Logout button */}
       <button
-        onClick={() => setShowLogoutConfirm(true)}
         style={{
           background: '#fef2f2',
           border: '1.5px solid #fee2e2',
@@ -1664,6 +2041,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           e.currentTarget.style.background = '#fef2f2';
           e.currentTarget.style.borderColor = '#fee2e2';
         }}
+        onClick={() => setShowLogoutConfirm(true)}
       >
         <LogOut size={16} />
         TIZIMDAN CHIQISH
@@ -1941,18 +2319,85 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 }}
               />
             ) : (
+              // Camera fallback simulation panel
               <div style={{
                 flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#94a3b8',
-                gap: '1rem',
-                background: '#1e293b'
+                color: '#ffffff',
+                padding: '2rem',
+                gap: '1.5rem',
+                background: '#0f172a',
+                textAlign: 'center'
               }}>
-                <RefreshCw size={28} style={{ animation: 'spin 1.5s linear infinite' }} />
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Kamera ishga tushirilmoqda...</span>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#94a3b8'
+                }}>
+                  <RefreshCw size={32} style={{ animation: 'spin 4s linear infinite' }} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: '0 0 0.5rem 0' }}>Kamera aniqlanmadi</h3>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0, maxWidth: '280px', lineHeight: 1.4 }}>
+                    Kamera ruxsati berilmagan yoki qurilmada kamera topilmadi. Skanerlashni simulyatsiya qilish uchun quyidagi namuna varaqlaridan birini tanlang:
+                  </p>
+                </div>
+
+                {/* Sample selection list */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  width: '100%',
+                  maxWidth: '320px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  padding: '1rem',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255,255,255,0.05)'
+                }}>
+                  {SAMPLE_OMR_SHEETS.map(sheet => {
+                    const isSelected = selectedSampleSheet?.id === sheet.id;
+                    return (
+                      <button
+                        key={sheet.id}
+                        onClick={() => {
+                          setSelectedSampleSheet(sheet);
+                          setScanStatus('aligning');
+                          setScanProgress(0);
+                        }}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          background: isSelected ? `${colors.primary}20` : 'transparent',
+                          border: isSelected ? `1.5px solid ${colors.primary}` : '1.5px solid rgba(255,255,255,0.1)',
+                          borderRadius: '10px',
+                          padding: '0.65rem 1rem',
+                          color: isSelected ? '#ffffff' : '#94a3b8',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <span>{sheet.name}</span>
+                        <span style={{ fontSize: '0.7rem', color: isSelected ? colors.primary : '#64748b' }}>
+                          ID: {sheet.id}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -2024,8 +2469,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     top: 0, left: 0,
                     width: '56px', height: '56px',
-                    borderTop: '3px solid #000000',
-                    borderLeft: '3px solid #000000',
+                    borderTop: '3px solid #22c55e',
+                    borderLeft: '3px solid #22c55e',
                     borderTopLeftRadius: '16px'
                   }} />
                   
@@ -2034,8 +2479,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     top: 0, right: 0,
                     width: '56px', height: '56px',
-                    borderTop: '3px solid #000000',
-                    borderRight: '3px solid #000000',
+                    borderTop: '3px solid #22c55e',
+                    borderRight: '3px solid #22c55e',
                     borderTopRightRadius: '16px'
                   }} />
 
@@ -2044,8 +2489,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     bottom: 0, left: 0,
                     width: '56px', height: '56px',
-                    borderBottom: '3px solid #000000',
-                    borderLeft: '3px solid #000000',
+                    borderBottom: '3px solid #22c55e',
+                    borderLeft: '3px solid #22c55e',
                     borderBottomLeftRadius: '16px'
                   }} />
 
@@ -2054,14 +2499,14 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     bottom: 0, right: 0,
                     width: '56px', height: '56px',
-                    borderBottom: '3px solid #000000',
-                    borderRight: '3px solid #000000',
+                    borderBottom: '3px solid #22c55e',
+                    borderRight: '3px solid #22c55e',
                     borderBottomRightRadius: '16px'
                   }} />
 
                   {/* Guide instruction card */}
                   <div style={{
-                    background: 'rgba(255, 255, 255, 0.9)',
+                    background: 'rgba(255, 255, 255, 0.95)',
                     backdropFilter: 'blur(4px)',
                     color: '#0f172a',
                     padding: '0.85rem 1.25rem',
@@ -2075,13 +2520,15 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     top: '20px'
                   }}>
-                    <div style={{ color: '#64748b', fontSize: '0.68rem', marginBottom: '0.2rem' }}>[1]</div>
-                    <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>{selectedTest.questions_json.length} talik (5427)</div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#334155' }}>Align 4 corner squares with viewfinders</div>
+                    <div style={{ color: '#64748b', fontSize: '0.68rem', marginBottom: '0.2rem' }}>[OMR GRADED SHEET]</div>
+                    <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>{selectedTest.name} ({selectedTest.subject})</div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#334155' }}>
+                      {cameraStream ? "Align paper corners with viewfinder" : `Simulating: ${selectedSampleSheet?.name}`}
+                    </div>
                   </div>
 
                   {/* Glowing Green Scanline */}
-                  {scanStatus === 'scanning' && (
+                  {(scanStatus === 'scanning' || scanStatus === 'aligning') && (
                     <div style={{
                       position: 'absolute',
                       left: '5%',
@@ -2100,14 +2547,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                       50% { top: 85%; }
                       100% { top: 15%; }
                     }
-                    @keyframes fadeIn {
-                      from { opacity: 0; }
-                      to { opacity: 1; }
-                    }
-                    @keyframes slideUp {
-                      from { transform: translateY(16px); opacity: 0; }
-                      to { transform: translateY(0); opacity: 1; }
-                    }
                   `}</style>
                 </div>
               </div>
@@ -2121,7 +2560,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               }}>
                 {scanStatus === 'aligning' && (
                   <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fdba74' }}>
-                    Qog'ozni tekislab ko'rsating...
+                    Qog'oz joylashuvi tekshirilmoqda...
                   </span>
                 )}
                 {scanStatus === 'scanning' && (
@@ -2143,7 +2582,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         {scanStatus === 'success' && scannedOMRSheet && (
           <div style={{
             flex: 1,
-            background: '#fcfcf9',
+            background: '#f1f5f9',
             display: 'flex',
             flexDirection: 'column',
             overflowY: 'auto',
@@ -2178,8 +2617,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 }}>
                   <CheckCircle size={28} />
                 </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>OMR VARAG'I O'QILDI</h3>
-                <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0 }}>Grading results computed from bubbled marks</p>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>OMR VARAG'I GRADOVKA QILINDI</h3>
+                <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0 }}>Javoblar varaqasidan o'qilgan natijalar</p>
                 
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '0.75rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
                   <div>
@@ -2194,7 +2633,17 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 </div>
               </div>
 
-              {/* Student mapper fields */}
+              {/* Dynamic OMR sheet preview component */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <OMRSheetMockup
+                  studentIdCode={scannedOMRSheet.studentIdCode}
+                  answers={scannedOMRSheet.answers}
+                  testKeys={selectedTest.questions_json || Array(15).fill("A")}
+                  students={students}
+                />
+              </div>
+
+              {/* Student and Week mapper fields */}
               <div style={{
                 background: '#ffffff',
                 border: '1.5px solid #e2e8f0',
@@ -2205,7 +2654,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 gap: '1rem'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Talaba OMR IDsi (skanerlangan):</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 850, color: '#475569' }}>OMR ID (o'qilgan):</label>
                   <input
                     type="text"
                     disabled
@@ -2223,7 +2672,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Tizimdan mos keluvchi talaba:</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 850, color: '#475569' }}>Tizimdagi o'quvchi:</label>
                   <select
                     value={selectedStudentForScan}
                     onChange={(e) => setSelectedStudentForScan(e.target.value)}
@@ -2247,42 +2696,34 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     ))}
                   </select>
                 </div>
-              </div>
 
-              {/* Answers Grid check-sheet list */}
-              <div style={{
-                background: '#ffffff',
-                border: '1.5px solid #e2e8f0',
-                borderRadius: '24px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.85rem'
-              }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 850, color: '#334155', margin: 0 }}>Skanerlangan javoblar tahlili:</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '0.2rem' }}>
-                  {scannedOMRSheet.answers.map((ans: string, idx: number) => {
-                    const correctKey = selectedTest.questions_json[idx] || "A";
-                    const isCorrect = ans === correctKey;
-                    return (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', background: '#f8fafc', padding: '0.4rem 0.75rem', borderRadius: '8px', gap: '1rem' }}>
-                        <span style={{ fontWeight: 800, color: '#64748b' }}>{idx + 1}-Savol:</span>
-                        <div style={{ display: 'flex', gap: '0.85rem', flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-                          <span style={{ textDecoration: !isCorrect ? 'line-through' : 'none', color: isCorrect ? '#10b981' : '#ef4444', fontWeight: 800 }}>
-                            Belgilangan: {ans}
-                          </span>
-                          {!isCorrect && (
-                            <span style={{ color: '#10b981', fontWeight: 800 }}>
-                              To'g'ri: {correctKey}
-                            </span>
-                          )}
-                          <span style={{ color: isCorrect ? '#10b981' : '#ef4444', fontWeight: 900 }}>
-                            {isCorrect ? '✓' : '✗'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 850, color: '#475569' }}>Natija yoziladigan hafta:</label>
+                  <select
+                    value={selectedWeekForSaving}
+                    onChange={(e) => setSelectedWeekForSaving(e.target.value)}
+                    style={{
+                      padding: '0.65rem',
+                      borderRadius: '10px',
+                      border: `1.5px solid ${colors.primary}`,
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      color: '#0f172a',
+                      background: '#ffffff',
+                      cursor: 'pointer',
+                      outline: 'none'
+                    }}
+                  >
+                    {weeksList.length > 0 ? (
+                      weeksList.map(w => (
+                        <option key={w} value={w}>{w}</option>
+                      ))
+                    ) : (
+                      ['1-Hafta', '2-Hafta', '3-Hafta', '4-Hafta'].map(w => (
+                        <option key={w} value={w}>{w}</option>
+                      ))
+                    )}
+                  </select>
                 </div>
               </div>
 
@@ -2296,12 +2737,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   }}
                   style={{
                     flex: 1,
-                    background: '#f1f5f9',
+                    background: '#ffffff',
                     color: '#475569',
-                    border: 'none',
+                    border: '1.5px solid #cbd5e1',
                     borderRadius: '12px',
                     padding: '0.75rem',
-                    fontSize: '0.8rem',
+                    fontSize: '0.85rem',
                     fontWeight: 800,
                     cursor: 'pointer'
                   }}
@@ -2309,7 +2750,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   Qayta skanerlash
                 </button>
                 <button
-                  disabled={!selectedStudentForScan}
+                  disabled={!selectedStudentForScan || syncingScore}
                   onClick={handleSaveScannedSheet}
                   style={{
                     flex: 1,
@@ -2318,12 +2759,17 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     border: 'none',
                     borderRadius: '12px',
                     padding: '0.75rem',
-                    fontSize: '0.8rem',
+                    fontSize: '0.85rem',
                     fontWeight: 800,
-                    cursor: selectedStudentForScan ? 'pointer' : 'not-allowed'
+                    cursor: selectedStudentForScan ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem'
                   }}
                 >
-                  Tizimga saqlash
+                  {syncingScore && <RefreshCw size={14} style={{ animation: 'spin 1.5s linear infinite' }} />}
+                  <span>{syncingScore ? "Saqlanmoqda..." : "Tizimga saqlash"}</span>
                 </button>
               </div>
             </div>
@@ -2333,53 +2779,182 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     );
   };
 
-  // MODAL C: REVIEW PAPER DETAILS ROW VIEW LIST
+  // MODAL C: REVIEW PAPERS MODAL
   const renderReviewModal = () => {
-    if (!selectedTest || !showReviewModal) return null;
+    if (!showReviewModal) return null;
+
+    // Filter and sort currentTestScans based on search term and filter tab
+    const filteredAndSortedScans = useMemo(() => {
+      let list = [...currentTestScans];
+      
+      // Apply search filter
+      if (reviewSearchTerm.trim()) {
+        const term = reviewSearchTerm.toLowerCase();
+        list = list.filter(s => s.studentName.toLowerCase().includes(term));
+      }
+
+      // Apply sorting/filtering based on active tab: Last, First, ID, Ext
+      list.sort((a, b) => {
+        switch (reviewFilterTab) {
+          case 'Last':
+            return parseInt(b.id) - parseInt(a.id); // scanned timestamp desc
+          case 'First':
+            return parseInt(a.id) - parseInt(b.id); // scanned timestamp asc
+          case 'ID':
+            return a.studentIdCode.localeCompare(b.studentIdCode); // Student ID order
+          case 'Ext':
+            return b.percentage - a.percentage; // Score order desc
+          default:
+            return parseInt(b.id) - parseInt(a.id);
+        }
+      });
+
+      return list;
+    }, [currentTestScans, reviewFilterTab, reviewSearchTerm]);
 
     return (
       <div style={{
         position: 'fixed',
         top: 0, left: 0, right: 0, bottom: 0,
-        background: 'rgba(15, 23, 42, 0.5)',
-        backdropFilter: 'blur(4px)',
+        background: 'rgba(15, 23, 42, 0.4)',
+        backdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1100,
-        padding: '1rem'
+        padding: isMobile ? 0 : '1rem'
       }} onClick={() => setShowReviewModal(false)}>
         <div style={{
           background: '#ffffff',
-          borderRadius: '24px',
+          borderRadius: isMobile ? 0 : '28px',
           width: '100%',
-          maxWidth: '560px',
-          maxHeight: '85vh',
-          padding: '1.75rem',
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+          maxWidth: '430px',
+          height: isMobile ? '100vh' : '88vh',
+          maxHeight: isMobile ? '100vh' : '720px',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.25rem',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          overflow: 'hidden'
         }} onClick={e => e.stopPropagation()}>
           
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: colors.primary }}>
-              <FileText size={18} />
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 850, color: '#0f172a', margin: 0 }}>review paper ({currentTestScans.length})</h3>
-            </div>
+          {/* Header Bar styled exactly like media__1780072237712.jpg */}
+          <div style={{
+            background: '#15803d', // Green bar
+            padding: '1rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            color: '#ffffff',
+            flexShrink: 0
+          }}>
+            <button
+              onClick={() => setShowReviewModal(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                padding: 0
+              }}
+            >
+              <ArrowLeft size={16} />
+              <span>Done Scanning</span>
+            </button>
+
+            <span style={{ fontSize: '0.9rem', fontWeight: 900, letterSpacing: '0.05em' }}>GRADED PAPERS</span>
+            
             <button 
               onClick={() => setShowReviewModal(false)}
-              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+              style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', padding: 0 }}
             >
               <X size={18} />
             </button>
           </div>
 
-          {/* List of scanned papers */}
-          <div style={{ overflowY: 'auto', flex: 1, paddingRight: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {currentTestScans.length === 0 ? (
+          {/* Sub-header Filter tab pills and search bar */}
+          <div style={{
+            padding: '0.85rem 1.25rem',
+            background: '#f8fafc',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.65rem',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+              {/* Tab Pills */}
+              <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '8px', padding: '2px', flex: 1 }}>
+                {(['Last', 'First', 'ID', 'Ext'] as const).map(tab => {
+                  const isActive = reviewFilterTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setReviewFilterTab(tab)}
+                      style={{
+                        flex: 1,
+                        background: isActive ? '#ffffff' : 'transparent',
+                        color: isActive ? '#0f172a' : '#64748b',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.35rem 0',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {tab}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search Box */}
+              <input
+                type="text"
+                placeholder="Qidirish..."
+                value={reviewSearchTerm}
+                onChange={e => setReviewSearchTerm(e.target.value)}
+                style={{
+                  width: '100px',
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: '8px',
+                  border: '1.5px solid #cbd5e1',
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  outline: 'none',
+                  background: '#ffffff'
+                }}
+              />
+            </div>
+
+            {/* Paper Not in Class sub-banner exactly like mockup */}
+            <div style={{
+              border: '2px solid #15803d',
+              borderRadius: '8px',
+              padding: '0.4rem 0.85rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              color: '#15803d',
+              background: '#ecfdf5'
+            }}>
+              <span>Paper Not in Class</span>
+              <span>{filteredAndSortedScans.length} papers</span>
+            </div>
+          </div>
+
+          {/* List of scanned papers rows */}
+          <div style={{ overflowY: 'auto', flex: 1, padding: '0.75rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            {filteredAndSortedScans.length === 0 ? (
               <div style={{
                 padding: '3rem 1.5rem',
                 textAlign: 'center',
@@ -2391,62 +2966,104 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 gap: '0.5rem'
               }}>
                 <AlertTriangle size={24} color="#94a3b8" />
-                <span>Hozircha skanerlangan qog'ozlar mavjud emas.</span>
-                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Scan the paper tugmasi orqali yangi varaqni skanerlang.</span>
+                <span>Mos keluvchi OMR varaqlar topilmadi.</span>
               </div>
             ) : (
-              currentTestScans.map(scan => (
+              filteredAndSortedScans.map(scan => (
                 <div
                   key={scan.id}
+                  onClick={() => setSelectedScanDetail(scan)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '0.75rem 1rem',
-                    background: '#f8fafc',
-                    borderRadius: '16px',
-                    border: '1px solid #e2e8f0',
-                    gap: '0.5rem',
-                    flexWrap: 'wrap'
+                    padding: '0.65rem 0.85rem',
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    border: '1.5px solid #e2e8f0',
+                    gap: '1rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
                   }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
                 >
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 850, color: '#0f172a' }}>
-                      {scan.studentName}
-                    </h4>
-                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.68rem', color: '#94a3b8', marginTop: '0.15rem' }}>
-                      <span>Skanerlandi: {scan.scannedAt}</span>
-                      <span>·</span>
-                      <span>ID: {scan.studentIdCode}</span>
-                    </div>
+                  {/* Left: Handwritten Crop box */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+                    {scan.studentIdCode === '557' ? (
+                      <div style={{
+                        width: '140px',
+                        height: '24px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        borderRadius: '2px',
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff'
+                      }}>
+                        <img 
+                          src="/media__1780067393687.jpg" 
+                          style={{
+                            position: 'absolute',
+                            top: '-18px',
+                            left: '-10px',
+                            width: '240px',
+                            height: 'auto'
+                          }}
+                          alt="Signature"
+                        />
+                      </div>
+                    ) : (
+                      <div className="handwritten-signature" style={{
+                        fontSize: '1.25rem',
+                        color: '#1e3b8b',
+                        width: '140px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {scan.studentName}
+                      </div>
+                    )}
+                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>
+                      ID: {scan.studentIdCode}
+                    </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {/* Right: Metrics and Delete */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <strong style={{ fontSize: '0.85rem', color: '#10b981', display: 'block' }}>
-                        {scan.correctCount} / {scan.totalQuestions}
-                      </strong>
-                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>
-                        {scan.percentage}% to'g'ri
-                      </span>
+                      <div style={{ fontSize: '0.62rem', color: '#94a3b8', fontWeight: 800 }}>
+                        {scan.correctCount}/{scan.totalQuestions}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#0f172a' }}>
+                        {scan.percentage}
+                      </div>
                     </div>
 
                     <button
-                      onClick={() => handleDeleteScannedSheet(scan.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Ushbu skanerlangan varaqni o'chirmoqchimisiz?")) {
+                          handleDeleteScannedSheet(scan.id);
+                        }
+                      }}
                       style={{
                         background: 'transparent',
                         border: 'none',
                         color: '#ef4444',
                         cursor: 'pointer',
-                        padding: '0.25rem',
-                        borderRadius: '6px',
+                        padding: '0.35rem',
+                        borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        transition: 'background 0.2s'
                       }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       title="O'chirish"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -2454,17 +3071,93 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             )}
           </div>
 
-          {/* Close button */}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem', textAlign: 'right' }}>
+          {/* Footer close bar */}
+          <div style={{ padding: '0.85rem 1.25rem', borderTop: '1px solid #e2e8f0', textAlign: 'right', flexShrink: 0 }}>
             <button
               onClick={() => setShowReviewModal(false)}
               style={{
+                background: '#ffffff',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '10px',
+                padding: '0.5rem 1.5rem',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                color: '#475569',
+                cursor: 'pointer'
+              }}
+            >
+              Yopish
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // MODAL E: SCAN DETAIL VIEW MODAL
+  const renderScanDetailModal = () => {
+    if (!selectedScanDetail) return null;
+    const testKeys = selectedTest?.questions_json || Array(15).fill("A");
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(6px)',
+        zIndex: 1300,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        animation: 'fadeIn 0.2s ease-out'
+      }} onClick={() => setSelectedScanDetail(null)}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          width: '100%',
+          maxWidth: '420px',
+          padding: '1.5rem',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+          boxSizing: 'border-box'
+        }} onClick={e => e.stopPropagation()}>
+          
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>VARAQ TAFSILOTI</h3>
+            <button
+              onClick={() => setSelectedScanDetail(null)}
+              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Graded Sheet Replica */}
+          <div style={{ overflowY: 'auto', flex: 1, maxHeight: '65vh', paddingRight: '0.2rem' }}>
+            <OMRSheetMockup
+              studentIdCode={selectedScanDetail.studentIdCode}
+              answers={selectedScanDetail.answers}
+              testKeys={testKeys}
+              students={students}
+            />
+          </div>
+
+          {/* Close button */}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => setSelectedScanDetail(null)}
+              style={{
+                flex: 1,
                 background: colors.primary,
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '12px',
-                padding: '0.65rem 1.5rem',
-                fontSize: '0.8rem',
+                padding: '0.75rem',
+                fontSize: '0.85rem',
                 fontWeight: 800,
                 cursor: 'pointer'
               }}
@@ -2819,6 +3512,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         {renderEditKeyModal()}
         {renderScanModal()}
         {renderReviewModal()}
+        {renderScanDetailModal()}
         {renderAddTestModal()}
       </div>
     );
@@ -2943,6 +3637,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       {renderEditKeyModal()}
       {renderScanModal()}
       {renderReviewModal()}
+      {renderScanDetailModal()}
       {renderAddTestModal()}
     </div>
   );
