@@ -164,7 +164,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   };
 
   const sortedStudents = React.useMemo(() => {
-    if (activeSubject !== 'ALL') return students;
+    if (activeSubject !== 'ALL' && activeSubject !== 'DETAILS') return students;
 
     const getAveragePercentage = (s: Student) => {
       const eng = (s.engScore || 0) / 15 * 100;
@@ -176,13 +176,22 @@ const StudentTable: React.FC<StudentTableProps> = ({
       return (eng + math + att + hw) / 4;
     };
 
-    const list = [...students];
-    if (sortBy === 'HL') {
-      return list.sort((a, b) => getAveragePercentage(b) - getAveragePercentage(a));
-    } else if (sortBy === 'AZ') {
-      return list.sort((a, b) => `${a.name} ${a.surname}`.localeCompare(`${b.name} ${b.surname}`, 'uz'));
+    // Separate new session-added students to always keep them at the bottom
+    const existingStudents = students.filter(s => !s.isSessionAdded);
+    const sessionNewStudents = students.filter(s => s.isSessionAdded);
+
+    // Sort existing students
+    if (activeSubject === 'ALL' && sortBy === 'HL') {
+      existingStudents.sort((a, b) => getAveragePercentage(b) - getAveragePercentage(a));
+    } else {
+      // Default sorting is alphabetical A-Z (covers AZ selection or default)
+      existingStudents.sort((a, b) => `${a.name} ${a.surname}`.localeCompare(`${b.name} ${b.surname}`, 'uz'));
     }
-    return list.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+
+    // Sort new students alphabetically as well so they are tidy at the bottom
+    sessionNewStudents.sort((a, b) => `${a.name} ${a.surname}`.localeCompare(`${b.name} ${b.surname}`, 'uz'));
+
+    return [...existingStudents, ...sessionNewStudents];
   }, [students, sortBy, activeSubject]);
 
   const handleCellSave = (studentId: string, field: 'name' | 'id' | 'passcode' | 'parentPhone', value: string) => {
@@ -1172,9 +1181,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 return a.teacher.localeCompare(b.teacher, 'uz');
               });
 
-              // Sort students inside each group by orderIndex
+              // Sort students inside each group by alphabetical order
               groups.forEach(g => {
-                g.students.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+                g.students.sort((a, b) => `${a.name} ${a.surname}`.localeCompare(`${b.name} ${b.surname}`, 'uz'));
               });
 
               return groups.map((group, groupIdx) => (

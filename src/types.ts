@@ -31,6 +31,7 @@ export interface Student {
   isDeleted?: boolean;
   passcode?: string;
   parentPhone?: string;
+  isSessionAdded?: boolean;
 }
 
 export type ClassName = '5A' | '5B' | '6A' | '6B' | '7A' | '7B' | '8A' | '8B' | string;

@@ -31,8 +31,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
     try {
       // 1. Check Admin Credentials
-      if (trimmedId.toLowerCase() === 'admin') {
-        if (trimmedPasscode === 'Azz21alxorazmiy') {
+      if (trimmedId.toLowerCase() === 'adminall') {
+        if (trimmedPasscode === 'Azz21adminall') {
           // Store in LocalStorage
           localStorage.setItem('auth_role', 'admin');
           localStorage.setItem('admin_passcode', trimmedPasscode);

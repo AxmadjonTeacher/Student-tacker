@@ -372,7 +372,7 @@ function App() {
       
       if (storedRole === 'admin') {
         const storedPass = localStorage.getItem('admin_passcode');
-        if (storedPass === 'Azz21alxorazmiy') {
+        if (storedPass === 'Azz21adminall') {
           setAuthRole('admin');
           setIsAdminMode(false);
           await fetchAllData();
@@ -538,7 +538,8 @@ function App() {
           mathScore: 0,
           attendance: 1,
           homework: 1,
-          passcode: ''
+          passcode: '',
+          isSessionAdded: true
         };
         localUpdatedList.push(brandNew);
         newInserts.push(brandNew);
@@ -701,7 +702,8 @@ function App() {
       attendance: studentData.attendance !== undefined ? studentData.attendance : 1,
       homework: studentData.homework !== undefined ? studentData.homework : 1,
       passcode: '',
-      parentPhone: studentData.parentPhone || ''
+      parentPhone: studentData.parentPhone || '',
+      isSessionAdded: true
     };
 
     setStudents(prev => [...prev, brandNew]);

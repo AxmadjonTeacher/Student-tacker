@@ -846,7 +846,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     const subjects = [
                       { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: '#166534', bg: '#f0fdf4' },
                       { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: '#0d9488', bg: '#f0fdfa' },
-                      { id: 'ALL', title: 'Umumiy Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' },
+                      { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' },
                       { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: '#db2777', bg: '#fdf2f8' }
                     ];
                     return subjects;

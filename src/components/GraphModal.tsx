@@ -649,7 +649,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
             <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
               {student.name} {student.surname} — {
                 activeSubject === 'ALL' 
-                  ? "Umumiy ko'rsatkichlar"
+                  ? "Haftalik ko'rsatkichlar"
                   : isComparing 
                     ? 'Fanlar taqqoslovi' 
                     : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')
