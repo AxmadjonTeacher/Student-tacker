@@ -1108,97 +1108,100 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         TIZIMDAN CHIQISH
       </button>
 
-      {/* Logout Confirmation Dialog */}
-      {showLogoutConfirm && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15, 23, 42, 0.5)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '1rem'
-        }} onClick={() => setShowLogoutConfirm(false)}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '24px',
-            border: '1px solid #e2e8f0',
-            width: '100%',
-            maxWidth: '380px',
-            padding: '1.75rem',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.25rem',
-            textAlign: 'center'
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              background: '#fef2f2',
-              color: '#ef4444',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto'
-            }}>
-              <ShieldAlert size={22} />
-            </div>
-
-            <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: '#0f172a', margin: '0 0 0.35rem 0' }}>
-                Tizimdan chiqish
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-                Haqiqatan ham testor kabinetidan chiqmoqchimisiz? Kirish uchun parolni qayta kiritishingiz kerak bo'ladi.
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                style={{
-                  flex: 1,
-                  background: '#f1f5f9',
-                  color: '#475569',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '0.7rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={() => {
-                  setShowLogoutConfirm(false);
-                  onLogout();
-                }}
-                style={{
-                  flex: 1,
-                  background: '#ef4444',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '0.7rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                Chiqish
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
+
+  const renderLogoutModal = () => {
+    if (!showLogoutConfirm) return null;
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(15, 23, 42, 0.5)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '1rem'
+      }} onClick={() => setShowLogoutConfirm(false)}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          border: '1px solid #e2e8f0',
+          width: '100%',
+          maxWidth: '380px',
+          padding: '1.75rem',
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+          textAlign: 'center'
+        }} onClick={e => e.stopPropagation()}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: '#fef2f2',
+            color: '#ef4444',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto'
+          }}>
+            <ShieldAlert size={22} />
+          </div>
+
+          <div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 850, color: '#0f172a', margin: '0 0 0.35rem 0' }}>
+              Tizimdan chiqish
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+              Haqiqatan ham testor kabinetidan chiqmoqchimisiz? Kirish uchun parolni qayta kiritishingiz kerak bo'ladi.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              style={{
+                flex: 1,
+                background: '#f1f5f9',
+                color: '#475569',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '0.7rem',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                cursor: 'pointer'
+              }}
+            >
+              Bekor qilish
+            </button>
+            <button
+              onClick={() => {
+                setShowLogoutConfirm(false);
+                onLogout();
+              }}
+              style={{
+                flex: 1,
+                background: '#ef4444',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '0.7rem',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                cursor: 'pointer'
+              }}
+            >
+              Chiqish
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const currentTabContent = () => {
     switch (activeTab) {
@@ -1308,6 +1311,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             );
           })}
         </nav>
+        {renderLogoutModal()}
       </div>
     );
   }
@@ -1424,6 +1428,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       }}>
         {currentTabContent()}
       </main>
+      {renderLogoutModal()}
     </div>
   );
 
