@@ -928,10 +928,13 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         const vf = viewfinderRef.current;
         if (vf) {
           const rect = vf.getBoundingClientRect();
-          detSearchTL = mapToVideo(rect.left, rect.top);
-          detSearchTR = mapToVideo(rect.right, rect.top);
-          detSearchBL = mapToVideo(rect.left, rect.bottom);
-          detSearchBR = mapToVideo(rect.right, rect.bottom);
+          const videoRect = video.getBoundingClientRect();
+          
+          // Map viewport coordinates to video element local coordinates by subtracting video offset
+          detSearchTL = mapToVideo(rect.left - videoRect.left, rect.top - videoRect.top);
+          detSearchTR = mapToVideo(rect.right - videoRect.left, rect.top - videoRect.top);
+          detSearchBL = mapToVideo(rect.left - videoRect.left, rect.bottom - videoRect.top);
+          detSearchBR = mapToVideo(rect.right - videoRect.left, rect.bottom - videoRect.top);
         }
 
         // Restrict search radius to a tight 90px (in 800x600 space) to avoid middle markers
@@ -3066,10 +3069,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   ref={viewfinderRef}
                   style={{
                     position: 'relative',
-                    width: '80%',
-                    maxWidth: '300px',
-                    height: '70%',
-                    maxHeight: '440px',
+                    width: '78vw',
+                    maxWidth: '305px',
+                    aspectRatio: '680 / 930', // Exact aspect ratio of physical corner markers spacing (680px horizontally to 930px vertically)
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center'
