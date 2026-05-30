@@ -671,7 +671,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   };
 
   // Sync / local saves for answer key updates
-  const handleSaveAnswerKey = async (testId: string, updatedKeys: string[]) => {
+  const handleSaveAnswerKey = async (testId: string, updatedKeys: any[]) => {
     // Update local state first
     const updated = dbTests.map(t => {
       if (t.id === testId) {
@@ -1035,7 +1035,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     const parsed = parseOMRSheet(warpCanvas);
     
     // 4. Grade against the selected test key
-    const testKeys = selectedTest.questions_json || Array(15).fill("A");
+    const rawKeys = selectedTest.questions_json || Array(15).fill("A");
+    const testKeys = rawKeys.map((q: any) => 
+      typeof q === 'object' && q !== null ? q.correct_answer : q
+    );
     const numQuestions = testKeys.length;
     
     let studentAnswers = [...parsed.answers];
@@ -1122,7 +1125,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     if (!selectedTest) return;
 
     const sheet = sample || selectedSampleSheet || SAMPLE_OMR_SHEETS[0];
-    const testKeys = selectedTest.questions_json || Array(15).fill("A");
+    const rawKeys = selectedTest.questions_json || Array(15).fill("A");
+    const testKeys = rawKeys.map((q: any) => 
+      typeof q === 'object' && q !== null ? q.correct_answer : q
+    );
     const numQuestions = testKeys.length;
 
     // Load OMR template image, draw mock answers onto it, then parse
@@ -1551,23 +1557,23 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           {/* Properties summary */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Teacher:</span>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>O'qituvchi:</span>
               <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.teacher_name}</span>
             </div>
             <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Form:</span>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Sinf:</span>
               <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.level}</span>
             </div>
             <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Date:</span>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Sana:</span>
               <span style={{ fontWeight: 800, color: '#0f172a' }}>{formattedDate}</span>
             </div>
             <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Papers:</span>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Skanerlangan varaqlar:</span>
               <span style={{ fontWeight: 800, color: '#0f172a' }}>{getScannedCount(test.id)} ta varaq</span>
             </div>
             <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Number Of Questions:</span>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Savollar soni:</span>
               <span style={{ fontWeight: 800, color: '#0f172a' }}>{numQuestions} ta</span>
             </div>
           </div>
@@ -1587,8 +1593,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 cursor: 'pointer',
                 textAlign: 'center',
                 letterSpacing: '0.02em',
-                transition: 'all 0.2s',
-                textTransform: 'lowercase'
+                transition: 'all 0.2s'
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.background = `${colors.primary}10`;
@@ -1597,7 +1602,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 e.currentTarget.style.background = 'transparent';
               }}
             >
-              edit key
+              Javoblarni tahrirlash
             </button>
 
             <button
@@ -1623,7 +1628,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 e.currentTarget.style.background = colors.primary;
               }}
             >
-              Scan the paper
+              Varaqni skanerlash
             </button>
 
             <button
@@ -1639,8 +1644,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 cursor: 'pointer',
                 textAlign: 'center',
                 letterSpacing: '0.02em',
-                transition: 'all 0.2s',
-                textTransform: 'lowercase'
+                transition: 'all 0.2s'
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.background = `${colors.primary}10`;
@@ -1649,7 +1653,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 e.currentTarget.style.background = 'transparent';
               }}
             >
-              review paper
+              Natijalarni ko'rish
             </button>
           </div>
         </div>
@@ -2598,7 +2602,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
           <div style={{ overflowY: 'auto', flex: 1, paddingRight: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {Array.from({ length: numQuestions }).map((_, idx) => {
-              const currentKey = testKeys[idx] || "A";
+              const item = testKeys[idx];
+              const currentKey = typeof item === 'object' && item !== null 
+                ? item.correct_answer 
+                : (item || "A");
               return (
                 <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '12px', gap: '1rem' }}>
                   <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', minWidth: '40px' }}>
@@ -2612,7 +2619,11 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                           key={option}
                           onClick={() => {
                             const newKeys = [...testKeys];
-                            newKeys[idx] = option;
+                            if (typeof newKeys[idx] === 'object' && newKeys[idx] !== null) {
+                              newKeys[idx] = { ...newKeys[idx], correct_answer: option };
+                            } else {
+                              newKeys[idx] = typeof newKeys[idx] === 'string' ? option : { correct_answer: option };
+                            }
                             // Update local state temporarily
                             setSelectedTest({ ...selectedTest, questions_json: newKeys });
                           }}
@@ -3259,7 +3270,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 <OMRSheetMockup
                   studentIdCode={scannedOMRSheet.studentIdCode}
                   answers={scannedOMRSheet.answers}
-                  testKeys={selectedTest.questions_json || Array(15).fill("A")}
+                  testKeys={(selectedTest.questions_json || Array(15).fill("A")).map((q: any) => 
+                    typeof q === 'object' && q !== null ? q.correct_answer : q
+                  )}
                   students={students}
                 />
               </div>
@@ -3718,7 +3731,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   // MODAL E: SCAN DETAIL VIEW MODAL
   const renderScanDetailModal = () => {
     if (!selectedScanDetail) return null;
-    const testKeys = selectedTest?.questions_json || Array(15).fill("A");
+    const rawKeys = selectedTest?.questions_json || Array(15).fill("A");
+    const testKeys = rawKeys.map((q: any) => 
+      typeof q === 'object' && q !== null ? q.correct_answer : q
+    );
 
     return (
       <div style={{

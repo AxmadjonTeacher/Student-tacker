@@ -364,101 +364,215 @@
       return Math.max(0, 255 - avgGrayscale);
     }
 
+    function getGrayscalePixelsInCircle(ctx, cx, cy, radius) {
+      const w = ctx.canvas.width;
+      const h = ctx.canvas.height;
+
+      const xMin = Math.max(0, Math.floor(cx - radius));
+      const xMax = Math.min(w - 1, Math.ceil(cx + radius));
+      const yMin = Math.max(0, Math.floor(cy - radius));
+      const yMax = Math.min(h - 1, Math.ceil(cy + radius));
+
+      const winW = xMax - xMin + 1;
+      const winH = yMax - yMin + 1;
+
+      if (winW <= 0 || winH <= 0) return [];
+
+      const imgData = ctx.getImageData(xMin, yMin, winW, winH);
+      const data = imgData.data;
+      const pixels = [];
+
+      for (let y = 0; y < winH; y++) {
+        const py = yMin + y;
+        const dy = py - cy;
+        for (let x = 0; x < winW; x++) {
+          const px = xMin + x;
+          const dx = px - cx;
+
+          if (dx * dx + dy * dy <= radius * radius) {
+            const idx = (y * winW + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
+            pixels.push(grayscale);
+          }
+        }
+      }
+      return pixels;
+    }
+
     function parseOMRSheet(canvas) {
       const ctx = canvas.getContext('2d');
       const options = ['A', 'B', 'C', 'D'];
       const answers = Array(15).fill('');
       const debugLogs = [];
 
-      // 1. Left Questions
+      // 1. Left Questions (1-13)
       for (let row = 0; row < 13; row++) {
         const cy = QUESTIONS_LEFT_Y_START + row * QUESTIONS_LEFT_Y_STEP;
-        const values = [];
+        const rowPixels = [];
+
+        // Gather pixels for row-wide contrast
+        for (let col = 0; col < 4; col++) {
+          const cx = QUESTIONS_LEFT_X[col];
+          const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 8.5);
+          rowPixels.push(...pixels);
+        }
+
+        let minVal = 255;
+        let maxVal = 0;
+        for (const val of rowPixels) {
+          if (val < minVal) minVal = val;
+          if (val > maxVal) maxVal = val;
+        }
+
+        const contrast = maxVal - minVal;
+        const localThreshold = minVal + 0.45 * contrast;
+        const bubbleDensities = [];
 
         for (let col = 0; col < 4; col++) {
           const cx = QUESTIONS_LEFT_X[col];
-          const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS);
-          values.push(darkness);
+          const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 6.0);
+          
+          let blackCount = 0;
+          for (const val of innerPixels) {
+            if (val < localThreshold) {
+              blackCount++;
+            }
+          }
+          const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
+          bubbleDensities.push(density);
         }
 
         let maxIdx = 0;
-        let maxVal = -1;
+        let maxDensity = -1;
         for (let col = 0; col < 4; col++) {
-          if (values[col] > maxVal) {
-            maxVal = values[col];
+          if (bubbleDensities[col] > maxDensity) {
+            maxDensity = bubbleDensities[col];
             maxIdx = col;
           }
         }
 
-        const sumOthers = values.reduce((a, b) => a + b, 0) - maxVal;
+        const sumOthers = bubbleDensities.reduce((a, b) => a + b, 0) - maxDensity;
         const avgOthers = sumOthers / 3;
-        const margin = maxVal - avgOthers;
-        
-        const isFilled = maxVal > 60 && margin > 15;
-        if (isFilled) {
+        const margin = maxDensity - avgOthers;
+
+        if (contrast > 25 && maxDensity > 0.30 && margin > 0.15) {
           answers[row] = options[maxIdx];
         } else {
           answers[row] = '';
         }
-        debugLogs.push(`Q${row+1}: A=${values[0].toFixed(0)}, B=${values[1].toFixed(0)}, C=${values[2].toFixed(0)}, D=${values[3].toFixed(0)} | Selected=${answers[row]} (max=${maxVal.toFixed(0)}, margin=${margin.toFixed(0)})`);
+        debugLogs.push(`Q${row+1}: A=${bubbleDensities[0].toFixed(2)}, B=${bubbleDensities[1].toFixed(2)}, C=${bubbleDensities[2].toFixed(2)}, D=${bubbleDensities[3].toFixed(2)} | Selected=${answers[row]} (maxDensity=${maxDensity.toFixed(2)}, contrast=${contrast.toFixed(0)})`);
       }
 
-      // 2. Right Questions
+      // 2. Right Questions (14-15)
       for (let row = 0; row < 2; row++) {
         const cy = QUESTIONS_RIGHT_Y_START + row * QUESTIONS_RIGHT_Y_STEP;
-        const values = [];
+        const rowPixels = [];
 
         for (let col = 0; col < 4; col++) {
           const cx = QUESTIONS_RIGHT_X[col];
-          const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS);
-          values.push(darkness);
+          const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 8.5);
+          rowPixels.push(...pixels);
+        }
+
+        let minVal = 255;
+        let maxVal = 0;
+        for (const val of rowPixels) {
+          if (val < minVal) minVal = val;
+          if (val > maxVal) maxVal = val;
+        }
+
+        const contrast = maxVal - minVal;
+        const localThreshold = minVal + 0.45 * contrast;
+        const bubbleDensities = [];
+
+        for (let col = 0; col < 4; col++) {
+          const cx = QUESTIONS_RIGHT_X[col];
+          const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 6.0);
+          
+          let blackCount = 0;
+          for (const val of innerPixels) {
+            if (val < localThreshold) {
+              blackCount++;
+            }
+          }
+          const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
+          bubbleDensities.push(density);
         }
 
         let maxIdx = 0;
-        let maxVal = -1;
+        let maxDensity = -1;
         for (let col = 0; col < 4; col++) {
-          if (values[col] > maxVal) {
-            maxVal = values[col];
+          if (bubbleDensities[col] > maxDensity) {
+            maxDensity = bubbleDensities[col];
             maxIdx = col;
           }
         }
 
-        const sumOthers = values.reduce((a, b) => a + b, 0) - maxVal;
+        const sumOthers = bubbleDensities.reduce((a, b) => a + b, 0) - maxDensity;
         const avgOthers = sumOthers / 3;
-        const margin = maxVal - avgOthers;
+        const margin = maxDensity - avgOthers;
 
-        const isFilled = maxVal > 60 && margin > 15;
-        if (isFilled) {
+        if (contrast > 25 && maxDensity > 0.30 && margin > 0.15) {
           answers[13 + row] = options[maxIdx];
         } else {
           answers[13 + row] = '';
         }
-        debugLogs.push(`Q${14+row}: A=${values[0].toFixed(0)}, B=${values[1].toFixed(0)}, C=${values[2].toFixed(0)}, D=${values[3].toFixed(0)} | Selected=${answers[13+row]} (max=${maxVal.toFixed(0)}, margin=${margin.toFixed(0)})`);
+        debugLogs.push(`Q${14+row}: A=${bubbleDensities[0].toFixed(2)}, B=${bubbleDensities[1].toFixed(2)}, C=${bubbleDensities[2].toFixed(2)}, D=${bubbleDensities[3].toFixed(2)} | Selected=${answers[13+row]} (maxDensity=${maxDensity.toFixed(2)}, contrast=${contrast.toFixed(0)})`);
       }
 
       // 3. ID Parsing
       let studentIdCode = '';
       for (let col = 0; col < 3; col++) {
         const cx = STUDENT_ID_X[col];
-        let maxIdx = 0;
-        let maxVal = -1;
-        const colVals = [];
+        const colPixels = [];
 
         for (let row = 0; row < 10; row++) {
           const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
-          const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS - 1.5);
-          colVals.push(darkness);
-          if (darkness > maxVal) {
-            maxVal = darkness;
+          const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 7.0);
+          colPixels.push(...pixels);
+        }
+
+        let minVal = 255;
+        let maxVal = 0;
+        for (const val of colPixels) {
+          if (val < minVal) minVal = val;
+          if (val > maxVal) maxVal = val;
+        }
+
+        const contrast = maxVal - minVal;
+        const localThreshold = minVal + 0.45 * contrast;
+        
+        let maxIdx = 0;
+        let maxDensity = -1;
+        const colDensities = [];
+
+        for (let row = 0; row < 10; row++) {
+          const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
+          const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 4.5);
+          
+          let blackCount = 0;
+          for (const val of innerPixels) {
+            if (val < localThreshold) {
+              blackCount++;
+            }
+          }
+          const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
+          colDensities.push(density);
+          if (density > maxDensity) {
+            maxDensity = density;
             maxIdx = row;
           }
         }
-        if (maxVal > 55) {
+
+        if (contrast > 25 && maxDensity > 0.25) {
           studentIdCode += maxIdx.toString();
         } else {
           studentIdCode += '0';
         }
-        debugLogs.push(`ID Col ${col+1}: values=[${colVals.map(v => v.toFixed(0)).join(',')}] | Selected=${maxIdx} (val=${maxVal.toFixed(0)})`);
+        debugLogs.push(`ID Col ${col+1}: values=[${colDensities.map(v => v.toFixed(2)).join(',')}] | Selected=${maxIdx} (val=${maxDensity.toFixed(2)}, contrast=${contrast.toFixed(0)})`);
       }
 
       return {

@@ -347,72 +347,173 @@ export function readBubbleDarkness(
 /**
  * Analyzes the standardized 646 x 903 warped OMR canvas to extract answers and Student ID digits.
  */
+/**
+ * Helper to get the grayscale values of pixels inside a circle.
+ */
+function getGrayscalePixelsInCircle(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number
+): number[] {
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+
+  const xMin = Math.max(0, Math.floor(cx - radius));
+  const xMax = Math.min(w - 1, Math.ceil(cx + radius));
+  const yMin = Math.max(0, Math.floor(cy - radius));
+  const yMax = Math.min(h - 1, Math.ceil(cy + radius));
+
+  const winW = xMax - xMin + 1;
+  const winH = yMax - yMin + 1;
+
+  if (winW <= 0 || winH <= 0) return [];
+
+  const imgData = ctx.getImageData(xMin, yMin, winW, winH);
+  const data = imgData.data;
+  const pixels: number[] = [];
+
+  for (let y = 0; y < winH; y++) {
+    const py = yMin + y;
+    const dy = py - cy;
+    for (let x = 0; x < winW; x++) {
+      const px = xMin + x;
+      const dx = px - cx;
+
+      if (dx * dx + dy * dy <= radius * radius) {
+        const idx = (y * winW + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
+        pixels.push(grayscale);
+      }
+    }
+  }
+  return pixels;
+}
+
+/**
+ * Analyzes the standardized 646 x 903 warped OMR canvas to extract answers and Student ID digits.
+ * Uses local, row/column-level adaptive binarization and density counting for industrial-grade robustness.
+ */
 export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
   const ctx = canvas.getContext('2d')!;
   const options = ['A', 'B', 'C', 'D'];
-
-  // 1. Parse Questions 1-13 (Left Column)
   const answers: string[] = Array(15).fill('');
 
+  // 1. Parse Questions 1-13 (Left Column)
   for (let row = 0; row < 13; row++) {
     const cy = QUESTIONS_LEFT_Y_START + row * QUESTIONS_LEFT_Y_STEP;
-    const bubbleDarknessValues: number[] = [];
+    const rowPixels: number[] = [];
+    const colPixelsList: number[][] = [];
 
+    // Collect pixels around all 4 bubbles in this row to build an adaptive local threshold
     for (let col = 0; col < 4; col++) {
       const cx = QUESTIONS_LEFT_X[col];
-      const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS);
-      bubbleDarknessValues.push(darkness);
+      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 8.5); // sample wider area
+      colPixelsList.push(pixels);
+      rowPixels.push(...pixels);
     }
 
-    // Find darkest bubble
-    let maxIdx = 0;
-    let maxVal = -1;
+    let minVal = 255;
+    let maxVal = 0;
+    for (const val of rowPixels) {
+      if (val < minVal) minVal = val;
+      if (val > maxVal) maxVal = val;
+    }
+
+    const contrast = maxVal - minVal;
+    const localThreshold = minVal + 0.45 * contrast;
+    const bubbleDensities: number[] = [];
+
+    // Calculate binary filled density inside a tighter inner radius (6px) to avoid borders
     for (let col = 0; col < 4; col++) {
-      if (bubbleDarknessValues[col] > maxVal) {
-        maxVal = bubbleDarknessValues[col];
+      const cx = QUESTIONS_LEFT_X[col];
+      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 6.0);
+      
+      let blackCount = 0;
+      for (const val of innerPixels) {
+        if (val < localThreshold) {
+          blackCount++;
+        }
+      }
+      const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
+      bubbleDensities.push(density);
+    }
+
+    let maxIdx = 0;
+    let maxDensity = -1;
+    for (let col = 0; col < 4; col++) {
+      if (bubbleDensities[col] > maxDensity) {
+        maxDensity = bubbleDensities[col];
         maxIdx = col;
       }
     }
 
-    // Threshold checks:
-    // A bubble is marked if it exceeds 60 darkness (relaxed from 75).
-    // The darkest option must be significantly darker than the average of the other 3.
-    const sumOthers = bubbleDarknessValues.reduce((a, b) => a + b, 0) - maxVal;
+    const sumOthers = bubbleDensities.reduce((a, b) => a + b, 0) - maxDensity;
     const avgOthers = sumOthers / 3;
-    const margin = maxVal - avgOthers;
+    const margin = maxDensity - avgOthers;
 
-    if (maxVal > 60 && margin > 15) {
+    if (contrast > 25 && maxDensity > 0.30 && margin > 0.15) {
       answers[row] = options[maxIdx];
     } else {
-      answers[row] = ''; // No answer / unclear
+      answers[row] = '';
     }
   }
 
-  // 2. Parse Questions 14-15 (Right Column top)
+  // 2. Parse Questions 14-15 (Right Column)
   for (let row = 0; row < 2; row++) {
     const cy = QUESTIONS_RIGHT_Y_START + row * QUESTIONS_RIGHT_Y_STEP;
-    const bubbleDarknessValues: number[] = [];
+    const rowPixels: number[] = [];
+    const colPixelsList: number[][] = [];
 
     for (let col = 0; col < 4; col++) {
       const cx = QUESTIONS_RIGHT_X[col];
-      const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS);
-      bubbleDarknessValues.push(darkness);
+      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 8.5);
+      colPixelsList.push(pixels);
+      rowPixels.push(...pixels);
+    }
+
+    let minVal = 255;
+    let maxVal = 0;
+    for (const val of rowPixels) {
+      if (val < minVal) minVal = val;
+      if (val > maxVal) maxVal = val;
+    }
+
+    const contrast = maxVal - minVal;
+    const localThreshold = minVal + 0.45 * contrast;
+    const bubbleDensities: number[] = [];
+
+    for (let col = 0; col < 4; col++) {
+      const cx = QUESTIONS_RIGHT_X[col];
+      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 6.0);
+      
+      let blackCount = 0;
+      for (const val of innerPixels) {
+        if (val < localThreshold) {
+          blackCount++;
+        }
+      }
+      const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
+      bubbleDensities.push(density);
     }
 
     let maxIdx = 0;
-    let maxVal = -1;
+    let maxDensity = -1;
     for (let col = 0; col < 4; col++) {
-      if (bubbleDarknessValues[col] > maxVal) {
-        maxVal = bubbleDarknessValues[col];
+      if (bubbleDensities[col] > maxDensity) {
+        maxDensity = bubbleDensities[col];
         maxIdx = col;
       }
     }
 
-    const sumOthers = bubbleDarknessValues.reduce((a, b) => a + b, 0) - maxVal;
+    const sumOthers = bubbleDensities.reduce((a, b) => a + b, 0) - maxDensity;
     const avgOthers = sumOthers / 3;
-    const margin = maxVal - avgOthers;
+    const margin = maxDensity - avgOthers;
 
-    if (maxVal > 60 && margin > 15) {
+    if (contrast > 25 && maxDensity > 0.30 && margin > 0.15) {
       answers[13 + row] = options[maxIdx];
     } else {
       answers[13 + row] = '';
@@ -423,23 +524,48 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
   let studentIdCode = '';
   for (let col = 0; col < 3; col++) {
     const cx = STUDENT_ID_X[col];
-    let maxIdx = 0;
-    let maxVal = -1;
+    const colPixels: number[] = [];
 
     for (let row = 0; row < 10; row++) {
       const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
-      const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS - 1.5); // ID bubbles are slightly smaller
-      if (darkness > maxVal) {
-        maxVal = darkness;
+      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 7.0);
+      colPixels.push(...pixels);
+    }
+
+    let minVal = 255;
+    let maxVal = 0;
+    for (const val of colPixels) {
+      if (val < minVal) minVal = val;
+      if (val > maxVal) maxVal = val;
+    }
+
+    const contrast = maxVal - minVal;
+    const localThreshold = minVal + 0.45 * contrast;
+    
+    let maxIdx = 0;
+    let maxDensity = -1;
+
+    for (let row = 0; row < 10; row++) {
+      const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
+      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 4.5); // ID bubbles are smaller (4.5px inner)
+      
+      let blackCount = 0;
+      for (const val of innerPixels) {
+        if (val < localThreshold) {
+          blackCount++;
+        }
+      }
+      const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
+      if (density > maxDensity) {
+        maxDensity = density;
         maxIdx = row;
       }
     }
 
-    // If the darkest ID grid bubble is dark enough, register it, else default to '0'
-    if (maxVal > 55) {
+    if (contrast > 25 && maxDensity > 0.25) {
       studentIdCode += maxIdx.toString();
     } else {
-      studentIdCode += '0'; // default fallback
+      studentIdCode += '0';
     }
   }
 
