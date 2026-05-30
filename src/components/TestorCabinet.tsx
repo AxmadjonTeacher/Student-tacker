@@ -878,50 +878,82 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     const processFrame = () => {
       if (!active) return;
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        // Use actual video dimensions for the processing canvas
+        // Use actual video dimensions for high-res warping
         const vw = video.videoWidth || 640;
         const vh = video.videoHeight || 480;
-        canvas.width = vw;
-        canvas.height = vh;
+        const cw = video.clientWidth || 640;
+        const ch = video.clientHeight || 480;
 
-        // Draw video frame at native resolution
-        ctx.drawImage(video, 0, 0, vw, vh);
+        // 1. Create downscaled canvas for super fast marker detection (CPU-friendly BFS)
+        const detW = 800;
+        const detH = 600;
+        const detCanvas = document.createElement('canvas');
+        detCanvas.width = detW;
+        detCanvas.height = detH;
+        const detCtx = detCanvas.getContext('2d', { willReadFrequently: true })!;
 
-        // Dynamic search positions: the paper's corners should appear at ~15% inset
-        // from each edge (matching the viewfinder bracket positions)
-        const marginX = vw * 0.15;
-        const marginY = vh * 0.12;
-        const searchTL = { x: marginX, y: marginY };
-        const searchTR = { x: vw - marginX, y: marginY };
-        const searchBL = { x: marginX, y: vh - marginY };
-        const searchBR = { x: vw - marginX, y: vh - marginY };
-        
-        // Generous search radius to handle imperfect alignment
-        const radius = Math.max(vw, vh) * 0.18;
+        // Draw video frame onto downscaled detection canvas
+        detCtx.drawImage(video, 0, 0, detW, detH);
 
-        // Find markers
-        let tl = findMarkerCentroid(ctx, searchTL.x, searchTL.y, radius);
-        let tr = findMarkerCentroid(ctx, searchTR.x, searchTR.y, radius);
-        let bl = findMarkerCentroid(ctx, searchBL.x, searchBL.y, radius);
-        let br = findMarkerCentroid(ctx, searchBR.x, searchBR.y, radius);
+        // 2. Define quadrant search centers on downscaled canvas
+        const detMarginX = detW * 0.15;
+        const detMarginY = detH * 0.15;
+        const detSearchTL = { x: detMarginX, y: detMarginY };
+        const detSearchTR = { x: detW - detMarginX, y: detMarginY };
+        const detSearchBL = { x: detMarginX, y: detH - detMarginY };
+        const detSearchBR = { x: detW - detMarginX, y: detH - detMarginY };
 
-        // Fallback: if some corners weren't found, try a wider search
-        if (!tl || !tr || !bl || !br) {
-          const wideRadius = Math.max(vw, vh) * 0.25;
-          if (!tl) tl = findMarkerCentroid(ctx, marginX * 1.2, marginY * 1.2, wideRadius);
-          if (!tr) tr = findMarkerCentroid(ctx, vw - marginX * 1.2, marginY * 1.2, wideRadius);
-          if (!bl) bl = findMarkerCentroid(ctx, marginX * 1.2, vh - marginY * 1.2, wideRadius);
-          if (!br) br = findMarkerCentroid(ctx, vw - marginX * 1.2, vh - marginY * 1.2, wideRadius);
-        }
+        // A very large 35% search radius covers 100% of the quadrants.
+        // This means the paper can be positioned anywhere and still be detected.
+        const detRadius = Math.max(detW, detH) * 0.35; // 280px radius
 
-        setDetectedCorners({ tl, tr, bl, br });
+        // Find markers on downscaled frame
+        let tlDet = findMarkerCentroid(detCtx, detSearchTL.x, detSearchTL.y, detRadius);
+        let trDet = findMarkerCentroid(detCtx, detSearchTR.x, detSearchTR.y, detRadius);
+        let blDet = findMarkerCentroid(detCtx, detSearchBL.x, detSearchBL.y, detRadius);
+        let brDet = findMarkerCentroid(detCtx, detSearchBR.x, detSearchBR.y, detRadius);
 
-        if (tl && tr && bl && br) {
+        // 3. Aspect Ratio Scale & offset calculations to map video coords to screen overlay
+        const scaleFit = Math.max(cw / vw, ch / vh);
+        const scaledW = vw * scaleFit;
+        const scaledH = vh * scaleFit;
+        const offsetX = (cw - scaledW) / 2;
+        const offsetY = (ch - scaledH) / 2;
+
+        const mapToScreen = (pt: Point) => ({
+          x: (pt.x / detW) * scaledW + offsetX,
+          y: (pt.y / detH) * scaledH + offsetY
+        });
+
+        // Store detected corners mapped to absolute screen pixels for UI feedback (snapping dots)
+        setDetectedCorners({
+          tl: tlDet ? mapToScreen(tlDet) : null,
+          tr: trDet ? mapToScreen(trDet) : null,
+          bl: blDet ? mapToScreen(blDet) : null,
+          br: brDet ? mapToScreen(brDet) : null
+        });
+
+        if (tlDet && trDet && blDet && brDet) {
+          // Scale detected markers back to the native video resolution
+          const scaleX = vw / detW;
+          const scaleY = vh / detH;
+          const tl = { x: tlDet.x * scaleX, y: tlDet.y * scaleY };
+          const tr = { x: trDet.x * scaleX, y: trDet.y * scaleY };
+          const bl = { x: blDet.x * scaleX, y: blDet.y * scaleY };
+          const br = { x: brDet.x * scaleX, y: brDet.y * scaleY };
+
           lastCorners = [tl, tr, bl, br];
           consecutiveSuccessFrames++;
+
           if (consecutiveSuccessFrames >= 2) {
             // Success! Stop loop, perform warp and parse (instant!)
             active = false;
+            
+            // Draw video frame at full native resolution on the main canvas
+            canvas.width = vw;
+            canvas.height = vh;
+            ctx.drawImage(video, 0, 0, vw, vh);
+
             handleGradeOMRFrame(ctx, lastCorners);
             return;
           }
@@ -2689,6 +2721,72 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 zIndex: 1000,
                 pointerEvents: 'none',
                 transition: 'opacity 0.1s ease-out'
+              }} />
+            )}
+
+            {/* Dynamic Snapping Indicators overlay */}
+            {detectedCorners.tl && (
+              <div style={{
+                position: 'absolute',
+                left: `${detectedCorners.tl.x}px`,
+                top: `${detectedCorners.tl.y}px`,
+                width: '20px', height: '20px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                border: '3px solid #ffffff',
+                boxShadow: '0 0 12px #22c55e',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 900,
+                pointerEvents: 'none',
+                transition: 'left 0.08s ease-out, top 0.08s ease-out'
+              }} />
+            )}
+            {detectedCorners.tr && (
+              <div style={{
+                position: 'absolute',
+                left: `${detectedCorners.tr.x}px`,
+                top: `${detectedCorners.tr.y}px`,
+                width: '20px', height: '20px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                border: '3px solid #ffffff',
+                boxShadow: '0 0 12px #22c55e',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 900,
+                pointerEvents: 'none',
+                transition: 'left 0.08s ease-out, top 0.08s ease-out'
+              }} />
+            )}
+            {detectedCorners.bl && (
+              <div style={{
+                position: 'absolute',
+                left: `${detectedCorners.bl.x}px`,
+                top: `${detectedCorners.bl.y}px`,
+                width: '20px', height: '20px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                border: '3px solid #ffffff',
+                boxShadow: '0 0 12px #22c55e',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 900,
+                pointerEvents: 'none',
+                transition: 'left 0.08s ease-out, top 0.08s ease-out'
+              }} />
+            )}
+            {detectedCorners.br && (
+              <div style={{
+                position: 'absolute',
+                left: `${detectedCorners.br.x}px`,
+                top: `${detectedCorners.br.y}px`,
+                width: '20px', height: '20px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                border: '3px solid #ffffff',
+                boxShadow: '0 0 12px #22c55e',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 900,
+                pointerEvents: 'none',
+                transition: 'left 0.08s ease-out, top 0.08s ease-out'
               }} />
             )}
 
