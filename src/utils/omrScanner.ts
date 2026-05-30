@@ -10,33 +10,35 @@ export interface OMRParsedResult {
   percentage?: number;
 }
 
-// Fixed coordinates in the standardized 646 x 903 warped template
-export const TEMPLATE_WIDTH = 646;
-export const TEMPLATE_HEIGHT = 903;
+import omrCoordinates from './omr_coordinates.json';
+
+// Fixed coordinates in the standardized 750 x 1000 warped template
+export const TEMPLATE_WIDTH = 750;
+export const TEMPLATE_HEIGHT = 1000;
 
 // Centroids of the 4 outer corner fiducial markers in the template
-export const TEMPLATE_TL: Point = { x: 17.0, y: 55.0 };
-export const TEMPLATE_TR: Point = { x: 628.0, y: 55.0 };
-export const TEMPLATE_BL: Point = { x: 17.0, y: 884.5 };
-export const TEMPLATE_BR: Point = { x: 628.1, y: 884.5 };
+export const TEMPLATE_TL: Point = omrCoordinates.template.markers.TL;
+export const TEMPLATE_TR: Point = omrCoordinates.template.markers.TR;
+export const TEMPLATE_BL: Point = omrCoordinates.template.markers.BL;
+export const TEMPLATE_BR: Point = omrCoordinates.template.markers.BR;
 
 // Coordinate Maps
-export const BUBBLE_RADIUS = 9; // radius for darkness check
+export const BUBBLE_RADIUS = omrCoordinates.template.bubbleRadius; // radius for darkness check
 
 // Left column questions (1 to 13)
-export const QUESTIONS_LEFT_X = [130, 174, 218, 262]; // A, B, C, D
-export const QUESTIONS_LEFT_Y_START = 161;
-export const QUESTIONS_LEFT_Y_STEP = 56.33;
+export const QUESTIONS_LEFT_X = [161, 210, 259, 308]; // A, B, C, D
+export const QUESTIONS_LEFT_Y_START = 154;
+export const QUESTIONS_LEFT_Y_STEP = 63.24;
 
 // Right column questions (14 to 15)
-export const QUESTIONS_RIGHT_X = [352, 396, 440, 484]; // A, B, C, D
-export const QUESTIONS_RIGHT_Y_START = 161;
-export const QUESTIONS_RIGHT_Y_STEP = 56.33;
+export const QUESTIONS_RIGHT_X = [408, 457, 506, 555]; // A, B, C, D
+export const QUESTIONS_RIGHT_Y_START = 154;
+export const QUESTIONS_RIGHT_Y_STEP = 63.24;
 
 // Student ID Grid (3 columns of digits 0 to 9)
-export const STUDENT_ID_X = [479, 523, 567]; // Digit Columns 1, 2, 3
-export const STUDENT_ID_Y_START = 408;
-export const STUDENT_ID_Y_STEP = 41.33;
+export const STUDENT_ID_X = [548, 597, 646]; // Digit Columns 1, 2, 3
+export const STUDENT_ID_Y_START = 431;
+export const STUDENT_ID_Y_STEP = 46.5;
 
 /**
  * Finds the centroid of a dark fiducial marker in a search window of a canvas.
@@ -232,7 +234,7 @@ export function findAllMarkersFullFrame(
 
 /**
  * Performs a perspective-correct bilinear warp on a source canvas using 4 corner points
- * onto a destination canvas of size 646 x 903.
+ * onto a destination canvas of size 750 x 1000.
  */
 export function warpQuadrilateral(
   sourceCtx: CanvasRenderingContext2D,
@@ -252,19 +254,19 @@ export function warpQuadrilateral(
   const [pTL, pTR, pBL, pBR] = srcCorners;
 
   for (let y = 0; y < dh; y++) {
-    // Map y in the destination template [0, 903] to the vertical range [55.0, 884.5]
-    // where 55.0 is the top marker Y and 884.5 is the bottom marker Y in the template.
-    const v = (y - 55.0) / 829.5;
+    // Map y in the destination template [0, 1000] to the vertical range [35.0, 965.0]
+    // where 35.0 is the top marker Y and 965.0 is the bottom marker Y.
+    const v = (y - 35.0) / 930.0;
     const oneMinusV = 1 - v;
     
     // Account for slight shift/rotation by interpolating the X-bounds at this Y
-    const xRight = 628.0 + v * 0.1;
-    const xRange = xRight - 17.0;
+    const xRight = 715.0; // TR and BR centers are at X=715
+    const xRange = xRight - 35.0;
 
     for (let x = 0; x < dw; x++) {
-      // Map x in the destination template [0, 646] to the horizontal range [17.0, xRight]
-      // where 17.0 is the left marker X and xRight is the interpolated right marker X.
-      const u = (x - 17.0) / xRange;
+      // Map x in the destination template [0, 750] to the horizontal range [35.0, xRight]
+      // where 35.0 is the left marker X and xRight is the right marker X.
+      const u = (x - 35.0) / xRange;
       const oneMinusU = 1 - u;
 
       // Bilinear interpolation weights
@@ -401,6 +403,10 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
   const ctx = canvas.getContext('2d')!;
   const options = ['A', 'B', 'C', 'D'];
   const answers: string[] = Array(15).fill('');
+  
+  const outerRadius = omrCoordinates.template.sampling.outerWindowRadius;
+  const innerQRadius = omrCoordinates.template.sampling.innerQuestionRadius;
+  const innerIdRadius = omrCoordinates.template.sampling.innerIdRadius;
 
   // 1. Parse Questions 1-13 (Left Column)
   for (let row = 0; row < 13; row++) {
@@ -411,7 +417,7 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
     // Collect pixels around all 4 bubbles in this row to build an adaptive local threshold
     for (let col = 0; col < 4; col++) {
       const cx = QUESTIONS_LEFT_X[col];
-      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 8.5); // sample wider area
+      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, outerRadius); // sample wider area
       colPixelsList.push(pixels);
       rowPixels.push(...pixels);
     }
@@ -427,10 +433,10 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
     const localThreshold = minVal + 0.45 * contrast;
     const bubbleDensities: number[] = [];
 
-    // Calculate binary filled density inside a tighter inner radius (6px) to avoid borders
+    // Calculate binary filled density inside a tighter inner radius to avoid borders
     for (let col = 0; col < 4; col++) {
       const cx = QUESTIONS_LEFT_X[col];
-      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 6.0);
+      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, innerQRadius);
       
       let blackCount = 0;
       for (const val of innerPixels) {
@@ -470,7 +476,7 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
 
     for (let col = 0; col < 4; col++) {
       const cx = QUESTIONS_RIGHT_X[col];
-      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 8.5);
+      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, outerRadius);
       colPixelsList.push(pixels);
       rowPixels.push(...pixels);
     }
@@ -488,7 +494,7 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
 
     for (let col = 0; col < 4; col++) {
       const cx = QUESTIONS_RIGHT_X[col];
-      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 6.0);
+      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, innerQRadius);
       
       let blackCount = 0;
       for (const val of innerPixels) {
@@ -528,7 +534,7 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
 
     for (let row = 0; row < 10; row++) {
       const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
-      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, 7.0);
+      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, outerRadius - 1.5);
       colPixels.push(...pixels);
     }
 
@@ -547,7 +553,7 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
 
     for (let row = 0; row < 10; row++) {
       const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
-      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, 4.5); // ID bubbles are smaller (4.5px inner)
+      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, innerIdRadius);
       
       let blackCount = 0;
       for (const val of innerPixels) {

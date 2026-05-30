@@ -59,6 +59,7 @@
   <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
     <label>Select OMR Image:</label>
     <select id="imageSelect">
+      <option value="/omr_sheet_template.svg">omr_sheet_template.svg (Standardized)</option>
       <option value="/media__1780067393687.jpg">media__1780067393687.jpg</option>
       <option value="/media__1780067381376.jpg">media__1780067381376.jpg</option>
       <option value="/media__1780072205654.jpg">media__1780072205654.jpg</option>
@@ -76,11 +77,11 @@
 
     <!-- Right panel: Warped image with bubble coordinate overlays -->
     <div class="panel">
-      <h3>Warped Template (646 x 903) with Coordinates</h3>
+      <h3>Warped Template (750 x 1000) with Coordinates</h3>
       <div style="margin-bottom: 10px;">
         <label><input type="checkbox" id="showCrosshairs" checked> Show Coordinates Crosshairs</label>
       </div>
-      <canvas id="warpedCanvas" width="646" height="903"></canvas>
+      <canvas id="warpedCanvas" width="750" height="1000"></canvas>
       
       <h3>OMR Extracted Results</h3>
       <div id="resultsPanel" class="results">Click "Run OMR Calibration" to parse.</div>
@@ -112,22 +113,22 @@
 
   <script>
     // Copy compiled functions for direct sandbox testing
-    const TEMPLATE_WIDTH = 646;
-    const TEMPLATE_HEIGHT = 903;
+    const TEMPLATE_WIDTH = 750;
+    const TEMPLATE_HEIGHT = 1000;
 
     // Fixed coordinates from omrScanner.ts
-    const BUBBLE_RADIUS = 9;
-    const QUESTIONS_LEFT_X = [130, 174, 218, 262];
-    const QUESTIONS_LEFT_Y_START = 161;
-    const QUESTIONS_LEFT_Y_STEP = 56.33;
+    const BUBBLE_RADIUS = 11;
+    const QUESTIONS_LEFT_X = [161, 210, 259, 308];
+    const QUESTIONS_LEFT_Y_START = 154;
+    const QUESTIONS_LEFT_Y_STEP = 63.24;
 
-    const QUESTIONS_RIGHT_X = [352, 396, 440, 484];
-    const QUESTIONS_RIGHT_Y_START = 161;
-    const QUESTIONS_RIGHT_Y_STEP = 56.33;
+    const QUESTIONS_RIGHT_X = [408, 457, 506, 555];
+    const QUESTIONS_RIGHT_Y_START = 154;
+    const QUESTIONS_RIGHT_Y_STEP = 63.24;
 
-    const STUDENT_ID_X = [479, 523, 567];
-    const STUDENT_ID_Y_START = 408;
-    const STUDENT_ID_Y_STEP = 41.33;
+    const STUDENT_ID_X = [548, 597, 646];
+    const STUDENT_ID_Y_START = 431;
+    const STUDENT_ID_Y_STEP = 46.5;
 
     // --- CV Helper Functions ---
     function findMarkerCentroid(ctx, searchX, searchY, radius) {
@@ -289,21 +290,26 @@
       const [pTL, pTR, pBL, pBR] = srcCorners;
 
       for (let y = 0; y < dh; y++) {
-        const v = (y - 55.0) / 829.5;
+        // Map y in the destination template [0, 1000] to the vertical range [35.0, 965.0]
+        const v = (y - 35.0) / 930.0;
         const oneMinusV = 1 - v;
         
-        const xRight = 628.0 + v * 0.1;
-        const xRange = xRight - 17.0;
+        // Account for slight shift/rotation by interpolating the X-bounds at this Y
+        const xRight = 715.0; // TR and BR centers are at X=715
+        const xRange = xRight - 35.0;
 
         for (let x = 0; x < dw; x++) {
-          const u = (x - 17.0) / xRange;
+          // Map x in the destination template [0, 750] to the horizontal range [35.0, xRight]
+          const u = (x - 35.0) / xRange;
           const oneMinusU = 1 - u;
 
+          // Bilinear interpolation weights
           const wTL = oneMinusU * oneMinusV;
           const wTR = u * oneMinusV;
           const wBL = oneMinusU * v;
           const wBR = u * v;
 
+          // Source pixel coordinate
           const sx = Math.round(wTL * pTL.x + wTR * pTR.x + wBL * pBL.x + wBR * pBR.x);
           const sy = Math.round(wTL * pTL.y + wTR * pTR.y + wBL * pBL.y + wBR * pBR.y);
 

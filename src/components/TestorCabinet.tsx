@@ -1023,10 +1023,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const handleGradeOMRFrame = (ctx: CanvasRenderingContext2D, corners: [Point, Point, Point, Point]) => {
     if (!selectedTest) return;
 
-    // 1. Create a 646 x 903 destination canvas
+    // 1. Create a 750 x 1000 destination canvas
     const warpCanvas = document.createElement('canvas');
-    warpCanvas.width = 646;
-    warpCanvas.height = 903;
+    warpCanvas.width = 750;
+    warpCanvas.height = 1000;
     
     // 2. Warp the frame to the destination canvas
     warpQuadrilateral(ctx, corners, warpCanvas);
@@ -1055,10 +1055,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     // 5. Crop the signature region from the warped canvas
     const sigCanvas = document.createElement('canvas');
-    sigCanvas.width = 560;
-    sigCanvas.height = 60;
+    sigCanvas.width = 597;
+    sigCanvas.height = 39;
     const sigCtx = sigCanvas.getContext('2d')!;
-    sigCtx.drawImage(warpCanvas, 40, 30, 560, 60, 0, 0, 560, 60);
+    sigCtx.drawImage(warpCanvas, 77, 35, 597, 39, 0, 0, 597, 39);
     const signatureDataURL = sigCanvas.toDataURL('image/jpeg', 0.85);
 
     const omrData = {
@@ -1133,12 +1133,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     // Load OMR template image, draw mock answers onto it, then parse
     const img = new Image();
-    img.src = '/media__1780067393687.jpg';
+    img.src = '/omr_sheet_template.svg';
     
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = 646;
-      canvas.height = 903;
+      canvas.width = 750;
+      canvas.height = 1000;
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, 0, 0);
 
@@ -1201,25 +1201,25 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
       // Crop the signature area or generate text-drawn signature
       const sigCanvas = document.createElement('canvas');
-      sigCanvas.width = 560;
-      sigCanvas.height = 60;
+      sigCanvas.width = 597;
+      sigCanvas.height = 39;
       const sigCtx = sigCanvas.getContext('2d')!;
 
       // Render simulated signature
       sigCtx.fillStyle = '#ffffff';
-      sigCtx.fillRect(0, 0, 560, 60);
-      sigCtx.font = '28px Caveat, cursive';
+      sigCtx.fillRect(0, 0, 597, 39);
+      sigCtx.font = '24px Caveat, cursive';
       sigCtx.fillStyle = '#1e3a8a';
       sigCtx.textAlign = 'center';
       sigCtx.textBaseline = 'middle';
-      sigCtx.fillText(sheet.name || 'Simulated Signature', 280, 30);
+      sigCtx.fillText(sheet.name || 'Simulated Signature', 298, 19);
 
       // If the template image is loaded and it's a specific student, crop signature from a signature region if possible
       if (sheet.id === '557') {
         const sigImg = new Image();
-        sigImg.src = '/media__1780067393687.jpg';
+        sigImg.src = '/omr_sheet_template.svg';
         sigImg.onload = () => {
-          sigCtx.drawImage(sigImg, 40, 30, 560, 60, 0, 0, 560, 60);
+          sigCtx.drawImage(sigImg, 77, 35, 597, 39, 0, 0, 597, 39);
           setScannedOMRSheet((prev: any) => prev ? { ...prev, signatureImg: sigCanvas.toDataURL('image/jpeg', 0.85) } : prev);
         };
       }
