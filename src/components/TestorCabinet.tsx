@@ -811,7 +811,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         setScanProgress(0);
         setDetectedCorners({ tl: null, tr: null, bl: null, br: null });
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
         });
         activeStream = stream;
         setCameraStream(stream);
@@ -856,44 +856,65 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     let active = true;
     const canvas = document.createElement('canvas');
-    canvas.width = 600;
-    canvas.height = 800;
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
-    // We will require stable lock for 5 consecutive frames
+    // Only need 2 consecutive frames for instant scanning (ZipGrade-style)
     let consecutiveSuccessFrames = 0;
-
-    // Search centers in 600x800 coordinate space
-    const searchTL = { x: 90, y: 110 };
-    const searchTR = { x: 510, y: 110 };
-    const searchBL = { x: 90, y: 690 };
-    const searchBR = { x: 510, y: 690 };
-    const radius = 75;
+    let lastCorners: [Point, Point, Point, Point] | null = null;
 
     const processFrame = () => {
       if (!active) return;
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        // Draw video frame to our 600x800 processing canvas
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Use actual video dimensions for the processing canvas
+        const vw = video.videoWidth || 640;
+        const vh = video.videoHeight || 480;
+        canvas.width = vw;
+        canvas.height = vh;
+
+        // Draw video frame at native resolution
+        ctx.drawImage(video, 0, 0, vw, vh);
+
+        // Dynamic search positions: the paper's corners should appear at ~15% inset
+        // from each edge (matching the viewfinder bracket positions)
+        const marginX = vw * 0.15;
+        const marginY = vh * 0.12;
+        const searchTL = { x: marginX, y: marginY };
+        const searchTR = { x: vw - marginX, y: marginY };
+        const searchBL = { x: marginX, y: vh - marginY };
+        const searchBR = { x: vw - marginX, y: vh - marginY };
+        
+        // Generous search radius to handle imperfect alignment
+        const radius = Math.max(vw, vh) * 0.18;
 
         // Find markers
-        const tl = findMarkerCentroid(ctx, searchTL.x, searchTL.y, radius);
-        const tr = findMarkerCentroid(ctx, searchTR.x, searchTR.y, radius);
-        const bl = findMarkerCentroid(ctx, searchBL.x, searchBL.y, radius);
-        const br = findMarkerCentroid(ctx, searchBR.x, searchBR.y, radius);
+        let tl = findMarkerCentroid(ctx, searchTL.x, searchTL.y, radius);
+        let tr = findMarkerCentroid(ctx, searchTR.x, searchTR.y, radius);
+        let bl = findMarkerCentroid(ctx, searchBL.x, searchBL.y, radius);
+        let br = findMarkerCentroid(ctx, searchBR.x, searchBR.y, radius);
+
+        // Fallback: if some corners weren't found, try a wider search
+        if (!tl || !tr || !bl || !br) {
+          const wideRadius = Math.max(vw, vh) * 0.25;
+          if (!tl) tl = findMarkerCentroid(ctx, marginX * 1.2, marginY * 1.2, wideRadius);
+          if (!tr) tr = findMarkerCentroid(ctx, vw - marginX * 1.2, marginY * 1.2, wideRadius);
+          if (!bl) bl = findMarkerCentroid(ctx, marginX * 1.2, vh - marginY * 1.2, wideRadius);
+          if (!br) br = findMarkerCentroid(ctx, vw - marginX * 1.2, vh - marginY * 1.2, wideRadius);
+        }
 
         setDetectedCorners({ tl, tr, bl, br });
 
         if (tl && tr && bl && br) {
+          lastCorners = [tl, tr, bl, br];
           consecutiveSuccessFrames++;
-          if (consecutiveSuccessFrames >= 5) {
-            // Success! Stop loop, perform warp and parse
+          if (consecutiveSuccessFrames >= 2) {
+            // Success! Stop loop, perform warp and parse (instant!)
             active = false;
-            handleGradeOMRFrame(ctx, [tl, tr, bl, br]);
+            handleGradeOMRFrame(ctx, lastCorners);
             return;
           }
         } else {
           consecutiveSuccessFrames = 0;
+          lastCorners = null;
         }
       }
 

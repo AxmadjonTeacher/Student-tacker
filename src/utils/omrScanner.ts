@@ -40,7 +40,9 @@ export const STUDENT_ID_Y_STEP = 41.33;
 
 /**
  * Finds the centroid of a dark fiducial marker in a search window of a canvas.
- * Grayscale conversion, dynamic thresholding, and BFS connected component search are applied.
+ * Uses adaptive grayscale conversion, dynamic thresholding, and BFS connected
+ * component search. Designed to be very forgiving of different lighting and
+ * camera distances for ZipGrade-style instant scanning.
  */
 export function findMarkerCentroid(
   ctx: CanvasRenderingContext2D,
@@ -81,13 +83,13 @@ export function findMarkerCentroid(
     if (val > maxVal) maxVal = val;
   }
 
-  // Contrast check: if contrast is too low, no black marker exists here
-  if (maxVal - minVal < 45) {
+  // Contrast check: relaxed to handle various lighting (lowered from 45 to 25)
+  if (maxVal - minVal < 25) {
     return null;
   }
 
-  // Threshold: pixels darker than local average/ratio are considered black (1)
-  const threshold = minVal + 0.35 * (maxVal - minVal);
+  // Threshold: pixels darker than local ratio are considered black
+  const threshold = minVal + 0.40 * (maxVal - minVal);
   const binary = new Uint8Array(winW * winH);
   for (let i = 0; i < winW * winH; i++) {
     binary[i] = gray[i] < threshold ? 1 : 0;
@@ -132,8 +134,8 @@ export function findMarkerCentroid(
           }
         }
 
-        // Component filtering: Must be larger than noise
-        if (compPoints.length > 25) {
+        // Component filtering: lowered noise threshold from 25 to 12 pixels
+        if (compPoints.length > 12) {
           const xs = compPoints.map(p => p.x);
           const ys = compPoints.map(p => p.y);
           const minX = Math.min(...xs);
@@ -155,21 +157,24 @@ export function findMarkerCentroid(
   }
 
   // Filter candidates that resemble a solid square marker
-  // (aspect ratio close to 1.0, area ratio relative to bounding box is high)
+  // Relaxed: aspect 0.4 to 2.5, solidity >= 0.35, size 6 to 120
   const markerCandidates = components.filter(c => {
     const aspect = c.width / c.height;
     const boxArea = c.width * c.height;
     const solidity = c.area / boxArea;
-    return aspect >= 0.6 && aspect <= 1.6 && solidity >= 0.5 && c.width >= 10 && c.width <= 55;
+    return aspect >= 0.4 && aspect <= 2.5 && solidity >= 0.35 && c.width >= 6 && c.width <= 120;
   });
 
   if (markerCandidates.length === 0) return null;
 
-  // Find the candidate closest to the center of the search window
+  // Sort by area descending to find the largest marker-like component
+  markerCandidates.sort((a, b) => b.area - a.area);
+
+  // Among top candidates, prefer those closest to center with good squareness
   const centerWinX = winW / 2;
   const centerWinY = winH / 2;
   let bestCandidate = markerCandidates[0];
-  let minDist = Infinity;
+  let bestScore = -Infinity;
 
   for (const c of markerCandidates) {
     const xs = c.points.map(p => p.x);
@@ -177,8 +182,15 @@ export function findMarkerCentroid(
     const cx = xs.reduce((a, b) => a + b, 0) / c.points.length;
     const cy = ys.reduce((a, b) => a + b, 0) / c.points.length;
     const dist = Math.sqrt((cx - centerWinX) ** 2 + (cy - centerWinY) ** 2);
-    if (dist < minDist) {
-      minDist = dist;
+    
+    // Scoring: bigger area is better, closer to center is better, squareness bonus
+    const aspect = c.width / c.height;
+    const squareness = 1 - Math.abs(1 - aspect);
+    const solidity = c.area / (c.width * c.height);
+    const score = c.area * 2 + squareness * 100 + solidity * 50 - dist * 3;
+    
+    if (score > bestScore) {
+      bestScore = score;
       bestCandidate = c;
     }
   }
@@ -193,6 +205,29 @@ export function findMarkerCentroid(
     x: xMin + localCentroidX,
     y: yMin + localCentroidY
   };
+}
+
+/**
+ * Full-frame marker scan: searches the entire canvas for 4 corner markers.
+ * Divides the frame into quadrants and finds the best square marker in each.
+ * This is a fallback for when the user doesn't perfectly align the sheet.
+ */
+export function findAllMarkersFullFrame(
+  ctx: CanvasRenderingContext2D
+): { tl: Point | null; tr: Point | null; bl: Point | null; br: Point | null } {
+  const cw = ctx.canvas.width;
+  const ch = ctx.canvas.height;
+  
+  // Search each quadrant with generous overlap
+  const quarterW = cw * 0.4;
+  const quarterH = ch * 0.4;
+  
+  const tl = findMarkerCentroid(ctx, quarterW / 2, quarterH / 2, Math.max(quarterW, quarterH) / 2);
+  const tr = findMarkerCentroid(ctx, cw - quarterW / 2, quarterH / 2, Math.max(quarterW, quarterH) / 2);
+  const bl = findMarkerCentroid(ctx, quarterW / 2, ch - quarterH / 2, Math.max(quarterW, quarterH) / 2);
+  const br = findMarkerCentroid(ctx, cw - quarterW / 2, ch - quarterH / 2, Math.max(quarterW, quarterH) / 2);
+  
+  return { tl, tr, bl, br };
 }
 
 /**
@@ -332,14 +367,13 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
     }
 
     // Threshold checks:
-    // A bubble is marked if it exceeds 75 darkness.
-    // To prevent registering accidental smudges, the darkest option must be significantly
-    // darker than the average of the other 3 options (e.g. margin >= 20).
+    // A bubble is marked if it exceeds 60 darkness (relaxed from 75).
+    // The darkest option must be significantly darker than the average of the other 3.
     const sumOthers = bubbleDarknessValues.reduce((a, b) => a + b, 0) - maxVal;
     const avgOthers = sumOthers / 3;
     const margin = maxVal - avgOthers;
 
-    if (maxVal > 75 && margin > 20) {
+    if (maxVal > 60 && margin > 15) {
       answers[row] = options[maxIdx];
     } else {
       answers[row] = ''; // No answer / unclear
@@ -370,7 +404,7 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
     const avgOthers = sumOthers / 3;
     const margin = maxVal - avgOthers;
 
-    if (maxVal > 75 && margin > 20) {
+    if (maxVal > 60 && margin > 15) {
       answers[13 + row] = options[maxIdx];
     } else {
       answers[13 + row] = '';
@@ -394,7 +428,7 @@ export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
     }
 
     // If the darkest ID grid bubble is dark enough, register it, else default to '0'
-    if (maxVal > 70) {
+    if (maxVal > 55) {
       studentIdCode += maxIdx.toString();
     } else {
       studentIdCode += '0'; // default fallback

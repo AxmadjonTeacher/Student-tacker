@@ -9,6 +9,7 @@ import type { Student, ActiveSubject, Teacher } from '../types';
 import AddStudentModal from './AddStudentModal';
 import { supabase } from '../supabase';
 import CustomDialog from './CustomDialog';
+import { generateRandomId } from '../utils/idGenerator';
 
 interface SidebarDrawerProps {
   isOpen: boolean;
@@ -318,7 +319,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
             }
 
             return {
-              id: customId || Math.random().toString(36).substr(2, 9),
+              id: customId || generateRandomId(),
               name,
               surname,
               className,
@@ -499,7 +500,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "Yodgorov Axmadjon",
         "5A",
         "+998901234567",
-        "ALabc12",
+        "AL557",
         "1234567"
       ].join(",");
 
@@ -507,7 +508,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "Salohiddinov Otabek",
         "5B",
         "+998907654321",
-        "ALxyz89",
+        "AL231",
         "7654321"
       ].join(",");
 

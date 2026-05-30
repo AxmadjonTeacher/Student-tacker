@@ -59,21 +59,9 @@ export const formatDateLabel = (dateStr: string): string => {
   return `${day}-${monthName}`;
 };
 
-// Helper to generate a random ID (AL + 3 digits from 100 to 999)
-export const generateRandomId = (): string => {
-  const num = Math.floor(Math.random() * 900) + 100; // 100 to 999
-  return `AL${num}`;
-};
-
-// Helper to generate a random passcode (7 alphanumeric characters)
-export const generateRandomPasscode = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 7; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
+// Import shared ID and passcode generators for local use, and re-export
+import { generateRandomId, generateRandomPasscode } from './utils/idGenerator';
+export { generateRandomId, generateRandomPasscode };
 
 // Helper to get local date string YYYY-MM-DD
 export const getLocalDateString = (): string => {
@@ -619,7 +607,7 @@ function App() {
         localUpdatedList[matchIndex] = merged;
         existingUpserts.push(merged);
       } else {
-        const tempId = Math.random().toString(36).substr(2, 9);
+        const tempId = generateRandomId();
         let inheritedEngOrder = 0;
         if (newS.teacher) {
           const engStudent = localUpdatedList.find(s => 
