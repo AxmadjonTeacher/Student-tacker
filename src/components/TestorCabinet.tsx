@@ -754,7 +754,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   // Camera setup
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [scanStatus, setScanStatus] = useState<'aligning' | 'scanning' | 'success'>('aligning');
+  const [scanStatus, setScanStatus] = useState<'aligning' | 'scanning' | 'saving' | 'success'>('aligning');
+  const [scanToast, setScanToast] = useState<{message: string, subMessage: string, type: 'success' | 'error'} | null>(null);
   const [scanProgress, setScanProgress] = useState(0);
 
   // Corner markers detection feedback
@@ -996,15 +997,16 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     sigCtx.drawImage(warpCanvas, 40, 30, 560, 60, 0, 0, 560, 60);
     const signatureDataURL = sigCanvas.toDataURL('image/jpeg', 0.85);
 
-    // 6. Set results state
-    setScannedOMRSheet({
+    const omrData = {
       studentIdCode: parsed.studentIdCode,
       answers: studentAnswers,
       correctCount: correct,
       totalQuestions: numQuestions,
       percentage: Math.round((correct / numQuestions) * 100),
       signatureImg: signatureDataURL
-    });
+    };
+
+    setScannedOMRSheet(omrData);
 
     // 7. Auto-map student in class list: AL + 3 digit code (e.g. AL557)
     const matchingStudent = students.find(s => {
@@ -1014,11 +1016,35 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     if (matchingStudent) {
       setSelectedStudentForScan(matchingStudent.id);
-    } else {
-      setSelectedStudentForScan('');
-    }
+      // Auto-save instantly!
+      setScanStatus('saving');
+      
+      // Play beep
+      playSuccessBeep();
 
-    setScanStatus('success');
+      // Flash Toast
+      setScanToast({
+        message: `${matchingStudent.name} ${matchingStudent.surname}`,
+        subMessage: `${omrData.correctCount} / ${omrData.totalQuestions} to'g'ri (${omrData.percentage}%)`,
+        type: 'success'
+      });
+
+      // Save to database asynchronously
+      saveOMRDataCore(matchingStudent.id, omrData).then(() => {
+        // Automatically resume scanning after brief delay
+        setTimeout(() => {
+          // If the user hasn't manually closed the scanner or changed state
+          setScanToast(null);
+          setScanStatus('aligning');
+          setScanProgress(0);
+        }, 1200);
+      });
+
+    } else {
+      // Unrecognized student - fallback to manual review screen
+      setSelectedStudentForScan('');
+      setScanStatus('success');
+    }
   };
 
   // Perform grading and student association simulation using real OMR Canvas Parser
@@ -1122,16 +1148,18 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         };
       }
 
-      setScannedOMRSheet({
+      const omrData = {
         studentIdCode: parsed.studentIdCode,
         answers: studentAnswers,
         correctCount: correct,
         totalQuestions: numQuestions,
         percentage: Math.round((correct / numQuestions) * 100),
         signatureImg: sigCanvas.toDataURL('image/jpeg', 0.85)
-      });
+      };
 
-      // Auto-map student in class list: AL + 3 digit code (e.g. AL557)
+      setScannedOMRSheet(omrData);
+
+      // Auto-map student in class list
       const matchingStudent = students.find(s => {
         const matchNum = s.id.match(/^AL(\d{3})$/);
         return matchNum && matchNum[1] === parsed.studentIdCode;
@@ -1139,20 +1167,19 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
       if (matchingStudent) {
         setSelectedStudentForScan(matchingStudent.id);
+        setScanStatus('success');
       } else {
         setSelectedStudentForScan('');
+        setScanStatus('success');
       }
-
-      setScanStatus('success');
     };
   };
 
+  // Core background save logic
+  const saveOMRDataCore = async (studentId: string, omrData: any, closeScanner: boolean = false) => {
+    if (!selectedTest || !omrData) return;
 
-  // Save scanned paper sheet results
-  const handleSaveScannedSheet = async () => {
-    if (!selectedTest || !scannedOMRSheet) return;
-
-    const matchedStudent = students.find(s => s.id === selectedStudentForScan);
+    const matchedStudent = students.find(s => s.id === studentId);
     if (!matchedStudent) return;
 
     setSyncingScore(true);
@@ -1163,41 +1190,66 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         await onUpdateStudentScore(
           matchedStudent.id,
           selectedTest.subject,
-          scannedOMRSheet.percentage,
+          omrData.percentage,
           weekName
         );
       }
 
       const newScan = {
         id: Date.now().toString(),
-        studentId: selectedStudentForScan,
+        studentId: studentId,
         studentName: `${matchedStudent.name} ${matchedStudent.surname}`,
-        studentIdCode: scannedOMRSheet.studentIdCode,
+        studentIdCode: omrData.studentIdCode,
         scannedAt: new Date().toLocaleTimeString() + ' ' + new Date().toLocaleDateString(),
-        answers: scannedOMRSheet.answers,
-        correctCount: scannedOMRSheet.correctCount,
-        totalQuestions: scannedOMRSheet.totalQuestions,
-        percentage: scannedOMRSheet.percentage,
+        answers: omrData.answers,
+        correctCount: omrData.correctCount,
+        totalQuestions: omrData.totalQuestions,
+        percentage: omrData.percentage,
         week: selectedWeekForSaving || selectedWeek || '1-Hafta'
       };
 
       // Prevent duplicates for the same student in this session scans
-      const updatedScans = [newScan, ...currentTestScans.filter(s => s.studentId !== selectedStudentForScan)];
+      const updatedScans = [newScan, ...currentTestScans.filter(s => s.studentId !== studentId)];
       setCurrentTestScans(updatedScans);
       localStorage.setItem(`testor_scans_${selectedTest.id}`, JSON.stringify(updatedScans));
 
       // Update database & local test student count
       handleIncrementStudentCount(selectedTest.id, updatedScans.length);
 
-      // Reset scanner states
-      setShowScanModal(false);
-      setScannedOMRSheet(null);
-      setSelectedStudentForScan('');
+      // Only close scanner if explicitly requested (e.g. manual mode)
+      if (closeScanner) {
+        setShowScanModal(false);
+        setScannedOMRSheet(null);
+        setSelectedStudentForScan('');
+      }
     } catch (err) {
       console.error("Failed to save OMR scan score:", err);
-      alert("Natijani saqlashda xatolik yuz berdi!");
     } finally {
       setSyncingScore(false);
+    }
+  };
+
+  // Manual save from review screen
+  const handleSaveScannedSheet = async () => {
+    await saveOMRDataCore(selectedStudentForScan, scannedOMRSheet, true);
+  };
+
+  // Success Beep
+  const playSuccessBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      oscillator.start();
+      gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+      oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      // Ignore audio errors
     }
   };
 
@@ -2811,40 +2863,60 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     }} />
                   </div>
 
-                  {/* Guide instruction card */}
-                  <div style={{
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(4px)',
-                    color: '#0f172a',
-                    padding: '0.85rem 1.25rem',
-                    borderRadius: '12px',
-                    textAlign: 'center',
-                    fontSize: '0.78rem',
-                    fontWeight: 750,
-                    lineHeight: 1.4,
-                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                    width: '80%',
-                    position: 'absolute',
-                    top: '20px'
-                  }}>
-                    <div style={{ color: '#64748b', fontSize: '0.68rem', marginBottom: '0.2rem' }}>[OMR GRADED SHEET]</div>
-                    <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>{selectedTest.name} ({selectedTest.subject})</div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#334155' }}>
-                      {cameraStream ? "Align paper corners with viewfinder" : `Simulating: ${selectedSampleSheet?.name}`}
+                  {/* Toast Notification (ZipGrade success flash) */}
+                  {scanToast ? (
+                    <div style={{
+                      background: scanToast.type === 'success' ? '#10b981' : '#ef4444',
+                      color: '#ffffff',
+                      padding: '1rem 1.5rem',
+                      borderRadius: '16px',
+                      textAlign: 'center',
+                      boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+                      width: '85%',
+                      position: 'absolute',
+                      top: '20px',
+                      zIndex: 100,
+                      animation: 'slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }}>
+                      <div style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: '0.25rem' }}>{scanToast.message}</div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.9 }}>{scanToast.subMessage}</div>
                     </div>
-                  </div>
+                  ) : (
+                    /* Guide instruction card */
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#0f172a',
+                      padding: '0.85rem 1.25rem',
+                      borderRadius: '12px',
+                      textAlign: 'center',
+                      fontSize: '0.78rem',
+                      fontWeight: 750,
+                      lineHeight: 1.4,
+                      boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                      width: '80%',
+                      position: 'absolute',
+                      top: '20px'
+                    }}>
+                      <div style={{ color: '#64748b', fontSize: '0.68rem', marginBottom: '0.2rem' }}>[OMR GRADED SHEET]</div>
+                      <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>{selectedTest.name} ({selectedTest.subject})</div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#334155' }}>
+                        {cameraStream ? "Align paper corners with viewfinder" : `Simulating: ${selectedSampleSheet?.name}`}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Glowing Green Scanline */}
-                  {(scanStatus === 'scanning' || scanStatus === 'aligning') && (
+                  {(scanStatus === 'scanning' || scanStatus === 'aligning' || scanStatus === 'saving') && (
                     <div style={{
                       position: 'absolute',
                       left: '5%',
                       width: '90%',
                       height: '3px',
-                      background: '#22c55e',
-                      boxShadow: '0 0 10px #22c55e, 0 0 20px #22c55e',
+                      background: scanStatus === 'saving' ? 'transparent' : '#22c55e',
+                      boxShadow: scanStatus === 'saving' ? 'none' : '0 0 10px #22c55e, 0 0 20px #22c55e',
                       zIndex: 20,
-                      animation: 'scanLineMove 2s linear infinite'
+                      animation: scanStatus === 'saving' ? 'none' : 'scanLineMove 2s linear infinite'
                     }} />
                   )}
                   
@@ -2858,6 +2930,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                       0% { transform: scale(0.85); opacity: 0.5; }
                       50% { transform: scale(1.15); opacity: 1; }
                       100% { transform: scale(0.85); opacity: 0.5; }
+                    }
+                    @keyframes slideDown {
+                      0% { transform: translateY(-20px); opacity: 0; }
+                      100% { transform: translateY(0); opacity: 1; }
                     }
                   `}</style>
                 </div>
