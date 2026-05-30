@@ -753,6 +753,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
   // Camera setup
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const viewfinderRef = useRef<HTMLDivElement | null>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [scanStatus, setScanStatus] = useState<'aligning' | 'scanning' | 'saving' | 'success'>('aligning');
   const [scanProgress, setScanProgress] = useState(0);
@@ -895,25 +896,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         // Draw video frame onto downscaled detection canvas
         detCtx.drawImage(video, 0, 0, detW, detH);
 
-        // 2. Define quadrant search centers on downscaled canvas
-        const detMarginX = detW * 0.15;
-        const detMarginY = detH * 0.15;
-        const detSearchTL = { x: detMarginX, y: detMarginY };
-        const detSearchTR = { x: detW - detMarginX, y: detMarginY };
-        const detSearchBL = { x: detMarginX, y: detH - detMarginY };
-        const detSearchBR = { x: detW - detMarginX, y: detH - detMarginY };
-
-        // A very large 35% search radius covers 100% of the quadrants.
-        // This means the paper can be positioned anywhere and still be detected.
-        const detRadius = Math.max(detW, detH) * 0.35; // 280px radius
-
-        // Find markers on downscaled frame
-        let tlDet = findMarkerCentroid(detCtx, detSearchTL.x, detSearchTL.y, detRadius);
-        let trDet = findMarkerCentroid(detCtx, detSearchTR.x, detSearchTR.y, detRadius);
-        let blDet = findMarkerCentroid(detCtx, detSearchBL.x, detSearchBL.y, detRadius);
-        let brDet = findMarkerCentroid(detCtx, detSearchBR.x, detSearchBR.y, detRadius);
-
-        // 3. Aspect Ratio Scale & offset calculations to map video coords to screen overlay
+        // Aspect Ratio Scale & offset calculations to map video coords to screen overlay
         const scaleFit = Math.max(cw / vw, ch / vh);
         const scaledW = vw * scaleFit;
         const scaledH = vh * scaleFit;
@@ -924,6 +907,40 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           x: (pt.x / detW) * scaledW + offsetX,
           y: (pt.y / detH) * scaledH + offsetY
         });
+
+        const mapToVideo = (screenX: number, screenY: number) => {
+          // Inverse of mapToScreen:
+          // screenX = (vx / detW) * scaledW + offsetX => vx = ((screenX - offsetX) / scaledW) * detW
+          const vx = ((screenX - offsetX) / scaledW) * detW;
+          const vy = ((screenY - offsetY) / scaledH) * detH;
+          return { x: vx, y: vy };
+        };
+
+        // 2. Define quadrant search centers on downscaled canvas
+        // Fallback default search centers (approx 15% margins)
+        let detSearchTL = { x: detW * 0.15, y: detH * 0.15 };
+        let detSearchTR = { x: detW * 0.85, y: detH * 0.15 };
+        let detSearchBL = { x: detW * 0.15, y: detH * 0.85 };
+        let detSearchBR = { x: detW * 0.85, y: detH * 0.85 };
+
+        // Attempt to calculate precise search centers using the physical viewfinder guides
+        const vf = viewfinderRef.current;
+        if (vf) {
+          const rect = vf.getBoundingClientRect();
+          detSearchTL = mapToVideo(rect.left, rect.top);
+          detSearchTR = mapToVideo(rect.right, rect.top);
+          detSearchBL = mapToVideo(rect.left, rect.bottom);
+          detSearchBR = mapToVideo(rect.right, rect.bottom);
+        }
+
+        // Restrict search radius to a tight 90px (in 800x600 space) to avoid middle markers
+        const detRadius = 90;
+
+        // Find markers on downscaled frame
+        let tlDet = findMarkerCentroid(detCtx, detSearchTL.x, detSearchTL.y, detRadius);
+        let trDet = findMarkerCentroid(detCtx, detSearchTR.x, detSearchTR.y, detRadius);
+        let blDet = findMarkerCentroid(detCtx, detSearchBL.x, detSearchBL.y, detRadius);
+        let brDet = findMarkerCentroid(detCtx, detSearchBR.x, detSearchBR.y, detRadius);
 
         // Store detected corners mapped to absolute screen pixels for UI feedback (snapping dots)
         setDetectedCorners({
@@ -2927,35 +2944,36 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 justifyContent: 'center'
               }}>
                 {/* 4 Viewfinder Corner Brackets */}
-                <div style={{
-                  position: 'relative',
-                  width: '80%',
-                  maxWidth: '300px',
-                  height: '70%',
-                  maxHeight: '440px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+                <div 
+                  ref={viewfinderRef}
+                  style={{
+                    position: 'relative',
+                    width: '80%',
+                    maxWidth: '300px',
+                    height: '70%',
+                    maxHeight: '440px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
                   {/* Top-Left Bracket */}
                   <div style={{
                     position: 'absolute',
                     top: 0, left: 0,
                     width: '56px', height: '56px',
-                    borderTop: `3.5px solid ${detectedCorners.tl ? '#10b981' : '#ef4444'}`,
-                    borderLeft: `3.5px solid ${detectedCorners.tl ? '#10b981' : '#ef4444'}`,
-                    borderTopLeftRadius: '16px',
-                    transition: 'border-color 0.15s'
+                    border: `3px solid ${detectedCorners.tl ? '#10b981' : 'rgba(239, 68, 68, 0.8)'}`,
+                    borderRadius: '12px',
+                    background: detectedCorners.tl ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.05)',
+                    boxShadow: detectedCorners.tl ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
                     <div style={{
-                      position: 'absolute',
-                      top: '-6px', left: '-6px',
-                      width: '12px', height: '12px',
+                      width: '6px', height: '6px',
                       borderRadius: '50%',
                       background: detectedCorners.tl ? '#10b981' : '#ef4444',
-                      border: '2px solid #ffffff',
-                      boxShadow: '0 0 6px rgba(0,0,0,0.3)',
-                      animation: detectedCorners.tl ? 'none' : 'pulse 1.5s infinite'
                     }} />
                   </div>
                   
@@ -2964,20 +2982,19 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     top: 0, right: 0,
                     width: '56px', height: '56px',
-                    borderTop: `3.5px solid ${detectedCorners.tr ? '#10b981' : '#ef4444'}`,
-                    borderRight: `3.5px solid ${detectedCorners.tr ? '#10b981' : '#ef4444'}`,
-                    borderTopRightRadius: '16px',
-                    transition: 'border-color 0.15s'
+                    border: `3px solid ${detectedCorners.tr ? '#10b981' : 'rgba(239, 68, 68, 0.8)'}`,
+                    borderRadius: '12px',
+                    background: detectedCorners.tr ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.05)',
+                    boxShadow: detectedCorners.tr ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
                     <div style={{
-                      position: 'absolute',
-                      top: '-6px', right: '-6px',
-                      width: '12px', height: '12px',
+                      width: '6px', height: '6px',
                       borderRadius: '50%',
                       background: detectedCorners.tr ? '#10b981' : '#ef4444',
-                      border: '2px solid #ffffff',
-                      boxShadow: '0 0 6px rgba(0,0,0,0.3)',
-                      animation: detectedCorners.tr ? 'none' : 'pulse 1.5s infinite'
                     }} />
                   </div>
 
@@ -2986,20 +3003,19 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     bottom: 0, left: 0,
                     width: '56px', height: '56px',
-                    borderBottom: `3.5px solid ${detectedCorners.bl ? '#10b981' : '#ef4444'}`,
-                    borderLeft: `3.5px solid ${detectedCorners.bl ? '#10b981' : '#ef4444'}`,
-                    borderBottomLeftRadius: '16px',
-                    transition: 'border-color 0.15s'
+                    border: `3px solid ${detectedCorners.bl ? '#10b981' : 'rgba(239, 68, 68, 0.8)'}`,
+                    borderRadius: '12px',
+                    background: detectedCorners.bl ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.05)',
+                    boxShadow: detectedCorners.bl ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
                     <div style={{
-                      position: 'absolute',
-                      bottom: '-6px', left: '-6px',
-                      width: '12px', height: '12px',
+                      width: '6px', height: '6px',
                       borderRadius: '50%',
                       background: detectedCorners.bl ? '#10b981' : '#ef4444',
-                      border: '2px solid #ffffff',
-                      boxShadow: '0 0 6px rgba(0,0,0,0.3)',
-                      animation: detectedCorners.bl ? 'none' : 'pulse 1.5s infinite'
                     }} />
                   </div>
 
@@ -3008,20 +3024,19 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     bottom: 0, right: 0,
                     width: '56px', height: '56px',
-                    borderBottom: `3.5px solid ${detectedCorners.br ? '#10b981' : '#ef4444'}`,
-                    borderRight: `3.5px solid ${detectedCorners.br ? '#10b981' : '#ef4444'}`,
-                    borderBottomRightRadius: '16px',
-                    transition: 'border-color 0.15s'
+                    border: `3px solid ${detectedCorners.br ? '#10b981' : 'rgba(239, 68, 68, 0.8)'}`,
+                    borderRadius: '12px',
+                    background: detectedCorners.br ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.05)',
+                    boxShadow: detectedCorners.br ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
                     <div style={{
-                      position: 'absolute',
-                      bottom: '-6px', right: '-6px',
-                      width: '12px', height: '12px',
+                      width: '6px', height: '6px',
                       borderRadius: '50%',
                       background: detectedCorners.br ? '#10b981' : '#ef4444',
-                      border: '2px solid #ffffff',
-                      boxShadow: '0 0 6px rgba(0,0,0,0.3)',
-                      animation: detectedCorners.br ? 'none' : 'pulse 1.5s infinite'
                     }} />
                   </div>
 

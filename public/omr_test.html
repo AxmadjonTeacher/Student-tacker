@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OMR Coordinate Calibration Tool</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      margin: 20px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+    }
+    canvas {
+      background: #000;
+      max-width: 100%;
+      border-radius: 8px;
+    }
+    select, button {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .results {
+      margin-top: 15px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      background: #090d16;
+      padding: 10px;
+      border-radius: 6px;
+      color: #38bdf8;
+    }
+    .bubble-values {
+      font-size: 0.75rem;
+      line-height: 1.3;
+    }
+  </style>
+</head>
+<body>
+  <h1>OMR Coordinate Calibration & Debugging</h1>
+  
+  <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+    <label>Select OMR Image:</label>
+    <select id="imageSelect">
+      <option value="/media__1780067393687.jpg">media__1780067393687.jpg</option>
+      <option value="/media__1780067381376.jpg">media__1780067381376.jpg</option>
+      <option value="/media__1780072205654.jpg">media__1780072205654.jpg</option>
+      <option value="/media__1780072551050.jpg">media__1780072551050.jpg</option>
+    </select>
+    <button id="runBtn">Run OMR Calibration</button>
+  </div>
+
+  <div class="container">
+    <!-- Left panel: Raw Image with detected corners -->
+    <div class="panel">
+      <h3>Detected Corners in Raw Frame</h3>
+      <canvas id="rawCanvas"></canvas>
+    </div>
+
+    <!-- Right panel: Warped image with bubble coordinate overlays -->
+    <div class="panel">
+      <h3>Warped Template (646 x 903) with Coordinates</h3>
+      <div style="margin-bottom: 10px;">
+        <label><input type="checkbox" id="showCrosshairs" checked> Show Coordinates Crosshairs</label>
+      </div>
+      <canvas id="warpedCanvas" width="646" height="903"></canvas>
+      
+      <h3>OMR Extracted Results</h3>
+      <div id="resultsPanel" class="results">Click "Run OMR Calibration" to parse.</div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Direct translation of OMR scanner algorithms for browser-side execution
+    import { 
+      findMarkerCentroid, 
+      warpQuadrilateral, 
+      parseOMRSheet,
+      QUESTIONS_LEFT_X,
+      QUESTIONS_LEFT_Y_START,
+      QUESTIONS_LEFT_Y_STEP,
+      QUESTIONS_RIGHT_X,
+      QUESTIONS_RIGHT_Y_START,
+      QUESTIONS_RIGHT_Y_STEP,
+      STUDENT_ID_X,
+      STUDENT_ID_Y_START,
+      STUDENT_ID_Y_STEP,
+      BUBBLE_RADIUS,
+      findAllMarkersFullFrame
+    } from './src/utils/omrScanner.ts';
+
+    // We can't import typescript directly unless we configure module resolution.
+    // To make this page immediately runnable, we copy the OMR code directly here compiled:
+  </script>
+
+  <script>
+    // Copy compiled functions for direct sandbox testing
+    const TEMPLATE_WIDTH = 646;
+    const TEMPLATE_HEIGHT = 903;
+
+    // Fixed coordinates from omrScanner.ts
+    const BUBBLE_RADIUS = 9;
+    const QUESTIONS_LEFT_X = [130, 174, 218, 262];
+    const QUESTIONS_LEFT_Y_START = 161;
+    const QUESTIONS_LEFT_Y_STEP = 56.33;
+
+    const QUESTIONS_RIGHT_X = [352, 396, 440, 484];
+    const QUESTIONS_RIGHT_Y_START = 161;
+    const QUESTIONS_RIGHT_Y_STEP = 56.33;
+
+    const STUDENT_ID_X = [479, 523, 567];
+    const STUDENT_ID_Y_START = 408;
+    const STUDENT_ID_Y_STEP = 41.33;
+
+    // --- CV Helper Functions ---
+    function findMarkerCentroid(ctx, searchX, searchY, radius) {
+      const canvasWidth = ctx.canvas.width;
+      const canvasHeight = ctx.canvas.height;
+
+      const xMin = Math.max(0, Math.floor(searchX - radius));
+      const xMax = Math.min(canvasWidth - 1, Math.ceil(searchX + radius));
+      const yMin = Math.max(0, Math.floor(searchY - radius));
+      const yMax = Math.min(canvasHeight - 1, Math.ceil(searchY + radius));
+
+      const winW = xMax - xMin + 1;
+      const winH = yMax - yMin + 1;
+      if (winW <= 0 || winH <= 0) return null;
+
+      const imgData = ctx.getImageData(xMin, yMin, winW, winH);
+      const data = imgData.data;
+
+      const gray = new Uint8Array(winW * winH);
+      let minVal = 255;
+      let maxVal = 0;
+
+      for (let i = 0; i < winW * winH; i++) {
+        const r = data[i * 4];
+        const g = data[i * 4 + 1];
+        const b = data[i * 4 + 2];
+        const val = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+        gray[i] = val;
+        if (val < minVal) minVal = val;
+        if (val > maxVal) maxVal = val;
+      }
+
+      if (maxVal - minVal < 25) return null;
+
+      const threshold = minVal + 0.40 * (maxVal - minVal);
+      const binary = new Uint8Array(winW * winH);
+      for (let i = 0; i < winW * winH; i++) {
+        binary[i] = gray[i] < threshold ? 1 : 0;
+      }
+
+      const visited = new Uint8Array(winW * winH);
+      const components = [];
+
+      for (let y = 0; y < winH; y++) {
+        for (let x = 0; x < winW; x++) {
+          const idx = y * winW + x;
+          if (binary[idx] === 1 && visited[idx] === 0) {
+            const compPoints = [];
+            const queue = [idx];
+            visited[idx] = 1;
+
+            let head = 0;
+            while (head < queue.length) {
+              const currIdx = queue[head++];
+              const cx = currIdx % winW;
+              const cy = Math.floor(currIdx / winW);
+              compPoints.push({ x: cx, y: cy });
+
+              const neighbors = [
+                { x: cx - 1, y: cy },
+                { x: cx + 1, y: cy },
+                { x: cx, y: cy - 1 },
+                { x: cx, y: cy + 1 }
+              ];
+
+              for (const n of neighbors) {
+                if (n.x >= 0 && n.x < winW && n.y >= 0 && n.y < winH) {
+                  const nIdx = n.y * winW + n.x;
+                  if (binary[nIdx] === 1 && visited[nIdx] === 0) {
+                    visited[nIdx] = 1;
+                    queue.push(nIdx);
+                  }
+                }
+              }
+            }
+
+            if (compPoints.length > 12) {
+              const xs = compPoints.map(p => p.x);
+              const ys = compPoints.map(p => p.y);
+              const minX = Math.min(...xs);
+              const maxX = Math.max(...xs);
+              const minY = Math.min(...ys);
+              const maxY = Math.max(...ys);
+
+              // Ignore dark components that touch the canvas border (false positive margins)
+              const touchesBorder = compPoints.some(p => {
+                const gx = xMin + p.x;
+                const gy = yMin + p.y;
+                return gx <= 2 || gx >= canvasWidth - 3 || gy <= 2 || gy >= canvasHeight - 3;
+              });
+
+              if (!touchesBorder) {
+                components.push({
+                  points: compPoints,
+                  width: maxX - minX + 1,
+                  height: maxY - minY + 1,
+                  area: compPoints.length
+                });
+              }
+            }
+          }
+        }
+      }
+
+      const markerCandidates = components.filter(c => {
+        const aspect = c.width / c.height;
+        const solidity = c.area / (c.width * c.height);
+        return aspect >= 0.4 && aspect <= 2.5 && solidity >= 0.35 && c.width >= 6 && c.width <= 120;
+      });
+
+      if (markerCandidates.length === 0) return null;
+      markerCandidates.sort((a, b) => b.area - a.area);
+
+      const centerWinX = winW / 2;
+      const centerWinY = winH / 2;
+      let bestCandidate = markerCandidates[0];
+      let bestScore = -Infinity;
+
+      for (const c of markerCandidates) {
+        const xs = c.points.map(p => p.x);
+        const ys = c.points.map(p => p.y);
+        const cx = xs.reduce((a, b) => a + b, 0) / c.points.length;
+        const cy = ys.reduce((a, b) => a + b, 0) / c.points.length;
+        const dist = Math.sqrt((cx - centerWinX) ** 2 + (cy - centerWinY) ** 2);
+        
+        const aspect = c.width / c.height;
+        const squareness = 1 - Math.abs(1 - aspect);
+        const solidity = c.area / (c.width * c.height);
+        const score = c.area * 2 + squareness * 100 + solidity * 50 - dist * 3;
+        
+        if (score > bestScore) {
+          bestScore = score;
+          bestCandidate = c;
+        }
+      }
+
+      const finalXs = bestCandidate.points.map(p => p.x);
+      const finalYs = bestCandidate.points.map(p => p.y);
+      const localCentroidX = finalXs.reduce((a, b) => a + b, 0) / bestCandidate.points.length;
+      const localCentroidY = finalYs.reduce((a, b) => a + b, 0) / bestCandidate.points.length;
+
+      return {
+        x: xMin + localCentroidX,
+        y: yMin + localCentroidY
+      };
+    }
+
+    function warpQuadrilateral(sourceCtx, srcCorners, destCanvas) {
+      const destCtx = destCanvas.getContext('2d');
+      const dw = destCanvas.width;
+      const dh = destCanvas.height;
+
+      const destImgData = destCtx.createImageData(dw, dh);
+      const sw = sourceCtx.canvas.width;
+      const sh = sourceCtx.canvas.height;
+      const srcImgData = sourceCtx.getImageData(0, 0, sw, sh);
+      const srcData = srcImgData.data;
+
+      const [pTL, pTR, pBL, pBR] = srcCorners;
+
+      for (let y = 0; y < dh; y++) {
+        const v = (y - 55.0) / 829.5;
+        const oneMinusV = 1 - v;
+        
+        const xRight = 628.0 + v * 0.1;
+        const xRange = xRight - 17.0;
+
+        for (let x = 0; x < dw; x++) {
+          const u = (x - 17.0) / xRange;
+          const oneMinusU = 1 - u;
+
+          const wTL = oneMinusU * oneMinusV;
+          const wTR = u * oneMinusV;
+          const wBL = oneMinusU * v;
+          const wBR = u * v;
+
+          const sx = Math.round(wTL * pTL.x + wTR * pTR.x + wBL * pBL.x + wBR * pBR.x);
+          const sy = Math.round(wTL * pTL.y + wTR * pTR.y + wBL * pBL.y + wBR * pBR.y);
+
+          if (sx >= 0 && sx < sw && sy >= 0 && sy < sh) {
+            const destIdx = (y * dw + x) * 4;
+            const srcIdx = (sy * sw + sx) * 4;
+
+            destImgData.data[destIdx] = srcData[srcIdx];
+            destImgData.data[destIdx + 1] = srcData[srcIdx + 1];
+            destImgData.data[destIdx + 2] = srcData[srcIdx + 2];
+            destImgData.data[destIdx + 3] = srcData[srcIdx + 3];
+          }
+        }
+      }
+      destCtx.putImageData(destImgData, 0, 0);
+    }
+
+    function readBubbleDarkness(ctx, cx, cy, radius) {
+      const w = ctx.canvas.width;
+      const h = ctx.canvas.height;
+
+      const xMin = Math.max(0, Math.floor(cx - radius));
+      const xMax = Math.min(w - 1, Math.ceil(cx + radius));
+      const yMin = Math.max(0, Math.floor(cy - radius));
+      const yMax = Math.min(h - 1, Math.ceil(cy + radius));
+
+      const winW = xMax - xMin + 1;
+      const winH = yMax - yMin + 1;
+      if (winW <= 0 || winH <= 0) return 0;
+
+      const imgData = ctx.getImageData(xMin, yMin, winW, winH);
+      const data = imgData.data;
+
+      let totalIntensity = 0;
+      let pixelCount = 0;
+
+      for (let y = 0; y < winH; y++) {
+        const py = yMin + y;
+        const dy = py - cy;
+        for (let x = 0; x < winW; x++) {
+          const px = xMin + x;
+          const dx = px - cx;
+
+          if (dx * dx + dy * dy <= radius * radius) {
+            const idx = (y * winW + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
+            totalIntensity += grayscale;
+            pixelCount++;
+          }
+        }
+      }
+
+      if (pixelCount === 0) return 0;
+      const avgGrayscale = totalIntensity / pixelCount;
+      return Math.max(0, 255 - avgGrayscale);
+    }
+
+    function parseOMRSheet(canvas) {
+      const ctx = canvas.getContext('2d');
+      const options = ['A', 'B', 'C', 'D'];
+      const answers = Array(15).fill('');
+      const debugLogs = [];
+
+      // 1. Left Questions
+      for (let row = 0; row < 13; row++) {
+        const cy = QUESTIONS_LEFT_Y_START + row * QUESTIONS_LEFT_Y_STEP;
+        const values = [];
+
+        for (let col = 0; col < 4; col++) {
+          const cx = QUESTIONS_LEFT_X[col];
+          const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS);
+          values.push(darkness);
+        }
+
+        let maxIdx = 0;
+        let maxVal = -1;
+        for (let col = 0; col < 4; col++) {
+          if (values[col] > maxVal) {
+            maxVal = values[col];
+            maxIdx = col;
+          }
+        }
+
+        const sumOthers = values.reduce((a, b) => a + b, 0) - maxVal;
+        const avgOthers = sumOthers / 3;
+        const margin = maxVal - avgOthers;
+        
+        const isFilled = maxVal > 60 && margin > 15;
+        if (isFilled) {
+          answers[row] = options[maxIdx];
+        } else {
+          answers[row] = '';
+        }
+        debugLogs.push(`Q${row+1}: A=${values[0].toFixed(0)}, B=${values[1].toFixed(0)}, C=${values[2].toFixed(0)}, D=${values[3].toFixed(0)} | Selected=${answers[row]} (max=${maxVal.toFixed(0)}, margin=${margin.toFixed(0)})`);
+      }
+
+      // 2. Right Questions
+      for (let row = 0; row < 2; row++) {
+        const cy = QUESTIONS_RIGHT_Y_START + row * QUESTIONS_RIGHT_Y_STEP;
+        const values = [];
+
+        for (let col = 0; col < 4; col++) {
+          const cx = QUESTIONS_RIGHT_X[col];
+          const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS);
+          values.push(darkness);
+        }
+
+        let maxIdx = 0;
+        let maxVal = -1;
+        for (let col = 0; col < 4; col++) {
+          if (values[col] > maxVal) {
+            maxVal = values[col];
+            maxIdx = col;
+          }
+        }
+
+        const sumOthers = values.reduce((a, b) => a + b, 0) - maxVal;
+        const avgOthers = sumOthers / 3;
+        const margin = maxVal - avgOthers;
+
+        const isFilled = maxVal > 60 && margin > 15;
+        if (isFilled) {
+          answers[13 + row] = options[maxIdx];
+        } else {
+          answers[13 + row] = '';
+        }
+        debugLogs.push(`Q${14+row}: A=${values[0].toFixed(0)}, B=${values[1].toFixed(0)}, C=${values[2].toFixed(0)}, D=${values[3].toFixed(0)} | Selected=${answers[13+row]} (max=${maxVal.toFixed(0)}, margin=${margin.toFixed(0)})`);
+      }
+
+      // 3. ID Parsing
+      let studentIdCode = '';
+      for (let col = 0; col < 3; col++) {
+        const cx = STUDENT_ID_X[col];
+        let maxIdx = 0;
+        let maxVal = -1;
+        const colVals = [];
+
+        for (let row = 0; row < 10; row++) {
+          const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
+          const darkness = readBubbleDarkness(ctx, cx, cy, BUBBLE_RADIUS - 1.5);
+          colVals.push(darkness);
+          if (darkness > maxVal) {
+            maxVal = darkness;
+            maxIdx = row;
+          }
+        }
+        if (maxVal > 55) {
+          studentIdCode += maxIdx.toString();
+        } else {
+          studentIdCode += '0';
+        }
+        debugLogs.push(`ID Col ${col+1}: values=[${colVals.map(v => v.toFixed(0)).join(',')}] | Selected=${maxIdx} (val=${maxVal.toFixed(0)})`);
+      }
+
+      return {
+        studentIdCode,
+        answers,
+        debugLogs
+      };
+    }
+
+    // --- Main Calibration Loop ---
+    const imgSelect = document.getElementById('imageSelect');
+    const runBtn = document.getElementById('runBtn');
+    const rawCanvas = document.getElementById('rawCanvas');
+    const warpedCanvas = document.getElementById('warpedCanvas');
+    const resultsPanel = document.getElementById('resultsPanel');
+    const showCrosshairsCheck = document.getElementById('showCrosshairs');
+
+    let currentWarpedCtx = null;
+    let currentParsedResult = null;
+    let detectedCorners = { tl: null, tr: null, bl: null, br: null };
+
+    runBtn.addEventListener('click', runCalibration);
+    showCrosshairsCheck.addEventListener('change', drawOverlayCoords);
+    window.addEventListener('load', runCalibration);
+
+    function runCalibration() {
+      resultsPanel.innerHTML = "Processing image...";
+      const imgPath = imgSelect.value;
+      const img = new Image();
+      img.src = imgPath;
+      img.onload = () => {
+        // Set raw canvas dimensions
+        rawCanvas.width = img.naturalWidth;
+        rawCanvas.height = img.naturalHeight;
+        const rawCtx = rawCanvas.getContext('2d');
+        rawCtx.drawImage(img, 0, 0);
+
+        // Run localized detection
+        const cw = rawCanvas.width;
+        const ch = rawCanvas.height;
+        
+        const marginX = cw * 0.15;
+        const marginY = ch * 0.12;
+        const radius = Math.min(cw, ch) * 0.18;
+
+        // Try localized corners
+        const tl = findMarkerCentroid(rawCtx, marginX, marginY, radius);
+        const tr = findMarkerCentroid(rawCtx, cw - marginX, marginY, radius);
+        const bl = findMarkerCentroid(rawCtx, marginX, ch - marginY, radius);
+        const br = findMarkerCentroid(rawCtx, cw - marginX, ch - marginY, radius);
+
+        detectedCorners = { tl, tr, bl, br };
+
+        // Draw circles on raw canvas for markers
+        rawCtx.strokeStyle = '#22c55e';
+        rawCtx.lineWidth = 6;
+        
+        [tl, tr, bl, br].forEach((pt, idx) => {
+          if (pt) {
+            rawCtx.beginPath();
+            rawCtx.arc(pt.x, pt.y, 25, 0, 2*Math.PI);
+            rawCtx.stroke();
+            rawCtx.fillStyle = '#22c55e';
+            rawCtx.font = '24px monospace';
+            rawCtx.fillText(['TL', 'TR', 'BL', 'BR'][idx], pt.x - 15, pt.y + 8);
+          }
+        });
+
+        if (!tl || !tr || !bl || !br) {
+          resultsPanel.innerHTML = `Error: Could not find all 4 corner markers!\nTL: ${!!tl}, TR: ${!!tr}, BL: ${!!bl}, BR: ${!!br}`;
+          return;
+        }
+
+        // Warp image
+        warpQuadrilateral(rawCtx, [tl, tr, bl, br], warpedCanvas);
+        currentWarpedCtx = warpedCanvas.getContext('2d');
+
+        // Parse OMR Sheet
+        currentParsedResult = parseOMRSheet(warpedCanvas);
+
+        // Print Results
+        let output = `Detected Student ID: AL${currentParsedResult.studentIdCode}\n`;
+        output += `Answers: ${currentParsedResult.answers.map((a, i) => `${i+1}:${a || '?'}`).join(', ')}\n\n`;
+        output += `=== DEBUG BUBBLE DARKNESS LOGS ===\n`;
+        output += currentParsedResult.debugLogs.join('\n');
+        
+        resultsPanel.innerHTML = output;
+
+        // Draw overlays
+        drawOverlayCoords();
+      };
+    }
+
+    function drawOverlayCoords() {
+      if (!currentWarpedCtx) return;
+      if (!detectedCorners.tl || !detectedCorners.tr || !detectedCorners.bl || !detectedCorners.br) return;
+      
+      // Re-draw warped image onto canvas to clear previous overlay
+      const warpedCtx = currentWarpedCtx;
+      const w = warpedCanvas.width;
+      const h = warpedCanvas.height;
+
+      // Re-run warp to draw clean image
+      const rawCtx = rawCanvas.getContext('2d');
+      warpQuadrilateral(rawCtx, [detectedCorners.tl, detectedCorners.tr, detectedCorners.bl, detectedCorners.br], warpedCanvas);
+
+      if (!showCrosshairsCheck.checked) return;
+
+      // Draw coordinate overlays
+      warpedCtx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; // red circle overlay
+      warpedCtx.lineWidth = 1.5;
+
+      // Questions Left
+      for (let row = 0; row < 13; row++) {
+        const cy = QUESTIONS_LEFT_Y_START + row * QUESTIONS_LEFT_Y_STEP;
+        for (let col = 0; col < 4; col++) {
+          const cx = QUESTIONS_LEFT_X[col];
+          warpedCtx.beginPath();
+          warpedCtx.arc(cx, cy, BUBBLE_RADIUS, 0, 2*Math.PI);
+          warpedCtx.stroke();
+          // Draw mini dot at center
+          warpedCtx.fillStyle = '#ef4444';
+          warpedCtx.fillRect(cx - 1, cy - 1, 2, 2);
+        }
+      }
+
+      // Questions Right
+      for (let row = 0; row < 2; row++) {
+        const cy = QUESTIONS_RIGHT_Y_START + row * QUESTIONS_RIGHT_Y_STEP;
+        for (let col = 0; col < 4; col++) {
+          const cx = QUESTIONS_RIGHT_X[col];
+          warpedCtx.beginPath();
+          warpedCtx.arc(cx, cy, BUBBLE_RADIUS, 0, 2*Math.PI);
+          warpedCtx.stroke();
+          warpedCtx.fillStyle = '#ef4444';
+          warpedCtx.fillRect(cx - 1, cy - 1, 2, 2);
+        }
+      }
+
+      // Student ID
+      warpedCtx.strokeStyle = 'rgba(59, 130, 246, 0.7)'; // blue circles for ID
+      for (let col = 0; col < 3; col++) {
+        const cx = STUDENT_ID_X[col];
+        for (let row = 0; row < 10; row++) {
+          const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
+          warpedCtx.beginPath();
+          warpedCtx.arc(cx, cy, BUBBLE_RADIUS - 1.5, 0, 2*Math.PI);
+          warpedCtx.stroke();
+          warpedCtx.fillStyle = '#3b82f6';
+          warpedCtx.fillRect(cx - 1, cy - 1, 2, 2);
+        }
+      }
+    }
+  </script>
+</body>
+</html>

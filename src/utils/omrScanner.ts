@@ -252,11 +252,19 @@ export function warpQuadrilateral(
   const [pTL, pTR, pBL, pBR] = srcCorners;
 
   for (let y = 0; y < dh; y++) {
-    const v = y / (dh - 1);
+    // Map y in the destination template [0, 903] to the vertical range [55.0, 884.5]
+    // where 55.0 is the top marker Y and 884.5 is the bottom marker Y in the template.
+    const v = (y - 55.0) / 829.5;
     const oneMinusV = 1 - v;
     
+    // Account for slight shift/rotation by interpolating the X-bounds at this Y
+    const xRight = 628.0 + v * 0.1;
+    const xRange = xRight - 17.0;
+
     for (let x = 0; x < dw; x++) {
-      const u = x / (dw - 1);
+      // Map x in the destination template [0, 646] to the horizontal range [17.0, xRight]
+      // where 17.0 is the left marker X and xRight is the interpolated right marker X.
+      const u = (x - 17.0) / xRange;
       const oneMinusU = 1 - u;
 
       // Bilinear interpolation weights
