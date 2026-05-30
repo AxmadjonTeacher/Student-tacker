@@ -85,8 +85,8 @@ export function findMarkerCentroid(
     if (val > maxVal) maxVal = val;
   }
 
-  // Contrast check: relaxed to handle various lighting (lowered from 45 to 25)
-  if (maxVal - minVal < 25) {
+  // Contrast check: must be high enough to represent a printed black marker on white paper
+  if (maxVal - minVal < 45) {
     return null;
   }
 
@@ -136,8 +136,8 @@ export function findMarkerCentroid(
           }
         }
 
-        // Component filtering: lowered noise threshold from 25 to 12 pixels
-        if (compPoints.length > 12) {
+        // Component filtering: raised noise threshold to 15 pixels to reject tiny dots
+        if (compPoints.length > 15) {
           const xs = compPoints.map(p => p.x);
           const ys = compPoints.map(p => p.y);
           const minX = Math.min(...xs);
@@ -159,12 +159,25 @@ export function findMarkerCentroid(
   }
 
   // Filter candidates that resemble a solid square marker
-  // Relaxed: aspect 0.4 to 2.5, solidity >= 0.35, size 6 to 120
+  // Enforce strict aspect ratio, high solidity, minimum size, and absolute darkness
   const markerCandidates = components.filter(c => {
     const aspect = c.width / c.height;
     const boxArea = c.width * c.height;
     const solidity = c.area / boxArea;
-    return aspect >= 0.4 && aspect <= 2.5 && solidity >= 0.35 && c.width >= 6 && c.width <= 120;
+    
+    // Geometric checks: must be close to a square and highly solid
+    if (aspect < 0.70 || aspect > 1.43 || solidity < 0.70 || c.width < 12 || c.width > 120) {
+      return false;
+    }
+
+    // Absolute darkness check: average grayscale intensity of candidate pixels must be low (black)
+    const compGraySum = c.points.reduce((acc, p) => acc + gray[p.y * winW + p.x], 0);
+    const avgGray = compGraySum / c.points.length;
+    if (avgGray > 110) {
+      return false;
+    }
+
+    return true;
   });
 
   if (markerCandidates.length === 0) return null;

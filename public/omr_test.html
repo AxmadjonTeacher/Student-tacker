@@ -161,7 +161,7 @@
         if (val > maxVal) maxVal = val;
       }
 
-      if (maxVal - minVal < 25) return null;
+      if (maxVal - minVal < 45) return null;
 
       const threshold = minVal + 0.40 * (maxVal - minVal);
       const binary = new Uint8Array(winW * winH);
@@ -205,7 +205,7 @@
               }
             }
 
-            if (compPoints.length > 12) {
+            if (compPoints.length > 15) {
               const xs = compPoints.map(p => p.x);
               const ys = compPoints.map(p => p.y);
               const minX = Math.min(...xs);
@@ -236,7 +236,24 @@
       const markerCandidates = components.filter(c => {
         const aspect = c.width / c.height;
         const solidity = c.area / (c.width * c.height);
-        return aspect >= 0.4 && aspect <= 2.5 && solidity >= 0.35 && c.width >= 6 && c.width <= 120;
+        
+        // Geometric checks
+        if (aspect < 0.70 || aspect > 1.43 || solidity < 0.70 || c.width < 12 || c.width > 120) {
+          return false;
+        }
+
+        // Absolute darkness check
+        let compGraySum = 0;
+        for (let i = 0; i < c.points.length; i++) {
+          const p = c.points[i];
+          compGraySum += gray[p.y * winW + p.x];
+        }
+        const avgGray = compGraySum / c.points.length;
+        if (avgGray > 110) {
+          return false;
+        }
+
+        return true;
       });
 
       if (markerCandidates.length === 0) return null;

@@ -18,7 +18,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Key,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
 import type { Student, Teacher } from '../types';
 import StudentTable from './StudentTable';
@@ -959,11 +960,32 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           const bl = { x: blDet.x * scaleX, y: blDet.y * scaleY };
           const br = { x: brDet.x * scaleX, y: brDet.y * scaleY };
 
-          lastCorners = [tl, tr, bl, br];
-          consecutiveSuccessFrames++;
+          // Jitter and stability check: compare current corners with the previous frame's corners
+          let isStable = true;
+          if (lastCorners) {
+            const distTL = Math.hypot(tl.x - lastCorners[0].x, tl.y - lastCorners[0].y);
+            const distTR = Math.hypot(tr.x - lastCorners[1].x, tr.y - lastCorners[1].y);
+            const distBL = Math.hypot(bl.x - lastCorners[2].x, bl.y - lastCorners[2].y);
+            const distBR = Math.hypot(br.x - lastCorners[3].x, br.y - lastCorners[3].y);
+            
+            const maxJitter = 12.0; // Max allowed pixel displacement in native resolution between frames
+            if (distTL > maxJitter || distTR > maxJitter || distBL > maxJitter || distBR > maxJitter) {
+              isStable = false;
+            }
+          }
 
-          if (consecutiveSuccessFrames >= 2) {
-            // Success! Stop loop, perform warp and parse (instant!)
+          if (isStable) {
+            consecutiveSuccessFrames++;
+          } else {
+            // Jitter detected, reset counter to 1 to start stabilizing again
+            consecutiveSuccessFrames = 1;
+          }
+
+          lastCorners = [tl, tr, bl, br];
+
+          // Require 6 consecutive stable frames (~100ms) before triggering the scan
+          if (consecutiveSuccessFrames >= 6) {
+            // Success! Stop loop, perform warp and parse
             active = false;
             
             // Draw video frame at full native resolution on the main canvas
@@ -2400,6 +2422,91 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Template Download Section */}
+      <div style={{
+        background: '#ffffff',
+        border: '1.5px solid #e2e8f0',
+        borderRadius: '24px',
+        padding: '1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div>
+          <h4 style={{ fontSize: '0.85rem', fontWeight: 850, color: '#334155', margin: '0 0 0.25rem 0' }}>
+            Javoblar varaqasi shabloni
+          </h4>
+          <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+            Baholash skaneri to'g'ri va aniq ishlashi uchun OMR javoblar varaqasi shablonini yuklab oling va A4 qog'oziga chop eting. Chop etishda "Haqiqiy o'lcham" (Actual Size / 100%) sozlamasidan foydalanish tavsiya etiladi.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <a
+            href="/omr_sheet_template.pdf"
+            download="omr_sheet_template.pdf"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.65rem 1.15rem',
+              borderRadius: '12px',
+              border: 'none',
+              background: colors.primary,
+              color: '#ffffff',
+              cursor: 'pointer',
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              textDecoration: 'none',
+              transition: 'all 0.2s',
+              boxShadow: `0 4px 10px ${colors.primary}20`
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = `0 6px 14px ${colors.primary}30`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = `0 4px 10px ${colors.primary}20`;
+            }}
+          >
+            <FileText size={16} />
+            PDF shablonini yuklab olish
+          </a>
+          
+          <a
+            href="/omr_sheet_template.svg"
+            download="omr_sheet_template.svg"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.65rem 1.15rem',
+              borderRadius: '12px',
+              border: '1.5px solid #e2e8f0',
+              background: '#ffffff',
+              color: '#475569',
+              cursor: 'pointer',
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              textDecoration: 'none',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.borderColor = '#cbd5e1';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+          >
+            <Download size={16} />
+            SVG shablonini yuklab olish
+          </a>
         </div>
       </div>
 
