@@ -755,8 +755,18 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [scanStatus, setScanStatus] = useState<'aligning' | 'scanning' | 'saving' | 'success'>('aligning');
-  const [scanToast, setScanToast] = useState<{message: string, subMessage: string, type: 'success' | 'error'} | null>(null);
   const [scanProgress, setScanProgress] = useState(0);
+  const [showFlash, setShowFlash] = useState(false);
+  const [lastScannedStudent, setLastScannedStudent] = useState<{
+    name: string;
+    surname: string;
+    studentId: string;
+    studentIdCode: string;
+    correctCount: number;
+    totalQuestions: number;
+    percentage: number;
+    saved: boolean;
+  } | null>(null);
 
   // Corner markers detection feedback
   const [detectedCorners, setDetectedCorners] = useState<{
@@ -829,6 +839,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     };
 
     if (showScanModal) {
+      setLastScannedStudent(null);
+      setShowFlash(false);
       startCamera();
     } else {
       if (cameraStream) {
@@ -1016,17 +1028,27 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     if (matchingStudent) {
       setSelectedStudentForScan(matchingStudent.id);
+      
+      // Trigger camera flash
+      setShowFlash(true);
+      setTimeout(() => setShowFlash(false), 150);
+
       // Auto-save instantly!
       setScanStatus('saving');
       
       // Play beep
       playSuccessBeep();
 
-      // Flash Toast
-      setScanToast({
-        message: `${matchingStudent.name} ${matchingStudent.surname}`,
-        subMessage: `${omrData.correctCount} / ${omrData.totalQuestions} to'g'ri (${omrData.percentage}%)`,
-        type: 'success'
+      // Update persistent last scanned student info state
+      setLastScannedStudent({
+        name: matchingStudent.name,
+        surname: matchingStudent.surname,
+        studentId: matchingStudent.id,
+        studentIdCode: parsed.studentIdCode,
+        correctCount: omrData.correctCount,
+        totalQuestions: omrData.totalQuestions,
+        percentage: omrData.percentage,
+        saved: true
       });
 
       // Save to database asynchronously
@@ -1034,7 +1056,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         // Automatically resume scanning after brief delay
         setTimeout(() => {
           // If the user hasn't manually closed the scanner or changed state
-          setScanToast(null);
           setScanStatus('aligning');
           setScanProgress(0);
         }, 1200);
@@ -1167,7 +1188,37 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
       if (matchingStudent) {
         setSelectedStudentForScan(matchingStudent.id);
-        setScanStatus('success');
+        
+        // Trigger simulated flash
+        setShowFlash(true);
+        setTimeout(() => setShowFlash(false), 150);
+
+        // Auto-save instantly!
+        setScanStatus('saving');
+        
+        // Play beep
+        playSuccessBeep();
+
+        // Update persistent last scanned student info state
+        setLastScannedStudent({
+          name: matchingStudent.name,
+          surname: matchingStudent.surname,
+          studentId: matchingStudent.id,
+          studentIdCode: parsed.studentIdCode,
+          correctCount: omrData.correctCount,
+          totalQuestions: omrData.totalQuestions,
+          percentage: omrData.percentage,
+          saved: true
+        });
+
+        // Save to database asynchronously
+        saveOMRDataCore(matchingStudent.id, omrData).then(() => {
+          setTimeout(() => {
+            setScanStatus('aligning');
+            setScanProgress(0);
+          }, 1500);
+        });
+
       } else {
         setSelectedStudentForScan('');
         setScanStatus('success');
@@ -2628,6 +2679,19 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               }}
             />
 
+            {/* Camera Flash overlay */}
+            {showFlash && (
+              <div style={{
+                position: 'absolute',
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: '#ffffff',
+                opacity: 0.85,
+                zIndex: 1000,
+                pointerEvents: 'none',
+                transition: 'opacity 0.1s ease-out'
+              }} />
+            )}
+
             {!cameraStream && (
               // Camera fallback simulation panel
               <div style={{
@@ -2863,45 +2927,97 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     }} />
                   </div>
 
-                  {/* Toast Notification (ZipGrade success flash) */}
-                  {scanToast ? (
-                    <div style={{
-                      background: scanToast.type === 'success' ? '#10b981' : '#ef4444',
-                      color: '#ffffff',
-                      padding: '1rem 1.5rem',
-                      borderRadius: '16px',
-                      textAlign: 'center',
-                      boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-                      width: '85%',
-                      position: 'absolute',
-                      top: '20px',
-                      zIndex: 100,
-                      animation: 'slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                    }}>
-                      <div style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: '0.25rem' }}>{scanToast.message}</div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.9 }}>{scanToast.subMessage}</div>
+                  /* Guide instruction card */
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(4px)',
+                    color: '#0f172a',
+                    padding: '0.85rem 1.25rem',
+                    borderRadius: '12px',
+                    textAlign: 'center',
+                    fontSize: '0.78rem',
+                    fontWeight: 750,
+                    lineHeight: 1.4,
+                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                    width: '80%',
+                    position: 'absolute',
+                    top: '20px',
+                    zIndex: 50
+                  }}>
+                    <div style={{ color: '#64748b', fontSize: '0.68rem', marginBottom: '0.2rem' }}>[OMR GRADED SHEET]</div>
+                    <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>{selectedTest.name} ({selectedTest.subject})</div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#334155' }}>
+                      {cameraStream ? "Align paper corners with viewfinder" : `Simulating: ${selectedSampleSheet?.name}`}
                     </div>
-                  ) : (
-                    /* Guide instruction card */
+                  </div>
+
+                  {/* Persistent last scanned student info pop-up in the middle */}
+                  {lastScannedStudent && (
                     <div style={{
-                      background: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(4px)',
-                      color: '#0f172a',
-                      padding: '0.85rem 1.25rem',
-                      borderRadius: '12px',
+                      background: 'rgba(15, 23, 42, 0.75)',
+                      backdropFilter: 'blur(12px)',
+                      border: '1.5px solid rgba(255, 255, 255, 0.2)',
+                      color: '#ffffff',
+                      padding: '1rem 1.25rem',
+                      borderRadius: '20px',
                       textAlign: 'center',
-                      fontSize: '0.78rem',
-                      fontWeight: 750,
-                      lineHeight: 1.4,
-                      boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                      boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.15)',
                       width: '80%',
+                      maxWidth: '240px',
+                      zIndex: 120,
+                      animation: 'scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                       position: 'absolute',
-                      top: '20px'
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.4rem',
+                      alignItems: 'center'
                     }}>
-                      <div style={{ color: '#64748b', fontSize: '0.68rem', marginBottom: '0.2rem' }}>[OMR GRADED SHEET]</div>
-                      <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>{selectedTest.name} ({selectedTest.subject})</div>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#334155' }}>
-                        {cameraStream ? "Align paper corners with viewfinder" : `Simulating: ${selectedSampleSheet?.name}`}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'rgba(34, 197, 94, 0.2)',
+                        border: '1px solid rgba(34, 197, 94, 0.4)',
+                        color: '#4ade80',
+                        marginBottom: '0.1rem'
+                      }}>
+                        <CheckCircle size={18} />
+                      </div>
+                      
+                      <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Muvaffaqiyatli saqlandi
+                      </div>
+                      
+                      <div style={{ fontWeight: 900, fontSize: '0.95rem', color: '#ffffff', lineHeight: 1.25, wordBreak: 'break-word', maxLines: 2 }}>
+                        {lastScannedStudent.name} {lastScannedStudent.surname}
+                      </div>
+
+                      <div style={{ fontSize: '0.7rem', color: '#cbd5e1', fontWeight: 600 }}>
+                        Student ID: <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#ffffff' }}>{lastScannedStudent.studentId}</span>
+                      </div>
+
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: '0.25rem',
+                        marginTop: '0.2rem',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(255,255,255,0.05)'
+                      }}>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#4ade80' }}>
+                          {lastScannedStudent.correctCount}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>
+                          / {lastScannedStudent.totalQuestions}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 800, marginLeft: '0.5rem' }}>
+                          ({lastScannedStudent.percentage}%)
+                        </span>
                       </div>
                     </div>
                   )}
@@ -2934,6 +3050,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     @keyframes slideDown {
                       0% { transform: translateY(-20px); opacity: 0; }
                       100% { transform: translateY(0); opacity: 1; }
+                    }
+                    @keyframes scaleIn {
+                      0% { transform: scale(0.9); opacity: 0; }
+                      100% { transform: scale(1); opacity: 1; }
                     }
                   `}</style>
                 </div>
