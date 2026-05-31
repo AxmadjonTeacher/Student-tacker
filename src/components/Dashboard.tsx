@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { 
-  Users, Award, Calendar, Trophy, Sparkles, 
-  ChevronRight, TrendingUp, ClipboardList
+  Trophy, Sparkles, ChevronRight, TrendingUp, ClipboardList, Award, CheckCircle
 } from 'lucide-react';
 import type { Student } from '../types';
 
@@ -9,11 +8,47 @@ interface DashboardProps {
   students: Student[];
   studentWeeks: any[];
   availableClasses: string[];
-  selectedWeek: string;
-  onWeekChange: (week: string) => void;
-  weeksList: string[];
   onSelectClass: (cls: string) => void;
 }
+
+// Helpers to parse level strings to integers
+const parseLevelToNumber = (lvl: string): number => {
+  if (!lvl) return 1;
+  const cleaned = lvl.toString().trim().toUpperCase();
+  if (cleaned.includes('LEVEL')) {
+    const match = cleaned.match(/LEVEL\s*(\d+)/);
+    if (match) return parseInt(match[1], 10);
+  }
+  if (cleaned.includes('A1')) return 1;
+  if (cleaned.includes('A2')) return 2;
+  if (cleaned.includes('B1')) return 3;
+  if (cleaned.includes('B2')) return 4;
+  if (cleaned.includes('C1')) return 5;
+  if (cleaned.includes('C2')) return 6;
+  
+  const digitMatch = cleaned.match(/(\d+)/);
+  if (digitMatch) return parseInt(digitMatch[1], 10);
+  return 1; // Default fallback
+};
+
+// Helper to format average index back to a readable CEFR/Level tag
+const formatLevelName = (val: number): string => {
+  if (val <= 0) return 'L0';
+  const integerPart = Math.floor(val);
+  const fraction = val - integerPart;
+  let baseLabel = '';
+  
+  if (integerPart <= 1) baseLabel = 'L1 (A1)';
+  else if (integerPart === 2) baseLabel = 'L2 (A2)';
+  else if (integerPart === 3) baseLabel = 'L3 (B1)';
+  else if (integerPart === 4) baseLabel = 'L4 (B2)';
+  else if (integerPart === 5) baseLabel = 'L5 (C1)';
+  else baseLabel = `L${integerPart} (C2)`;
+  
+  if (fraction >= 0.75) return `L${integerPart + 1}`;
+  if (fraction >= 0.25) return `${baseLabel}+`;
+  return baseLabel;
+};
 
 // Helper to group classes (same as in App.tsx)
 const getLocalClassGroup = (clsName: string): string => {
@@ -24,11 +59,7 @@ const getLocalClassGroup = (clsName: string): string => {
 
 export const Dashboard: React.FC<DashboardProps> = ({
   students,
-  studentWeeks,
   availableClasses,
-  selectedWeek,
-  onWeekChange,
-  weeksList,
   onSelectClass
 }) => {
   // Get active students list
@@ -36,217 +67,264 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return students.filter(s => !s.isDeleted);
   }, [students]);
 
-  // Calculate dynamic metrics for each student based on the selected week
-  const projectedStudents = useMemo(() => {
+  // Calculate dynamic metrics for each student based on current/latest levels
+  const studentsWithMetrics = useMemo(() => {
     return activeStudents.map(student => {
-      let engScore = student.engScore ?? 0;
-      let mathScore = student.mathScore ?? 0;
-      let attendance = student.attendance ?? 1;
-      let homework = student.homework ?? 1;
+      const engStart = parseLevelToNumber(student.startingLevel);
+      const engCurr = parseLevelToNumber(student.currentLevel || student.startingLevel);
+      const mathStart = parseLevelToNumber(student.mathStartingLevel || 'Level 1');
+      const mathCurr = parseLevelToNumber(student.mathCurrentLevel || 'Level 1');
 
-      if (selectedWeek) {
-        const hist = studentWeeks.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
-        if (hist) {
-          engScore = hist.eng_score ?? student.engScore ?? 0;
-          mathScore = hist.math_score ?? student.mathScore ?? 0;
-          attendance = hist.attendance ?? student.attendance ?? 1;
-          homework = hist.homework ?? student.homework ?? 1;
-        } else {
-          engScore = 0;
-          mathScore = 0;
-          attendance = 1;
-          homework = 1;
-        }
-      }
+      const engGrowth = Math.max(0, engCurr - engStart);
+      const mathGrowth = Math.max(0, mathCurr - mathStart);
+      const combinedGrowth = engGrowth + mathGrowth;
 
-      // Convert raw scores to percentages
-      const engPercent = (engScore / 15) * 100;
-      const mathPercent = (mathScore / 15) * 100;
-      const absences = attendance < 0 ? -attendance : 0;
-      const attPercent = Math.max(0, 100 - absences * 16.67);
-      const missedHw = homework < 0 ? -homework : 0;
-      const hwPercent = Math.max(0, 100 - missedHw * 20);
-      const overallPercent = (engPercent + mathPercent + attPercent + hwPercent) / 4;
+      const hasEngCert = engCurr >= 3;  // Level 3 (B1) or higher
+      const hasMathCert = mathCurr >= 3; // Level 3 or higher
+      const hasCert = hasEngCert || hasMathCert;
 
       return {
         ...student,
-        engPercent,
-        mathPercent,
-        attPercent,
-        hwPercent,
-        overallPercent,
-        rawEng: engScore,
-        rawMath: mathScore,
-        rawAtt: absences,
-        rawHw: missedHw
+        engStart,
+        engCurr,
+        mathStart,
+        mathCurr,
+        engGrowth,
+        mathGrowth,
+        combinedGrowth,
+        hasEngCert,
+        hasMathCert,
+        hasCert
       };
     });
-  }, [activeStudents, selectedWeek, studentWeeks]);
+  }, [activeStudents]);
 
-  // Calculate overall metrics
-  const totalStudentsCount = projectedStudents.length;
+  // Total Students Count
+  const totalStudentsCount = studentsWithMetrics.length;
 
-  const overallAvgScore = useMemo(() => {
+  // KPI 1: Certified Students
+  const totalCertificatesCount = useMemo(() => {
+    return studentsWithMetrics.filter(s => s.hasCert).length;
+  }, [studentsWithMetrics]);
+
+  // KPI 2: English Certificate Count (CEFR B1+)
+  const engCertificatesCount = useMemo(() => {
+    return studentsWithMetrics.filter(s => s.hasEngCert).length;
+  }, [studentsWithMetrics]);
+
+  // KPI 3: Math Certificate Count
+  const mathCertificatesCount = useMemo(() => {
+    return studentsWithMetrics.filter(s => s.hasMathCert).length;
+  }, [studentsWithMetrics]);
+
+  // KPI 4: Average Level Growth
+  const averageGrowth = useMemo(() => {
     if (totalStudentsCount === 0) return 0;
-    // Combine English and Math scores percentage
-    const totalScorePercent = projectedStudents.reduce((sum, s) => sum + (s.engPercent + s.mathPercent) / 2, 0);
-    return totalScorePercent / totalStudentsCount;
-  }, [projectedStudents, totalStudentsCount]);
-
-  const overallAttendance = useMemo(() => {
-    if (totalStudentsCount === 0) return 0;
-    const totalAttPercent = projectedStudents.reduce((sum, s) => sum + s.attPercent, 0);
-    return totalAttPercent / totalStudentsCount;
-  }, [projectedStudents, totalStudentsCount]);
+    const totalGrowth = studentsWithMetrics.reduce((sum, s) => sum + (s.engGrowth + s.mathGrowth) / 2, 0);
+    return totalGrowth / totalStudentsCount;
+  }, [studentsWithMetrics, totalStudentsCount]);
 
   // Calculate class metrics
   const classMetrics = useMemo(() => {
     return availableClasses.map(clsGroup => {
-      const classStudents = projectedStudents.filter(s => getLocalClassGroup(s.className.toUpperCase()) === clsGroup);
+      const classStudents = studentsWithMetrics.filter(s => getLocalClassGroup(s.className.toUpperCase()) === clsGroup);
       const count = classStudents.length;
 
       if (count === 0) {
         return {
           name: clsGroup,
           studentCount: 0,
-          engAvg: 0,
-          mathAvg: 0,
-          attAvg: 0,
-          hwAvg: 0,
-          overallAvg: 0
+          engAvgLvl: 0,
+          mathAvgLvl: 0,
+          maxGrowth: 0,
+          maxGrowthStudentName: '-'
         };
       }
 
-      const engAvg = classStudents.reduce((sum, s) => sum + s.engPercent, 0) / count;
-      const mathAvg = classStudents.reduce((sum, s) => sum + s.mathPercent, 0) / count;
-      const attAvg = classStudents.reduce((sum, s) => sum + s.attPercent, 0) / count;
-      const hwAvg = classStudents.reduce((sum, s) => sum + s.hwPercent, 0) / count;
-      const overallAvg = classStudents.reduce((sum, s) => sum + s.overallPercent, 0) / count;
+      // Calculate overall average level indices
+      const engAvgLvl = classStudents.reduce((sum, s) => sum + s.engCurr, 0) / count;
+      const mathAvgLvl = classStudents.reduce((sum, s) => sum + s.mathCurr, 0) / count;
+
+      // Find highest rise in this class
+      let maxGrowth = 0;
+      let topStudent: typeof classStudents[0] | null = null;
+      classStudents.forEach(s => {
+        if (s.combinedGrowth >= maxGrowth) {
+          maxGrowth = s.combinedGrowth;
+          topStudent = s;
+        }
+      });
 
       return {
         name: clsGroup,
         studentCount: count,
-        engAvg,
-        mathAvg,
-        attAvg,
-        hwAvg,
-        overallAvg
+        engAvgLvl,
+        mathAvgLvl,
+        maxGrowth,
+        maxGrowthStudentName: topStudent ? `${(topStudent as any).name} ${(topStudent as any).surname.charAt(0)}.` : '-'
       };
     });
-  }, [projectedStudents, availableClasses]);
+  }, [studentsWithMetrics, availableClasses]);
 
-  // Determine best performing class
-  const bestClass = useMemo(() => {
-    const validClasses = classMetrics.filter(c => c.studentCount > 0);
-    if (validClasses.length === 0) return { name: "Noma'lum", score: 0 };
-    
-    const sorted = [...validClasses].sort((a, b) => b.overallAvg - a.overallAvg);
-    return {
-      name: sorted[0].name,
-      score: sorted[0].overallAvg
-    };
-  }, [classMetrics]);
-
-  // Identify top students (limit to 5)
-  const topStudents = useMemo(() => {
-    return [...projectedStudents]
-      .sort((a, b) => b.overallPercent - a.overallPercent)
+  // Determine top growth students (limit to 5)
+  const topGrowthLeaders = useMemo(() => {
+    return [...studentsWithMetrics]
+      .filter(s => s.combinedGrowth > 0)
+      .sort((a, b) => b.combinedGrowth - a.combinedGrowth)
       .slice(0, 5);
-  }, [projectedStudents]);
+  }, [studentsWithMetrics]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', width: '100%' }}>
-      {/* Welcome Banner */}
+      {/* Dynamic Marquee Keyframe Styles */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes scroll-left {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes scroll-right {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(0); }
+        }
+        @keyframes draw-line {
+          to { stroke-dashoffset: 0; }
+        }
+        @keyframes float-up {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes pulse-ring {
+          0% { transform: scale(0.95); opacity: 0.5; }
+          50% { transform: scale(1.1); opacity: 0.3; }
+          100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .marquee-content-left {
+          display: inline-flex;
+          animation: scroll-left 25s linear infinite;
+        }
+        .marquee-content-right {
+          display: inline-flex;
+          animation: scroll-right 25s linear infinite;
+        }
+        .kpi-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.08) !important;
+        }
+        .dashboard-row-clickable:hover {
+          background-color: #f8fafc !important;
+          cursor: pointer;
+        }
+      `}} />
+
+      {/* Standalone Page Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <Sparkles size={22} style={{ color: '#6366f1' }} />
+          <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.025em' }}>
+            Bosh Sahifa
+          </h2>
+        </div>
+        <span style={{ fontSize: '0.8rem', background: '#e0e7ff', color: '#4f46e5', padding: '0.35rem 0.8rem', borderRadius: '20px', fontWeight: 800 }}>
+          {totalStudentsCount} ta o'quvchi monitoringi
+        </span>
+      </div>
+
+      {/* Velocity Scroll Banner Box */}
       <div style={{
-        background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #4338ca 100%)',
+        background: '#ffffff',
+        border: '1.5px solid #e2e8f0',
         borderRadius: '24px',
-        padding: '2.2rem 2.5rem',
-        color: '#ffffff',
+        padding: '1.75rem 1.5rem',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '1.5rem',
-        boxShadow: '0 12px 24px -4px rgba(79, 70, 229, 0.25)',
+        flexDirection: 'column',
+        gap: '0.75rem',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01)',
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {/* Glow Effects */}
-        <div style={{
-          position: 'absolute',
-          top: '-20%',
-          right: '-10%',
-          width: '300px',
-          height: '300px',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
-          borderRadius: '50%',
-          pointerEvents: 'none'
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: '-30%',
-          left: '10%',
-          width: '200px',
-          height: '200px',
-          background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 75%)',
-          borderRadius: '50%',
-          pointerEvents: 'none'
-        }} />
+        {/* Continuous Marquees */}
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+          {/* Edge Fading Mask */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: '60px',
+            background: 'linear-gradient(to right, #ffffff, transparent)',
+            zIndex: 10,
+            pointerEvents: 'none'
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: '60px',
+            background: 'linear-gradient(to left, #ffffff, transparent)',
+            zIndex: 10,
+            pointerEvents: 'none'
+          }} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', zIndex: 2 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Sparkles size={20} style={{ color: '#fcd34d' }} />
-            <h2 style={{ fontSize: '1.7rem', fontWeight: 800, margin: 0, letterSpacing: '-0.025em' }}>
-              Tahliliy Dashboard
-            </h2>
+          {/* Lane 1: AL-XORAZMIY MAKTABI (Gray/Teal scrolling left) */}
+          <div className="marquee-container" style={{ overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', display: 'flex' }}>
+            <div className="marquee-content-left" style={{
+              display: 'inline-flex',
+              gap: '2.5rem',
+              fontSize: '2.2rem',
+              fontWeight: 900,
+              color: '#0d9488', // Teal
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase'
+            }}>
+              <span>AL-XORAZMIY MAKTABI</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span>AL-XORAZMIY MAKTABI</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span>AL-XORAZMIY MAKTABI</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span>AL-XORAZMIY MAKTABI</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span>AL-XORAZMIY MAKTABI</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span>AL-XORAZMIY MAKTABI</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span>AL-XORAZMIY MAKTABI</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+              <span>AL-XORAZMIY MAKTABI</span>
+              <span style={{ color: '#cbd5e1' }}>•</span>
+            </div>
           </div>
-          <p style={{ fontSize: '0.95rem', color: '#e0e7ff', fontWeight: 500, margin: 0, opacity: 0.9 }}>
-            Maktab o'quvchilari o'zlashtirish va davomat ko'rsatkichlarining to'liq tahlili
-          </p>
-        </div>
 
-        {/* Dropdown controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 2 }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e0e7ff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Hisobot Davri:
-          </span>
-          <select
-            value={selectedWeek}
-            onChange={(e) => onWeekChange(e.target.value)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.12)',
-              border: '1.5px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: '14px',
-              padding: '0.65rem 2.25rem 0.65rem 1rem',
-              color: '#ffffff',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              outline: 'none',
-              cursor: 'pointer',
-              appearance: 'none',
-              WebkitAppearance: 'none',
-              backgroundImage: 'url("data:image/svg+xml;utf8,<svg fill=\'%23ffffff\' height=\'24\' viewBox=\'0 0 24 24\' width=\'24\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/></svg>")',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 0.75rem center',
-              backgroundSize: '1.25rem',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s',
-              minWidth: '160px'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
-            }}
-          >
-            <option value="" style={{ color: '#1e293b', fontWeight: 600 }}>Umumiy Natijalar</option>
-            {weeksList.map(wk => (
-              <option key={wk} value={wk} style={{ color: '#1e293b', fontWeight: 600 }}>{wk}-Hafta</option>
-            ))}
-          </select>
+          {/* Lane 2: TA'LIMDA INNOVATSIYA (Indigo-Violet scrolling right) */}
+          <div className="marquee-container" style={{ overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', display: 'flex' }}>
+            <div className="marquee-content-right" style={{
+              display: 'inline-flex',
+              gap: '2.5rem',
+              fontSize: '2.2rem',
+              fontWeight: 900,
+              color: '#6366f1', // Indigo-Violet
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase'
+            }}>
+              <span>TA'LIMDA INNOVATSIYA</span>
+              <span style={{ color: '#c7d2fe' }}>•</span>
+              <span>TA'LIMDA INNOVATSIYA</span>
+              <span style={{ color: '#c7d2fe' }}>•</span>
+              <span>TA'LIMDA INNOVATSIYA</span>
+              <span style={{ color: '#c7d2fe' }}>•</span>
+              <span>TA'LIMDA INNOVATSIYA</span>
+              <span style={{ color: '#c7d2fe' }}>•</span>
+              <span>TA'LIMDA INNOVATSIYA</span>
+              <span style={{ color: '#c7d2fe' }}>•</span>
+              <span>TA'LIMDA INNOVATSIYA</span>
+              <span style={{ color: '#c7d2fe' }}>•</span>
+              <span>TA'LIMDA INNOVATSIYA</span>
+              <span style={{ color: '#c7d2fe' }}>•</span>
+              <span>TA'LIMDA INNOVATSIYA</span>
+              <span style={{ color: '#c7d2fe' }}>•</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -257,7 +335,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         gap: '1.25rem',
         width: '100%'
       }}>
-        {/* KPI 1: Total Students */}
+        {/* KPI 1: Total Certificates */}
         <div 
           className="kpi-card"
           style={{
@@ -270,44 +348,46 @@ export const Dashboard: React.FC<DashboardProps> = ({
             alignItems: 'center',
             gap: '1.2rem',
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-            cursor: 'default'
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 12px 20px -8px rgba(0, 0, 0, 0.08)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
+            cursor: 'default',
+            position: 'relative'
           }}
         >
-          <div style={{
-            background: 'rgba(79, 70, 229, 0.1)',
-            color: '#4f46e5',
-            borderRadius: '16px',
-            width: '56px',
-            height: '56px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <Users size={26} />
+          <div style={{ position: 'relative', width: '56px', height: '56px', flexShrink: 0 }}>
+            {/* Animated Pulsing Ring */}
+            <div style={{
+              position: 'absolute',
+              top: '-4px', left: '-4px', right: '-4px', bottom: '-4px',
+              borderRadius: '16px',
+              border: '2px solid #6366f1',
+              animation: 'pulse-ring 2s infinite'
+            }} />
+            <div style={{
+              background: 'rgba(99, 102, 241, 0.1)',
+              color: '#6366f1',
+              borderRadius: '16px',
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Award size={26} />
+            </div>
           </div>
           <div>
             <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              O'quvchilar
+              Sertifikatlar
             </p>
             <h3 style={{ margin: '0.2rem 0', fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>
-              {totalStudentsCount}
+              {totalCertificatesCount} <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>o'quvchi</span>
             </h3>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
-              Faol ta'lim oluvchilar
+            <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
+              CEFR B1+ / Milliy daraja
             </p>
           </div>
         </div>
 
-        {/* KPI 2: Overall Score Percentage */}
+        {/* KPI 2: English Certificate count */}
         <div 
           className="kpi-card"
           style={{
@@ -321,14 +401,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
             gap: '1.2rem',
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             cursor: 'default'
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 12px 20px -8px rgba(0, 0, 0, 0.08)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
           }}
         >
           <div style={{
@@ -342,24 +414,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
             justifyContent: 'center',
             flexShrink: 0
           }}>
-            <Award size={26} />
+            <CheckCircle size={26} />
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              O'zlashtirish
+              Ingliz tili
             </p>
             <h3 style={{ margin: '0.2rem 0', fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>
-              {overallAvgScore.toFixed(1)}%
+              {engCertificatesCount}
             </h3>
-            <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
-              <span style={{ color: '#16a34a' }}>ENG: {(projectedStudents.reduce((sum, s) => sum + s.engPercent, 0) / (totalStudentsCount || 1)).toFixed(0)}%</span>
-              <span>|</span>
-              <span style={{ color: '#0d9488' }}>MATH: {(projectedStudents.reduce((sum, s) => sum + s.mathPercent, 0) / (totalStudentsCount || 1)).toFixed(0)}%</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.15rem' }}>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>B1 / B2 / C1 (L3+)</span>
+              {/* Animated SVG trend line */}
+              <svg width="60" height="20" viewBox="0 0 60 20" fill="none">
+                <path 
+                  d="M 2 18 Q 15 15 30 8 T 58 2" 
+                  stroke="#10b981" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round"
+                  strokeDasharray="80"
+                  strokeDashoffset="80"
+                  style={{ animation: 'draw-line 2.5s ease-out infinite' }}
+                />
+              </svg>
             </div>
           </div>
         </div>
 
-        {/* KPI 3: Attendance */}
+        {/* KPI 3: Math Certificate count */}
         <div 
           className="kpi-card"
           style={{
@@ -374,13 +456,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             cursor: 'default'
           }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 12px 20px -8px rgba(0, 0, 0, 0.08)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
+        >
+          <div style={{
+            background: 'rgba(13, 148, 136, 0.1)',
+            color: '#0d9488',
+            borderRadius: '16px',
+            width: '56px',
+            height: '56px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <CheckCircle size={26} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Matematika
+            </p>
+            <h3 style={{ margin: '0.2rem 0', fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>
+              {mathCertificatesCount}
+            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.15rem' }}>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>Milliy daraja (L3+)</span>
+              {/* Animated SVG trend line */}
+              <svg width="60" height="20" viewBox="0 0 60 20" fill="none">
+                <path 
+                  d="M 2 18 Q 15 15 30 8 T 58 2" 
+                  stroke="#0d9488" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round"
+                  strokeDasharray="80"
+                  strokeDashoffset="80"
+                  style={{ animation: 'draw-line 2.5s ease-out infinite' }}
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 4: Growth Velocity */}
+        <div 
+          className="kpi-card"
+          style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            padding: '1.5rem',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1.2rem',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            cursor: 'default'
           }}
         >
           <div style={{
@@ -394,309 +522,242 @@ export const Dashboard: React.FC<DashboardProps> = ({
             justifyContent: 'center',
             flexShrink: 0
           }}>
-            <Calendar size={26} />
+            {/* Animated bouncing arrow */}
+            <TrendingUp size={26} style={{ animation: 'float-up 1.8s ease-in-out infinite' }} />
           </div>
           <div>
             <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Davomat
+              O'rtacha O'sish
             </p>
             <h3 style={{ margin: '0.2rem 0', fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>
-              {overallAttendance.toFixed(1)}%
-            </h3>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
-              Darslarga qatnashish darajasi
-            </p>
-          </div>
-        </div>
-
-        {/* KPI 4: Best performing class */}
-        <div 
-          className="kpi-card"
-          style={{
-            background: '#ffffff',
-            borderRadius: '20px',
-            padding: '1.5rem',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1.2rem',
-            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-            cursor: 'default'
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 12px 20px -8px rgba(0, 0, 0, 0.08)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
-          }}
-        >
-          <div style={{
-            background: 'rgba(236, 72, 153, 0.1)',
-            color: '#ec4899',
-            borderRadius: '16px',
-            width: '56px',
-            height: '56px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <Trophy size={26} />
-          </div>
-          <div>
-            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Ilg'or Sinf
-            </p>
-            <h3 style={{ margin: '0.2rem 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>
-              {bestClass.name}
+              +{averageGrowth.toFixed(1)} <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>daraja</span>
             </h3>
             <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
-              Umumiy: {bestClass.score.toFixed(1)}% o'rtacha
+              Sinflar bo'yicha daraja o'sishi
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Layout Content Area: Left = Class Comparison, Right = Top Students */}
-      <div style={{
+      {/* Main Layout Content Area: Left = Class Comparison, Right = Growth Leaders */}
+      <div className="dashboard-grid-content" style={{
         display: 'grid',
         gridTemplateColumns: '2fr 1.1fr',
         gap: '1.5rem',
         width: '100%',
         alignItems: 'start'
       }}>
-        {/* CSS styles to make it responsive on smaller screens */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media (max-width: 1024px) {
-            div.dashboard-grid-content {
-              grid-template-columns: 1fr !important;
-            }
-          }
-          .dashboard-row-clickable:hover {
-            background-color: #f8fafc !important;
-            cursor: pointer;
-          }
-        `}} />
-
-        <div className="dashboard-grid-content" style={{ display: 'grid', gridTemplateColumns: '2fr 1.1fr', gap: '1.5rem', gridColumn: 'span 2' }}>
-          
-          {/* Left panel: Class comparison breakdown */}
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '24px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <div style={{ padding: '1.5rem 1.75rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <ClipboardList size={20} style={{ color: '#4f46e5' }} />
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                  Sinflar kesimida tahlil
-                </h3>
-              </div>
-              <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.35rem 0.75rem', borderRadius: '20px', color: '#64748b', fontWeight: 700 }}>
-                {classMetrics.filter(c => c.studentCount > 0).length} Faol sinf
-              </span>
-            </div>
-
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Sinf</th>
-                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>O'quvchi</th>
-                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ingliz tili</th>
-                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Matematika</th>
-                    <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Umumiy ball</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {classMetrics.map(cls => {
-                    const hasStudents = cls.studentCount > 0;
-                    
-                    return (
-                      <tr 
-                        key={cls.name} 
-                        onClick={() => hasStudents && onSelectClass(cls.name)}
-                        className={hasStudents ? "dashboard-row-clickable" : ""}
-                        style={{ 
-                          borderBottom: '1px solid #f1f5f9',
-                          transition: 'background-color 0.15s ease',
-                          opacity: hasStudents ? 1 : 0.5
-                        }}
-                      >
-                        <td style={{ padding: '1.1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>{cls.name}</span>
-                          {bestClass.name === cls.name && hasStudents && (
-                            <Trophy size={14} style={{ color: '#f59e0b' }} />
-                          )}
-                        </td>
-                        <td style={{ padding: '1.1rem 1.5rem', fontSize: '0.9rem', color: '#475569', fontWeight: 600 }}>
-                          {cls.studentCount} ta o'quvchi
-                        </td>
-                        <td style={{ padding: '1.1rem 1.5rem' }}>
-                          <span style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 700 }}>
-                            {hasStudents ? `${cls.engAvg.toFixed(0)}%` : '-'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1.1rem 1.5rem' }}>
-                          <span style={{ fontSize: '0.9rem', color: '#0d9488', fontWeight: 700 }}>
-                            {hasStudents ? `${cls.mathAvg.toFixed(0)}%` : '-'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1.1rem 1.5rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
-                            <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, width: '40px', flexShrink: 0 }}>
-                              {hasStudents ? `${cls.overallAvg.toFixed(1)}%` : '-'}
-                            </span>
-                            {hasStudents && (
-                              <div style={{ background: '#e2e8f0', borderRadius: '9999px', height: '8px', flex: 1, overflow: 'hidden' }}>
-                                <div style={{ 
-                                  background: cls.overallAvg >= 80 ? 'linear-gradient(90deg, #10b981, #059669)' : cls.overallAvg >= 60 ? 'linear-gradient(90deg, #4f46e5, #6366f1)' : 'linear-gradient(90deg, #f59e0b, #d97706)',
-                                  width: `${cls.overallAvg}%`, 
-                                  height: '100%', 
-                                  borderRadius: '9999px' 
-                                }} />
-                              </div>
-                            )}
-                            {hasStudents && (
-                              <ChevronRight size={16} style={{ color: '#94a3b8' }} />
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Right panel: Top performing students */}
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '24px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-            padding: '1.5rem 1.75rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.25rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-              <TrendingUp size={20} style={{ color: '#10b981' }} />
+        {/* Left panel: Class comparison breakdown */}
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div style={{ padding: '1.5rem 1.75rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <ClipboardList size={20} style={{ color: '#4f46e5' }} />
               <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                Hafta Qahramonlari
+                Sinflar kesimida tahlil
               </h3>
             </div>
+            <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.35rem 0.75rem', borderRadius: '20px', color: '#64748b', fontWeight: 700 }}>
+              {classMetrics.filter(c => c.studentCount > 0).length} Faol sinf
+            </span>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {topStudents.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem 0', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>
-                  Ma'lumotlar mavjud emas
-                </div>
-              ) : (
-                topStudents.map((student, idx) => {
-                  const placeColors = [
-                    { border: '2.5px solid #f59e0b', badge: '#fef3c7', text: '#b45309', label: '1' },
-                    { border: '2.5px solid #94a3b8', badge: '#f1f5f9', text: '#475569', label: '2' },
-                    { border: '2.5px solid #b45309', badge: '#ffedd5', text: '#c2410c', label: '3' },
-                    { border: '1.5px solid #e2e8f0', badge: '#f8fafc', text: '#64748b', label: '4' },
-                    { border: '1.5px solid #e2e8f0', badge: '#f8fafc', text: '#64748b', label: '5' }
-                  ];
-                  const place = placeColors[idx] || placeColors[4];
-
-                  // Generate Avatar Initials
-                  const initials = student.name && student.surname 
-                    ? `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase() 
-                    : student.name ? student.name.charAt(0).toUpperCase() : '?';
-
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Sinf</th>
+                  <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>O'quvchi</th>
+                  <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Ingliz tili (Daraja)</th>
+                  <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Matematika (Daraja)</th>
+                  <th style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Eng Yuqori O'sish</th>
+                </tr>
+              </thead>
+              <tbody>
+                {classMetrics.map(cls => {
+                  const hasStudents = cls.studentCount > 0;
+                  
                   return (
-                    <div 
-                      key={student.id} 
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        background: idx === 0 ? 'linear-gradient(to right, rgba(254, 243, 199, 0.25), transparent)' : 'transparent',
-                        padding: '0.6rem 0.8rem',
-                        borderRadius: '16px',
-                        border: idx === 0 ? '1px dashed #fcd34d' : '1px solid transparent'
+                    <tr 
+                      key={cls.name} 
+                      onClick={() => hasStudents && onSelectClass(cls.name)}
+                      className={hasStudents ? "dashboard-row-clickable" : ""}
+                      style={{ 
+                        borderBottom: '1px solid #f1f5f9',
+                        transition: 'background-color 0.15s ease',
+                        opacity: hasStudents ? 1 : 0.5
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                        {/* Place Badge */}
-                        <span style={{
-                          background: place.badge,
-                          color: place.text,
-                          width: '22px',
-                          height: '22px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.75rem',
-                          fontWeight: 800,
-                          flexShrink: 0
-                        }}>
-                          {place.label}
+                      <td style={{ padding: '1.1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>{cls.name}</span>
+                        {cls.maxGrowth >= 3 && hasStudents && (
+                          <Trophy size={14} style={{ color: '#f59e0b' }} />
+                        )}
+                      </td>
+                      <td style={{ padding: '1.1rem 1.5rem', fontSize: '0.9rem', color: '#475569', fontWeight: 600 }}>
+                        {cls.studentCount} ta o'quvchi
+                      </td>
+                      <td style={{ padding: '1.1rem 1.5rem' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 700 }}>
+                          {hasStudents ? formatLevelName(cls.engAvgLvl) : '-'}
                         </span>
-
-                        {/* Avatar */}
-                        <div style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '50%',
-                          background: idx === 0 ? '#fcd34d' : '#6366f1',
-                          color: idx === 0 ? '#78350f' : '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.9rem',
-                          fontWeight: 700,
-                          overflow: 'hidden',
-                          border: place.border,
-                          boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                          flexShrink: 0
-                        }}>
-                          {student.pictureUrl ? (
-                            <img src={student.pictureUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </td>
+                      <td style={{ padding: '1.1rem 1.5rem' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#0d9488', fontWeight: 700 }}>
+                          {hasStudents ? formatLevelName(cls.mathAvgLvl) : '-'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1.1rem 1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%' }}>
+                          {hasStudents && cls.maxGrowth > 0 ? (
+                            <>
+                              <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, flexShrink: 0 }}>
+                                +{cls.maxGrowth} d.
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                ({cls.maxGrowthStudentName})
+                              </span>
+                            </>
                           ) : (
-                            initials
+                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>-</span>
+                          )}
+                          {hasStudents && (
+                            <ChevronRight size={16} style={{ color: '#94a3b8', marginLeft: 'auto' }} />
                           )}
                         </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-                        <div>
-                          <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>
-                            {student.name} {student.surname}
-                          </h4>
-                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
-                            {student.className.toUpperCase()} SINF
-                          </span>
-                        </div>
+        {/* Right panel: Top growth students */}
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+          padding: '1.5rem 1.75rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+            <TrendingUp size={20} style={{ color: '#10b981' }} />
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+              Eng Yuqori O'sish
+            </h3>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {topGrowthLeaders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem 0', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600 }}>
+                O'sish ko'rsatkichlari mavjud emas
+              </div>
+            ) : (
+              topGrowthLeaders.map((student, idx) => {
+                const placeColors = [
+                  { border: '2.5px solid #f59e0b', badge: '#fef3c7', text: '#b45309', label: '1' },
+                  { border: '2.5px solid #94a3b8', badge: '#f1f5f9', text: '#475569', label: '2' },
+                  { border: '2.5px solid #b45309', badge: '#ffedd5', text: '#c2410c', label: '3' },
+                  { border: '1.5px solid #e2e8f0', badge: '#f8fafc', text: '#64748b', label: '4' },
+                  { border: '1.5px solid #e2e8f0', badge: '#f8fafc', text: '#64748b', label: '5' }
+                ];
+                const place = placeColors[idx] || placeColors[4];
+
+                // Generate Avatar Initials
+                const initials = student.name && student.surname 
+                  ? `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase() 
+                  : student.name ? student.name.charAt(0).toUpperCase() : '?';
+
+                return (
+                  <div 
+                    key={student.id} 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: idx === 0 ? 'linear-gradient(to right, rgba(254, 243, 199, 0.25), transparent)' : 'transparent',
+                      padding: '0.6rem 0.8rem',
+                      borderRadius: '16px',
+                      border: idx === 0 ? '1px dashed #fcd34d' : '1px solid transparent'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      {/* Place Badge */}
+                      <span style={{
+                        background: place.badge,
+                        color: place.text,
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        flexShrink: 0
+                      }}>
+                        {place.label}
+                      </span>
+
+                      {/* Avatar */}
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '50%',
+                        background: idx === 0 ? '#fcd34d' : '#6366f1',
+                        color: idx === 0 ? '#78350f' : '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.9rem',
+                        fontWeight: 700,
+                        overflow: 'hidden',
+                        border: place.border,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                        flexShrink: 0
+                      }}>
+                        {student.pictureUrl ? (
+                          <img src={student.pictureUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          initials
+                        )}
                       </div>
 
-                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                        <span style={{ fontSize: '1rem', color: idx === 0 ? '#b45309' : '#0f172a', fontWeight: 900 }}>
-                          {student.overallPercent.toFixed(1)}%
-                        </span>
-                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>
-                          Eng: {student.rawEng} | Math: {student.rawMath}
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>
+                          {student.name} {student.surname}
+                        </h4>
+                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>
+                          {student.className.toUpperCase()} SINF
                         </span>
                       </div>
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
 
+                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      <span style={{ fontSize: '1rem', color: idx === 0 ? '#b45309' : '#0f172a', fontWeight: 900 }}>
+                        +{student.combinedGrowth} d.
+                      </span>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>
+                        Eng: +{student.engGrowth} | Math: +{student.mathGrowth}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -2152,9 +2152,6 @@ function App() {
               students={students}
               studentWeeks={studentWeeks}
               availableClasses={availableClasses}
-              selectedWeek={selectedWeek}
-              onWeekChange={setSelectedWeek}
-              weeksList={weeksList}
               onSelectClass={(cls) => {
                 setActiveClass(cls);
                 setActiveSubject('ENG');
@@ -2637,9 +2634,6 @@ function App() {
                 students={students}
                 studentWeeks={studentWeeks}
                 availableClasses={availableClasses}
-                selectedWeek={selectedWeek}
-                onWeekChange={setSelectedWeek}
-                weeksList={weeksList}
                 onSelectClass={(cls) => {
                   setActiveClass(cls);
                   setActiveSubject('ENG');
