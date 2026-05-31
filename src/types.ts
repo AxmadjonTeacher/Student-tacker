@@ -48,7 +48,7 @@ export interface NewsEvent {
   type?: 'news' | 'event' | 'reminder';
 }
 
-export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS';
+export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD';
 
 export interface Teacher {
   id: number;

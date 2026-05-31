@@ -307,107 +307,110 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
  
-      <div className={`admin-header-bottom-row admin-tab-${activeAdminTab}`} style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        width: '100%', 
-        gap: '1.5rem', 
-        flexWrap: 'nowrap',
-        marginTop: '0.5rem',
-        marginBottom: '1rem'
-      }}>
-        <div className="class-selector" style={{ 
+      {activeSubject !== 'DASHBOARD' && (
+        <div className={`admin-header-bottom-row admin-tab-${activeAdminTab}`} style={{ 
           display: 'flex', 
-          gap: '0.25rem', 
-          background: '#ffffff', 
-          padding: '0.5rem', 
-          borderRadius: '9999px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
-          border: '1px solid #e5e7eb',
-          overflowX: 'auto',
-          flex: '1 1 auto',
-          maxWidth: '100%'
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          width: '100%', 
+          gap: '1.5rem', 
+          flexWrap: 'nowrap',
+          marginTop: '0.5rem',
+          marginBottom: '1rem'
         }}>
-          {classes.map(cls => {
-            const isActive = activeClass === cls;
-            
-            const getSubjectColor = (subj: ActiveSubject) => {
-              switch(subj) {
-                case 'ENG': return '#166534'; // green
-                case 'MATH': return '#0d9488'; // teal
-                case 'ALL': return '#4f46e5'; // indigo
-                case 'DETAILS': return '#db2777'; // pink
-                default: return '#0d9488';
-              }
-            };
-            const subjectColor = getSubjectColor(activeSubject);
+          <div className="class-selector" style={{ 
+            display: 'flex', 
+            gap: '0.25rem', 
+            background: '#ffffff', 
+            padding: '0.5rem', 
+            borderRadius: '9999px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
+            border: '1px solid #e5e7eb',
+            overflowX: 'auto',
+            flex: '1 1 auto',
+            maxWidth: '100%'
+          }}>
+            {classes.map(cls => {
+              const isActive = activeClass === cls;
+              
+              const getSubjectColor = (subj: ActiveSubject) => {
+                switch(subj) {
+                  case 'ENG': return '#166534'; // green
+                  case 'MATH': return '#0d9488'; // teal
+                  case 'ALL': return '#4f46e5'; // indigo
+                  case 'DETAILS': return '#db2777'; // pink
+                  case 'DASHBOARD': return '#6366f1'; // indigo-purple
+                  default: return '#0d9488';
+                }
+              };
+              const subjectColor = getSubjectColor(activeSubject);
 
-            return (
-              <button
-                key={cls}
-                onClick={() => onClassSelect(cls)}
-                className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
+              return (
+                <button
+                  key={cls}
+                  onClick={() => onClassSelect(cls)}
+                  className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    background: isActive ? subjectColor : '#ffffff',
+                    color: isActive ? '#ffffff' : '#6b7280',
+                    border: isActive ? `1px solid ${subjectColor}` : '1px solid #e2e8f0',
+                    boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : '0 1px 2px rgba(0,0,0,0.02)',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '9999px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    transition: 'all 0.2s ease',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {cls}
+                  <span style={{
+                    background: isActive ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
+                    color: isActive ? '#ffffff' : '#9ca3af',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.7rem',
+                    fontWeight: 700
+                  }}>
+                    {classCounts[cls] || 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+    
+          <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
+            <div className="mobile-sticky-search" style={{ position: 'relative', width: '320px' }}>
+              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+              <input 
+                type="text" 
+                placeholder="O'quvchilarni qidirish..." 
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  background: isActive ? subjectColor : '#ffffff',
-                  color: isActive ? '#ffffff' : '#6b7280',
-                  border: isActive ? `1px solid ${subjectColor}` : '1px solid #e2e8f0',
-                  boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : '0 1px 2px rgba(0,0,0,0.02)',
-                  padding: '0.5rem 1rem',
+                  width: '100%',
+                  padding: '0.85rem 1rem 0.85rem 2.75rem',
                   borderRadius: '9999px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
+                  border: '1px solid #e5e7eb',
+                  background: '#ffffff',
+                  fontSize: '0.95rem',
+                  color: '#1a1a1a',
+                  outline: 'none',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)'
                 }}
-              >
-                {cls}
-                <span style={{
-                  background: isActive ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
-                  color: isActive ? '#ffffff' : '#9ca3af',
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.7rem',
-                  fontWeight: 700
-                }}>
-                  {classCounts[cls] || 0}
-                </span>
-              </button>
-            );
-          })}
-        </div>
- 
-        <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
-          <div className="mobile-sticky-search" style={{ position: 'relative', width: '320px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-            <input 
-              type="text" 
-              placeholder="O'quvchilarni qidirish..." 
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.85rem 1rem 0.85rem 2.75rem',
-                borderRadius: '9999px',
-                border: '1px solid #e5e7eb',
-                background: '#ffffff',
-                fontSize: '0.95rem',
-                color: '#1a1a1a',
-                outline: 'none',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)'
-              }}
-            />
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
     </header>
   );

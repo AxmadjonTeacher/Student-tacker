@@ -7,6 +7,7 @@ import {
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
 import SidebarDrawer from './components/SidebarDrawer';
+import { Dashboard } from './components/Dashboard';
 import CustomDialog from './components/CustomDialog';
 import InstallAppDrawer from './components/InstallAppDrawer';
 import PasscodeModal from './components/PasscodeModal';
@@ -99,7 +100,7 @@ export const parseWeekToSortValue = (weekStr: string): number => {
 
 function App() {
   const [students, setStudents] = useState<Student[]>([]);
-  const [activeSubject, setActiveSubject] = useState<ActiveSubject>('ENG');
+  const [activeSubject, setActiveSubject] = useState<ActiveSubject>('DASHBOARD');
   const [loading, setLoading] = useState(true);
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
   const [searchTerm, setSearchTerm] = useState('');
@@ -2146,30 +2147,45 @@ function App() {
         />
 
         <div style={{ display: activeAdminTab === 'settings' ? 'none' : 'block' }}>
-          <StudentTable
-            students={filteredStudents}
-            isAdminMode={isAdminMode}
-            onUpdatePhoto={isAdminMode ? handleUpdateStudentPhoto : undefined}
-            onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
-            onAssignTeacher={handleAssignTeacher}
-            onMoveStudent={handleMoveStudent}
-            onMoveTeacherTable={handleMoveTeacherTable}
-            activeSubject={activeSubject}
-            onUpdateProgress={handleUpdateProgress}
-            onRenameTeacherTable={handleRenameTeacherTable}
-            onDeleteTeacherTable={handleDeleteTeacherTable}
-            studentWeeks={studentWeeks}
-            onSaveCredentials={handleSaveCredentials}
-            onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
-            teachers={teachers}
-            authRole={authRole}
-            showSummerPlan={showSummerPlan}
-            selectedWeek={selectedWeek}
-            onWeekChange={setSelectedWeek}
-            weeksList={weeksList}
-            onStartNewWeekClick={handleStartNewWeekClick}
-            onDeleteWeekClick={handleDeleteWeek}
-          />
+          {activeSubject === 'DASHBOARD' ? (
+            <Dashboard
+              students={students}
+              studentWeeks={studentWeeks}
+              availableClasses={availableClasses}
+              selectedWeek={selectedWeek}
+              onWeekChange={setSelectedWeek}
+              weeksList={weeksList}
+              onSelectClass={(cls) => {
+                setActiveClass(cls);
+                setActiveSubject('ENG');
+              }}
+            />
+          ) : (
+            <StudentTable
+              students={filteredStudents}
+              isAdminMode={isAdminMode}
+              onUpdatePhoto={isAdminMode ? handleUpdateStudentPhoto : undefined}
+              onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
+              onAssignTeacher={handleAssignTeacher}
+              onMoveStudent={handleMoveStudent}
+              onMoveTeacherTable={handleMoveTeacherTable}
+              activeSubject={activeSubject}
+              onUpdateProgress={handleUpdateProgress}
+              onRenameTeacherTable={handleRenameTeacherTable}
+              onDeleteTeacherTable={handleDeleteTeacherTable}
+              studentWeeks={studentWeeks}
+              onSaveCredentials={handleSaveCredentials}
+              onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
+              teachers={teachers}
+              authRole={authRole}
+              showSummerPlan={showSummerPlan}
+              selectedWeek={selectedWeek}
+              onWeekChange={setSelectedWeek}
+              weeksList={weeksList}
+              onStartNewWeekClick={handleStartNewWeekClick}
+              onDeleteWeekClick={handleDeleteWeek}
+            />
+          )}
         </div>
 
         <div style={{ display: activeAdminTab === 'settings' ? 'block' : 'none' }}>
@@ -2207,9 +2223,7 @@ function App() {
           <button 
             onClick={() => {
               setActiveAdminTab('home');
-              if (activeSubject === 'ALL') {
-                setActiveSubject('ENG');
-              }
+              setActiveSubject('DASHBOARD');
               setSearchTerm('');
               window.scrollTo(0, 0);
             }}
@@ -2222,7 +2236,7 @@ function App() {
           <button 
             onClick={() => {
               setActiveAdminTab('search');
-              if (activeSubject === 'ALL') {
+              if (activeSubject === 'ALL' || activeSubject === 'DASHBOARD') {
                 setActiveSubject('ENG');
               }
               setTimeout(() => {
@@ -2293,7 +2307,7 @@ function App() {
   }
 
   // Desktop Left Sidebar Layout
-  const subjectColor = activeSubject === 'MATH' ? '#0d9488' : activeSubject === 'ALL' ? '#4f46e5' : activeSubject === 'DETAILS' ? '#db2777' : '#166534';
+  const subjectColor = activeSubject === 'MATH' ? '#0d9488' : activeSubject === 'ALL' ? '#4f46e5' : activeSubject === 'DETAILS' ? '#db2777' : activeSubject === 'DASHBOARD' ? '#6366f1' : '#166534';
 
   return (
     <div style={{
@@ -2395,7 +2409,7 @@ function App() {
               {
                 title: 'Tizim',
                 items: [
-                  { id: 'home', label: 'Bosh sahifa', icon: Home, isActive: activeAdminTab === 'home' && (activeSubject === 'ENG' || activeSubject === 'MATH'), action: () => { setActiveAdminTab('home'); if (activeSubject === 'ALL' || activeSubject === 'DETAILS') setActiveSubject('ENG'); } },
+                  { id: 'home', label: 'Bosh sahifa', icon: Home, isActive: activeAdminTab === 'home' && activeSubject === 'DASHBOARD', action: () => { setActiveAdminTab('home'); setActiveSubject('DASHBOARD'); } },
                   { id: 'subj_details', label: 'ID & Telefonlar', icon: ShieldAlert, isActive: activeAdminTab === 'home' && activeSubject === 'DETAILS', action: () => { setActiveAdminTab('home'); setActiveSubject('DETAILS'); } },
                 ]
               },
@@ -2618,30 +2632,45 @@ function App() {
               onOpenDrawer={() => setActiveAdminTab('settings')}
               activeSubject={activeSubject}
             />
-            <StudentTable
-              students={filteredStudents}
-              isAdminMode={isAdminMode}
-              onUpdatePhoto={isAdminMode ? handleUpdateStudentPhoto : undefined}
-              onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
-              onAssignTeacher={handleAssignTeacher}
-              onMoveStudent={handleMoveStudent}
-              onMoveTeacherTable={handleMoveTeacherTable}
-              activeSubject={activeSubject}
-              onUpdateProgress={handleUpdateProgress}
-              onRenameTeacherTable={handleRenameTeacherTable}
-              onDeleteTeacherTable={handleDeleteTeacherTable}
-              studentWeeks={studentWeeks}
-              onSaveCredentials={handleSaveCredentials}
-              onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
-              teachers={teachers}
-              authRole={authRole}
-              showSummerPlan={showSummerPlan}
-              selectedWeek={selectedWeek}
-              onWeekChange={setSelectedWeek}
-              weeksList={weeksList}
-              onStartNewWeekClick={handleStartNewWeekClick}
-              onDeleteWeekClick={handleDeleteWeek}
-            />
+            {activeSubject === 'DASHBOARD' ? (
+              <Dashboard
+                students={students}
+                studentWeeks={studentWeeks}
+                availableClasses={availableClasses}
+                selectedWeek={selectedWeek}
+                onWeekChange={setSelectedWeek}
+                weeksList={weeksList}
+                onSelectClass={(cls) => {
+                  setActiveClass(cls);
+                  setActiveSubject('ENG');
+                }}
+              />
+            ) : (
+              <StudentTable
+                students={filteredStudents}
+                isAdminMode={isAdminMode}
+                onUpdatePhoto={isAdminMode ? handleUpdateStudentPhoto : undefined}
+                onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
+                onAssignTeacher={handleAssignTeacher}
+                onMoveStudent={handleMoveStudent}
+                onMoveTeacherTable={handleMoveTeacherTable}
+                activeSubject={activeSubject}
+                onUpdateProgress={handleUpdateProgress}
+                onRenameTeacherTable={handleRenameTeacherTable}
+                onDeleteTeacherTable={handleDeleteTeacherTable}
+                studentWeeks={studentWeeks}
+                onSaveCredentials={handleSaveCredentials}
+                onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
+                teachers={teachers}
+                authRole={authRole}
+                showSummerPlan={showSummerPlan}
+                selectedWeek={selectedWeek}
+                onWeekChange={setSelectedWeek}
+                weeksList={weeksList}
+                onStartNewWeekClick={handleStartNewWeekClick}
+                onDeleteWeekClick={handleDeleteWeek}
+              />
+            )}
           </>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', flex: 1 }}>
