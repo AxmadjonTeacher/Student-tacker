@@ -2142,14 +2142,7 @@ function App() {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onOpenDrawer={() => setActiveAdminTab('settings')}
-          selectedWeek={selectedWeek}
-          onWeekChange={setSelectedWeek}
           activeSubject={activeSubject}
-          isAdminMode={isAdminMode}
-          weeksList={weeksList}
-          onStartNewWeekClick={handleStartNewWeekClick}
-          onDeleteWeekClick={handleDeleteWeek}
-          authRole={authRole}
         />
 
         <div style={{ display: activeAdminTab === 'settings' ? 'none' : 'block' }}>
@@ -2171,6 +2164,11 @@ function App() {
             teachers={teachers}
             authRole={authRole}
             showSummerPlan={showSummerPlan}
+            selectedWeek={selectedWeek}
+            onWeekChange={setSelectedWeek}
+            weeksList={weeksList}
+            onStartNewWeekClick={handleStartNewWeekClick}
+            onDeleteWeekClick={handleDeleteWeek}
           />
         </div>
 
@@ -2618,14 +2616,7 @@ function App() {
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
               onOpenDrawer={() => setActiveAdminTab('settings')}
-              selectedWeek={selectedWeek}
-              onWeekChange={setSelectedWeek}
               activeSubject={activeSubject}
-              isAdminMode={isAdminMode}
-              weeksList={weeksList}
-              onStartNewWeekClick={handleStartNewWeekClick}
-              onDeleteWeekClick={handleDeleteWeek}
-              authRole={authRole}
             />
             <StudentTable
               students={filteredStudents}
@@ -2645,6 +2636,11 @@ function App() {
               teachers={teachers}
               authRole={authRole}
               showSummerPlan={showSummerPlan}
+              selectedWeek={selectedWeek}
+              onWeekChange={setSelectedWeek}
+              weeksList={weeksList}
+              onStartNewWeekClick={handleStartNewWeekClick}
+              onDeleteWeekClick={handleDeleteWeek}
             />
           </>
         ) : (

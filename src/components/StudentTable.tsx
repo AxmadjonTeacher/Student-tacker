@@ -36,6 +36,11 @@ interface StudentTableProps {
   teachers?: Teacher[];
   authRole?: string | null;
   showSummerPlan?: boolean;
+  selectedWeek?: string;
+  onWeekChange?: (week: string) => void;
+  weeksList?: string[];
+  onStartNewWeekClick?: () => void;
+  onDeleteWeekClick?: (weekName: string) => void;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -55,7 +60,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onBatchRegenerateCredentials,
   teachers = [],
   authRole,
-  showSummerPlan = true
+  showSummerPlan = true,
+  selectedWeek,
+  onWeekChange,
+  weeksList = [],
+  onStartNewWeekClick,
+  onDeleteWeekClick
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -581,8 +591,134 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   fontWeight: 700,
                   letterSpacing: '0.08em'
                 }}>
-                  <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', padding: '0.9rem 0' }}>
-                    O'QUVCHILAR NATIJALARI TAHLILI
+                  <div style={{ 
+                    fontWeight: 900, 
+                    color: '#0f172a', 
+                    fontSize: '0.85rem', 
+                    letterSpacing: '0.04em', 
+                    borderRight: '1px solid #e5e7eb', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    padding: '0.5rem 0',
+                    gap: '0.5rem',
+                    flexWrap: 'wrap'
+                  }}>
+                    <span style={{ whiteSpace: 'nowrap' }}>HAFTALIK NATIJALAR</span>
+                    {onWeekChange && weeksList && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <div style={{ position: 'relative' }}>
+                          <select
+                            value={selectedWeek}
+                            onChange={(e) => onWeekChange(e.target.value)}
+                            style={{
+                              background: '#f8fafc',
+                              color: '#1e293b',
+                              border: '1.5px solid #cbd5e1',
+                              borderRadius: '8px',
+                              padding: '0.35rem 1.75rem 0.35rem 0.65rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              outline: 'none',
+                              cursor: 'pointer',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                              appearance: 'none',
+                              WebkitAppearance: 'none',
+                              display: 'block',
+                              lineHeight: 1.2
+                            }}
+                          >
+                            {weeksList.length === 0 ? (
+                              <option value="">Hafta yo'q</option>
+                            ) : (
+                              weeksList.map(w => (
+                                <option key={w} value={w}>{w}</option>
+                              ))
+                            )}
+                          </select>
+                          <div style={{
+                            position: 'absolute',
+                            right: '0.5rem',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: '#64748b',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}>
+                            <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                        </div>
+
+                        {isAdminMode && selectedWeek && authRole !== 'admin123' && onDeleteWeekClick && (
+                          <button
+                            onClick={() => onDeleteWeekClick(selectedWeek)}
+                            title="Ushbu haftani savatga o'chirish"
+                            style={{
+                              background: '#fee2e2',
+                              color: '#ef4444',
+                              border: '1.5px solid #fca5a5',
+                              borderRadius: '8px',
+                              padding: '0.35rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s ease',
+                              height: '26px',
+                              width: '26px',
+                              boxSizing: 'border-box'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#ef4444';
+                              e.currentTarget.style.color = '#ffffff';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = '#fee2e2';
+                              e.currentTarget.style.color = '#ef4444';
+                            }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+
+                        {isAdminMode && onStartNewWeekClick && (
+                          <button
+                            onClick={onStartNewWeekClick}
+                            title="Yangi o'quv haftasini boshlash"
+                            style={{
+                              background: '#f0fdf4',
+                              color: '#10b981',
+                              border: '1.5px solid #a7f3d0',
+                              borderRadius: '8px',
+                              padding: '0.35rem 0.5rem',
+                              cursor: 'pointer',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              transition: 'all 0.2s ease',
+                              height: '26px',
+                              boxSizing: 'border-box'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#10b981';
+                              e.currentTarget.style.color = '#ffffff';
+                              e.currentTarget.style.borderColor = '#10b981';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = '#f0fdf4';
+                              e.currentTarget.style.color = '#10b981';
+                              e.currentTarget.style.borderColor = '#a7f3d0';
+                            }}
+                          >
+                            <span>+ Yangi Hafta</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>ENG SCORE</div>
                   <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>MATH SCORE</div>

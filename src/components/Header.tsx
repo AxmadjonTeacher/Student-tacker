@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings, Plus, Trash2 } from 'lucide-react';
+import { Search, Settings } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
 import type { ActiveSubject } from '../types';
 
@@ -11,21 +11,14 @@ interface HeaderProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onOpenDrawer: () => void;
-  selectedWeek: string;
-  onWeekChange: (week: string) => void;
   activeSubject: ActiveSubject;
-  isAdminMode: boolean;
-  weeksList: string[];
-  onStartNewWeekClick?: () => void;
-  onDeleteWeekClick?: (weekName: string) => void;
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash';
-  authRole?: string | null;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
-  selectedWeek, onWeekChange, activeSubject, isAdminMode, weeksList, onStartNewWeekClick, onDeleteWeekClick,
-  activeAdminTab = 'home', authRole
+  activeSubject,
+  activeAdminTab = 'home'
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -314,14 +307,13 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
  
-      {/* Bottom Row: Classes & Search */}
       <div className={`admin-header-bottom-row admin-tab-${activeAdminTab}`} style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
         width: '100%', 
         gap: '1.5rem', 
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',
         marginTop: '0.5rem',
         marginBottom: '1rem'
       }}>
@@ -417,135 +409,6 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {activeSubject === 'ALL' && (
-        <div className="admin-week-actions-row" style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          alignItems: 'center',
-          width: '100%',
-          marginTop: '0.25rem',
-          marginBottom: '1rem',
-          gap: '0.75rem',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ position: 'relative' }}>
-              <select
-                value={selectedWeek}
-                onChange={(e) => onWeekChange(e.target.value)}
-                style={{
-                  background: '#ffffff',
-                  color: '#1e293b',
-                  border: '1.5px solid #e2e8f0',
-                  borderRadius: '9999px',
-                  padding: '0.85rem 2.25rem 0.85rem 1.25rem',
-                  fontSize: '0.9rem',
-                  fontWeight: 800,
-                  outline: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                  display: 'block',
-                  lineHeight: 1.2
-                }}
-              >
-                {weeksList.length === 0 ? (
-                  <option value="">Hafta yo'q</option>
-                ) : (
-                  weeksList.map(w => (
-                    <option key={w} value={w}>{w}</option>
-                  ))
-                )}
-              </select>
-              <div style={{
-                position: 'absolute',
-                right: '1rem',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                pointerEvents: 'none',
-                color: '#9ca3af',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 1L5 5L9 1" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            </div>
-
-            {isAdminMode && selectedWeek && authRole !== 'admin123' && (
-              <button
-                onClick={() => onDeleteWeekClick && onDeleteWeekClick(selectedWeek)}
-                title="Ushbu haftani savatga o'chirish"
-                className="delete-week-btn"
-                style={{
-                  background: '#fee2e2',
-                  color: '#ef4444',
-                  border: '1.5px solid #fca5a5',
-                  borderRadius: '9999px',
-                  padding: '0.85rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s ease',
-                  height: '42px',
-                  width: '42px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#ef4444';
-                  e.currentTarget.style.color = '#ffffff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#fee2e2';
-                  e.currentTarget.style.color = '#ef4444';
-                }}
-              >
-                <Trash2 size={16} />
-              </button>
-            )}
-          </div>
-
-          {isAdminMode && (
-            <button
-              onClick={onStartNewWeekClick}
-              title="Yangi o'quv haftasini boshlash"
-              className="add-week-btn"
-              style={{
-                background: '#ffffff',
-                color: '#10b981',
-                border: '1.5px solid #10b981',
-                borderRadius: '9999px',
-                padding: '0.85rem 1.25rem',
-                fontSize: '0.85rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                transition: 'all 0.2s ease',
-                height: '42px',
-                lineHeight: 1.2,
-                whiteSpace: 'nowrap'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#10b981';
-                e.currentTarget.style.color = '#ffffff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#ffffff';
-                e.currentTarget.style.color = '#10b981';
-              }}
-            >
-              <Plus size={14} />
-              <span className="week-btn-text">YANGI HAFTA</span>
-            </button>
-          )}
-        </div>
-      )}
     </header>
   );
 };
