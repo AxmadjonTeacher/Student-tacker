@@ -37,6 +37,8 @@ interface SidebarDrawerProps {
   authRole?: string | null;
   activeTab?: 'settings' | 'news' | 'teachers' | 'trash';
   onTabChange?: (tab: 'settings' | 'news' | 'teachers' | 'trash') => void;
+  showSummerPlan?: boolean;
+  onToggleSummerPlan?: () => void;
 }
 
 const getClassGroupLocal = (clsName: string): string => {
@@ -70,7 +72,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   onDeleteTeacher,
   authRole,
   activeTab: propActiveTab,
-  onTabChange
+  onTabChange,
+  showSummerPlan = true,
+  onToggleSummerPlan
 }) => {
   // Responsive check
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -965,6 +969,48 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Summer Plan Toggle */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1e293b', letterSpacing: '0.01em' }}>
+                      YOZGI REJA
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.15rem', maxWidth: '240px', lineHeight: 1.4 }}>
+                      O'quvchilar progressi va choraklik grafiklarida yozgi rejani ko'rsatish
+                    </div>
+                  </div>
+                  <button 
+                    onClick={onToggleSummerPlan}
+                    style={{
+                      width: '46px',
+                      height: '24px',
+                      borderRadius: '9999px',
+                      background: showSummerPlan ? 'var(--accent-primary)' : '#cbd5e1',
+                      border: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      padding: 0,
+                      transition: 'background-color 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
+                      position: 'absolute',
+                      left: showSummerPlan ? '24px' : '4px',
+                      transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
+                    }} />
+                  </button>
+                </div>
+              </div>
 
               {/* Section 3: Admin Actions */}
               {isAdminMode && (

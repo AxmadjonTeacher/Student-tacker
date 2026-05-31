@@ -122,9 +122,18 @@ function App() {
     return saved !== null ? JSON.parse(saved) : true;
   });
 
+  const [showSummerPlan, setShowSummerPlan] = useState(() => {
+    const saved = localStorage.getItem('show_summer_plan');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
   useEffect(() => {
     localStorage.setItem('admin_sidebar_expanded', JSON.stringify(isSidebarExpanded));
   }, [isSidebarExpanded]);
+
+  useEffect(() => {
+    localStorage.setItem('show_summer_plan', JSON.stringify(showSummerPlan));
+  }, [showSummerPlan]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -2161,6 +2170,7 @@ function App() {
             onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
             teachers={teachers}
             authRole={authRole}
+            showSummerPlan={showSummerPlan}
           />
         </div>
 
@@ -2189,6 +2199,8 @@ function App() {
             onAddTeacher={handleAddTeacher}
             onDeleteTeacher={handleDeleteTeacher}
             authRole={authRole}
+            showSummerPlan={showSummerPlan}
+            onToggleSummerPlan={() => setShowSummerPlan(!showSummerPlan)}
           />
         </div>
 
@@ -2632,6 +2644,7 @@ function App() {
               onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
               teachers={teachers}
               authRole={authRole}
+              showSummerPlan={showSummerPlan}
             />
           </>
         ) : (
@@ -2667,6 +2680,8 @@ function App() {
               onAddTeacher={handleAddTeacher}
               onDeleteTeacher={handleDeleteTeacher}
               authRole={authRole}
+              showSummerPlan={showSummerPlan}
+              onToggleSummerPlan={() => setShowSummerPlan(!showSummerPlan)}
             />
             
             {/* Symmetrical Footer */}

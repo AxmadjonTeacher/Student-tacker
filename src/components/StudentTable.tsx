@@ -35,6 +35,7 @@ interface StudentTableProps {
   onBatchRegenerateCredentials?: (regenerateIds: boolean, regeneratePasscodes: boolean, targetClass: string | null) => Promise<boolean>;
   teachers?: Teacher[];
   authRole?: string | null;
+  showSummerPlan?: boolean;
 }
 
 const StudentTable: React.FC<StudentTableProps> = ({ 
@@ -53,7 +54,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onSaveCredentials,
   onBatchRegenerateCredentials,
   teachers = [],
-  authRole
+  authRole,
+  showSummerPlan = true
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -1202,7 +1204,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   {/* Clean and Small but Noticeable Column Headers (With Integrated Teacher Name in All Caps) */}
                   <div className="table-header-row teacher-group-header" style={{
                     display: 'grid',
-                    gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr 1.5fr',
+                    gridTemplateColumns: showSummerPlan ? '2.5fr 1fr 1.5fr 1.5fr 1.5fr' : '2.5fr 1.25fr 1.75fr 1.5fr',
                     alignItems: 'stretch',
                     padding: '0 1.5rem',
                     borderBottom: '1px solid #f1f5f9',
@@ -1217,7 +1219,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     </div>
                     <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>AVVALGI DARAJA</div>
                     <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>HOZIRGI DARAJA</div>
-                    <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', color: '#ea580c', fontWeight: 800 }}>☀️ YOZGI REJA</div>
+                    {showSummerPlan && (
+                      <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', color: '#ea580c', fontWeight: 800 }}>☀️ YOZGI REJA</div>
+                    )}
                     <div style={{ 
                       padding: '0.9rem 1.5rem', 
                       display: 'flex', 
@@ -1440,7 +1444,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onDragEnd={() => setDraggedId(null)}
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '2.5fr 1fr 1.5fr 1.5fr 1.5fr',
+                          gridTemplateColumns: showSummerPlan ? '2.5fr 1fr 1.5fr 1.5fr 1.5fr' : '2.5fr 1.25fr 1.75fr 1.5fr',
                           alignItems: 'center',
                           padding: '1.2rem 1.5rem',
                           borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
@@ -1511,32 +1515,34 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         </div>
 
                         {/* Yozgi Natija block */}
-                        <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                          <span className="mobile-label">Yozgi reja</span>
-                          <div style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.4rem',
-                            background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-                            color: '#ea580c',
-                            border: '1px dashed #fdba74',
-                            padding: '0.35rem 0.75rem',
-                            borderRadius: '12px',
-                            fontSize: '0.85rem',
-                            fontWeight: 850,
-                            boxShadow: '0 4px 10px -2px rgba(234, 88, 12, 0.15)',
-                            width: 'max-content'
-                          }}>
-                            <span style={{ fontSize: '0.95rem' }}>☀️</span>
-                            {(() => {
-                              const match = (student.currentLevel || '').match(/(\d+)/);
-                              if (match) {
-                                return `Level ${parseInt(match[1]) + 1}`;
-                              }
-                              return 'Level 2';
-                            })()}
+                        {showSummerPlan && (
+                          <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <span className="mobile-label">Yozgi reja</span>
+                            <div style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                              color: '#ea580c',
+                              border: '1px dashed #fdba74',
+                              padding: '0.35rem 0.75rem',
+                              borderRadius: '12px',
+                              fontSize: '0.85rem',
+                              fontWeight: 850,
+                              boxShadow: '0 4px 10px -2px rgba(234, 88, 12, 0.15)',
+                              width: 'max-content'
+                            }}>
+                              <span style={{ fontSize: '0.95rem' }}>☀️</span>
+                              {(() => {
+                                const match = (student.currentLevel || '').match(/(\d+)/);
+                                if (match) {
+                                  return `Level ${parseInt(match[1]) + 1}`;
+                                }
+                                return 'Level 2';
+                              })()}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Actions/Progress block */}
                         {!isAdminMode ? (
@@ -1632,6 +1638,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           onClose={() => setSelectedStudent(null)} 
           activeSubject={activeSubject}
           studentWeeks={studentWeeks}
+          showSummerPlan={showSummerPlan}
         />
       )}
 

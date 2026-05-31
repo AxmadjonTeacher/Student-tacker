@@ -27,9 +27,17 @@ interface GraphModalProps {
   activeSubject: ActiveSubject;
   studentWeeks: any[];
   isInline?: boolean;
+  showSummerPlan?: boolean;
 }
 
-const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject, studentWeeks, isInline = false }) => {
+const GraphModal: React.FC<GraphModalProps> = ({ 
+  student, 
+  onClose, 
+  activeSubject, 
+  studentWeeks, 
+  isInline = false,
+  showSummerPlan = true
+}) => {
   const [isComparing, setIsComparing] = useState(false);
   const [allActiveTab, setAllActiveTab] = useState<'current' | 'progression' | 'terms'>('current');
 
@@ -171,7 +179,7 @@ const GraphModal: React.FC<GraphModalProps> = ({ student, onClose, activeSubject
   }
 
   // Add 5th point (Yozgi Reja) if we have any valid data points
-  if (combinedData.length > 0) {
+  if (showSummerPlan && combinedData.length > 0) {
     combinedData.push({
       date: 'Yozgi Reja',
       engVal: null,
