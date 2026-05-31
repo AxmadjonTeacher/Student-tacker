@@ -253,46 +253,7 @@ const Header: React.FC<HeaderProps> = ({
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
 
-          {/* Desktop buttons */}
-          <div className="desktop-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {/* Minimalist modern settings/sidebar menu button */}
-            <button
-              onClick={onOpenDrawer}
-              title="Boshqaruv panelini ochish"
-              style={{
-                background: '#ffffff',
-                color: '#475569',
-                border: '1.5px solid #e2e8f0',
-                borderRadius: '9999px',
-                padding: '0.5rem 1.1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
-                transition: 'all 0.2s ease',
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                letterSpacing: '0.04em',
-                height: '40px'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                e.currentTarget.style.color = 'var(--accent-primary)';
-                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.03)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = '#e2e8f0';
-                e.currentTarget.style.color = '#475569';
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.01)';
-              }}
-            >
-              <Settings size={15} />
-              <span>SOZLAMALAR</span>
-            </button>
-          </div>
+          {/* Settings button removed on desktop - moved to left sidebar */}
 
           {/* Hamburger Menu button */}
           <div className="mobile-header-menu-container" style={{ position: 'relative' }}>

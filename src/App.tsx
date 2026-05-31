@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Home, Search, BarChart2, Settings } from 'lucide-react';
+import { Home, Search, BarChart2, Settings, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
 import SidebarDrawer from './components/SidebarDrawer';
@@ -11,6 +11,7 @@ import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
 import LoginScreen from './components/LoginScreen';
 import ParentCabinet from './components/ParentCabinet';
 import TestorCabinet from './components/TestorCabinet';
+import iconLight from './assets/icon-light.png';
 
 const INITIAL_CLASSES = ['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'];
 
@@ -102,7 +103,6 @@ function App() {
     return localStorage.getItem('isAdminMode') === 'true';
   });
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
@@ -110,6 +110,25 @@ function App() {
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+
+  // Responsiveness and Sidebar state
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem('admin_sidebar_expanded');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin_sidebar_expanded', JSON.stringify(isSidebarExpanded));
+  }, [isSidebarExpanded]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // PWA State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -2095,113 +2114,463 @@ function App() {
         />
       </>
     );
-  }
-
-  const adminTabIndices = { home: 0, search: 1, stats: 2, settings: 3 };
+  }  const adminTabIndices = { home: 0, search: 1, stats: 2, settings: 3 };
   const activeAdminIndex = adminTabIndices[activeAdminTab] || 0;
 
-  return (
-    <div className="app-container">
-      <Header
-        activeAdminTab={activeAdminTab}
-        classes={availableClasses}
-        activeClass={activeClass}
-        onClassSelect={setActiveClass}
-        classCounts={classCounts}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        onOpenDrawer={() => setIsDrawerOpen(true)}
-        selectedWeek={selectedWeek}
-        onWeekChange={setSelectedWeek}
-        activeSubject={activeSubject}
-        isAdminMode={isAdminMode}
-        weeksList={weeksList}
-        onStartNewWeekClick={handleStartNewWeekClick}
-        onDeleteWeekClick={handleDeleteWeek}
-        authRole={authRole}
-      />
-
-      <div className="tab-admin-settings-hide">
-        <StudentTable
-          students={filteredStudents}
-          isAdminMode={isAdminMode}
-          onUpdatePhoto={isAdminMode ? handleUpdateStudentPhoto : undefined}
-          onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
-          onAssignTeacher={handleAssignTeacher}
-          onMoveStudent={handleMoveStudent}
-          onMoveTeacherTable={handleMoveTeacherTable}
-          activeSubject={activeSubject}
-          onUpdateProgress={handleUpdateProgress}
-          onRenameTeacherTable={handleRenameTeacherTable}
-          onDeleteTeacherTable={handleDeleteTeacherTable}
-          studentWeeks={studentWeeks}
-          onSaveCredentials={handleSaveCredentials}
-          onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
-          teachers={teachers}
-          authRole={authRole}
-        />
-      </div>
-
-      <div className="tab-admin-settings-only">
-        <SidebarDrawer
-          isOpen={isDrawerOpen || activeAdminTab === 'settings'}
-          onClose={() => {
-            setIsDrawerOpen(false);
-            if (activeAdminTab === 'settings') {
-              setActiveAdminTab('home');
-            }
-          }}
-          isInline={activeAdminTab === 'settings'}
-          activeSubject={activeSubject}
-          onSubjectChange={setActiveSubject}
-          isAdminMode={isAdminMode}
-          onToggleAdmin={handleToggleAdmin}
-          students={activeStudents}
-          deletedStudents={deletedStudents}
-          onRestoreStudent={handleRestoreStudent}
-          onPermanentDeleteStudent={handlePermanentDeleteStudent}
+  if (isMobile) {
+    return (
+      <div className="app-container" style={{ paddingBottom: '80px', boxSizing: 'border-box' }}>
+        <Header
+          activeAdminTab={activeAdminTab}
+          classes={availableClasses}
           activeClass={activeClass}
-          onStudentsUploaded={handleStudentsUploaded}
-          onBulkDeleteClass={handleBulkDeleteClass}
-          onAddStudent={handleAddStudent}
-          deletedWeeks={deletedWeeks}
-          onRestoreWeek={handleRestoreWeek}
-          onPermanentDeleteWeek={handlePermanentDeleteWeek}
-          onLogout={handleLogout}
-          teachers={teachers}
-          onAddTeacher={handleAddTeacher}
-          onDeleteTeacher={handleDeleteTeacher}
+          onClassSelect={setActiveClass}
+          classCounts={classCounts}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onOpenDrawer={() => setActiveAdminTab('settings')}
+          selectedWeek={selectedWeek}
+          onWeekChange={setSelectedWeek}
+          activeSubject={activeSubject}
+          isAdminMode={isAdminMode}
+          weeksList={weeksList}
+          onStartNewWeekClick={handleStartNewWeekClick}
+          onDeleteWeekClick={handleDeleteWeek}
           authRole={authRole}
         />
-      </div>
 
-      {/* Elegant Symmetrical Footer - Settings Only */}
-      {activeAdminTab === 'settings' && (
-        <footer style={{
-          marginTop: 'auto',
-          paddingTop: '3rem',
-          paddingBottom: '1.5rem',
-          textAlign: 'center',
-          borderTop: '1px solid #e2e8f0',
-          color: '#64748b',
-          fontSize: '0.8rem',
-          fontWeight: 600,
-          letterSpacing: '0.05em',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.35rem',
-          alignItems: 'center'
+        <div style={{ display: activeAdminTab === 'settings' ? 'none' : 'block' }}>
+          <StudentTable
+            students={filteredStudents}
+            isAdminMode={isAdminMode}
+            onUpdatePhoto={isAdminMode ? handleUpdateStudentPhoto : undefined}
+            onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
+            onAssignTeacher={handleAssignTeacher}
+            onMoveStudent={handleMoveStudent}
+            onMoveTeacherTable={handleMoveTeacherTable}
+            activeSubject={activeSubject}
+            onUpdateProgress={handleUpdateProgress}
+            onRenameTeacherTable={handleRenameTeacherTable}
+            onDeleteTeacherTable={handleDeleteTeacherTable}
+            studentWeeks={studentWeeks}
+            onSaveCredentials={handleSaveCredentials}
+            onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
+            teachers={teachers}
+            authRole={authRole}
+          />
+        </div>
+
+        <div style={{ display: activeAdminTab === 'settings' ? 'block' : 'none' }}>
+          <SidebarDrawer
+            isOpen={true}
+            onClose={() => setActiveAdminTab('home')}
+            isInline={true}
+            activeSubject={activeSubject}
+            onSubjectChange={setActiveSubject}
+            isAdminMode={isAdminMode}
+            onToggleAdmin={handleToggleAdmin}
+            students={activeStudents}
+            deletedStudents={deletedStudents}
+            onRestoreStudent={handleRestoreStudent}
+            onPermanentDeleteStudent={handlePermanentDeleteStudent}
+            activeClass={activeClass}
+            onStudentsUploaded={handleStudentsUploaded}
+            onBulkDeleteClass={handleBulkDeleteClass}
+            onAddStudent={handleAddStudent}
+            deletedWeeks={deletedWeeks}
+            onRestoreWeek={handleRestoreWeek}
+            onPermanentDeleteWeek={handlePermanentDeleteWeek}
+            onLogout={handleLogout}
+            teachers={teachers}
+            onAddTeacher={handleAddTeacher}
+            onDeleteTeacher={handleDeleteTeacher}
+            authRole={authRole}
+          />
+        </div>
+
+        <div className="mobile-tab-bar" style={{ display: 'flex' }}>
+          <div className="tab-capsule" style={{ left: `calc(${activeAdminIndex} * 25% + 8px)` }} />
+          <button 
+            onClick={() => {
+              setActiveAdminTab('home');
+              if (activeSubject === 'ALL') {
+                setActiveSubject('ENG');
+              }
+              setSearchTerm('');
+              window.scrollTo(0, 0);
+            }}
+            className={`tab-item ${activeAdminTab === 'home' ? 'active' : ''}`}
+          >
+            <Home size={20} />
+            <span>Bosh sahifa</span>
+          </button>
+          
+          <button 
+            onClick={() => {
+              setActiveAdminTab('search');
+              if (activeSubject === 'ALL') {
+                setActiveSubject('ENG');
+              }
+              setTimeout(() => {
+                const input = document.querySelector('.mobile-sticky-search input') as HTMLInputElement;
+                if (input) {
+                  input.focus();
+                  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, 100);
+            }}
+            className={`tab-item ${activeAdminTab === 'search' ? 'active' : ''}`}
+          >
+            <Search size={20} />
+            <span>Qidiruv</span>
+          </button>
+          
+          <button 
+            onClick={() => {
+              setActiveAdminTab('stats');
+              setActiveSubject('ALL');
+              window.scrollTo(0, 0);
+            }}
+            className={`tab-item ${activeAdminTab === 'stats' ? 'active' : ''}`}
+          >
+            <BarChart2 size={20} />
+            <span>Statistika</span>
+          </button>
+          
+          <button 
+            onClick={() => {
+              setActiveAdminTab('settings');
+            }}
+            className={`tab-item ${activeAdminTab === 'settings' ? 'active' : ''}`}
+          >
+            <Settings size={20} />
+            <span>Sozlamalar</span>
+          </button>
+        </div>
+
+        <InstallAppDrawer deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
+        
+        <CustomDialog
+          isOpen={dialog.isOpen}
+          type={dialog.type}
+          title={dialog.title}
+          message={dialog.message}
+          defaultValue={dialog.defaultValue}
+          placeholder={dialog.placeholder}
+          confirmText={dialog.confirmText}
+          cancelText={dialog.cancelText}
+          danger={dialog.danger}
+          onConfirm={dialog.onConfirm}
+          onClose={closeDialog}
+        />
+
+        {showPasscodeModal && (
+          <PasscodeModal
+            activeSubject={activeSubject}
+            onClose={() => setShowPasscodeModal(false)}
+            onSuccess={() => {
+              setIsAdminMode(true);
+              setShowPasscodeModal(false);
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Desktop Left Sidebar Layout
+  const subjectColor = activeSubject === 'MATH' ? '#0d9488' : activeSubject === 'ALL' ? '#4f46e5' : activeSubject === 'DETAILS' ? '#db2777' : '#166534';
+
+  return (
+    <div style={{
+      background: '#fcfcf9',
+      minHeight: '100vh',
+      display: 'flex',
+      boxSizing: 'border-box'
+    }}>
+      {/* Collapsible Left Sidebar for Desktop */}
+      <aside style={{
+        width: isSidebarExpanded ? '240px' : '72px',
+        background: '#ffffff',
+        borderRight: '1px solid #e2e8f0',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: isSidebarExpanded ? '1.5rem 1rem' : '1.5rem 0.5rem',
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        boxSizing: 'border-box',
+        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 1000
+      }}>
+        {/* Brand logo & Expand/Collapse Toggle */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: isSidebarExpanded ? 'space-between' : 'center', 
+          marginBottom: '2.5rem', 
+          paddingLeft: isSidebarExpanded ? '0.5rem' : '0',
+          position: 'relative'
         }}>
-          <div style={{ textTransform: 'uppercase' }}>
-            © 2026 Al-Xorazmiy School. Barcha huquqlar himoyalangan.
+          {isSidebarExpanded ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', animation: 'fadeIn 0.2s' }}>
+              <img src={iconLight} alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '8px' }} />
+              <div>
+                <h1 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>AL-XORAZMIY</h1>
+                <p style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>ADMIN KABINETI</p>
+              </div>
+            </div>
+          ) : (
+            <img src={iconLight} alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '8px' }} />
+          )}
+
+          {/* Toggle Button */}
+          <button
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            style={{
+              position: isSidebarExpanded ? 'relative' : 'absolute',
+              right: isSidebarExpanded ? '0' : '-13px',
+              top: isSidebarExpanded ? 'auto' : '50%',
+              transform: isSidebarExpanded ? 'none' : 'translateY(-50%)',
+              background: '#ffffff',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '50%',
+              width: '26px',
+              height: '26px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#64748b',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s ease',
+              padding: 0,
+              zIndex: 10
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = subjectColor;
+              e.currentTarget.style.color = subjectColor;
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.color = '#64748b';
+            }}
+          >
+            {isSidebarExpanded ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+          </button>
+        </div>
+
+        {/* Navigation Items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1, alignItems: isSidebarExpanded ? 'stretch' : 'center' }}>
+          {[
+            { id: 'home' as const, label: 'Bosh sahifa', icon: Home },
+            { id: 'search' as const, label: 'Qidiruv', icon: Search },
+            { id: 'stats' as const, label: 'Statistika', icon: BarChart2 },
+            { id: 'settings' as const, label: 'Sozlamalar', icon: Settings }
+          ].map(item => {
+            const Icon = item.icon;
+            const isActive = activeAdminTab === item.id;
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.id === 'stats') {
+                    setActiveSubject('ALL');
+                  } else if (activeSubject === 'ALL') {
+                    setActiveSubject('ENG'); // Restore default subject if leaving stats
+                  }
+                  setActiveAdminTab(item.id);
+                }}
+                title={!isSidebarExpanded ? item.label : undefined}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
+                  gap: isSidebarExpanded ? '0.75rem' : '0',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  background: isActive ? `${subjectColor}12` : 'transparent',
+                  color: isActive ? subjectColor : '#475569',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: isActive ? 800 : 700,
+                  fontSize: '0.82rem',
+                  width: '100%',
+                  transition: 'all 0.15s ease',
+                  boxSizing: 'border-box'
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.color = '#0f172a';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#475569';
+                  }
+                }}
+              >
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} color={isActive ? subjectColor : '#64748b'} />
+                {isSidebarExpanded && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Logout at Bottom */}
+        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={() => handleLogout()}
+            title={!isSidebarExpanded ? 'Chiqish' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
+              gap: isSidebarExpanded ? '0.75rem' : '0',
+              padding: '0.75rem 1rem',
+              borderRadius: '12px',
+              background: 'transparent',
+              color: '#ef4444',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 800,
+              fontSize: '0.82rem',
+              width: '100%',
+              transition: 'background 0.15s',
+              boxSizing: 'border-box'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <LogOut size={18} />
+            {isSidebarExpanded && <span>CHIQISH</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main style={{
+        flex: 1,
+        padding: '2.5rem',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        boxSizing: 'border-box'
+      }}>
+        {activeAdminTab !== 'settings' && (
+          <>
+            <Header
+              activeAdminTab={activeAdminTab}
+              classes={availableClasses}
+              activeClass={activeClass}
+              onClassSelect={setActiveClass}
+              classCounts={classCounts}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onOpenDrawer={() => setActiveAdminTab('settings')}
+              selectedWeek={selectedWeek}
+              onWeekChange={setSelectedWeek}
+              activeSubject={activeSubject}
+              isAdminMode={isAdminMode}
+              weeksList={weeksList}
+              onStartNewWeekClick={handleStartNewWeekClick}
+              onDeleteWeekClick={handleDeleteWeek}
+              authRole={authRole}
+            />
+            <StudentTable
+              students={filteredStudents}
+              isAdminMode={isAdminMode}
+              onUpdatePhoto={isAdminMode ? handleUpdateStudentPhoto : undefined}
+              onDeleteStudent={isAdminMode ? handleDeleteStudent : undefined}
+              onAssignTeacher={handleAssignTeacher}
+              onMoveStudent={handleMoveStudent}
+              onMoveTeacherTable={handleMoveTeacherTable}
+              activeSubject={activeSubject}
+              onUpdateProgress={handleUpdateProgress}
+              onRenameTeacherTable={handleRenameTeacherTable}
+              onDeleteTeacherTable={handleDeleteTeacherTable}
+              studentWeeks={studentWeeks}
+              onSaveCredentials={handleSaveCredentials}
+              onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
+              teachers={teachers}
+              authRole={authRole}
+            />
+          </>
+        )}
+
+        {activeAdminTab === 'settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <SidebarDrawer
+              isOpen={true}
+              onClose={() => setActiveAdminTab('home')}
+              isInline={true}
+              activeSubject={activeSubject}
+              onSubjectChange={setActiveSubject}
+              isAdminMode={isAdminMode}
+              onToggleAdmin={handleToggleAdmin}
+              students={activeStudents}
+              deletedStudents={deletedStudents}
+              onRestoreStudent={handleRestoreStudent}
+              onPermanentDeleteStudent={handlePermanentDeleteStudent}
+              activeClass={activeClass}
+              onStudentsUploaded={handleStudentsUploaded}
+              onBulkDeleteClass={handleBulkDeleteClass}
+              onAddStudent={handleAddStudent}
+              deletedWeeks={deletedWeeks}
+              onRestoreWeek={handleRestoreWeek}
+              onPermanentDeleteWeek={handlePermanentDeleteWeek}
+              onLogout={handleLogout}
+              teachers={teachers}
+              onAddTeacher={handleAddTeacher}
+              onDeleteTeacher={handleDeleteTeacher}
+              authRole={authRole}
+            />
+            
+            {/* Symmetrical Footer inside Settings only */}
+            <footer style={{
+              marginTop: 'auto',
+              paddingTop: '3rem',
+              paddingBottom: '1.5rem',
+              textAlign: 'center',
+              borderTop: '1px solid #e2e8f0',
+              color: '#64748b',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.35rem',
+              alignItems: 'center'
+            }}>
+              <div style={{ textTransform: 'uppercase' }}>
+                © 2026 Al-Xorazmiy School. Barcha huquqlar himoyalangan.
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
+                Created by Axmadjon
+              </div>
+            </footer>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
-            Created by Axmadjon
-          </div>
-        </footer>
+        )}
+      </main>
+
+      <InstallAppDrawer deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
+      
+      {/* Passcode Modal */}
+      {showPasscodeModal && (
+        <PasscodeModal
+          activeSubject={activeSubject}
+          onClose={() => setShowPasscodeModal(false)}
+          onSuccess={() => {
+            setIsAdminMode(true);
+            setShowPasscodeModal(false);
+          }}
+        />
       )}
 
-      {/* Modern Custom Dialog Pop-up */}
+      {/* Dialog Popups */}
       <CustomDialog
         isOpen={dialog.isOpen}
         type={dialog.type}
@@ -2215,151 +2584,6 @@ function App() {
         onConfirm={dialog.onConfirm}
         onClose={closeDialog}
       />
-
-      {showPasscodeModal && (
-        <PasscodeModal
-          activeSubject={activeSubject}
-          onClose={() => setShowPasscodeModal(false)}
-          onSuccess={() => {
-            setIsAdminMode(true);
-            setShowPasscodeModal(false);
-          }}
-        />
-      )}
-
-      {/* Sticky Bottom Tab Bar for PWAs */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        .mobile-tab-bar {
-          display: none;
-        }
-        .tab-admin-settings-only {
-          display: ${isDrawerOpen || activeAdminTab === 'settings' ? 'block' : 'none'};
-        }
-        .tab-admin-settings-hide {
-          display: block;
-        }
-        @media (max-width: 768px) {
-          .tab-admin-settings-hide {
-            display: ${activeAdminTab === 'settings' ? 'none' : 'block'} !important;
-          }
-          .tab-admin-settings-only {
-            display: ${isDrawerOpen || activeAdminTab === 'settings' ? 'block' : 'none'} !important;
-          }
-          .mobile-tab-bar {
-            display: flex !important;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 64px;
-            background: #ffffff;
-            border-top: 1px solid #e2e8f0;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 998;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
-            padding-bottom: env(safe-area-inset-bottom);
-          }
-          .tab-capsule {
-            position: absolute;
-            top: 8px;
-            height: 48px;
-            width: calc(25% - 16px);
-            background: rgba(13, 148, 136, 0.08);
-            border: 1px solid rgba(13, 148, 136, 0.15);
-            border-radius: 16px;
-            z-index: 1;
-            transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-            backdrop-filter: blur(4px);
-          }
-          .mobile-tab-bar .tab-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-size: 0.7rem;
-            font-weight: 700;
-            gap: 0.25rem;
-            flex: 1;
-            height: 100%;
-            transition: all 0.15s ease;
-            position: relative;
-            z-index: 2;
-          }
-          .mobile-tab-bar .tab-item.active {
-            color: var(--accent-primary);
-          }
-          .app-container {
-            padding-bottom: 80px !important;
-          }
-        }
-      `}} />
-      <div className="mobile-tab-bar">
-        <div className="tab-capsule" style={{ left: `calc(${activeAdminIndex} * 25% + 8px)` }} />
-        <button 
-          onClick={() => {
-            setActiveAdminTab('home');
-            if (activeSubject === 'ALL') {
-              setActiveSubject('ENG');
-            }
-            setSearchTerm('');
-            window.scrollTo(0, 0);
-          }}
-          className={`tab-item ${activeAdminTab === 'home' ? 'active' : ''}`}
-        >
-          <Home size={20} />
-          <span>Bosh sahifa</span>
-        </button>
-        
-        <button 
-          onClick={() => {
-            setActiveAdminTab('search');
-            if (activeSubject === 'ALL') {
-              setActiveSubject('ENG');
-            }
-            setTimeout(() => {
-              const input = document.querySelector('.mobile-sticky-search input') as HTMLInputElement;
-              if (input) {
-                input.focus();
-                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            }, 100);
-          }}
-          className={`tab-item ${activeAdminTab === 'search' ? 'active' : ''}`}
-        >
-          <Search size={20} />
-          <span>Qidiruv</span>
-        </button>
-        
-        <button 
-          onClick={() => {
-            setActiveAdminTab('stats');
-            setActiveSubject('ALL');
-            window.scrollTo(0, 0);
-          }}
-          className={`tab-item ${activeAdminTab === 'stats' ? 'active' : ''}`}
-        >
-          <BarChart2 size={20} />
-          <span>Statistika</span>
-        </button>
-        
-        <button 
-          onClick={() => {
-            setActiveAdminTab('settings');
-            setIsDrawerOpen(false);
-          }}
-          className={`tab-item ${activeAdminTab === 'settings' ? 'active' : ''}`}
-        >
-          <Settings size={20} />
-          <span>Sozlamalar</span>
-        </button>
-      </div>
-
-      <InstallAppDrawer deferredPrompt={deferredPrompt} onClearPrompt={() => setDeferredPrompt(null)} />
     </div>
   );
 }
