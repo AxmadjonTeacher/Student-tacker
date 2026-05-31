@@ -312,7 +312,6 @@ const PERIODS: { label: string; months: string[] }[] = [
   { label: 'Fev', months: ['yan', 'fev'] },
   { label: 'Apr', months: ['mar', 'apr'] },
   { label: 'May', months: ['may'] },
-  { label: 'Iyu', months: ['iyun', 'iyul'] },
 ];
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
