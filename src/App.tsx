@@ -2386,17 +2386,15 @@ function App() {
                 title: 'Tizim',
                 items: [
                   { id: 'home', label: 'Bosh sahifa', icon: Home, isActive: activeAdminTab === 'home' && (activeSubject === 'ENG' || activeSubject === 'MATH'), action: () => { setActiveAdminTab('home'); if (activeSubject === 'ALL' || activeSubject === 'DETAILS') setActiveSubject('ENG'); } },
-                  { id: 'search', label: 'Qidiruv', icon: Search, isActive: activeAdminTab === 'search', action: () => setActiveAdminTab('search') },
-                  { id: 'stats', label: 'Statistika', icon: BarChart2, isActive: activeAdminTab === 'stats', action: () => { setActiveAdminTab('stats'); setActiveSubject('ALL'); } },
+                  { id: 'subj_details', label: 'ID & Telefonlar', icon: ShieldAlert, isActive: activeAdminTab === 'home' && activeSubject === 'DETAILS', action: () => { setActiveAdminTab('home'); setActiveSubject('DETAILS'); } },
                 ]
               },
               {
-                title: 'Fanlar & Tahlillar',
+                title: 'Fanlar & Tahlil',
                 items: [
                   { id: 'subj_eng', label: 'Ingliz tili', icon: BookOpen, isActive: activeAdminTab === 'home' && activeSubject === 'ENG', action: () => { setActiveAdminTab('home'); setActiveSubject('ENG'); } },
                   { id: 'subj_math', label: 'Matematika', icon: Binary, isActive: activeAdminTab === 'home' && activeSubject === 'MATH', action: () => { setActiveAdminTab('home'); setActiveSubject('MATH'); } },
                   { id: 'subj_all', label: 'Haftalik tahlil', icon: Activity, isActive: activeAdminTab === 'home' && activeSubject === 'ALL', action: () => { setActiveAdminTab('home'); setActiveSubject('ALL'); } },
-                  { id: 'subj_details', label: 'ID & Telefonlar', icon: ShieldAlert, isActive: activeAdminTab === 'home' && activeSubject === 'DETAILS', action: () => { setActiveAdminTab('home'); setActiveSubject('DETAILS'); } },
                 ]
               },
               {

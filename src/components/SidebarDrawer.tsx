@@ -923,7 +923,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               )}
 
               {/* Section 2: Admin Mode Toggle */}
-              {authRole !== 'publish' && (
+              {authRole !== 'publish' && (!isInline || isMobile) && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
