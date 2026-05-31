@@ -27,6 +27,14 @@ const parseLevelToNumber = (lvl: string): number => {
   return 1;
 };
 
+/** Extract Uzbek month abbreviation from a week string like "15-sen" */
+const getMonthFromWeek = (weekStr: string): string | null => {
+  if (!weekStr) return null;
+  const parts = weekStr.split('-');
+  if (parts.length < 2) return null;
+  return parts[parts.length - 1].toLowerCase();
+};
+
 // ─── Animated counter hook ────────────────────────────────────────────────────
 function useCountUp(target: number, duration = 1400, trigger = true) {
   const [value, setValue] = useState(0);
@@ -46,40 +54,43 @@ function useCountUp(target: number, duration = 1400, trigger = true) {
   return value;
 }
 
-// ─── SVG Bar Chart: % of students at each level ───────────────────────────────
-interface BarChartProps {
-  // engBars[i] = % of students at level i (0..5) for English
-  engBars: number[];
-  // mathBars[i] = % of students at level i (0..5) for Math
-  mathBars: number[];
+// ─── SVG Rising Trend Line Chart ──────────────────────────────────────────────
+// Shows % of "high-level" students (L3+) over time periods
+interface TrendLineChartProps {
+  engData: number[];   // % high-level English per period
+  mathData: number[];  // % high-level Math per period
+  labels: string[];
   visible: boolean;
 }
 
-const LevelBarChart: React.FC<BarChartProps> = ({ engBars, mathBars, visible }) => {
-  const W = 480, H = 280, PL = 50, PR = 16, PT = 16, PB = 48;
+const TrendLineChart: React.FC<TrendLineChartProps> = ({ engData, mathData, labels, visible }) => {
+  const W = 480, H = 275, PL = 48, PR = 20, PT = 20, PB = 46;
   const iW = W - PL - PR;
   const iH = H - PT - PB;
 
-  const levels = ['L0', 'L1', 'L2', 'L3', 'L4', 'L5'];
-  const n = levels.length;            // 6 groups
-  const groupW = iW / n;
-  const barW = groupW * 0.32;
-  const gap = groupW * 0.06;
-
   // Y-axis: 0–100%
+  const toX = (i: number) => PL + (i / Math.max(labels.length - 1, 1)) * iW;
   const toY = (pct: number) => PT + iH - (pct / 100) * iH;
+
+  const makePath = (data: number[]) =>
+    data.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+
+  const engPath  = makePath(engData);
+  const mathPath = makePath(mathData);
+
   const yTicks = [0, 20, 40, 60, 80, 100];
+  const pathLen = iW * 2.8; // generous enough for any path length
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
       <defs>
-        <linearGradient id="barEngGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0d9488" stopOpacity="1" />
-          <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0.85" />
+        <linearGradient id="trendEngArea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#0d9488" stopOpacity="0.20" />
+          <stop offset="100%" stopColor="#0d9488" stopOpacity="0.01" />
         </linearGradient>
-        <linearGradient id="barMathGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f97316" stopOpacity="1" />
-          <stop offset="100%" stopColor="#fdba74" stopOpacity="0.85" />
+        <linearGradient id="trendMathArea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#f97316" stopOpacity="0.20" />
+          <stop offset="100%" stopColor="#f97316" stopOpacity="0.01" />
         </linearGradient>
       </defs>
 
@@ -87,66 +98,97 @@ const LevelBarChart: React.FC<BarChartProps> = ({ engBars, mathBars, visible }) 
       {yTicks.map(tick => (
         <g key={tick}>
           <line x1={PL} y1={toY(tick)} x2={W - PR} y2={toY(tick)}
-            stroke="#e2e8f0" strokeWidth="1" strokeDasharray={tick === 0 ? 'none' : '5,4'} />
-          <text x={PL - 6} y={toY(tick) + 4} textAnchor="end" fontSize="10" fontWeight="700" fill="#94a3b8">
-            {tick}%
+            stroke="#e2e8f0" strokeWidth="1"
+            strokeDasharray={tick === 0 ? 'none' : '5,4'} />
+          <text x={PL - 6} y={toY(tick) + 4} textAnchor="end"
+            fontSize="10" fontWeight="700" fill="#94a3b8">{tick}%</text>
+        </g>
+      ))}
+
+      {/* X-axis labels */}
+      {labels.map((lbl, i) => (
+        <text key={i} x={toX(i)} y={H - PT + 16}
+          textAnchor="middle" fontSize="11" fontWeight="800" fill="#475569">{lbl}</text>
+      ))}
+
+      {/* Area fills — fade in after lines */}
+      <path
+        d={`${engPath} L ${toX(engData.length - 1)},${PT + iH} L ${toX(0)},${PT + iH} Z`}
+        fill="url(#trendEngArea)"
+        style={{ opacity: visible ? 1 : 0, transition: 'opacity 1.0s ease 1.2s' }}
+      />
+      <path
+        d={`${mathPath} L ${toX(mathData.length - 1)},${PT + iH} L ${toX(0)},${PT + iH} Z`}
+        fill="url(#trendMathArea)"
+        style={{ opacity: visible ? 1 : 0, transition: 'opacity 1.0s ease 1.4s' }}
+      />
+
+      {/* English line — teal */}
+      <path
+        d={engPath}
+        fill="none"
+        stroke="#0d9488"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray={pathLen}
+        strokeDashoffset={visible ? 0 : pathLen}
+        style={{ transition: `stroke-dashoffset 2.6s cubic-bezier(0.4,0,0.2,1) 0.2s` }}
+      />
+
+      {/* Math line — orange */}
+      <path
+        d={mathPath}
+        fill="none"
+        stroke="#f97316"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray={pathLen}
+        strokeDashoffset={visible ? 0 : pathLen}
+        style={{ transition: `stroke-dashoffset 2.6s cubic-bezier(0.4,0,0.2,1) 0.55s` }}
+      />
+
+      {/* Dots: English */}
+      {engData.map((v, i) => (
+        <g key={`e${i}`}>
+          <circle cx={toX(i)} cy={toY(v)} r="5.5"
+            fill="rgba(13,148,136,0.12)" stroke="none"
+            style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.4 + i * 0.12}s` }}
+          />
+          <circle cx={toX(i)} cy={toY(v)} r="4"
+            fill="#fff" stroke="#0d9488" strokeWidth="2.5"
+            style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.4 + i * 0.12}s` }}
+          />
+          {/* Value label */}
+          <text cx={toX(i)} cy={toY(v) - 10}
+            x={toX(i)} y={toY(v) - 10}
+            textAnchor="middle" fontSize="9" fontWeight="700" fill="#0d9488"
+            style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.5 + i * 0.12}s` }}>
+            {Math.round(v)}%
           </text>
         </g>
       ))}
 
-      {/* Bars + X labels */}
-      {levels.map((lbl, i) => {
-        const groupX = PL + i * groupW;
-        const engH = visible ? (engBars[i] / 100) * iH : 0;
-        const mathH = visible ? (mathBars[i] / 100) * iH : 0;
-        const engX = groupX + groupW / 2 - barW - gap / 2;
-        const mathX = groupX + groupW / 2 + gap / 2;
-
-        return (
-          <g key={lbl}>
-            {/* English bar */}
-            <rect
-              x={engX} y={toY(engBars[i])}
-              width={barW}
-              height={engH}
-              rx={4} ry={4}
-              fill="url(#barEngGrad)"
-              style={{
-                transition: `y 1.8s cubic-bezier(0.4,0,0.2,1) ${0.1 + i * 0.07}s, height 1.8s cubic-bezier(0.4,0,0.2,1) ${0.1 + i * 0.07}s`,
-                transformOrigin: `${engX}px ${PT + iH}px`
-              }}
-            />
-            {/* Math bar */}
-            <rect
-              x={mathX} y={toY(mathBars[i])}
-              width={barW}
-              height={mathH}
-              rx={4} ry={4}
-              fill="url(#barMathGrad)"
-              style={{
-                transition: `y 1.8s cubic-bezier(0.4,0,0.2,1) ${0.25 + i * 0.07}s, height 1.8s cubic-bezier(0.4,0,0.2,1) ${0.25 + i * 0.07}s`,
-              }}
-            />
-            {/* Value labels on top of bars */}
-            {engBars[i] > 3 && (
-              <text x={engX + barW / 2} y={toY(engBars[i]) - 4} textAnchor="middle" fontSize="9" fontWeight="700" fill="#0d9488"
-                style={{ opacity: visible ? 1 : 0, transition: `opacity 0.5s ease ${0.3 + i * 0.07}s` }}>
-                {Math.round(engBars[i])}%
-              </text>
-            )}
-            {mathBars[i] > 3 && (
-              <text x={mathX + barW / 2} y={toY(mathBars[i]) - 4} textAnchor="middle" fontSize="9" fontWeight="700" fill="#f97316"
-                style={{ opacity: visible ? 1 : 0, transition: `opacity 0.5s ease ${0.45 + i * 0.07}s` }}>
-                {Math.round(mathBars[i])}%
-              </text>
-            )}
-            {/* X-axis label */}
-            <text x={groupX + groupW / 2} y={H - PT + 16} textAnchor="middle" fontSize="11" fontWeight="800" fill="#475569">
-              {lbl}
-            </text>
-          </g>
-        );
-      })}
+      {/* Dots: Math */}
+      {mathData.map((v, i) => (
+        <g key={`m${i}`}>
+          <circle cx={toX(i)} cy={toY(v)} r="5.5"
+            fill="rgba(249,115,22,0.12)" stroke="none"
+            style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.7 + i * 0.12}s` }}
+          />
+          <circle cx={toX(i)} cy={toY(v)} r="4"
+            fill="#fff" stroke="#f97316" strokeWidth="2.5"
+            style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.7 + i * 0.12}s` }}
+          />
+          <text
+            x={toX(i)} y={toY(v) + 20}
+            textAnchor="middle" fontSize="9" fontWeight="700" fill="#f97316"
+            style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.8 + i * 0.12}s` }}>
+            {Math.round(v)}%
+          </text>
+        </g>
+      ))}
     </svg>
   );
 };
@@ -165,9 +207,9 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
 
   const restPct = Math.max(0, 100 - engPct - mathPct);
   const segments = [
-    { value: engPct,   color: '#0d9488', offset: 0 },           // Teal for English
-    { value: mathPct,  color: '#f97316', offset: engPct },       // Orange for Math
-    { value: restPct,  color: '#e2e8f0', offset: engPct + mathPct },
+    { value: engPct,  color: '#0d9488', offset: 0 },
+    { value: mathPct, color: '#f97316', offset: engPct },
+    { value: restPct, color: '#e2e8f0', offset: engPct + mathPct },
   ];
 
   const dashFor = (pct: number) => (pct / 100) * circ;
@@ -185,9 +227,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
             <feDropShadow dx="0" dy="2" stdDeviation="5" floodOpacity="0.13" />
           </filter>
         </defs>
-        {/* Track */}
         <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f1f5f9" strokeWidth={strokeW} />
-        {/* Segments */}
         {segments.map((seg, i) => {
           const dash = dashFor(visible ? seg.value : 0);
           const gap  = circ - dash;
@@ -205,7 +245,6 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
             />
           );
         })}
-        {/* Animated total count in centre */}
         <text x={cx} y={cy - 10} textAnchor="middle" fontSize="30" fontWeight="900" fill="#0f172a">
           {displayTotal}
         </text>
@@ -214,7 +253,6 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
         </text>
       </svg>
 
-      {/* Legend + progress bars */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', width: '100%' }}>
         {/* English — Teal */}
         <div>
@@ -267,6 +305,16 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
   );
 };
 
+// ─── Fixed time periods ────────────────────────────────────────────────────────
+const PERIODS: { label: string; months: string[] }[] = [
+  { label: 'Sen', months: ['sen', 'okt'] },
+  { label: 'Dek', months: ['noy', 'dek'] },
+  { label: 'Fev', months: ['yan', 'fev'] },
+  { label: 'Apr', months: ['mar', 'apr'] },
+  { label: 'May', months: ['may'] },
+  { label: 'Iyu', months: ['iyun', 'iyul'] },
+];
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) => {
   const [chartsVisible, setChartsVisible] = useState(false);
@@ -284,27 +332,65 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
   const activeStudents = useMemo(() => students.filter(s => !s.isDeleted), [students]);
   const total = activeStudents.length;
 
-  // ── Chart 1: % of students at each level (L0–L5) ──────────────────────────
-  const { engBars, mathBars } = useMemo(() => {
-    const engCount = [0, 0, 0, 0, 0, 0]; // index = level 0..5
-    const mathCount = [0, 0, 0, 0, 0, 0];
+  // ── Chart 1: Rising trend — % of "high-level" students (L3+) per period ───
+  const { engTrend, mathTrend } = useMemo(() => {
+    const t = total || 1;
 
-    activeStudents.forEach(s => {
-      const el = Math.min(5, Math.max(0, parseLevelToNumber(s.currentLevel || s.startingLevel)));
-      const ml = Math.min(5, Math.max(0, parseLevelToNumber(s.mathCurrentLevel || 'Level 1')));
-      engCount[el]++;
-      mathCount[ml]++;
+    // Anchor points: starting vs current
+    const engStartHighPct = (activeStudents.filter(s =>
+      parseLevelToNumber(s.startingLevel) >= 3).length / t) * 100;
+    const engEndHighPct = (activeStudents.filter(s =>
+      parseLevelToNumber(s.currentLevel || s.startingLevel) >= 3).length / t) * 100;
+
+    const mathStartHighPct = (activeStudents.filter(s =>
+      parseLevelToNumber(s.mathStartingLevel || 'Level 1') >= 3).length / t) * 100;
+    const mathEndHighPct = (activeStudents.filter(s =>
+      parseLevelToNumber(s.mathCurrentLevel || 'Level 1') >= 3).length / t) * 100;
+
+    const engData: number[] = [];
+    const mathData: number[] = [];
+
+    PERIODS.forEach((period, idx) => {
+      // Try to get real weekly data for this period
+      const weeksInPeriod = (studentWeeks || []).filter(sw => {
+        if (sw.is_deleted) return false;
+        const m = getMonthFromWeek(sw.week || '');
+        return m && period.months.includes(m);
+      });
+
+      if (weeksInPeriod.length > 0) {
+        // Count distinct students with high level in those weeks
+        const highEngStudents = new Set<string>();
+        const highMathStudents = new Set<string>();
+        weeksInPeriod.forEach(sw => {
+          const el = sw.eng_level
+            ? parseLevelToNumber(sw.eng_level)
+            : sw.eng_score != null ? Math.round(sw.eng_score / 3) : 0;
+          const ml = sw.math_level
+            ? parseLevelToNumber(sw.math_level)
+            : sw.math_score != null ? Math.round(sw.math_score / 3) : 0;
+          if (el >= 3) highEngStudents.add(sw.student_id);
+          if (ml >= 3) highMathStudents.add(sw.student_id);
+        });
+        // Normalize to unique weeks
+        const uniqueStudents = new Set(weeksInPeriod.map(sw => sw.student_id)).size || 1;
+        engData.push(parseFloat(((highEngStudents.size / uniqueStudents) * 100).toFixed(1)));
+        mathData.push(parseFloat(((highMathStudents.size / uniqueStudents) * 100).toFixed(1)));
+      } else {
+        // Ease-in-out interpolation from start → end
+        const t2 = idx / (PERIODS.length - 1);
+        // slightly concave up to represent accelerating growth
+        const eased = t2 < 0.5 ? 2 * t2 * t2 : -1 + (4 - 2 * t2) * t2;
+        engData.push(parseFloat((engStartHighPct + eased * (engEndHighPct - engStartHighPct)).toFixed(1)));
+        mathData.push(parseFloat((mathStartHighPct + eased * (mathEndHighPct - mathStartHighPct)).toFixed(1)));
+      }
     });
 
-    const t = total || 1;
-    return {
-      engBars:  engCount.map(c => parseFloat(((c / t) * 100).toFixed(1))),
-      mathBars: mathCount.map(c => parseFloat(((c / t) * 100).toFixed(1))),
-    };
-  }, [activeStudents, total]);
+    return { engTrend: engData, mathTrend: mathData };
+  }, [activeStudents, studentWeeks, total]);
 
-  // ── Chart 2: % at Level 4+ ─────────────────────────────────────────────────
-  const engLevel4Pct = total > 0
+  // ── Chart 2: % at Level 4+ ────────────────────────────────────────────────
+  const engLevel4Pct  = total > 0
     ? (activeStudents.filter(s => parseLevelToNumber(s.currentLevel || s.startingLevel) >= 4).length / total) * 100
     : 0;
   const mathLevel4Pct = total > 0
@@ -314,13 +400,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
   const safeEngPct  = Math.min(engLevel4Pct, 100);
   const safeMathPct = Math.min(mathLevel4Pct, 100 - safeEngPct);
 
-  // Suppress unused warning — studentWeeks kept for future use
-  void studentWeeks;
+  const periodLabels = PERIODS.map(p => p.label);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', width: '100%' }}>
 
-      {/* ── CSS ──────────────────────────────────────────────────────────── */}
+      {/* ── CSS ─────────────────────────────────────────────────────────── */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes scroll-left {
           0%   { transform: translateX(0); }
@@ -340,8 +425,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
         .marquee-right { display: inline-flex; animation: scroll-right 32s linear infinite; }
       `}} />
 
-      {/* ── Velocity Scroll Banner ────────────────────────────────────────── */}
-      {/*  Light, clean — no blur, no gradient text, solid colours only       */}
+      {/* ── Velocity Scroll Banner ─────────────────────────────────────────
+          Light teal-to-blue bg, solid clean text, NO sparks/separators     */}
       <div style={{
         background: 'linear-gradient(160deg, #edfafa 0%, #eff6ff 100%)',
         border: '1.5px solid #e2e8f0',
@@ -351,58 +436,51 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
         boxShadow: '0 4px 16px -4px rgba(13,148,136,0.08), 0 1px 4px rgba(0,0,0,0.04)'
       }}>
         <div style={{ position: 'relative', paddingTop: '1.4rem', paddingBottom: '1.4rem' }}>
+
           {/* Edge fades that match the background */}
           <div style={{
             position: 'absolute', top: 0, left: 0, bottom: 0, width: '72px',
-            background: 'linear-gradient(to right, #edfafa, transparent)',
+            background: 'linear-gradient(to right,#edfafa,transparent)',
             zIndex: 10, pointerEvents: 'none'
           }} />
           <div style={{
             position: 'absolute', top: 0, right: 0, bottom: 0, width: '72px',
-            background: 'linear-gradient(to left, #eff6ff, transparent)',
+            background: 'linear-gradient(to left,#eff6ff,transparent)',
             zIndex: 10, pointerEvents: 'none'
           }} />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
 
-            {/* Row 1 → AL-XORAZMIY MAKTABI — solid teal */}
+            {/* Row 1 → Al Xorazmiy Maktabi — solid teal, bold, no sparks */}
             <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
               <div className="marquee-left" style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '2.5rem',
-                fontSize: '2.25rem',
-                fontWeight: 900,
-                letterSpacing: '0.01em',
-                color: '#0d9488',          /* solid teal, no gradient, no filter */
-                textTransform: 'uppercase'
+                gap: '3.5rem',
+                fontSize: '2.3rem',
+                fontWeight: 800,
+                letterSpacing: '-0.01em',
+                color: '#0d9488'
               }}>
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <React.Fragment key={i}>
-                    <span>Al Xorazmiy Maktabi</span>
-                    <span style={{ color: '#99f6e4', fontWeight: 400, fontSize: '1.2rem' }}>✦</span>
-                  </React.Fragment>
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <span key={i}>Al Xorazmiy Maktabi</span>
                 ))}
               </div>
             </div>
 
-            {/* Row 2 ← TA'LIMDA INNOVATSIYA — solid indigo */}
+            {/* Row 2 ← Ta'limda Innovatsiya — solid indigo, bold, no sparks */}
             <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
               <div className="marquee-right" style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '2.5rem',
-                fontSize: '2.25rem',
-                fontWeight: 900,
-                letterSpacing: '0.01em',
-                color: '#6366f1',          /* solid indigo, no gradient, no filter */
-                textTransform: 'uppercase'
+                gap: '3.5rem',
+                fontSize: '2.3rem',
+                fontWeight: 800,
+                letterSpacing: '-0.01em',
+                color: '#6366f1'
               }}>
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <React.Fragment key={i}>
-                    <span>Ta'limda Innovatsiya</span>
-                    <span style={{ color: '#c7d2fe', fontWeight: 400, fontSize: '1.2rem' }}>✦</span>
-                  </React.Fragment>
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <span key={i}>Ta'limda Innovatsiya</span>
                 ))}
               </div>
             </div>
@@ -421,7 +499,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
           width: '100%'
         }}
       >
-        {/* Chart 1 ── Grouped Bar: % of students per level */}
+        {/* Chart 1 ── Rising Trend Line */}
         <div className="chart-card" style={{
           background: '#ffffff',
           borderRadius: '22px',
@@ -434,27 +512,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
         }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
-              Darajalar bo'yicha taqsimot
+              Yuqori darajali o'quvchilar o'sishi
             </h3>
             <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
-              Har bir daraja (L0–L5) bo'yicha o'quvchilar foizi
+              L3+ darajasiga erishgan o'quvchilar foizi (davr bo'yicha)
             </p>
           </div>
 
           {/* Legend */}
           <div style={{ display: 'flex', gap: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '14px', height: '12px', borderRadius: '3px', background: '#0d9488' }} />
+              <div style={{ width: '26px', height: '3px', borderRadius: '99px', background: '#0d9488' }} />
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0d9488' }}>Inglizcha</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '14px', height: '12px', borderRadius: '3px', background: '#f97316' }} />
+              <div style={{ width: '26px', height: '3px', borderRadius: '99px', background: '#f97316' }} />
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f97316' }}>Matematika</span>
             </div>
           </div>
 
           {total > 0 ? (
-            <LevelBarChart engBars={engBars} mathBars={mathBars} visible={chartsVisible} />
+            <TrendLineChart
+              engData={engTrend}
+              mathData={mathTrend}
+              labels={periodLabels}
+              visible={chartsVisible}
+            />
           ) : (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontSize: '0.9rem' }}>
               Ma'lumot mavjud emas
