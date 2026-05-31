@@ -18,7 +18,7 @@ interface HeaderProps {
   weeksList: string[];
   onStartNewWeekClick?: () => void;
   onDeleteWeekClick?: (weekName: string) => void;
-  activeAdminTab?: 'home' | 'search' | 'stats' | 'settings';
+  activeAdminTab?: 'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash';
   authRole?: string | null;
 }
 
@@ -48,6 +48,9 @@ const Header: React.FC<HeaderProps> = ({
       <style dangerouslySetInnerHTML={{ __html: `
         .mobile-header-menu-container {
           display: none;
+        }
+        .school-logo {
+          display: none !important;
         }
         @media (max-width: 768px) {
           .desktop-header-actions {

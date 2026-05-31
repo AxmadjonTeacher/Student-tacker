@@ -35,6 +35,8 @@ interface SidebarDrawerProps {
   onAddTeacher: (name: string, subject: 'ENG' | 'MATH') => Promise<void>;
   onDeleteTeacher: (id: number) => Promise<void>;
   authRole?: string | null;
+  activeTab?: 'settings' | 'news' | 'teachers' | 'trash';
+  onTabChange?: (tab: 'settings' | 'news' | 'teachers' | 'trash') => void;
 }
 
 const getClassGroupLocal = (clsName: string): string => {
@@ -66,12 +68,25 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   teachers,
   onAddTeacher,
   onDeleteTeacher,
-  authRole
+  authRole,
+  activeTab: propActiveTab,
+  onTabChange
 }) => {
-  // Navigation Tabs
-  const [activeTab, setActiveTab] = useState<'settings' | 'news' | 'teachers' | 'trash'>(() => {
+  // Responsive check
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Navigation Tabs State
+  const [activeTabState, setActiveTabState] = useState<'settings' | 'news' | 'teachers' | 'trash'>(() => {
     return authRole === 'publish' ? 'news' : 'settings';
   });
+
+  const activeTab = propActiveTab !== undefined ? propActiveTab : activeTabState;
+  const setActiveTab = onTabChange !== undefined ? onTabChange : setActiveTabState;
 
   // CSV and Student Upload states
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
@@ -729,7 +744,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         </div>
 
         {/* Navigation Tabs Selector */}
-        {authRole !== 'admin123' && (
+        {authRole !== 'admin123' && (!isInline || isMobile) && (
           <div style={{
             display: 'flex',
             background: '#f1f5f9',
@@ -837,73 +852,75 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           {activeTab === 'settings' && (
             <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
               {/* Section 1: Subject Select */}
-              <div style={{ marginBottom: '2rem', marginTop: '0.5rem' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
-                  FAOL FAN KO'RINISHI
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                  {(() => {
-                    const subjects = [
-                      { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: '#166534', bg: '#f0fdf4' },
-                      { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: '#0d9488', bg: '#f0fdfa' },
-                      { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' },
-                      { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: '#db2777', bg: '#fdf2f8' }
-                    ];
-                    return subjects;
-                  })().map(subj => {
-                    const isSelected = activeSubject === subj.id;
-                    return (
-                      <button
-                        key={subj.id}
-                        onClick={() => onSubjectChange(subj.id as any)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '1rem',
-                          width: '100%',
-                          padding: '0.9rem 1.1rem',
-                          borderRadius: '16px',
-                          background: isSelected ? subj.bg : '#ffffff',
-                          border: isSelected ? `2.2px solid ${subj.color}` : '1.5px solid #e2e8f0',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                          boxShadow: isSelected ? '0 4px 12px -3px rgba(0,0,0,0.04)' : 'none'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.borderColor = subj.color;
-                            e.currentTarget.style.background = `${subj.bg}20`;
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.borderColor = '#e2e8f0';
-                            e.currentTarget.style.background = '#ffffff';
-                          }
-                        }}
-                      >
-                        <div style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: subj.color,
-                          flexShrink: 0
-                        }} />
-                        <div>
-                          <div style={{ fontWeight: 850, fontSize: '0.8rem', color: isSelected ? subj.color : '#334155', letterSpacing: '0.02em' }}>
-                            {subj.title.toUpperCase()}
+              {(!isInline || isMobile) && (
+                <div style={{ marginBottom: '2rem', marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                    FAOL FAN KO'RINISHI
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    {(() => {
+                      const subjects = [
+                        { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: '#166534', bg: '#f0fdf4' },
+                        { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: '#0d9488', bg: '#f0fdfa' },
+                        { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' },
+                        { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: '#db2777', bg: '#fdf2f8' }
+                      ];
+                      return subjects;
+                    })().map(subj => {
+                      const isSelected = activeSubject === subj.id;
+                      return (
+                        <button
+                          key={subj.id}
+                          onClick={() => onSubjectChange(subj.id as any)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1rem',
+                            width: '100%',
+                            padding: '0.9rem 1.1rem',
+                            borderRadius: '16px',
+                            background: isSelected ? subj.bg : '#ffffff',
+                            border: isSelected ? `2.2px solid ${subj.color}` : '1.5px solid #e2e8f0',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: isSelected ? '0 4px 12px -3px rgba(0,0,0,0.04)' : 'none'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.borderColor = subj.color;
+                              e.currentTarget.style.background = `${subj.bg}20`;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.borderColor = '#e2e8f0';
+                              e.currentTarget.style.background = '#ffffff';
+                            }
+                          }}
+                        >
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: subj.color,
+                            flexShrink: 0
+                          }} />
+                          <div>
+                            <div style={{ fontWeight: 850, fontSize: '0.8rem', color: isSelected ? subj.color : '#334155', letterSpacing: '0.02em' }}>
+                              {subj.title.toUpperCase()}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                              {subj.desc}
+                            </div>
                           </div>
-                          <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
-                            {subj.desc}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Section 2: Admin Mode Toggle */}
               {authRole !== 'publish' && (

@@ -1,5 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Home, Search, BarChart2, Settings, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { 
+  Home, Search, BarChart2, Settings, LogOut,
+  BookOpen, Binary, Activity, ShieldAlert, Bell, Users, Trash2,
+  PanelLeftClose, Shield
+} from 'lucide-react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
 import SidebarDrawer from './components/SidebarDrawer';
@@ -103,7 +107,7 @@ function App() {
     return localStorage.getItem('isAdminMode') === 'true';
   });
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-  const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
+  const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash'>('home');
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
   const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | null>(null);
@@ -2114,7 +2118,7 @@ function App() {
         />
       </>
     );
-  }  const adminTabIndices = { home: 0, search: 1, stats: 2, settings: 3 };
+  }  const adminTabIndices = { home: 0, search: 1, stats: 2, settings: 3, news: 3, teachers: 3, trash: 3 };
   const activeAdminIndex = adminTabIndices[activeAdminTab] || 0;
 
   if (isMobile) {
@@ -2291,16 +2295,16 @@ function App() {
       {/* Collapsible Left Sidebar for Desktop */}
       <aside style={{
         width: isSidebarExpanded ? '240px' : '72px',
-        background: '#ffffff',
+        background: '#f8fafc',
         borderRight: '1px solid #e2e8f0',
         display: 'flex',
         flexDirection: 'column',
-        padding: isSidebarExpanded ? '1.5rem 1rem' : '1.5rem 0.5rem',
+        padding: isSidebarExpanded ? '1.25rem 0.85rem' : '1.25rem 0.5rem',
         position: 'sticky',
         top: 0,
         height: '100vh',
         boxSizing: 'border-box',
-        transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex: 1000
       }}>
         {/* Brand logo & Expand/Collapse Toggle */}
@@ -2308,120 +2312,253 @@ function App() {
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: isSidebarExpanded ? 'space-between' : 'center', 
-          marginBottom: '2.5rem', 
-          paddingLeft: isSidebarExpanded ? '0.5rem' : '0',
+          paddingBottom: '1.25rem',
+          borderBottom: '1px solid #e2e8f0',
+          marginBottom: '1.5rem', 
           position: 'relative'
         }}>
           {isSidebarExpanded ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', animation: 'fadeIn 0.2s' }}>
-              <img src={iconLight} alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '8px' }} />
+              <img src={iconLight} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
               <div>
-                <h1 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>AL-XORAZMIY</h1>
-                <p style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>ADMIN KABINETI</p>
+                <h1 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>AL-XORAZMIY</h1>
+                <p style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>ADMIN KABINETI</p>
               </div>
             </div>
           ) : (
-            <img src={iconLight} alt="Logo" style={{ width: '34px', height: '34px', borderRadius: '8px' }} />
+            <button
+              onClick={() => setIsSidebarExpanded(true)}
+              title="Sidebar-ni yozish"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px'
+              }}
+            >
+              <img src={iconLight} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+            </button>
           )}
 
-          {/* Toggle Button */}
-          <button
-            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            style={{
-              position: isSidebarExpanded ? 'relative' : 'absolute',
-              right: isSidebarExpanded ? '0' : '-13px',
-              top: isSidebarExpanded ? 'auto' : '50%',
-              transform: isSidebarExpanded ? 'none' : 'translateY(-50%)',
-              background: '#ffffff',
-              border: '1.5px solid #e2e8f0',
-              borderRadius: '50%',
-              width: '26px',
-              height: '26px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#64748b',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              transition: 'all 0.2s ease',
-              padding: 0,
-              zIndex: 10
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = subjectColor;
-              e.currentTarget.style.color = subjectColor;
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.color = '#64748b';
-            }}
-          >
-            {isSidebarExpanded ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-          </button>
+          {isSidebarExpanded && (
+            <button
+              onClick={() => setIsSidebarExpanded(false)}
+              title="Sidebar-ni yig'ish"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#64748b',
+                padding: '0.25rem',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+            >
+              <PanelLeftClose size={18} />
+            </button>
+          )}
         </div>
 
         {/* Navigation Items */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1, alignItems: isSidebarExpanded ? 'stretch' : 'center' }}>
-          {[
-            { id: 'home' as const, label: 'Bosh sahifa', icon: Home },
-            { id: 'search' as const, label: 'Qidiruv', icon: Search },
-            { id: 'stats' as const, label: 'Statistika', icon: BarChart2 },
-            { id: 'settings' as const, label: 'Sozlamalar', icon: Settings }
-          ].map(item => {
-            const Icon = item.icon;
-            const isActive = activeAdminTab === item.id;
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === 'stats') {
-                    setActiveSubject('ALL');
-                  } else if (activeSubject === 'ALL') {
-                    setActiveSubject('ENG'); // Restore default subject if leaving stats
-                  }
-                  setActiveAdminTab(item.id);
-                }}
-                title={!isSidebarExpanded ? item.label : undefined}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
-                  gap: isSidebarExpanded ? '0.75rem' : '0',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '12px',
-                  background: isActive ? `${subjectColor}12` : 'transparent',
-                  color: isActive ? subjectColor : '#475569',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: isActive ? 800 : 700,
-                  fontSize: '0.82rem',
-                  width: '100%',
-                  transition: 'all 0.15s ease',
-                  boxSizing: 'border-box'
-                }}
-                onMouseEnter={e => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = '#f8fafc';
-                    e.currentTarget.style.color = '#0f172a';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = '#475569';
-                  }
-                }}
-              >
-                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} color={isActive ? subjectColor : '#64748b'} />
-                {isSidebarExpanded && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
-              </button>
-            );
-          })}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1.25rem', 
+          flex: 1, 
+          overflowY: 'auto',
+          marginRight: isSidebarExpanded ? '-0.5rem' : '0',
+          paddingRight: isSidebarExpanded ? '0.5rem' : '0',
+          scrollbarWidth: 'none'
+        }}>
+          {(() => {
+            const sidebarGroups = [
+              {
+                title: 'Tizim',
+                items: [
+                  { id: 'home', label: 'Bosh sahifa', icon: Home, isActive: activeAdminTab === 'home' && (activeSubject === 'ENG' || activeSubject === 'MATH'), action: () => { setActiveAdminTab('home'); if (activeSubject === 'ALL' || activeSubject === 'DETAILS') setActiveSubject('ENG'); } },
+                  { id: 'search', label: 'Qidiruv', icon: Search, isActive: activeAdminTab === 'search', action: () => setActiveAdminTab('search') },
+                  { id: 'stats', label: 'Statistika', icon: BarChart2, isActive: activeAdminTab === 'stats', action: () => { setActiveAdminTab('stats'); setActiveSubject('ALL'); } },
+                ]
+              },
+              {
+                title: 'Fanlar & Tahlillar',
+                items: [
+                  { id: 'subj_eng', label: 'Ingliz tili', icon: BookOpen, isActive: activeAdminTab === 'home' && activeSubject === 'ENG', action: () => { setActiveAdminTab('home'); setActiveSubject('ENG'); } },
+                  { id: 'subj_math', label: 'Matematika', icon: Binary, isActive: activeAdminTab === 'home' && activeSubject === 'MATH', action: () => { setActiveAdminTab('home'); setActiveSubject('MATH'); } },
+                  { id: 'subj_all', label: 'Haftalik tahlil', icon: Activity, isActive: activeAdminTab === 'home' && activeSubject === 'ALL', action: () => { setActiveAdminTab('home'); setActiveSubject('ALL'); } },
+                  { id: 'subj_details', label: 'ID & Telefonlar', icon: ShieldAlert, isActive: activeAdminTab === 'home' && activeSubject === 'DETAILS', action: () => { setActiveAdminTab('home'); setActiveSubject('DETAILS'); } },
+                ]
+              },
+              {
+                title: 'Boshqaruv',
+                items: [
+                  { id: 'news', label: 'E\'lonlar', icon: Bell, isActive: activeAdminTab === 'news', action: () => setActiveAdminTab('news') },
+                  { id: 'teachers', label: 'O\'qituvchilar', icon: Users, isActive: activeAdminTab === 'teachers', action: () => setActiveAdminTab('teachers') },
+                  { id: 'settings', label: 'Sozlamalar', icon: Settings, isActive: activeAdminTab === 'settings', action: () => setActiveAdminTab('settings') },
+                  { id: 'trash', label: 'Savat', icon: Trash2, isActive: activeAdminTab === 'trash', action: () => setActiveAdminTab('trash') },
+                ]
+              }
+            ];
+
+            return sidebarGroups.map((group, groupIdx) => (
+              <div key={groupIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                {isSidebarExpanded && (
+                  <div style={{ 
+                    fontSize: '0.62rem', 
+                    fontWeight: 900, 
+                    color: '#94a3b8', 
+                    letterSpacing: '0.08em', 
+                    paddingLeft: '0.75rem',
+                    marginBottom: '0.2rem',
+                    textTransform: 'uppercase'
+                  }}>
+                    {group.title}
+                  </div>
+                )}
+                {group.items.map(item => {
+                  const Icon = item.icon;
+                  const isActive = item.isActive;
+                  
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={item.action}
+                      title={!isSidebarExpanded ? item.label : undefined}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
+                        gap: isSidebarExpanded ? '0.75rem' : '0',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '12px',
+                        background: isActive ? '#ffffff' : 'transparent',
+                        color: isActive ? '#0f172a' : '#475569',
+                        border: isActive ? '1.5px solid #e2e8f0' : '1.5px solid transparent',
+                        boxShadow: isActive ? '0 2px 4px rgba(0,0,0,0.03)' : 'none',
+                        cursor: 'pointer',
+                        fontWeight: isActive ? 800 : 700,
+                        fontSize: '0.8rem',
+                        width: '100%',
+                        transition: 'all 0.15s ease',
+                        boxSizing: 'border-box'
+                      }}
+                      onMouseEnter={e => {
+                        if (!isActive) {
+                          e.currentTarget.style.background = '#f1f5f980';
+                          e.currentTarget.style.color = '#0f172a';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActive) {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = '#475569';
+                        }
+                      }}
+                    >
+                      <Icon size={17} strokeWidth={isActive ? 2.5 : 2} color={isActive ? subjectColor : '#64748b'} />
+                      {isSidebarExpanded && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            ));
+          })()}
         </div>
 
-        {/* Logout at Bottom */}
-        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+        {/* Admin Mode Toggle & Logout */}
+        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', marginTop: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {isSidebarExpanded ? (
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '0.65rem 0.8rem',
+              width: '100%',
+              boxSizing: 'border-box',
+              marginBottom: '0.5rem',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.01)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.72rem', color: '#1e293b', letterSpacing: '0.02em' }}>ADMIN REJIMI</div>
+                  <div style={{ fontSize: '0.58rem', color: '#64748b', marginTop: '0.05rem' }}>Tahrirlash imkoniyati</div>
+                </div>
+                <button 
+                  onClick={handleToggleAdmin}
+                  style={{
+                    width: '36px',
+                    height: '18px',
+                    borderRadius: '9999px',
+                    background: isAdminMode ? subjectColor : '#cbd5e1',
+                    border: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    padding: 0,
+                    transition: 'background-color 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    position: 'absolute',
+                    left: isAdminMode ? '20px' : '4px',
+                    transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                  }} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleToggleAdmin}
+              title={isAdminMode ? "Admin rejimidan chiqish" : "Admin rejimini yoqish"}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: isAdminMode ? `${subjectColor}12` : 'transparent',
+                color: isAdminMode ? subjectColor : '#64748b',
+                border: isAdminMode ? `1px solid ${subjectColor}30` : '1px solid transparent',
+                cursor: 'pointer',
+                marginBottom: '0.5rem',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={e => {
+                if (!isAdminMode) {
+                  e.currentTarget.style.background = '#f1f5f9';
+                  e.currentTarget.style.color = '#0f172a';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isAdminMode) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#64748b';
+                }
+              }}
+            >
+              <Shield size={16} strokeWidth={isAdminMode ? 2.5 : 2} />
+            </button>
+          )}
+
+          {/* Logout button */}
           <button
             onClick={() => handleLogout()}
             title={!isSidebarExpanded ? 'Chiqish' : undefined}
@@ -2430,14 +2567,14 @@ function App() {
               alignItems: 'center',
               justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
               gap: isSidebarExpanded ? '0.75rem' : '0',
-              padding: '0.75rem 1rem',
+              padding: '0.65rem 0.85rem',
               borderRadius: '12px',
               background: 'transparent',
               color: '#ef4444',
               border: 'none',
               cursor: 'pointer',
               fontWeight: 800,
-              fontSize: '0.82rem',
+              fontSize: '0.8rem',
               width: '100%',
               transition: 'background 0.15s',
               boxSizing: 'border-box'
@@ -2445,7 +2582,7 @@ function App() {
             onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             {isSidebarExpanded && <span>CHIQISH</span>}
           </button>
         </div>
@@ -2460,7 +2597,7 @@ function App() {
         flexDirection: 'column',
         boxSizing: 'border-box'
       }}>
-        {activeAdminTab !== 'settings' && (
+        {(activeAdminTab === 'home' || activeAdminTab === 'search' || activeAdminTab === 'stats') ? (
           <>
             <Header
               activeAdminTab={activeAdminTab}
@@ -2499,14 +2636,19 @@ function App() {
               authRole={authRole}
             />
           </>
-        )}
-
-        {activeAdminTab === 'settings' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', flex: 1 }}>
             <SidebarDrawer
               isOpen={true}
               onClose={() => setActiveAdminTab('home')}
               isInline={true}
+              activeTab={activeAdminTab === 'trash' ? 'trash' : activeAdminTab === 'news' ? 'news' : activeAdminTab === 'teachers' ? 'teachers' : 'settings'}
+              onTabChange={(tab) => {
+                if (tab === 'settings') setActiveAdminTab('settings');
+                else if (tab === 'news') setActiveAdminTab('news');
+                else if (tab === 'teachers') setActiveAdminTab('teachers');
+                else if (tab === 'trash') setActiveAdminTab('trash');
+              }}
               activeSubject={activeSubject}
               onSubjectChange={setActiveSubject}
               isAdminMode={isAdminMode}
@@ -2529,7 +2671,7 @@ function App() {
               authRole={authRole}
             />
             
-            {/* Symmetrical Footer inside Settings only */}
+            {/* Symmetrical Footer */}
             <footer style={{
               marginTop: 'auto',
               paddingTop: '3rem',
