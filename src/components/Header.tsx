@@ -33,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({
       background: 'var(--bg-header-rgba)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      borderBottom: '1px solid var(--border-color)',
+      borderBottom: activeSubject === 'DASHBOARD' ? 'none' : '1px solid var(--border-color)',
       width: '100%',
       display: 'flex',
       flexDirection: 'column',

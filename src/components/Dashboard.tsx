@@ -314,7 +314,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       `}} />
 
       {/* ── HEADER ROW ────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '0.25rem' }}>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        width: '100%', 
+        paddingBottom: '0.85rem',
+        borderBottom: '1px solid var(--border-color)',
+        marginBottom: '0.65rem' 
+      }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.03em' }}>
           Bosh Sahifa
         </h1>
@@ -508,7 +516,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <tbody>
                   {weeklyLeaders.map((lead, idx) => (
                     <tr key={lead.id || idx} className="leaders-table-row">
-                      <td style={{ padding: '0.35rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <td style={{ padding: '0.45rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-secondary)', width: '12px' }}>{idx + 1}</span>
                         {lead.pictureUrl ? (
                           <img src={lead.pictureUrl} alt="avatar" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
@@ -533,10 +541,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           {lead.surname} {lead.name}
                         </span>
                       </td>
-                      <td style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', fontWeight: 850, color: 'var(--accent-primary)', textAlign: 'center' }}>
+                      <td style={{ padding: '0.45rem 0.5rem', fontSize: '0.8rem', fontWeight: 850, color: 'var(--accent-primary)', textAlign: 'center' }}>
                         {lead.eng}%
                       </td>
-                      <td style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', fontWeight: 850, color: '#f97316', textAlign: 'center' }}>
+                      <td style={{ padding: '0.45rem 0.5rem', fontSize: '0.8rem', fontWeight: 850, color: '#f97316', textAlign: 'center' }}>
                         {lead.math}%
                       </td>
                     </tr>
@@ -632,7 +640,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Recharts Line Chart */}
-            <div style={{ height: '115px', width: '100%', marginTop: '0.5rem' }}>
+            <div style={{ height: '200px', width: '100%', marginTop: '0.5rem' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={termMasteryData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.4} />
@@ -694,7 +702,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Recharts Attendance Line Chart */}
-            <div style={{ height: '115px', width: '100%' }}>
+            <div style={{ height: '200px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={attendanceHistoryData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.4} />
