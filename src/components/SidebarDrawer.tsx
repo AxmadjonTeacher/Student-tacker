@@ -804,29 +804,27 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
             >
               YANGILIKLAR
             </button>
-            {isAdminMode && (
-              <button
-                onClick={() => setActiveTab('teachers')}
-                style={{
-                  flex: 1,
-                  background: activeTab === 'teachers' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'teachers' ? '#0f172a' : '#64748b',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.5rem 0.25rem',
-                  fontSize: '0.68rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  boxShadow: activeTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}
-              >
-                O'QITUVCHILAR
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab('teachers')}
+              style={{
+                flex: 1,
+                background: activeTab === 'teachers' ? '#ffffff' : 'transparent',
+                color: activeTab === 'teachers' ? '#0f172a' : '#64748b',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.5rem 0.25rem',
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: activeTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}
+            >
+              O'QITUVCHILAR
+            </button>
             {isAdminMode && (
               <button
                 onClick={() => setActiveTab('trash')}
@@ -1875,11 +1873,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           )}
 
           {/* TAB: Teachers / O'qituvchilar */}
-          {activeTab === 'teachers' && isAdminMode && (
+          {activeTab === 'teachers' && (
             <div style={{ animation: 'fadeIn 0.2s ease-out', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
               {/* Form to Add Teacher */}
-              <form 
+              {isAdminMode && (
+                <form 
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (!newTeacherName.trim()) return;
@@ -2017,6 +2016,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   {isAddingTeacher ? "QO'SHILMOQDA..." : "O'QITUVCHINI QO'SHISH"}
                 </button>
               </form>
+              )}
 
               {/* Teachers List Grouped by Subject */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -2049,23 +2049,25 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           }}
                         >
                           <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
-                                onDeleteTeacher(teacher.id);
-                              }
-                            }}
-                            style={{
-                              background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', color: '#ef4444', border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid #fee2e2',
-                              borderRadius: '8px', padding: '0.3rem', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              transition: 'all 0.15s'
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                           {isAdminMode && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                  onDeleteTeacher(teacher.id);
+                                }
+                              }}
+                              style={{
+                                background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', color: '#ef4444', border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid #fee2e2',
+                                borderRadius: '8px', padding: '0.3rem', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                transition: 'all 0.15s'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       ))
                     )}
@@ -2074,8 +2076,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
                 {/* Math Teachers */}
                 <div>
-                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#0d9488', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#0d9488' }} />
+                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent-primary)', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />
                     MATEMATIKA O'QITUVCHILARI ({teachers.filter(t => t.subject === 'MATH').length} ta)
                   </div>
                   
@@ -2100,23 +2102,25 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           }}
                         >
                           <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
-                                onDeleteTeacher(teacher.id);
-                              }
-                            }}
-                            style={{
-                              background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', color: '#ef4444', border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid #fee2e2',
-                              borderRadius: '8px', padding: '0.3rem', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              transition: 'all 0.15s'
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                           {isAdminMode && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                  onDeleteTeacher(teacher.id);
+                                }
+                              }}
+                              style={{
+                                background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', color: '#ef4444', border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid #fee2e2',
+                                borderRadius: '8px', padding: '0.3rem', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                transition: 'all 0.15s'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </div>
                       ))
                     )}
@@ -2342,16 +2346,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               Excel yoki Google Sheets da tahrirlab bo'lgach, <em>Vergul bilan ajratilgan qiymatlar (.csv)</em> sifatida yuklab oling.
             </div>
 
-            <button 
+             <button 
               className="admin-btn" 
               style={{
                 marginBottom: '1.5rem', width: '100%', justifyContent: 'center',
-                background: '#ffffff', color: '#0d9488', border: '1.5px solid #0d9488',
+                background: 'var(--bg-card)', color: 'var(--accent-primary)', border: '1.5px solid var(--accent-primary)',
                 borderRadius: '12px', padding: '0.75rem 1.25rem', fontSize: '0.82rem', fontWeight: 800,
                 display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f0fdfa'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
               onClick={downloadTemplate}
             >
               <Download size={16} />

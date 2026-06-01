@@ -886,7 +886,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               width="12" 
                               height={(engPercent / 100) * 32} 
                               rx="3" 
-                              fill="#0d9488"
+                              fill="var(--accent-primary)"
                             >
                               <title>English Score: {engPercent.toFixed(2)}% ({student.engScore || 0}/15)</title>
                             </rect>
@@ -1103,13 +1103,13 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             style={{
                               width: '40px', height: '40px', borderRadius: '50%',
                               objectFit: 'cover', flexShrink: 0,
-                              border: '1px solid #fbcfe8'
+                              border: '1px solid var(--profile-border)'
                             }}
                           />
                         ) : (
                           <div style={{
                             width: '40px', height: '40px', borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #fbcfe8, #f472b6)', color: '#be185d',
+                            background: 'var(--profile-bg)', color: 'var(--profile-text)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '0.9rem', fontWeight: 700, flexShrink: 0
                           }}>

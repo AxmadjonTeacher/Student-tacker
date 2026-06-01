@@ -175,8 +175,20 @@ function App() {
     localStorage.setItem('isDarkMode', String(isDarkMode));
     if (isDarkMode) {
       document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.style.setProperty('--accent-primary', '#8b5cf6');
+      document.documentElement.style.setProperty('--accent-hover', '#a78bfa');
+      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #7c3aed, #4f46e5)');
+      document.documentElement.style.setProperty('--marquee-bg', 'linear-gradient(160deg, #1e1b4b 0%, #0c0c0e 100%)');
+      document.documentElement.style.setProperty('--marquee-fade-left', 'linear-gradient(to right, #1e1b4b, transparent)');
+      document.documentElement.style.setProperty('--marquee-fade-right', 'linear-gradient(to left, #0c0c0e, transparent)');
     } else {
       document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.style.setProperty('--accent-primary', '#0d9488');
+      document.documentElement.style.setProperty('--accent-hover', '#0f766e');
+      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #0d9488, #0f766e)');
+      document.documentElement.style.setProperty('--marquee-bg', 'linear-gradient(160deg, #edfafa 0%, #f0fdfa 100%)');
+      document.documentElement.style.setProperty('--marquee-fade-left', 'linear-gradient(to right, #edfafa, transparent)');
+      document.documentElement.style.setProperty('--marquee-fade-right', 'linear-gradient(to left, #f0fdfa, transparent)');
     }
   }, [isDarkMode]);
 
@@ -598,12 +610,7 @@ function App() {
     }
   }, [students, loading, authRole]);
 
-  // Dynamic theme colors locked to Teal (#0d9488) across all sections
-  useEffect(() => {
-    document.documentElement.style.setProperty('--accent-primary', '#0d9488');
-    document.documentElement.style.setProperty('--accent-hover', '#14b8a6');
-    document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #0d9488, #14b8a6)');
-  }, []);
+
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
     const localUpdatedList = [...students];
@@ -2028,15 +2035,15 @@ function App() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: '#fcfcf9',
-        color: '#0d9488',
+        background: 'var(--bg-main)',
+        color: 'var(--accent-primary)',
         gap: '1.5rem'
       }}>
         <div style={{
           width: '50px',
           height: '50px',
-          border: '4px solid #ccfbf1',
-          borderTop: '4px solid #0d9488',
+          border: '4px solid var(--border-color)',
+          borderTop: '4px solid var(--accent-primary)',
           borderRadius: '50%',
           animation: 'spin 1s linear infinite'
         }} />
@@ -2572,7 +2579,7 @@ function App() {
                       width: '36px',
                       height: '18px',
                       borderRadius: '9999px',
-                      background: isDarkMode ? '#0d9488' : '#cbd5e1',
+                      background: isDarkMode ? 'var(--accent-primary)' : '#cbd5e1',
                       border: 'none',
                       cursor: 'pointer',
                       position: 'relative',

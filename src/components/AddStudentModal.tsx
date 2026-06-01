@@ -120,20 +120,20 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
         style={{
           maxWidth: '500px',
           width: '90%',
-          background: 'rgba(255, 255, 255, 0.95)',
+          background: 'var(--bg-card)',
           backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.5)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--glass-shadow)',
           borderRadius: '24px',
           padding: '2rem'
         }}
       >
-        <div className="modal-header" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+        <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ background: '#dcfce7', color: '#166534', padding: '0.5rem', borderRadius: '10px' }}>
+            <div style={{ background: 'var(--accent-hover)', color: '#ffffff', padding: '0.5rem', borderRadius: '10px', opacity: 0.85 }}>
               <UserPlus size={20} />
             </div>
-            <h2 style={{ fontSize: '1.25rem', color: '#0f172a', margin: 0 }}>Yangi o'quvchi qo'shish</h2>
+            <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', margin: 0 }}>Yangi o'quvchi qo'shish</h2>
           </div>
           <button className="close-btn" onClick={onClose}>
             <X size={20} />
@@ -144,7 +144,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Ism *</label>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Ism *</label>
               <input 
                 type="text" 
                 value={name}
@@ -153,15 +153,16 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 required
                 style={{
                   width: '100%', padding: '0.75rem', borderRadius: '10px',
-                  border: '1px solid #cbd5e1', fontSize: '0.95rem',
+                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
                   outline: 'none', transition: 'border-color 0.2s ease'
                 }}
-                onFocus={e => e.currentTarget.style.borderColor = '#0d9488'}
-                onBlur={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
               />
             </div>
             <div className="form-group">
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Familiya *</label>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Familiya *</label>
               <input 
                 type="text" 
                 value={surname}
@@ -170,11 +171,12 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 required
                 style={{
                   width: '100%', padding: '0.75rem', borderRadius: '10px',
-                  border: '1px solid #cbd5e1', fontSize: '0.95rem',
+                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
                   outline: 'none', transition: 'border-color 0.2s ease'
                 }}
-                onFocus={e => e.currentTarget.style.borderColor = '#0d9488'}
-                onBlur={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
               />
             </div>
           </div>
@@ -183,51 +185,51 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Avvalgi daraja</label>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Avvalgi daraja</label>
                   <select 
                     value={startingLevel}
                     onChange={e => setStartingLevel(e.target.value)}
                     style={{
                       width: '100%', padding: '0.75rem', borderRadius: '10px',
-                      border: '1px solid #cbd5e1', fontSize: '0.95rem',
-                      backgroundColor: '#fff', cursor: 'pointer', outline: 'none'
+                      border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                      backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                     }}
                   >
-                    {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                    {LEVELS.map(l => <option key={l} value={l} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{l}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>Hozirgi daraja</label>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Hozirgi daraja</label>
                   <select 
                     value={currentLevel}
                     onChange={e => setCurrentLevel(e.target.value)}
                     style={{
                       width: '100%', padding: '0.75rem', borderRadius: '10px',
-                      border: '1px solid #cbd5e1', fontSize: '0.95rem',
-                      backgroundColor: '#fff', cursor: 'pointer', outline: 'none'
+                      border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                      backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                     }}
                   >
-                    {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                    {LEVELS.map(l => <option key={l} value={l} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{l}</option>)}
                   </select>
                 </div>
               </div>
 
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>
-                  O'qituvchi <span style={{ color: '#94a3b8', fontWeight: 400 }}>(ixtiyoriy)</span>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                  O'qituvchi <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
                 </label>
                 <select 
                   value={teacher}
                   onChange={e => setTeacher(e.target.value)}
                   style={{
                     width: '100%', padding: '0.75rem', borderRadius: '10px',
-                    border: '1px solid #cbd5e1', fontSize: '0.95rem',
-                    backgroundColor: '#fff', cursor: 'pointer', outline: 'none'
+                    border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                    backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                   }}
                 >
-                  <option value="">Tanlanmagan</option>
+                  <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Tanlanmagan</option>
                   {(activeSubject === 'ENG' ? engTeachers : mathTeachers).map(t => (
-                    <option key={t.id} value={t.name}>{t.name}</option>
+                    <option key={t.id} value={t.name} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{t.name}</option>
                   ))}
                 </select>
               </div>
@@ -237,41 +239,41 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
           {activeSubject === 'DETAILS' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>
-                  Ingliz tili o'qituvchisi <span style={{ color: '#94a3b8', fontWeight: 400 }}>(ixtiyoriy)</span>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                  Ingliz tili o'qituvchisi <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
                 </label>
                 <select 
                   value={englishTeacher}
                   onChange={e => setEnglishTeacher(e.target.value)}
                   style={{
                     width: '100%', padding: '0.75rem', borderRadius: '10px',
-                    border: '1px solid #cbd5e1', fontSize: '0.95rem',
-                    backgroundColor: '#fff', cursor: 'pointer', outline: 'none'
+                    border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                    backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                   }}
                 >
-                  <option value="">Tanlanmagan</option>
+                  <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Tanlanmagan</option>
                   {engTeachers.map(t => (
-                    <option key={t.id} value={t.name}>{t.name}</option>
+                    <option key={t.id} value={t.name} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{t.name}</option>
                   ))}
                 </select>
               </div>
 
               <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>
-                  Matematika o'qituvchisi <span style={{ color: '#94a3b8', fontWeight: 400 }}>(ixtiyoriy)</span>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                  Matematika o'qituvchisi <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
                 </label>
                 <select 
                   value={mathTeacher}
                   onChange={e => setMathTeacher(e.target.value)}
                   style={{
                     width: '100%', padding: '0.75rem', borderRadius: '10px',
-                    border: '1px solid #cbd5e1', fontSize: '0.95rem',
-                    backgroundColor: '#fff', cursor: 'pointer', outline: 'none'
+                    border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                    backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                   }}
                 >
-                  <option value="">Tanlanmagan</option>
+                  <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Tanlanmagan</option>
                   {mathTeachers.map(t => (
-                    <option key={t.id} value={t.name}>{t.name}</option>
+                    <option key={t.id} value={t.name} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{t.name}</option>
                   ))}
                 </select>
               </div>
@@ -279,8 +281,8 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
           )}
 
           <div className="form-group">
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>
-              Ota-ona telefon raqami <span style={{ color: '#94a3b8', fontWeight: 400 }}>(ixtiyoriy)</span>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+              Ota-ona telefon raqami <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
             </label>
             <input 
               type="text" 
@@ -296,11 +298,12 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
               placeholder="+998 90 123 45 67"
               style={{
                 width: '100%', padding: '0.75rem', borderRadius: '10px',
-                border: '1px solid #cbd5e1', fontSize: '0.95rem',
+                border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
                 outline: 'none', transition: 'border-color 0.2s ease'
               }}
-              onFocus={e => e.currentTarget.style.borderColor = '#0d9488'}
-              onBlur={e => e.currentTarget.style.borderColor = '#cbd5e1'}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
             />
           </div>
 
@@ -309,12 +312,12 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
               type="button" 
               onClick={onClose}
               style={{
-                padding: '0.75rem 1.5rem', borderRadius: '10px', border: '1px solid #cbd5e1',
-                background: '#ffffff', color: '#475569', fontWeight: 600, cursor: 'pointer',
+                padding: '0.75rem 1.5rem', borderRadius: '10px', border: '1px solid var(--border-color)',
+                background: 'var(--bg-card)', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-              onMouseLeave={e => e.currentTarget.style.background = '#ffffff'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-card)'}
             >
               Bekor qilish
             </button>
@@ -325,7 +328,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 padding: '0.75rem 1.5rem', borderRadius: '10px', border: 'none',
                 background: (!name.trim() || !surname.trim()) ? '#9ca3af' : 'var(--accent-gradient)', 
                 color: '#ffffff', fontWeight: 600, cursor: (!name.trim() || !surname.trim()) ? 'not-allowed' : 'pointer',
-                boxShadow: (!name.trim() || !surname.trim()) ? 'none' : '0 4px 6px -1px rgba(13, 148, 136, 0.3)',
+                boxShadow: (!name.trim() || !surname.trim()) ? 'none' : '0 4px 6px -1px rgba(139, 92, 246, 0.3)',
                 transition: 'all 0.2s ease'
               }}
             >

@@ -18,6 +18,11 @@
   --marquee-bg: linear-gradient(160deg, #edfafa 0%, #f0fdfa 100%);
   --marquee-fade-left: linear-gradient(to right, #edfafa, transparent);
   --marquee-fade-right: linear-gradient(to left, #f0fdfa, transparent);
+  
+  /* Teal profiles in ID & Tafsilotlar */
+  --profile-bg: linear-gradient(135deg, #ccfbf1, #99f6e4);
+  --profile-text: #0f766e;
+  --profile-border: #99f6e4;
 }
 
 [data-theme="dark"] {
@@ -27,15 +32,20 @@
   --bg-card-hover: #1f1f23;
   --text-primary: #ffffff;
   --text-secondary: #8f8f98;
-  --accent-primary: #0d9488;
-  --accent-hover: #14b8a6;
-  --accent-gradient: linear-gradient(135deg, #0d9488, #14b8a6);
+  --accent-primary: #8b5cf6; /* Purple instead of teal */
+  --accent-hover: #a78bfa;
+  --accent-gradient: linear-gradient(135deg, #7c3aed, #4f46e5); /* Beautiful Workly-like purple/indigo gradient */
   --border-color: #1e1e22;
   --glass-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   --bg-header-rgba: rgba(12, 12, 14, 0.95);
-  --marquee-bg: linear-gradient(160deg, #022c22 0%, #0c0c0e 100%);
-  --marquee-fade-left: linear-gradient(to right, #022c22, transparent);
+  --marquee-bg: linear-gradient(160deg, #1e1b4b 0%, #0c0c0e 100%);
+  --marquee-fade-left: linear-gradient(to right, #1e1b4b, transparent);
   --marquee-fade-right: linear-gradient(to left, #0c0c0e, transparent);
+
+  /* Teal profiles in ID & Tafsilotlar (remain teal even in dark mode) */
+  --profile-bg: linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(13, 148, 136, 0.35));
+  --profile-text: #14b8a6;
+  --profile-border: rgba(20, 184, 166, 0.3);
 }
 
 [data-theme="dark"] input[type="text"],
