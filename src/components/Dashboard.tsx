@@ -372,21 +372,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* ── TOP 3 STUDENTS SECTION ───────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-        <h2 style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-          <Award size={16} color="var(--accent-primary)" strokeWidth={2.5} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <Award size={15} color="var(--accent-primary)" strokeWidth={2.5} />
           Top 3 O'quvchilar
         </h2>
         
-        <div className="top3-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+        <div className="top3-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
           {/* Card 1: 5-6 Grades */}
-          <div className="top3-card" style={{ borderRadius: '20px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.52rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '0.15rem 0.45rem', borderRadius: '999px', letterSpacing: '0.04em' }}>5-6 SINFLAR</span>
+          <div className="top3-card" style={{ borderRadius: '16px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
+            <span style={{ position: 'absolute', top: '0.55rem', right: '0.75rem', fontSize: '0.5rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '0.12rem 0.4rem', borderRadius: '999px', letterSpacing: '0.04em' }}>5-6 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades5_6?.pictureUrl ? (
-                <img src={topStudents.grades5_6.pictureUrl} alt="avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+                <img src={topStudents.grades5_6.pictureUrl} alt="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
               ) : (
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', fontWeight: 850 }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 850 }}>
                   {topStudents.grades5_6 ? (topStudents.grades5_6.name[0] + topStudents.grades5_6.surname[0]) : '—'}
                 </div>
               )}
@@ -402,13 +402,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Card 2: 7-8 Grades */}
-          <div className="top3-card" style={{ borderRadius: '20px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.52rem', fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '0.15rem 0.45rem', borderRadius: '999px', letterSpacing: '0.04em' }}>7-8 SINFLAR</span>
+          <div className="top3-card" style={{ borderRadius: '16px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
+            <span style={{ position: 'absolute', top: '0.55rem', right: '0.75rem', fontSize: '0.5rem', fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '0.12rem 0.4rem', borderRadius: '999px', letterSpacing: '0.04em' }}>7-8 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades7_8?.pictureUrl ? (
-                <img src={topStudents.grades7_8.pictureUrl} alt="avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+                <img src={topStudents.grades7_8.pictureUrl} alt="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
               ) : (
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', fontWeight: 850 }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 850 }}>
                   {topStudents.grades7_8 ? (topStudents.grades7_8.name[0] + topStudents.grades7_8.surname[0]) : '—'}
                 </div>
               )}
@@ -424,13 +424,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Card 3: 9-11 Grades */}
-          <div className="top3-card" style={{ borderRadius: '20px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.52rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '0.15rem 0.45rem', borderRadius: '999px', letterSpacing: '0.04em' }}>9-11 SINFLAR</span>
+          <div className="top3-card" style={{ borderRadius: '16px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
+            <span style={{ position: 'absolute', top: '0.55rem', right: '0.75rem', fontSize: '0.5rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '0.12rem 0.4rem', borderRadius: '999px', letterSpacing: '0.04em' }}>9-11 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades9_11?.pictureUrl ? (
-                <img src={topStudents.grades9_11.pictureUrl} alt="avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+                <img src={topStudents.grades9_11.pictureUrl} alt="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
               ) : (
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', fontWeight: 850 }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 850 }}>
                   {topStudents.grades9_11 ? (topStudents.grades9_11.name[0] + topStudents.grades9_11.surname[0]) : '—'}
                 </div>
               )}
@@ -448,18 +448,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* ── BOTTOM DOUBLE COLUMN LAYOUT ──────────────────────────────────── */}
-      <div className="dashboard-columns" style={{ display: 'grid', gridTemplateColumns: '4.5fr 5.5fr', gap: '1.5rem', width: '100%' }}>
+      <div className="dashboard-columns" style={{ display: 'grid', gridTemplateColumns: '4.5fr 5.5fr', gap: '1rem', width: '100%' }}>
         
         {/* LEFT COLUMN: Hafta Liderlari */}
         <div style={{
           background: 'var(--bg-card)',
           border: '1.5px solid var(--border-color)',
           borderRadius: '24px',
-          padding: '1.5rem',
+          padding: '0.85rem 1.15rem',
           boxShadow: 'var(--glass-shadow)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.25rem',
+          gap: '0.75rem',
           boxSizing: 'border-box'
         }}>
           {/* Header & Tabs */}
@@ -500,22 +500,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '1.5px solid var(--border-color)' }}>
-                    <th style={{ padding: '0.6rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>O'QUVCHI</th>
-                    <th style={{ padding: '0.6rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'center' }}>ENG</th>
-                    <th style={{ padding: '0.6rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'center' }}>MATH</th>
+                    <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>O'QUVCHI</th>
+                    <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'center' }}>ENG</th>
+                    <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'center' }}>MATH</th>
                   </tr>
                 </thead>
                 <tbody>
                   {weeklyLeaders.map((lead, idx) => (
                     <tr key={lead.id || idx} className="leaders-table-row">
-                      <td style={{ padding: '0.75rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', width: '14px' }}>{idx + 1}</span>
+                      <td style={{ padding: '0.35rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-secondary)', width: '12px' }}>{idx + 1}</span>
                         {lead.pictureUrl ? (
-                          <img src={lead.pictureUrl} alt="avatar" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                          <img src={lead.pictureUrl} alt="avatar" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{
-                            width: '28px',
-                            height: '28px',
+                            width: '24px',
+                            height: '24px',
                             borderRadius: '50%',
                             background: 'var(--bg-card-hover)',
                             color: 'var(--text-secondary)',
@@ -523,20 +523,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '0.68rem',
+                            fontSize: '0.62rem',
                             fontWeight: 800
                           }}>
                             {lead.name[0]}{lead.surname[0]}
                           </div>
                         )}
-                        <span style={{ fontSize: '0.82rem', fontWeight: 750, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 750, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
                           {lead.surname} {lead.name}
                         </span>
                       </td>
-                      <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.85rem', fontWeight: 850, color: 'var(--accent-primary)', textAlign: 'center' }}>
+                      <td style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', fontWeight: 850, color: 'var(--accent-primary)', textAlign: 'center' }}>
                         {lead.eng}%
                       </td>
-                      <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.85rem', fontWeight: 850, color: '#f97316', textAlign: 'center' }}>
+                      <td style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', fontWeight: 850, color: '#f97316', textAlign: 'center' }}>
                         {lead.math}%
                       </td>
                     </tr>
@@ -548,14 +548,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* RIGHT COLUMN: CHARTS STATS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
           {/* Chart 1: Average Term Mastery Index */}
           <div style={{
             background: 'var(--bg-card)',
             border: '1.5px solid var(--border-color)',
             borderRadius: '24px',
-            padding: '1.5rem',
+            padding: '0.85rem 1.15rem',
             boxShadow: 'var(--glass-shadow)',
             display: 'flex',
             flexDirection: 'column',
@@ -632,7 +632,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Recharts Line Chart */}
-            <div style={{ height: '170px', width: '100%', marginTop: '0.5rem' }}>
+            <div style={{ height: '115px', width: '100%', marginTop: '0.5rem' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={termMasteryData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.4} />
@@ -676,7 +676,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             background: 'var(--bg-card)',
             border: '1.5px solid var(--border-color)',
             borderRadius: '24px',
-            padding: '1.5rem',
+            padding: '0.85rem 1.15rem',
             boxShadow: 'var(--glass-shadow)',
             display: 'flex',
             flexDirection: 'column',
@@ -685,7 +685,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }}>
             <div>
               <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 850, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <Calendar size={14} color="#10b981" />
+                <Calendar size={14} color="#3b82f6" />
                 Haftalik Davomat
               </h3>
               <p style={{ margin: '0.15rem 0 0', fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
@@ -694,7 +694,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Recharts Attendance Line Chart */}
-            <div style={{ height: '170px', width: '100%' }}>
+            <div style={{ height: '115px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={attendanceHistoryData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.4} />
@@ -723,7 +723,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <Line 
                     type="monotone" 
                     dataKey="Davomat" 
-                    stroke="#10b981" 
+                    stroke="#3b82f6" 
                     strokeWidth={3}
                     dot={{ r: 4, strokeWidth: 2, fill: '#ffffff' }}
                     activeDot={{ r: 6 }}

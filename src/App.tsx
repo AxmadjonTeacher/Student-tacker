@@ -141,6 +141,14 @@ function App() {
     localStorage.setItem('show_summer_plan', JSON.stringify(showSummerPlan));
   }, [showSummerPlan]);
 
+  // Dynamic window theme-color meta tag updates
+  useEffect(() => {
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', isDarkMode ? '#8b5cf6' : '#0d9488');
+    }
+  }, [isDarkMode]);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
@@ -2704,11 +2712,12 @@ function App() {
       {/* Main Content Area */}
       <main style={{
         flex: 1,
-        padding: '2.5rem',
-        overflowY: 'auto',
+        padding: activeSubject === 'DASHBOARD' ? '1rem 2rem' : '2.5rem',
+        overflowY: activeSubject === 'DASHBOARD' ? 'hidden' : 'auto',
         display: 'flex',
         flexDirection: 'column',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        height: '100vh'
       }}>
         {(activeAdminTab === 'home' || activeAdminTab === 'search' || activeAdminTab === 'stats') ? (
           <>
