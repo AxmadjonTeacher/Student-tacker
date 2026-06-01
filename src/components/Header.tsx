@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Settings } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
+import iconDark from '../assets/icon-dark.png';
 import type { ActiveSubject } from '../types';
 
 interface HeaderProps {
@@ -13,12 +14,14 @@ interface HeaderProps {
   onOpenDrawer: () => void;
   activeSubject: ActiveSubject;
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash';
+  isDarkMode?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
   activeSubject,
-  activeAdminTab = 'home'
+  activeAdminTab = 'home',
+  isDarkMode = false
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -95,10 +98,10 @@ const Header: React.FC<HeaderProps> = ({
             display: none !important; /* Safari and Chrome */
           }
           .class-selector button {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-            color: #475569;
+            color: var(--text-secondary);
           }
           .class-selector button.active-pill {
             color: #ffffff !important;
@@ -233,7 +236,7 @@ const Header: React.FC<HeaderProps> = ({
       }}>
         <div className="school-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0', background: 'transparent', border: 'none' }}>
           <img 
-            src={iconLight} 
+            src={isDarkMode ? iconDark : iconLight} 
             alt="Logo" 
             style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} 
           />
@@ -256,9 +259,9 @@ const Header: React.FC<HeaderProps> = ({
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               style={{
-                background: '#ffffff',
-                color: '#475569',
-                border: '1.5px solid #e2e8f0',
+                background: 'var(--bg-card)',
+                color: 'var(--text-secondary)',
+                border: '1.5px solid var(--border-color)',
                 borderRadius: '50%',
                 width: '40px',
                 height: '40px',
@@ -279,10 +282,10 @@ const Header: React.FC<HeaderProps> = ({
                 top: '45px',
                 right: 0,
                 width: '180px',
-                background: '#ffffff',
+                background: 'var(--bg-card)',
                 borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+                border: '1px solid var(--border-color)',
+                boxShadow: 'var(--glass-shadow)',
                 padding: '0.5rem',
                 display: 'flex',
                 flexDirection: 'column',
@@ -293,7 +296,7 @@ const Header: React.FC<HeaderProps> = ({
                   onClick={() => { setIsMenuOpen(false); onOpenDrawer(); }}
                   style={{
                     background: 'transparent', border: 'none', padding: '0.6rem 0.75rem',
-                    borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', cursor: 'pointer',
+                    borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', cursor: 'pointer',
                     textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%'
                   }}
                 >
@@ -321,11 +324,11 @@ const Header: React.FC<HeaderProps> = ({
           <div className="class-selector" style={{ 
             display: 'flex', 
             gap: '0.25rem', 
-            background: '#ffffff', 
+            background: 'var(--bg-card)', 
             padding: '0.5rem', 
             borderRadius: '9999px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
-            border: '1px solid #e5e7eb',
+            boxShadow: 'var(--glass-shadow)',
+            border: '1px solid var(--border-color)',
             overflowX: 'auto',
             flex: '1 1 auto',
             maxWidth: '100%'

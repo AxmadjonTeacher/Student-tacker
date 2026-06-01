@@ -71,7 +71,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           return (
             <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
               <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dotColor }} />
-              <span style={{ color: '#475569' }}>{entry.value}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>{entry.value}</span>
             </li>
           );
         })}
@@ -235,7 +235,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
   const mathEnd = getLevelValue(student.mathCurrentLevel || 'Level 1');
   const mathImproved = mathEnd - mathStart;
 
-  const activeThemeColor = activeSubject === 'MATH' ? '#0d9488' : activeSubject === 'ALL' ? '#4f46e5' : '#166534';
+  const activeThemeColor = 'var(--accent-primary)';
 
   // Calculate percentages for ALL section
   const engPercent = ((student.engScore || 0) / 15 * 100);
@@ -324,16 +324,16 @@ const GraphModal: React.FC<GraphModalProps> = ({
     if (active && payload && payload.length) {
       return (
         <div style={{
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           padding: '12px 16px',
-          border: '1.5px solid #e2e8f0',
+          border: '1px solid var(--border-color)',
           borderRadius: '16px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+          boxShadow: 'var(--glass-shadow)',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.4rem'
         }}>
-          <p style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: '0.85rem', marginBottom: '0.2rem' }}>
+          <p style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.85rem', marginBottom: '0.2rem' }}>
             {label === 'Faol hafta' ? '🔄 Hozirgi Faol Hafta' : label}
           </p>
           {payload.map((item: any, idx: number) => (
@@ -354,7 +354,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
       <text 
         x={x + width / 2} 
         y={y - 12} 
-        fill="#1e293b" 
+        fill="var(--text-primary)" 
         textAnchor="middle" 
         style={{ fontSize: '0.85rem', fontWeight: 850 }}
       >
@@ -396,11 +396,11 @@ const GraphModal: React.FC<GraphModalProps> = ({
       const data = payload[0].payload;
       return (
         <div style={{
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           padding: '10px 14px',
-          border: '1.5px solid #e2e8f0',
+          border: '1px solid var(--border-color)',
           borderRadius: '12px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+          boxShadow: 'var(--glass-shadow)',
         }}>
           <p style={{ margin: 0, fontWeight: 800, color: data.color, fontSize: '0.85rem' }}>
             {data.name}: {data.value}%
@@ -427,16 +427,16 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
       return (
         <div style={{ 
-          background: '#ffffff', 
+          background: 'var(--bg-card)', 
           padding: '12px 16px', 
-          border: '1.5px solid #e2e8f0', 
+          border: '1px solid var(--border-color)', 
           borderRadius: '16px', 
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
+          boxShadow: 'var(--glass-shadow)',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.35rem'
         }}>
-          <p style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: '0.85rem', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>
+          <p style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.85rem', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>
             {label === 'Yozgi Reja' ? '☀️ Yozgi Reja (Kutilmoqda)' : label}
           </p>
           {filteredPayload.map((item: any, idx: number) => {
@@ -474,14 +474,14 @@ const GraphModal: React.FC<GraphModalProps> = ({
               <stop offset="95%" stopColor="#f97316" stopOpacity={0.0}/>
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
+          <CartesianGrid vertical={false} stroke="var(--border-color)" strokeDasharray="3 3" opacity={0.5} />
           <XAxis 
             dataKey="date" 
             axisLine={false} 
             tickLine={false} 
             interval={0}
             tickFormatter={formatXAxisTerm}
-            tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
             dy={10}
           />
           <YAxis 
@@ -490,13 +490,13 @@ const GraphModal: React.FC<GraphModalProps> = ({
             tickFormatter={(val) => `${val}%`}
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
             width={35}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--border-color)', strokeWidth: 1.5 }} />
           
           {domainMin <= 50 && domainMax >= 50 && (
-            <ReferenceLine y={50} stroke="#e2e8f0" strokeWidth={1.5} strokeDasharray="3 3" />
+            <ReferenceLine y={50} stroke="var(--border-color)" strokeWidth={1.5} strokeDasharray="3 3" />
           )}
           
           {/* English Score Area (Teal) */}
@@ -570,11 +570,11 @@ const GraphModal: React.FC<GraphModalProps> = ({
   const modalContentStyle = {
     maxWidth: isInline ? '100%' : '820px', 
     width: '100%',
-    background: '#fcfcf9', 
+    background: 'var(--bg-card)', 
     borderRadius: isInline ? '20px' : '24px',
     padding: isInline ? '1.5rem 1rem' : '2.5rem',
-    border: isInline ? '1px solid #e2e8f0' : 'none',
-    boxShadow: isInline ? 'none' : '0 25px 50px -12px rgba(0,0,0,0.25)',
+    border: '1px solid var(--border-color)',
+    boxShadow: isInline ? 'none' : 'var(--glass-shadow)',
     boxSizing: 'border-box' as const
   };
 
@@ -654,7 +654,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} style={{ flexShrink: 0 }} />
-            <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: '#1e293b', margin: 0, letterSpacing: '-0.02em' }}>
+            <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
               {student.name} {student.surname} — {
                 activeSubject === 'ALL' 
                   ? "Haftalik ko'rsatkichlar"
@@ -669,30 +669,34 @@ const GraphModal: React.FC<GraphModalProps> = ({
             <button 
               onClick={onClose}
               style={{ 
-                background: 'transparent', border: `2px solid ${activeThemeColor}`, 
-                borderRadius: '50%', padding: '4px', cursor: 'pointer',
-                color: activeThemeColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', 
+                borderRadius: '50%', padding: '6px', cursor: 'pointer',
+                color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.2s ease',
                 flexShrink: 0
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'scale(1.08)';
-                e.currentTarget.style.background = `${activeThemeColor}10`;
+                e.currentTarget.style.color = '#ef4444';
+                e.currentTarget.style.borderColor = '#fca5a5';
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.background = 'var(--bg-card-hover)';
               }}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           )}
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-          <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sinf: {student.className}</span>
-          <span style={{ color: '#cbd5e1' }}>·</span>
-          <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>Sana: {student.dateJoined}</span>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sinf: {student.className}</span>
+          <span style={{ color: 'var(--border-color)' }}>·</span>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sana: {student.dateJoined}</span>
         </div>
 
         <div className="modal-tags-container" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
@@ -766,11 +770,12 @@ const GraphModal: React.FC<GraphModalProps> = ({
           justifyContent: 'center',
           gap: '0.5rem',
           marginBottom: '1.5rem',
-          background: '#f1f5f9',
+          background: 'var(--bg-card-hover)',
           padding: '4px',
           borderRadius: '9999px',
           maxWidth: 'fit-content',
-          margin: '0 auto 1.5rem'
+          margin: '0 auto 1.5rem',
+          border: '1px solid var(--border-color)'
         }}>
           {[
             { id: 'current', label: '📊 JORIY HAFTA' },
@@ -785,9 +790,9 @@ const GraphModal: React.FC<GraphModalProps> = ({
                 alignItems: 'center',
                 gap: '0.5rem',
                 background: allActiveTab === tab.id 
-                  ? 'linear-gradient(135deg, #4f46e5, #4338ca)' 
+                  ? 'var(--accent-gradient)' 
                   : 'transparent',
-                color: allActiveTab === tab.id ? '#ffffff' : '#64748b',
+                color: allActiveTab === tab.id ? '#ffffff' : 'var(--text-secondary)',
                 border: 'none',
                 borderRadius: '9999px',
                 padding: '0.6rem 1.25rem',
@@ -811,24 +816,24 @@ const GraphModal: React.FC<GraphModalProps> = ({
             <div className="chart-container" style={{ height: '350px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={progressionData} margin={{ top: 15, right: 15, left: -5, bottom: 10 }}>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
+                  <CartesianGrid vertical={false} stroke="var(--border-color)" strokeDasharray="3 3" opacity={0.5} />
                   <XAxis 
                     dataKey="week" 
                     axisLine={false} 
                     tickLine={false} 
                     interval={0}
                     tickFormatter={formatXAxisWeek}
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
                   />
                   <YAxis 
                     domain={[0, 100]} 
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
                     tickFormatter={(val) => `${val}%`}
                     width={35}
                   />
-                  <Tooltip content={<ProgressionTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1.5 }} />
+                  <Tooltip content={<ProgressionTooltip />} cursor={{ stroke: 'var(--border-color)', strokeWidth: 1.5 }} />
                   <Legend content={renderLegend} />
                   <Line 
                     type="monotone" 
@@ -873,19 +878,19 @@ const GraphModal: React.FC<GraphModalProps> = ({
             <div className="chart-container" style={{ height: '350px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 25, right: 15, left: -5, bottom: 10 }}>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" opacity={0.3} />
+                  <CartesianGrid vertical={false} stroke="var(--border-color)" strokeDasharray="3 3" opacity={0.5} />
                   <XAxis 
                     dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
                     interval={0}
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
                   />
                   <YAxis 
                     domain={[0, 100]} 
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
                     tickFormatter={(val) => `${val}%`}
                     width={35}
                   />

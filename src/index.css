@@ -54,14 +54,14 @@
 }
 
 [data-theme="dark"] .class-pill-btn:not(.active-pill) {
-  background: #151518 !important;
-  border-color: #1e1e22 !important;
-  color: #8f8f98 !important;
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-secondary) !important;
 }
 
 [data-theme="dark"] .class-pill-btn:not(.active-pill) span {
-  background: #1f1f23 !important;
-  color: #8f8f98 !important;
+  background: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
 }
 
 [data-theme="dark"] .modal-overlay {

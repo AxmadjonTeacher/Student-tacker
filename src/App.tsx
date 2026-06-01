@@ -17,6 +17,7 @@ import LoginScreen from './components/LoginScreen';
 import ParentCabinet from './components/ParentCabinet';
 import TestorCabinet from './components/TestorCabinet';
 import iconLight from './assets/icon-light.png';
+import iconDark from './assets/icon-dark.png';
 
 const INITIAL_CLASSES = ['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'];
 
@@ -2143,6 +2144,7 @@ function App() {
           onSearchChange={setSearchTerm}
           onOpenDrawer={() => setActiveAdminTab('settings')}
           activeSubject={activeSubject}
+          isDarkMode={isDarkMode}
         />
 
         <div style={{ display: activeAdminTab === 'settings' ? 'none' : 'block' }}>
@@ -2340,7 +2342,7 @@ function App() {
         }}>
           {isSidebarExpanded ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', animation: 'fadeIn 0.2s' }}>
-              <img src={iconLight} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+              <img src={isDarkMode ? iconDark : iconLight} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
               <div>
                 <h1 style={{ fontSize: '0.95rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>AL-XORAZMIY</h1>
                 <p style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>ADMIN KABINETI</p>
@@ -2362,7 +2364,7 @@ function App() {
                 height: '32px'
               }}
             >
-              <img src={iconLight} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+              <img src={isDarkMode ? iconDark : iconLight} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
             </button>
           )}
 
@@ -2712,6 +2714,7 @@ function App() {
               onSearchChange={setSearchTerm}
               onOpenDrawer={() => setActiveAdminTab('settings')}
               activeSubject={activeSubject}
+              isDarkMode={isDarkMode}
             />
             {activeSubject === 'DASHBOARD' ? (
               <Dashboard
