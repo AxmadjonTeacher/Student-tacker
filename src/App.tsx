@@ -2160,6 +2160,7 @@ function App() {
               students={students}
               studentWeeks={studentWeeks}
               availableClasses={availableClasses}
+              authRole={authRole}
               onSelectClass={(cls) => {
                 setActiveClass(cls);
                 setActiveSubject('ENG');
@@ -2728,6 +2729,7 @@ function App() {
                 students={students}
                 studentWeeks={studentWeeks}
                 availableClasses={availableClasses}
+                authRole={authRole}
                 onSelectClass={(cls) => {
                   setActiveClass(cls);
                   setActiveSubject('ENG');
