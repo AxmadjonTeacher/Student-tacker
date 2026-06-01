@@ -74,13 +74,13 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
       <form 
         onSubmit={handleSubmit}
         style={{
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           width: '100%',
           maxWidth: '460px',
           borderRadius: '24px',
           padding: '2rem',
-          border: '1.5px solid #f1f5f9',
-          boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.02)',
+          border: '1.5px solid var(--border-color)',
+          boxShadow: 'var(--glass-shadow)',
           animation: 'scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
           display: 'flex',
           flexDirection: 'column',
@@ -93,7 +93,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             margin: '0 0 0.5rem 0',
             fontSize: '1.25rem',
             fontWeight: 750,
-            color: '#0f172a',
+            color: 'var(--text-primary)',
             letterSpacing: '-0.02em'
           }}>
             {title}
@@ -102,7 +102,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             margin: 0,
             fontSize: '0.9rem',
             lineHeight: '1.5',
-            color: '#64748b',
+            color: 'var(--text-secondary)',
             fontWeight: 500
           }}>
             {message}
@@ -119,25 +119,25 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             autoFocus
             style={{
               width: '100%',
-              background: '#f8fafc',
-              border: '1.5px solid #e2e8f0',
+              background: 'var(--bg-card-hover)',
+              border: '1.5px solid var(--border-color)',
               borderRadius: '12px',
               padding: '0.85rem 1rem',
               fontSize: '0.95rem',
               fontWeight: 600,
-              color: '#0f172a',
+              color: 'var(--text-primary)',
               outline: 'none',
               transition: 'all 0.2s',
               boxSizing: 'border-box'
             }}
             onFocus={(e) => {
-              e.currentTarget.style.border = '1.5px solid #0d9488';
-              e.currentTarget.style.background = '#ffffff';
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13,148,136,0.15)';
+              e.currentTarget.style.border = '1.5px solid var(--accent-primary)';
+              e.currentTarget.style.background = 'var(--bg-card)';
+              e.currentTarget.style.boxShadow = '0 0 0 3px var(--border-color)';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.border = '1.5px solid #e2e8f0';
-              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.border = '1.5px solid var(--border-color)';
+              e.currentTarget.style.background = 'var(--bg-card-hover)';
               e.currentTarget.style.boxShadow = 'none';
             }}
           />
@@ -152,26 +152,26 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             autoFocus
             style={{
               width: '100%',
-              background: '#f8fafc',
-              border: '1.5px solid #e2e8f0',
+              background: 'var(--bg-card-hover)',
+              border: '1.5px solid var(--border-color)',
               borderRadius: '12px',
               padding: '0.85rem 1rem',
               fontSize: '0.95rem',
               fontWeight: 600,
-              color: '#0f172a',
+              color: 'var(--text-primary)',
               outline: 'none',
               transition: 'all 0.2s',
               boxSizing: 'border-box',
               fontFamily: 'inherit'
             }}
             onFocus={(e) => {
-              e.currentTarget.style.border = '1.5px solid #0d9488';
-              e.currentTarget.style.background = '#ffffff';
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13,148,136,0.15)';
+              e.currentTarget.style.border = '1.5px solid var(--accent-primary)';
+              e.currentTarget.style.background = 'var(--bg-card)';
+              e.currentTarget.style.boxShadow = '0 0 0 3px var(--border-color)';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.border = '1.5px solid #e2e8f0';
-              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.border = '1.5px solid var(--border-color)';
+              e.currentTarget.style.background = 'var(--bg-card-hover)';
               e.currentTarget.style.boxShadow = 'none';
             }}
           />
@@ -192,22 +192,22 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               onClick={onClose}
               style={{
                 background: 'transparent',
-                border: '1.5px solid #e2e8f0',
+                border: '1.5px solid var(--border-color)',
                 borderRadius: '9999px',
                 padding: '0.65rem 1.5rem',
                 fontSize: '0.9rem',
                 fontWeight: 700,
-                color: '#64748b',
+                color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#f8fafc';
-                e.currentTarget.style.color = '#0f172a';
+                e.currentTarget.style.background = 'var(--bg-card-hover)';
+                e.currentTarget.style.color = 'var(--text-primary)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = '#64748b';
+                e.currentTarget.style.color = 'var(--text-secondary)';
               }}
             >
               {cancelText}
@@ -218,7 +218,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           <button
             type="submit"
             style={{
-              background: danger ? '#ef4444' : '#0d9488',
+              background: danger ? '#ef4444' : 'var(--accent-primary)',
               border: 'none',
               borderRadius: '9999px',
               padding: '0.65rem 1.5rem',
@@ -229,14 +229,14 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               transition: 'all 0.2s ease',
               boxShadow: danger 
                 ? '0 4px 6px -1px rgba(239,68,68,0.2)' 
-                : '0 4px 6px -1px rgba(13,148,136,0.2)'
+                : '0 4px 6px -1px rgba(139,92,246,0.15)'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = danger ? '#dc2626' : '#0f766e';
+              e.currentTarget.style.background = danger ? '#dc2626' : 'var(--accent-hover)';
               e.currentTarget.style.transform = 'translateY(-1px)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = danger ? '#ef4444' : '#0d9488';
+              e.currentTarget.style.background = danger ? '#ef4444' : 'var(--accent-primary)';
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >

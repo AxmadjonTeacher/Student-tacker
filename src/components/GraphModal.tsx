@@ -249,12 +249,12 @@ const GraphModal: React.FC<GraphModalProps> = ({
     {
       name: 'Ingliz tili',
       value: Math.round(engPercent * 100) / 100,
-      color: '#6366f1' // Indigo
+      color: 'var(--accent-primary)'
     },
     {
       name: 'Matematika',
       value: Math.round(mathPercent * 100) / 100,
-      color: '#14b8a6' // Teal
+      color: '#f97316'
     },
     {
       name: 'Davomat',
@@ -446,7 +446,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
             const labelText = isEstimate && label === 'Yozgi Reja' ? `${subjectLabel} (Prognoz)` : subjectLabel;
             const color = isMath 
               ? (isEstimate && label === 'Yozgi Reja' ? '#c2410c' : '#f97316') 
-              : (isEstimate && label === 'Yozgi Reja' ? '#166534' : '#129f87');
+              : (isEstimate && label === 'Yozgi Reja' ? 'var(--accent-hover)' : 'var(--accent-primary)');
             return (
               <p key={idx} style={{ margin: 0, color: color, fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, display: 'inline-block' }}></span>
@@ -466,8 +466,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
         <AreaChart data={combinedData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
           <defs>
             <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#129f87" stopOpacity={0.2}/>
-              <stop offset="95%" stopColor="#129f87" stopOpacity={0.0}/>
+              <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0.0}/>
             </linearGradient>
             <linearGradient id="colorMath" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#f97316" stopOpacity={0.2}/>
@@ -504,12 +504,12 @@ const GraphModal: React.FC<GraphModalProps> = ({
             <Area 
               type="monotone" 
               dataKey="engVal" 
-              stroke="#129f87" 
+              stroke="var(--accent-primary)" 
               strokeWidth={4.5} 
               fillOpacity={1}
               fill="url(#colorEng)"
-              dot={{ r: 5, fill: '#ffffff', stroke: '#129f87', strokeWidth: 3 }}
-              activeDot={{ r: 7, fill: '#129f87', stroke: '#ffffff', strokeWidth: 3 }}
+              dot={{ r: 5, fill: '#ffffff', stroke: 'var(--accent-primary)', strokeWidth: 3 }}
+              activeDot={{ r: 7, fill: 'var(--accent-primary)', stroke: '#ffffff', strokeWidth: 3 }}
               isAnimationActive={true}
               animationDuration={1200}
             />
@@ -520,12 +520,12 @@ const GraphModal: React.FC<GraphModalProps> = ({
             <Line 
               type="monotone" 
               dataKey="engEstimate" 
-              stroke="#166534" 
+              stroke="var(--accent-hover)" 
               strokeWidth={5.5} 
               strokeDasharray="35 3"
               connectNulls={true}
-              dot={{ r: 7, fill: '#f0fdf4', stroke: '#166534', strokeWidth: 4 }}
-              activeDot={{ r: 9, fill: '#166534', stroke: '#ffffff', strokeWidth: 3.5 }}
+              dot={{ r: 7, fill: 'var(--bg-card-hover)', stroke: 'var(--accent-hover)', strokeWidth: 4 }}
+              activeDot={{ r: 9, fill: 'var(--accent-hover)', stroke: '#ffffff', strokeWidth: 3.5 }}
               isAnimationActive={true}
               animationDuration={1200}
             />
@@ -839,19 +839,19 @@ const GraphModal: React.FC<GraphModalProps> = ({
                     type="monotone" 
                     dataKey="engPercent" 
                     name="Ingliz tili" 
-                    stroke="#6366f1" 
+                    stroke="var(--accent-primary)" 
                     strokeWidth={3.5} 
-                    dot={{ r: 4, fill: '#ffffff', stroke: '#6366f1', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#6366f1', stroke: '#ffffff', strokeWidth: 2 }}
+                    dot={{ r: 4, fill: '#ffffff', stroke: 'var(--accent-primary)', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: 'var(--accent-primary)', stroke: '#ffffff', strokeWidth: 2 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="mathPercent" 
                     name="Matematika" 
-                    stroke="#14b8a6" 
+                    stroke="#f97316" 
                     strokeWidth={3.5} 
-                    dot={{ r: 4, fill: '#ffffff', stroke: '#14b8a6', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#14b8a6', stroke: '#ffffff', strokeWidth: 2 }}
+                    dot={{ r: 4, fill: '#ffffff', stroke: '#f97316', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#f97316', stroke: '#ffffff', strokeWidth: 2 }}
                   />
                   <Line 
                     type="monotone" 

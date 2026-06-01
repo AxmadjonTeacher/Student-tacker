@@ -85,8 +85,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({ engData, mathData, labe
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
       <defs>
         <linearGradient id="trendEngArea" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#0d9488" stopOpacity="0.20" />
-          <stop offset="100%" stopColor="#0d9488" stopOpacity="0.01" />
+          <stop offset="0%"   stopColor="var(--accent-primary)" stopOpacity="0.20" />
+          <stop offset="100%" stopColor="var(--accent-primary)" stopOpacity="0.01" />
         </linearGradient>
         <linearGradient id="trendMathArea" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%"   stopColor="#f97316" stopOpacity="0.20" />
@@ -127,7 +127,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({ engData, mathData, labe
       <path
         d={engPath}
         fill="none"
-        stroke="#0d9488"
+        stroke="var(--accent-primary)"
         strokeWidth="3.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -153,17 +153,17 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({ engData, mathData, labe
       {engData.map((v, i) => (
         <g key={`e${i}`}>
           <circle cx={toX(i)} cy={toY(v)} r="5.5"
-            fill="rgba(13,148,136,0.12)" stroke="none"
+            fill="var(--accent-primary)" fillOpacity={0.12} stroke="none"
             style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.4 + i * 0.12}s` }}
           />
           <circle cx={toX(i)} cy={toY(v)} r="4"
-            fill="#fff" stroke="#0d9488" strokeWidth="2.5"
+            fill="#fff" stroke="var(--accent-primary)" strokeWidth="2.5"
             style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.4 + i * 0.12}s` }}
           />
           {/* Value label */}
           <text cx={toX(i)} cy={toY(v) - 10}
             x={toX(i)} y={toY(v) - 10}
-            textAnchor="middle" fontSize="9" fontWeight="700" fill="#0d9488"
+            textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--accent-primary)"
             style={{ opacity: visible ? 1 : 0, transition: `opacity 0.3s ease ${0.5 + i * 0.12}s` }}>
             {Math.round(v)}%
           </text>
@@ -207,7 +207,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
 
   const restPct = Math.max(0, 100 - engPct - mathPct);
   const segments = [
-    { value: engPct,  color: '#0d9488', offset: 0 },
+    { value: engPct,  color: 'var(--accent-primary)', offset: 0 },
     { value: mathPct, color: '#f97316', offset: engPct },
     { value: restPct, color: 'var(--border-color)', offset: engPct + mathPct },
   ];
@@ -258,15 +258,15 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <div style={{ width: '11px', height: '11px', borderRadius: '3px', background: '#0d9488' }} />
+              <div style={{ width: '11px', height: '11px', borderRadius: '3px', background: 'var(--accent-primary)' }} />
               <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Inglizcha L4+</span>
             </div>
-            <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0d9488' }}>{displayEngPct}%</span>
+            <span style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--accent-primary)' }}>{displayEngPct}%</span>
           </div>
           <div style={{ height: '6px', borderRadius: '99px', background: 'var(--border-color)', overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: '99px',
-              background: 'linear-gradient(90deg,#2dd4bf,#0d9488)',
+              background: 'var(--accent-gradient)',
               width: visible ? `${engPct}%` : '0%',
               transition: 'width 1.4s cubic-bezier(0.4,0,0.2,1) 0.3s'
             }} />
@@ -529,8 +529,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
           {/* Legend */}
           <div style={{ display: 'flex', gap: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '26px', height: '3px', borderRadius: '99px', background: '#0d9488' }} />
-              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0d9488' }}>Inglizcha</span>
+              <div style={{ width: '26px', height: '3px', borderRadius: '99px', background: 'var(--accent-primary)' }} />
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-primary)' }}>Inglizcha</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <div style={{ width: '26px', height: '3px', borderRadius: '99px', background: '#f97316' }} />

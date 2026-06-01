@@ -1621,12 +1621,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       onClick={() => newsImageInputRef.current?.click()}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                        width: '100%', padding: '0.6rem', border: '2px dashed #cbd5e1', borderRadius: '10px',
-                        background: '#f8fafc', color: '#64748b', fontSize: '0.78rem', fontWeight: 700,
+                        width: '100%', padding: '0.6rem', border: '2px dashed var(--border-color)', borderRadius: '10px',
+                        background: 'var(--bg-card-hover)', color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 700,
                         cursor: 'pointer', transition: 'all 0.2s'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.background = '#f1f5f9'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.background = 'var(--border-color)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
                     >
                       <UploadCloud size={16} />
                       <span>Rasm tanlash (bir nechta mumkin)</span>
@@ -1705,12 +1705,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       type="button"
                       onClick={() => setIsFormOpen(false)}
                       style={{
-                        padding: '0.65rem', border: '1.5px solid #e2e8f0', borderRadius: '10px',
-                        background: '#ffffff', color: '#64748b', fontSize: '0.8rem', fontWeight: 800,
+                        padding: '0.65rem', border: '1.5px solid var(--border-color)', borderRadius: '10px',
+                        background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 800,
                         cursor: 'pointer', transition: 'all 0.2s'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
                     >
                       BEKOR QILISH
                     </button>
@@ -2322,25 +2322,25 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       {/* Upload CSV Modal overlay */}
       {isCsvModalOpen && (
         <div className="modal-overlay" onClick={() => setIsCsvModalOpen(false)} style={{ zIndex: 1100, background: 'rgba(0,0,0,0.6)' }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '24px', padding: '2rem' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '24px', padding: '2rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
             <div className="modal-header" style={{ marginBottom: '1.25rem' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 850 }}>O'quvchilarni guruhli yuklash</h2>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)' }}>O'quvchilarni guruhli yuklash</h2>
               <button 
                 onClick={() => setIsCsvModalOpen(false)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
               >
                 <X size={24} />
               </button>
             </div>
             
-            <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.85rem', lineHeight: 1.5 }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.85rem', lineHeight: 1.5 }}>
               Sinf o'quvchilarini ommaviy CSV fayl orqali tizimga yuklang. To'g'ri ustunlar mos kelishi uchun quyidagi namunani yuklab oling.
             </p>
 
             <div style={{ 
-              background: '#f0fdf4', border: '1px solid #bbf7d0', 
+              background: 'rgba(13, 148, 136, 0.08)', border: '1px solid var(--accent-primary)', 
               borderRadius: '12px', padding: '0.8rem 1rem', marginBottom: '1.25rem',
-              fontSize: '0.8rem', color: '#166534', lineHeight: 1.5
+              fontSize: '0.8rem', color: 'var(--text-primary)', lineHeight: 1.5
             }}>
               <strong>⚠️ Diqqat:</strong> Yuklanadigan fayl faqat <strong>.CSV</strong> formatida bo'lishi shart.<br />
               Excel yoki Google Sheets da tahrirlab bo'lgach, <em>Vergul bilan ajratilgan qiymatlar (.csv)</em> sifatida yuklab oling.
@@ -2378,21 +2378,21 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               className="upload-area"
               onClick={() => fileInputRef.current?.click()}
               style={{
-                border: '2px dashed #cbd5e1',
+                border: '2px dashed var(--border-color)',
                 borderRadius: '16px',
                 padding: '2.5rem 1.5rem',
                 textAlign: 'center',
                 cursor: 'pointer',
-                background: '#fafaf9',
+                background: 'var(--bg-card-hover)',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.background = '#f1f5f9'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#fafaf9'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.background = 'var(--border-color)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
             >
-              <UploadCloud className="icon" size={32} style={{ color: '#94a3b8', marginBottom: '0.75rem' }} />
+              <UploadCloud className="icon" size={32} style={{ color: 'var(--text-secondary)', marginBottom: '0.75rem' }} />
               <div>
-                <p style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.85rem', margin: 0 }}>Faylni tanlash uchun bosing</p>
-                <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0.25rem 0 0' }}>yoki faylni sudrab bu yerga tashlang (.csv formatda)</p>
+                <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.85rem', margin: 0 }}>Faylni tanlash uchun bosing</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: '0.25rem 0 0' }}>yoki faylni sudrab bu yerga tashlang (.csv formatda)</p>
               </div>
               <input 
                 type="file" 

@@ -688,9 +688,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             onClick={onStartNewWeekClick}
                             title="Yangi o'quv haftasini boshlash"
                             style={{
-                              background: '#f0fdf4',
+                              background: 'rgba(16, 185, 129, 0.1)',
                               color: '#10b981',
-                              border: '1.5px solid #a7f3d0',
+                              border: '1.5px solid rgba(16, 185, 129, 0.3)',
                               borderRadius: '8px',
                               padding: '0.35rem 0.5rem',
                               cursor: 'pointer',
@@ -709,9 +709,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               e.currentTarget.style.borderColor = '#10b981';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.background = '#f0fdf4';
+                              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
                               e.currentTarget.style.color = '#10b981';
-                              e.currentTarget.style.borderColor = '#a7f3d0';
+                              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
                             }}
                           >
                             <span>+ Yangi Hafta</span>

@@ -337,7 +337,7 @@ const Header: React.FC<HeaderProps> = ({
               const isActive = activeClass === cls;
               
               const getSubjectColor = () => {
-                return '#0d9488'; // Always lock to premium Teal
+                return 'var(--accent-primary)'; // Dynamic theme-based color
               };
               const subjectColor = getSubjectColor();
 
