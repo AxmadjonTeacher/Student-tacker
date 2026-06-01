@@ -720,13 +720,13 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
                     )}
                   </div>
-                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>ENG SCORE</div>
-                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>MATH SCORE</div>
-                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>ATTENDANCE</div>
-                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>HOMEWORK</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>ENG SCORE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>MATH SCORE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>ATTENDANCE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>HOMEWORK</div>
                   <div style={{ 
                     padding: '0.9rem 1.5rem', 
-                    borderRight: isAdminMode ? '1px solid #e5e7eb' : 'none',
+                    borderRight: isAdminMode ? '1px solid var(--border-color)' : 'none',
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
@@ -1130,16 +1130,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               }}
                               style={{
                                 width: '90%', padding: '0.25rem 0.5rem', borderRadius: '6px',
-                                border: '2px solid #db2777', fontSize: '0.9rem', outline: 'none',
-                                fontWeight: 600, color: '#1f2937'
+                                border: '2px solid var(--accent-primary)', fontSize: '0.9rem', outline: 'none',
+                                fontWeight: 600, color: 'var(--text-primary)'
                               }}
                             />
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 650, color: '#1f2937' }}>
-                                {fullName || <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Ism kiritilmagan</span>}
+                              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 650, color: 'var(--text-primary)' }}>
+                                {fullName || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Ism kiritilmagan</span>}
                               </h3>
-                              <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: 700, textTransform: 'uppercase', marginTop: '0.1rem' }}>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', marginTop: '0.1rem' }}>
                                 Sinf: {student.className.toUpperCase()}
                               </span>
                             </div>
@@ -1150,7 +1150,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       {/* ID Number Cell */}
                       <div 
                         className="table-cell" 
-                        style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        style={{ padding: '0 1rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                         onClick={() => { if(!isEditing('id') && idVal) handleCopyText(idVal, student.id, 'id'); }}
                         onDoubleClick={() => handleDoubleClick('id', idVal)}
                         title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
@@ -1168,16 +1168,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             }}
                             style={{
                               width: '90%', padding: '0.25rem 0.5rem', borderRadius: '6px',
-                              border: '2px solid #db2777', fontSize: '0.9rem', outline: 'none',
-                              fontWeight: 700, color: '#1f2937', fontFamily: 'monospace'
+                              border: '2px solid var(--accent-primary)', fontSize: '0.9rem', outline: 'none',
+                              fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace'
                             }}
                           />
                         ) : (
-                          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
                             {copiedId?.id === student.id && copiedId?.field === 'id' ? (
                               <span style={{ color: '#16a34a', fontWeight: 800 }}>Nusxalandi! ✓</span>
                             ) : (
-                              idVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Bo'sh</span>
+                              idVal || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Bo'sh</span>
                             )}
                           </div>
                         )}
@@ -1186,7 +1186,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       {/* Passcode Cell */}
                       <div 
                         className="table-cell" 
-                        style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        style={{ padding: '0 1rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                         onClick={() => { if(!isEditing('passcode') && passcodeVal) handleCopyText(passcodeVal, student.id, 'passcode'); }}
                         onDoubleClick={() => handleDoubleClick('passcode', passcodeVal || '')}
                         title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
@@ -1204,18 +1204,18 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             }}
                             style={{
                               width: '90%', padding: '0.25rem 0.5rem', borderRadius: '6px',
-                              border: '2px solid #db2777', fontSize: '0.9rem', outline: 'none',
-                              fontWeight: 600, color: '#1f2937', fontFamily: 'monospace'
+                              border: '2px solid var(--accent-primary)', fontSize: '0.9rem', outline: 'none',
+                              fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace'
                             }}
                           />
                         ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: '#475569', fontFamily: 'monospace' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
                             {copiedId?.id === student.id && copiedId?.field === 'passcode' ? (
                               <span style={{ color: '#16a34a', fontWeight: 800 }}>Nusxalandi! ✓</span>
                             ) : (
                               <>
                                 <Key size={13} style={{ color: '#94a3b8' }} />
-                                <span>{passcodeVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Bo'sh</span>}</span>
+                                <span>{passcodeVal || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Bo'sh</span>}</span>
                               </>
                             )}
                           </div>
@@ -1225,7 +1225,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       {/* Parent Phone Number Cell */}
                       <div 
                         className="table-cell" 
-                        style={{ padding: '0 1rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                        style={{ padding: '0 1rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                         onClick={() => { if(!isEditing('parentPhone') && phoneVal) handleCopyText(phoneVal, student.id, 'parentPhone'); }}
                         onDoubleClick={() => handleDoubleClick('parentPhone', phoneVal || '+998')}
                         title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
@@ -1249,18 +1249,18 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             }}
                             style={{
                               width: '90%', padding: '0.25rem 0.5rem', borderRadius: '6px',
-                              border: '2px solid #db2777', fontSize: '0.9rem', outline: 'none',
-                              fontWeight: 600, color: '#1f2937'
+                              border: '2px solid var(--accent-primary)', fontSize: '0.9rem', outline: 'none',
+                              fontWeight: 600, color: 'var(--text-primary)'
                             }}
                           />
                         ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                             {copiedId?.id === student.id && copiedId?.field === 'parentPhone' ? (
                               <span style={{ color: '#16a34a', fontWeight: 800 }}>Nusxalandi! ✓</span>
                             ) : (
                               <>
                                 <Phone size={13} style={{ color: '#94a3b8' }} />
-                                <span>{phoneVal || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>Kiritilmagan</span>}</span>
+                                <span>{phoneVal || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Kiritilmagan</span>}</span>
                               </>
                             )}
                           </div>
@@ -1329,9 +1329,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   key={group.teacher || `unassigned-${groupIdx}`}
                   className="table-card-container"
                   style={{
-                    background: '#ffffff',
+                    background: 'var(--bg-card)',
                     borderRadius: '16px',
-                    border: '1px solid #e5e7eb',
+                    border: '1px solid var(--border-color)',
                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
                     overflow: 'hidden',
                     marginBottom: '2rem'
@@ -1386,7 +1386,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer',
                                     padding: '0', margin: '0', display: 'flex', alignItems: 'center', justifyContent: 'center'
                                   }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.color = '#334155'; }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; }}
                                 >
                                   <ChevronUp size={16} />
@@ -1398,7 +1398,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer',
                                     padding: '0', margin: '0', display: 'flex', alignItems: 'center', justifyContent: 'center'
                                   }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.color = '#334155'; }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; }}
                                 >
                                   <ChevronDown size={16} />
@@ -1559,13 +1559,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     const isLast = idx === group.students.length - 1;
                     
                     const getTheme = () => {
-                      switch (activeSubject as string) {
-                        case 'ENG': return { primary: '#166534', lightBg: '#dcfce7', text: '#166534', badgeText: '#14532d' };
-                        case 'MATH': return { primary: '#0d9488', lightBg: '#ccfbf1', text: '#0d9488', badgeText: '#0f766e' };
-                        case 'ALL': return { primary: '#4f46e5', lightBg: '#e0e7ff', text: '#4f46e5', badgeText: '#3730a3' };
-                        case 'DETAILS': return { primary: '#db2777', lightBg: '#fce7f3', text: '#db2777', badgeText: '#9d174d' };
-                        default: return { primary: '#0d9488', lightBg: '#ccfbf1', text: '#0d9488', badgeText: '#0f766e' };
-                      }
+                      return { 
+                        primary: 'var(--accent-primary)', 
+                        lightBg: 'rgba(13, 148, 136, 0.12)', 
+                        text: 'var(--accent-primary)', 
+                        badgeText: 'var(--accent-hover)' 
+                      };
                     };
                     const theme = getTheme();
 
@@ -1614,27 +1613,27 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             )}
                           </div>
                           <div>
-                            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#1a1a1a' }}>
+                            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                               {student.name} {student.surname}
                             </h3>
-                            <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', letterSpacing: '0.05em' }}>
+                            <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                               SINF {student.className.toUpperCase()}
                             </p>
                           </div>
                         </div>
 
                         {/* Level block */}
-                        <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                           <span className="mobile-label">Avvalgi daraja</span>
-                          <div style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.95rem' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                             {student.startingLevel}
                           </div>
                         </div>
 
                         {/* Current Level block */}
-                        <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                           <span className="mobile-label">Hozirgi daraja</span>
-                          <div style={{ fontWeight: 600, color: '#1a1a1a', fontSize: '0.95rem', marginBottom: '0.2rem' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '0.2rem' }}>
                             {student.currentLevel}
                           </div>
                           {improvement.includes('+') ? (
@@ -1652,7 +1651,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                         {/* Yozgi Natija block */}
                         {showSummerPlan && (
-                          <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <span className="mobile-label">Yozgi reja</span>
                             <div style={{
                               display: 'inline-flex',
@@ -1905,7 +1904,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
               }
             `}} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#db2777' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)' }}>
                 <RotateCw size={20} />
                 <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.01em' }}>
                   ID VA PAROLLARNI YANGILASH
@@ -1913,34 +1912,34 @@ const StudentTable: React.FC<StudentTableProps> = ({
               </div>
               <button 
                 onClick={() => setIsRegenerateModalOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0.25rem' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem' }}
               >
                 <X size={20} />
               </button>
             </div>
 
-            <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
               Ushbu bo'lim orqali o'quvchilarning tizimga kirish kodlarini ommaviy ravishda avtomatik yangilashingiz mumkin.
             </p>
 
             {/* Checkbox Options */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                 <input
                   type="checkbox"
                   checked={regenIds}
                   onChange={(e) => setRegenIds(e.target.checked)}
-                  style={{ width: '18px', height: '18px', accentColor: '#db2777', cursor: 'pointer' }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
                 />
                 <span>Yangi ID raqamlarini yaratish (AL + 5 ta belgi)</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                 <input
                   type="checkbox"
                   checked={regenPasscodes}
                   onChange={(e) => setRegenPasscodes(e.target.checked)}
-                  style={{ width: '18px', height: '18px', accentColor: '#db2777', cursor: 'pointer' }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
                 />
                 <span>Yangi parollarni yaratish (7 ta belgi)</span>
               </label>
@@ -1948,15 +1947,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
             {/* Target Select */}
             <div style={{ marginBottom: '1.5rem' }}>
-              <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+              <span style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                 Yangilash doirasi (Target)
               </span>
               <select
                 value={regenTarget}
                 onChange={(e) => setRegenTarget(e.target.value as any)}
                 style={{
-                  width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1.5px solid #e2e8f0',
-                  fontSize: '0.9rem', fontWeight: 600, outline: 'none', color: '#1e293b', cursor: 'pointer'
+                  width: '100%', padding: '0.75rem 1rem', borderRadius: '12px', border: '1.5px solid var(--border-color)',
+                  fontSize: '0.9rem', fontWeight: 600, outline: 'none', color: 'var(--text-primary)', cursor: 'pointer',
+                  background: 'var(--bg-card)'
                 }}
               >
                 <option value="class">Faqat ushbu sinf o'quvchilari uchun</option>
@@ -1985,12 +1985,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
               <button
                 onClick={() => setIsRegenerateModalOpen(false)}
                 style={{
-                  background: '#f3f4f6', color: '#4b5563', border: 'none',
+                  background: 'var(--bg-card-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)',
                   padding: '0.65rem 1.25rem', borderRadius: '12px', fontSize: '0.85rem',
                   fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#e5e7eb'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--border-color)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
               >
                 Bekor qilish
               </button>
@@ -2011,11 +2011,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   }
                 }}
                 style={{
-                  background: (!regenIds && !regenPasscodes) ? '#cbd5e1' : 'linear-gradient(135deg, #db2777, #be185d)',
+                  background: (!regenIds && !regenPasscodes) ? '#cbd5e1' : 'var(--accent-gradient)',
                   color: '#ffffff', border: 'none',
                   padding: '0.65rem 1.5rem', borderRadius: '12px', fontSize: '0.85rem',
                   fontWeight: 700, cursor: (!regenIds && !regenPasscodes) ? 'not-allowed' : 'pointer',
-                  boxShadow: (!regenIds && !regenPasscodes) ? 'none' : '0 4px 10px rgba(219, 39, 119, 0.2)',
+                  boxShadow: (!regenIds && !regenPasscodes) ? 'none' : '0 4px 10px rgba(13, 148, 136, 0.2)',
                   transition: 'all 0.15s'
                 }}
                 onMouseEnter={(e) => { if (regenIds || regenPasscodes) e.currentTarget.style.transform = 'translateY(-1px)'; }}

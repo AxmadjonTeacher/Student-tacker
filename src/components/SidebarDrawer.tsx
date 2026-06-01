@@ -869,10 +869,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                     {(() => {
                       const subjects = [
-                        { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: '#166534', bg: '#f0fdf4' },
-                        { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: '#0d9488', bg: '#f0fdfa' },
-                        { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: '#4f46e5', bg: '#e0e7ff' },
-                        { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: '#db2777', bg: '#fdf2f8' }
+                        { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
+                        { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
+                        { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
+                        { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' }
                       ];
                       return subjects;
                     })().map(subj => {
@@ -888,8 +888,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             width: '100%',
                             padding: '0.9rem 1.1rem',
                             borderRadius: '16px',
-                            background: isSelected ? subj.bg : '#ffffff',
-                            border: isSelected ? `2.2px solid ${subj.color}` : '1.5px solid #e2e8f0',
+                            background: isSelected ? subj.bg : 'var(--bg-card)',
+                            border: isSelected ? `2.2px solid ${subj.color}` : '1.5px solid var(--border-color)',
                             textAlign: 'left',
                             cursor: 'pointer',
                             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -897,14 +897,14 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           }}
                           onMouseEnter={(e) => {
                             if (!isSelected) {
-                              e.currentTarget.style.borderColor = subj.color;
-                              e.currentTarget.style.background = `${subj.bg}20`;
+                              e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                              e.currentTarget.style.background = 'var(--bg-card-hover)';
                             }
                           }}
                           onMouseLeave={(e) => {
                             if (!isSelected) {
-                              e.currentTarget.style.borderColor = '#e2e8f0';
-                              e.currentTarget.style.background = '#ffffff';
+                              e.currentTarget.style.borderColor = 'var(--border-color)';
+                              e.currentTarget.style.background = 'var(--bg-card)';
                             }
                           }}
                         >
@@ -916,10 +916,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             flexShrink: 0
                           }} />
                           <div>
-                            <div style={{ fontWeight: 850, fontSize: '0.8rem', color: isSelected ? subj.color : '#334155', letterSpacing: '0.02em' }}>
+                            <div style={{ fontWeight: 850, fontSize: '0.8rem', color: isSelected ? subj.color : 'var(--text-primary)', letterSpacing: '0.02em' }}>
                               {subj.title.toUpperCase()}
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                               {subj.desc}
                             </div>
                           </div>

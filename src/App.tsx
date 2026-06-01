@@ -597,26 +597,12 @@ function App() {
     }
   }, [students, loading, authRole]);
 
-  // Dynamic theme colors: English = Dark Green, Math = Teal, All = Indigo
+  // Dynamic theme colors locked to Teal (#0d9488) across all sections
   useEffect(() => {
-    if (activeSubject === 'MATH') {
-      document.documentElement.style.setProperty('--accent-primary', '#0d9488'); // Teal
-      document.documentElement.style.setProperty('--accent-hover', '#0f766e');
-      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #0d9488, #0f766e)');
-    } else if (activeSubject === 'ALL') {
-      document.documentElement.style.setProperty('--accent-primary', '#4f46e5'); // Premium Indigo
-      document.documentElement.style.setProperty('--accent-hover', '#4338ca');
-      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #4f46e5, #4338ca)');
-    } else if (activeSubject === 'DETAILS') {
-      document.documentElement.style.setProperty('--accent-primary', '#db2777'); // Rose/Pink
-      document.documentElement.style.setProperty('--accent-hover', '#be185d');
-      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #db2777, #be185d)');
-    } else {
-      document.documentElement.style.setProperty('--accent-primary', '#166534'); // Premium Dark Green
-      document.documentElement.style.setProperty('--accent-hover', '#14532d');
-      document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #166534, #14532d)');
-    }
-  }, [activeSubject]);
+    document.documentElement.style.setProperty('--accent-primary', '#0d9488');
+    document.documentElement.style.setProperty('--accent-hover', '#14b8a6');
+    document.documentElement.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #0d9488, #14b8a6)');
+  }, []);
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
     const localUpdatedList = [...students];
@@ -2319,7 +2305,6 @@ function App() {
   }
 
   // Desktop Left Sidebar Layout
-  const subjectColor = activeSubject === 'MATH' ? '#0d9488' : activeSubject === 'ALL' ? '#4f46e5' : activeSubject === 'DETAILS' ? '#db2777' : activeSubject === 'DASHBOARD' ? '#0d9488' : '#166534';
 
   return (
     <div style={{
@@ -2475,9 +2460,12 @@ function App() {
                         gap: isSidebarExpanded ? '0.75rem' : '0',
                         padding: '0.65rem 0.85rem',
                         borderRadius: '12px',
-                        background: isActive ? 'var(--bg-card)' : 'transparent',
+                        background: isActive 
+                          ? 'linear-gradient(90deg, var(--bg-card) 75%, rgba(13, 148, 136, 0.12) 100%)' 
+                          : 'transparent',
                         color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                         border: isActive ? '1.5px solid var(--border-color)' : '1.5px solid transparent',
+                        borderRight: isActive ? '3.5px solid var(--accent-primary)' : '1.5px solid transparent',
                         boxShadow: isActive ? 'var(--glass-shadow)' : 'none',
                         cursor: 'pointer',
                         fontWeight: isActive ? 800 : 700,
@@ -2499,7 +2487,7 @@ function App() {
                         }
                       }}
                     >
-                      <Icon size={17} strokeWidth={isActive ? 2.5 : 2} color={isActive ? subjectColor : 'var(--text-secondary)'} />
+                      <Icon size={17} strokeWidth={isActive ? 2.5 : 2} color={isActive ? 'var(--accent-primary)' : 'var(--text-secondary)'} />
                       {isSidebarExpanded && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
                     </button>
                   );
@@ -2535,7 +2523,7 @@ function App() {
                       width: '36px',
                       height: '18px',
                       borderRadius: '9999px',
-                      background: isAdminMode ? subjectColor : '#cbd5e1',
+                      background: isAdminMode ? 'var(--accent-primary)' : '#cbd5e1',
                       border: 'none',
                       cursor: 'pointer',
                       position: 'relative',
@@ -2619,9 +2607,9 @@ function App() {
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  background: isAdminMode ? `${subjectColor}12` : 'transparent',
-                  color: isAdminMode ? subjectColor : 'var(--text-secondary)',
-                  border: isAdminMode ? `1px solid ${subjectColor}30` : '1px solid transparent',
+                  background: isAdminMode ? 'rgba(13, 148, 136, 0.12)' : 'transparent',
+                  color: isAdminMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                  border: isAdminMode ? '1px solid rgba(13, 148, 136, 0.2)' : '1px solid transparent',
                   cursor: 'pointer',
                   marginBottom: '0.5rem',
                   transition: 'all 0.15s ease'

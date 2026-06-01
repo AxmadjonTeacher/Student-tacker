@@ -333,17 +333,10 @@ const Header: React.FC<HeaderProps> = ({
             {classes.map(cls => {
               const isActive = activeClass === cls;
               
-              const getSubjectColor = (subj: ActiveSubject) => {
-                switch(subj) {
-                  case 'ENG': return '#166534'; // green
-                  case 'MATH': return '#0d9488'; // teal
-                  case 'ALL': return '#4f46e5'; // indigo
-                  case 'DETAILS': return '#db2777'; // pink
-                  case 'DASHBOARD': return '#0d9488'; // teal
-                  default: return '#0d9488';
-                }
+              const getSubjectColor = () => {
+                return '#0d9488'; // Always lock to premium Teal
               };
-              const subjectColor = getSubjectColor(activeSubject);
+              const subjectColor = getSubjectColor();
 
               return (
                 <button
@@ -354,9 +347,9 @@ const Header: React.FC<HeaderProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    background: isActive ? subjectColor : '#ffffff',
-                    color: isActive ? '#ffffff' : '#6b7280',
-                    border: isActive ? `1px solid ${subjectColor}` : '1px solid #e2e8f0',
+                    background: isActive ? subjectColor : 'var(--bg-card)',
+                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                    border: isActive ? `1px solid ${subjectColor}` : '1px solid var(--border-color)',
                     boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : '0 1px 2px rgba(0,0,0,0.02)',
                     padding: '0.5rem 1rem',
                     borderRadius: '9999px',
@@ -369,8 +362,8 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   {cls}
                   <span style={{
-                    background: isActive ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
-                    color: isActive ? '#ffffff' : '#9ca3af',
+                    background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-card-hover)',
+                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
                     width: '20px',
                     height: '20px',
                     borderRadius: '50%',
@@ -399,10 +392,10 @@ const Header: React.FC<HeaderProps> = ({
                   width: '100%',
                   padding: '0.85rem 1rem 0.85rem 2.75rem',
                   borderRadius: '9999px',
-                  border: '1px solid #e5e7eb',
-                  background: '#ffffff',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-card)',
                   fontSize: '0.95rem',
-                  color: '#1a1a1a',
+                  color: 'var(--text-primary)',
                   outline: 'none',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)'
                 }}

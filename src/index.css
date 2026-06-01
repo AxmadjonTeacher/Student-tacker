@@ -21,21 +21,21 @@
 }
 
 [data-theme="dark"] {
-  --bg-main: #111113;
-  --bg-card: #18181b;
-  --bg-card-hover: #222227;
-  --bg-sidebar: #0b0b0c;
-  --text-primary: #f4f4f5;
-  --text-secondary: #8a8a93;
+  --bg-main: #0c0c0e;
+  --bg-sidebar: #121214;
+  --bg-card: #151518;
+  --bg-card-hover: #1f1f23;
+  --text-primary: #ffffff;
+  --text-secondary: #8f8f98;
   --accent-primary: #0d9488;
   --accent-hover: #14b8a6;
   --accent-gradient: linear-gradient(135deg, #0d9488, #14b8a6);
-  --border-color: #222227;
-  --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --bg-header-rgba: rgba(11, 11, 13, 0.95);
-  --marquee-bg: linear-gradient(160deg, #022c22 0%, #0b0b0c 100%);
+  --border-color: #1e1e22;
+  --glass-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  --bg-header-rgba: rgba(12, 12, 14, 0.95);
+  --marquee-bg: linear-gradient(160deg, #022c22 0%, #0c0c0e 100%);
   --marquee-fade-left: linear-gradient(to right, #022c22, transparent);
-  --marquee-fade-right: linear-gradient(to left, #0b0b0c, transparent);
+  --marquee-fade-right: linear-gradient(to left, #0c0c0e, transparent);
 }
 
 [data-theme="dark"] input[type="text"],
@@ -43,25 +43,25 @@
 [data-theme="dark"] input[type="datetime-local"],
 [data-theme="dark"] select,
 [data-theme="dark"] textarea {
-  background-color: #1e1e24 !important;
-  color: #f4f4f5 !important;
-  border-color: #2e2e34 !important;
+  background-color: #1f1f23 !important;
+  color: #ffffff !important;
+  border-color: #1e1e22 !important;
 }
 
 [data-theme="dark"] select option {
-  background-color: #18181b !important;
-  color: #f4f4f5 !important;
+  background-color: #151518 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .class-pill-btn:not(.active-pill) {
-  background: #18181b !important;
-  border-color: #222227 !important;
-  color: #8a8a93 !important;
+  background: #151518 !important;
+  border-color: #1e1e22 !important;
+  color: #8f8f98 !important;
 }
 
 [data-theme="dark"] .class-pill-btn:not(.active-pill) span {
-  background: #222227 !important;
-  color: #8a8a93 !important;
+  background: #1f1f23 !important;
+  color: #8f8f98 !important;
 }
 
 [data-theme="dark"] .modal-overlay {
@@ -69,9 +69,9 @@
 }
 
 [data-theme="dark"] .modal-content {
-  background: #18181b !important;
-  border-color: #222227 !important;
-  color: #f4f4f5 !important;
+  background: #151518 !important;
+  border-color: #1e1e22 !important;
+  color: #ffffff !important;
 }
 
 .handwritten-signature {
