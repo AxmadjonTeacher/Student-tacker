@@ -2040,22 +2040,22 @@ const StudentTable: React.FC<StudentTableProps> = ({
           backdropFilter: 'blur(8px)',
         }}>
           <div style={{
-            background: '#ffffff',
+            background: 'var(--bg-card)',
             width: '90%',
             maxWidth: '400px',
             borderRadius: '24px',
             padding: '2rem',
-            border: '1.5px solid #f1f5f9',
-            boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.15)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
             display: 'flex',
             flexDirection: 'column',
             gap: '1.25rem'
           }}>
             <div>
-              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                 O'qituvchini biriktirish
               </h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                 Quyidagi ro'yxatdan o'qituvchini tanlang:
               </p>
             </div>
@@ -2070,16 +2070,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
               }}
               style={{
                 width: '100%',
-                background: '#f8fafc',
-                border: '1.5px solid #e2e8f0',
+                background: 'var(--bg-card-hover)',
+                border: '1.5px solid var(--border-color)',
                 borderRadius: '12px',
                 padding: '0.85rem 1rem',
                 fontSize: '0.95rem',
                 fontWeight: 600,
-                color: '#0f172a',
+                color: 'var(--text-primary)',
                 outline: 'none',
                 appearance: 'none',
-                backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/%3e%3c/svg%3e")',
+                backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238f8f98\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/%3e%3c/svg%3e")',
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'right 1rem center',
                 backgroundSize: '1em'
@@ -2100,17 +2100,23 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 onClick={() => setAssigningStudent(null)}
                 style={{
                   background: 'transparent',
-                  border: '1.5px solid #e2e8f0',
+                  border: '1.5px solid var(--border-color)',
                   borderRadius: '9999px',
                   padding: '0.65rem 1.5rem',
                   fontSize: '0.9rem',
                   fontWeight: 700,
-                  color: '#64748b',
+                  color: 'var(--text-secondary)',
                   cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--bg-card-hover)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
               >
                 Bekor qilish
               </button>

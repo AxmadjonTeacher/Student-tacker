@@ -183,10 +183,11 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
         style={{ 
           maxWidth: '500px', 
           width: '90%',
-          background: '#fcfcf9', 
+          background: 'var(--bg-card)', 
+          border: '1px solid var(--border-color)',
           borderRadius: '24px',
           padding: '2rem 2.5rem',
-          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.25), 0 10px 10px -5px rgba(0,0,0,0.12)'
         }}
       >
         <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
@@ -194,24 +195,28 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             onClick={onClose}
             style={{ 
               position: 'absolute', right: '-15px', top: '-15px', 
-              background: 'transparent', border: `2px solid ${activeThemeColor}`, 
+              background: 'var(--bg-card-hover)', border: '1.5px solid var(--border-color)', 
               borderRadius: '50%', padding: '4px', cursor: 'pointer',
-              color: activeThemeColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.2s ease'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.08)';
-              e.currentTarget.style.background = `${activeThemeColor}10`;
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
+              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+              e.currentTarget.style.color = '#ef4444';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.background = 'var(--bg-card-hover)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
             <X size={18} />
           </button>
           
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 850, color: '#1e293b', margin: 0 }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
             O'quvchini tahrirlash
           </h2>
           <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: activeThemeColor, fontWeight: 700, letterSpacing: '0.05em' }}>
@@ -223,7 +228,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                 ISM *
               </label>
               <input 
@@ -232,14 +237,14 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 onChange={e => setName(e.target.value)}
                 required
                 style={{
-                  width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                  width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                   borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                  color: '#1e293b', background: '#ffffff', outline: 'none'
+                  color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
                 }}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                 FAMILIYA *
               </label>
               <input 
@@ -248,16 +253,16 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 onChange={e => setSurname(e.target.value)}
                 required
                 style={{
-                  width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                  width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                   borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                  color: '#1e293b', background: '#ffffff', outline: 'none'
+                  color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
                 }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
               SINF / GURUH *
             </label>
             <input 
@@ -266,9 +271,9 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               onChange={e => setClassName(e.target.value)}
               required
               style={{
-                width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                 borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                color: '#1e293b', background: '#ffffff', outline: 'none'
+                color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
               }}
             />
           </div>
@@ -276,7 +281,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
           {isAll && (
             <>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                   OTA-ONA TELEFON RAQAMI
                 </label>
                 <input 
@@ -285,10 +290,10 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                   readOnly
                   style={{
                     width: '100%', padding: '0.75rem 1rem', borderRadius: '12px',
-                    border: '1.5px solid #e2e8f0', fontSize: '0.95rem',
+                    border: '1.5px solid var(--border-color)', fontSize: '0.95rem',
                     outline: 'none', transition: 'all 0.2s ease',
-                    backgroundColor: '#f1f5f9',
-                    color: '#64748b',
+                    backgroundColor: 'var(--bg-card)',
+                    color: 'var(--text-secondary)',
                     cursor: 'not-allowed'
                   }}
                 />
@@ -296,22 +301,22 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
 
               {/* Kirish ma'lumotlari (ota-onalar uchun) */}
               <div style={{ 
-                background: '#f8fafc', 
+                background: 'var(--bg-card-hover)', 
                 borderRadius: '12px', 
                 padding: '1rem', 
                 marginBottom: '1rem',
-                border: '1.5px dashed #cbd5e1',
+                border: '1.5px dashed var(--border-color)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.75rem'
               }}>
-                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   Kirish Ma'lumotlari (Ota-onalar uchun)
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
-                      STUDENT ID: <strong style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '0.95rem' }}>{student.id}</strong>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      STUDENT ID: <strong style={{ color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '0.95rem' }}>{student.id}</strong>
                     </span>
                     <button 
                       type="button"
@@ -336,8 +341,8 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     </button>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
-                      PAROL (PASSCODE): <strong style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '0.95rem' }}>{student.passcode || '—'}</strong>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      PAROL (PASSCODE): <strong style={{ color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '0.95rem' }}>{student.passcode || '—'}</strong>
                     </span>
                     <button 
                       type="button"
@@ -373,7 +378,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                     ENG SCORE (0-15) *
                   </label>
                   <input 
@@ -384,14 +389,14 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     onChange={e => setEngScore(e.target.value)}
                     required
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                       borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                     MATH SCORE (0-15) *
                   </label>
                   <input 
@@ -402,9 +407,9 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     onChange={e => setMathScore(e.target.value)}
                     required
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                       borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
                     }}
                   />
                 </div>
@@ -412,7 +417,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                     ATTENDANCE (1, -1, -2...) *
                   </label>
                   <input 
@@ -422,17 +427,17 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     onChange={e => setAttendance(e.target.value)}
                     required
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                       borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
                     }}
                   />
-                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.35rem', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.3 }}>
                     1 = 100% · -1 = 83.3% · -2 = 66.7%
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                     HOMEWORK (1, -1, -2...) *
                   </label>
                   <input 
@@ -442,12 +447,12 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     onChange={e => setHomework(e.target.value)}
                     required
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e2e8f0',
+                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                       borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: '#1e293b', background: '#ffffff', outline: 'none'
+                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
                     }}
                   />
-                  <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '0.35rem', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.3 }}>
                     1 = 100% · -1 = 80.0% · -2 = 60.0%
                   </div>
                 </div>
@@ -457,7 +462,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             <>
               {/* Starting Level selection */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                   BOSHLANG'ICH DARAJA
                 </label>
                 <select 
@@ -466,12 +471,12 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
-                    border: '1.5px solid #e2e8f0',
+                    border: '1.5px solid var(--border-color)',
                     borderRadius: '12px',
                     fontSize: '0.9rem',
                     fontWeight: 600,
-                    color: '#1e293b',
-                    background: '#ffffff',
+                    color: 'var(--text-primary)',
+                    background: 'var(--bg-card-hover)',
                     outline: 'none',
                     cursor: 'pointer'
                   }}
@@ -484,7 +489,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
 
               {/* Current Level selection */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                   HOZIRGI DARAJA
                 </label>
                 <select 
@@ -493,12 +498,12 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
-                    border: '1.5px solid #e2e8f0',
+                    border: '1.5px solid var(--border-color)',
                     borderRadius: '12px',
                     fontSize: '0.9rem',
                     fontWeight: 600,
-                    color: '#1e293b',
-                    background: '#ffffff',
+                    color: 'var(--text-primary)',
+                    background: 'var(--bg-card-hover)',
                     outline: 'none',
                     cursor: 'pointer'
                   }}
@@ -511,7 +516,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
 
               {/* Test Scores */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
                   CHORAK NATIJALARI (%)
                 </label>
                 
@@ -519,19 +524,19 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                   const inputStyle = {
                     width: '100%',
                     padding: '0.65rem 0.85rem',
-                    border: '1.5px solid #e2e8f0',
+                    border: '1.5px solid var(--border-color)',
                     borderRadius: '10px',
                     fontSize: '0.85rem',
                     fontWeight: 600,
                     outline: 'none',
-                    color: '#1e293b',
-                    background: '#ffffff'
+                    color: 'var(--text-primary)',
+                    background: 'var(--bg-card-hover)'
                   };
 
                   return (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>1-Chorak</label>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>1-Chorak</label>
                         <input 
                           type="text"
                           value={grant1}
@@ -542,7 +547,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>2-Chorak</label>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>2-Chorak</label>
                         <input 
                           type="text"
                           value={grant2}
@@ -553,7 +558,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>3-Chorak</label>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>3-Chorak</label>
                         <input 
                           type="text"
                           value={grant3}
@@ -564,7 +569,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', marginBottom: '0.35rem' }}>4-Chorak</label>
+                        <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>4-Chorak</label>
                         <input 
                           type="text"
                           value={grant4}
@@ -584,7 +589,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             type="submit"
             style={{
               width: '100%',
-              background: activeThemeColor,
+              background: 'var(--accent-gradient)',
               color: '#ffffff',
               border: 'none',
               borderRadius: '12px',
@@ -596,7 +601,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               justifyContent: 'center',
               gap: '0.5rem',
               cursor: 'pointer',
-              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+              boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.3)',
               transition: 'all 0.2s ease',
               marginTop: '0.5rem',
               letterSpacing: '0.05em'
