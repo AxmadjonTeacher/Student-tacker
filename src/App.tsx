@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { 
   Home, Search, BarChart2, Settings, LogOut,
   BookOpen, Binary, Activity, ShieldAlert, Bell, Users, Trash2,
-  PanelLeftClose, Shield
+  PanelLeftClose, Shield, Sun, Moon
 } from 'lucide-react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
@@ -107,6 +107,10 @@ function App() {
   const [isAdminMode, setIsAdminMode] = useState(() => {
     return localStorage.getItem('isAdminMode') === 'true';
   });
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('isDarkMode');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash'>('home');
   const [selectedWeek, setSelectedWeek] = useState<string>('');
@@ -165,6 +169,15 @@ function App() {
   useEffect(() => {
     localStorage.setItem('isAdminMode', String(isAdminMode));
   }, [isAdminMode]);
+
+  useEffect(() => {
+    localStorage.setItem('isDarkMode', String(isDarkMode));
+    if (isDarkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Sync active parent weeks
   useEffect(() => {
@@ -2194,6 +2207,8 @@ function App() {
             onSubjectChange={setActiveSubject}
             isAdminMode={isAdminMode}
             onToggleAdmin={handleToggleAdmin}
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
             students={activeStudents}
             deletedStudents={deletedStudents}
             onRestoreStudent={handleRestoreStudent}
@@ -2304,11 +2319,11 @@ function App() {
   }
 
   // Desktop Left Sidebar Layout
-  const subjectColor = activeSubject === 'MATH' ? '#0d9488' : activeSubject === 'ALL' ? '#4f46e5' : activeSubject === 'DETAILS' ? '#db2777' : activeSubject === 'DASHBOARD' ? '#6366f1' : '#166534';
+  const subjectColor = activeSubject === 'MATH' ? '#0d9488' : activeSubject === 'ALL' ? '#4f46e5' : activeSubject === 'DETAILS' ? '#db2777' : activeSubject === 'DASHBOARD' ? '#0d9488' : '#166534';
 
   return (
     <div style={{
-      background: '#fcfcf9',
+      background: 'var(--bg-main)',
       minHeight: '100vh',
       display: 'flex',
       boxSizing: 'border-box'
@@ -2316,8 +2331,8 @@ function App() {
       {/* Collapsible Left Sidebar for Desktop */}
       <aside style={{
         width: isSidebarExpanded ? '240px' : '72px',
-        background: '#f8fafc',
-        borderRight: '1px solid #e2e8f0',
+        background: 'var(--bg-sidebar)',
+        borderRight: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
         padding: isSidebarExpanded ? '1.25rem 0.85rem' : '1.25rem 0.5rem',
@@ -2334,7 +2349,7 @@ function App() {
           alignItems: 'center', 
           justifyContent: isSidebarExpanded ? 'space-between' : 'center', 
           paddingBottom: '1.25rem',
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid var(--border-color)',
           marginBottom: '1.5rem', 
           position: 'relative'
         }}>
@@ -2342,8 +2357,8 @@ function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', animation: 'fadeIn 0.2s' }}>
               <img src={iconLight} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
               <div>
-                <h1 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>AL-XORAZMIY</h1>
-                <p style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>ADMIN KABINETI</p>
+                <h1 style={{ fontSize: '0.95rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>AL-XORAZMIY</h1>
+                <p style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>ADMIN KABINETI</p>
               </div>
             </div>
           ) : (
@@ -2435,7 +2450,7 @@ function App() {
                   <div style={{ 
                     fontSize: '0.62rem', 
                     fontWeight: 900, 
-                    color: '#94a3b8', 
+                    color: 'var(--text-secondary)', 
                     letterSpacing: '0.08em', 
                     paddingLeft: '0.75rem',
                     marginBottom: '0.2rem',
@@ -2460,10 +2475,10 @@ function App() {
                         gap: isSidebarExpanded ? '0.75rem' : '0',
                         padding: '0.65rem 0.85rem',
                         borderRadius: '12px',
-                        background: isActive ? '#ffffff' : 'transparent',
-                        color: isActive ? '#0f172a' : '#475569',
-                        border: isActive ? '1.5px solid #e2e8f0' : '1.5px solid transparent',
-                        boxShadow: isActive ? '0 2px 4px rgba(0,0,0,0.03)' : 'none',
+                        background: isActive ? 'var(--bg-card)' : 'transparent',
+                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        border: isActive ? '1.5px solid var(--border-color)' : '1.5px solid transparent',
+                        boxShadow: isActive ? 'var(--glass-shadow)' : 'none',
                         cursor: 'pointer',
                         fontWeight: isActive ? 800 : 700,
                         fontSize: '0.8rem',
@@ -2473,18 +2488,18 @@ function App() {
                       }}
                       onMouseEnter={e => {
                         if (!isActive) {
-                          e.currentTarget.style.background = '#f1f5f980';
-                          e.currentTarget.style.color = '#0f172a';
+                          e.currentTarget.style.background = 'var(--bg-card-hover)';
+                          e.currentTarget.style.color = 'var(--text-primary)';
                         }
                       }}
                       onMouseLeave={e => {
                         if (!isActive) {
                           e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = '#475569';
+                          e.currentTarget.style.color = 'var(--text-secondary)';
                         }
                       }}
                     >
-                      <Icon size={17} strokeWidth={isActive ? 2.5 : 2} color={isActive ? subjectColor : '#64748b'} />
+                      <Icon size={17} strokeWidth={isActive ? 2.5 : 2} color={isActive ? subjectColor : 'var(--text-secondary)'} />
                       {isSidebarExpanded && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
                     </button>
                   );
@@ -2494,87 +2509,168 @@ function App() {
           })()}
         </div>
 
-        {/* Admin Mode Toggle & Logout */}
-        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', marginTop: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        {/* Admin Mode & Dark Mode Toggles & Logout */}
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
           {isSidebarExpanded ? (
-            <div style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '0.65rem 0.8rem',
-              width: '100%',
-              boxSizing: 'border-box',
-              marginBottom: '0.5rem',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.01)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.72rem', color: '#1e293b', letterSpacing: '0.02em' }}>ADMIN REJIMI</div>
-                  <div style={{ fontSize: '0.58rem', color: '#64748b', marginTop: '0.05rem' }}>Tahrirlash imkoniyati</div>
-                </div>
-                <button 
-                  onClick={handleToggleAdmin}
-                  style={{
-                    width: '36px',
-                    height: '18px',
-                    borderRadius: '9999px',
-                    background: isAdminMode ? subjectColor : '#cbd5e1',
-                    border: 'none',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    padding: 0,
-                    transition: 'background-color 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexShrink: 0
-                  }}
-                >
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    background: '#ffffff',
-                    position: 'absolute',
-                    left: isAdminMode ? '20px' : '4px',
-                    transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                  }} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={handleToggleAdmin}
-              title={isAdminMode ? "Admin rejimidan chiqish" : "Admin rejimini yoqish"}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                background: isAdminMode ? `${subjectColor}12` : 'transparent',
-                color: isAdminMode ? subjectColor : '#64748b',
-                border: isAdminMode ? `1px solid ${subjectColor}30` : '1px solid transparent',
-                cursor: 'pointer',
+            <>
+              {/* Admin Mode Toggle */}
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '0.65rem 0.8rem',
+                width: '100%',
+                boxSizing: 'border-box',
                 marginBottom: '0.5rem',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={e => {
-                if (!isAdminMode) {
-                  e.currentTarget.style.background = '#f1f5f9';
-                  e.currentTarget.style.color = '#0f172a';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!isAdminMode) {
+                boxShadow: 'var(--glass-shadow)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.72rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>ADMIN REJIMI</div>
+                    <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', marginTop: '0.05rem' }}>Tahrirlash imkoniyati</div>
+                  </div>
+                  <button 
+                    onClick={handleToggleAdmin}
+                    style={{
+                      width: '36px',
+                      height: '18px',
+                      borderRadius: '9999px',
+                      background: isAdminMode ? subjectColor : '#cbd5e1',
+                      border: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      padding: 0,
+                      transition: 'background-color 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
+                      position: 'absolute',
+                      left: isAdminMode ? '20px' : '4px',
+                      transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                    }} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Dark Mode Toggle */}
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '0.65rem 0.8rem',
+                width: '100%',
+                boxSizing: 'border-box',
+                marginBottom: '0.5rem',
+                boxShadow: 'var(--glass-shadow)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.72rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>QORONG'U REJIM</div>
+                    <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', marginTop: '0.05rem' }}>Tungi mavzu</div>
+                  </div>
+                  <button 
+                    onClick={() => setIsDarkMode(!isDarkMode)}
+                    style={{
+                      width: '36px',
+                      height: '18px',
+                      borderRadius: '9999px',
+                      background: isDarkMode ? '#0d9488' : '#cbd5e1',
+                      border: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      padding: 0,
+                      transition: 'background-color 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
+                      position: 'absolute',
+                      left: isDarkMode ? '20px' : '4px',
+                      transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                    }} />
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleToggleAdmin}
+                title={isAdminMode ? "Admin rejimidan chiqish" : "Admin rejimini yoqish"}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: isAdminMode ? `${subjectColor}12` : 'transparent',
+                  color: isAdminMode ? subjectColor : 'var(--text-secondary)',
+                  border: isAdminMode ? `1px solid ${subjectColor}30` : '1px solid transparent',
+                  cursor: 'pointer',
+                  marginBottom: '0.5rem',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  if (!isAdminMode) {
+                    e.currentTarget.style.background = 'var(--bg-card-hover)';
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isAdminMode) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                  }
+                }}
+              >
+                <Shield size={16} strokeWidth={isAdminMode ? 2.5 : 2} />
+              </button>
+
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                title={isDarkMode ? "Yorug' mavzuni yoqish" : "Qorong'u mavzuni yoqish"}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid transparent',
+                  cursor: 'pointer',
+                  marginBottom: '0.5rem',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'var(--bg-card-hover)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={e => {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#64748b';
-                }
-              }}
-            >
-              <Shield size={16} strokeWidth={isAdminMode ? 2.5 : 2} />
-            </button>
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+              >
+                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+            </>
           )}
 
           {/* Logout button */}
@@ -2683,6 +2779,8 @@ function App() {
               onSubjectChange={setActiveSubject}
               isAdminMode={isAdminMode}
               onToggleAdmin={handleToggleAdmin}
+              isDarkMode={isDarkMode}
+              onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
               students={activeStudents}
               deletedStudents={deletedStudents}
               onRestoreStudent={handleRestoreStudent}

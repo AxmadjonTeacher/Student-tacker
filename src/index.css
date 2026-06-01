@@ -4,6 +4,7 @@
   --bg-main: #f9f8f3; /* Creamy beige background */
   --bg-card: #ffffff;
   --bg-card-hover: #f8fafc;
+  --bg-sidebar: #f8fafc;
   --text-primary: #1a1a1a;
   --text-secondary: #6b7280;
   --accent-primary: #0d9488; /* Teal */
@@ -13,6 +14,64 @@
   --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   --backdrop-blur: blur(12px);
   --font-main: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --bg-header-rgba: rgba(249, 248, 243, 0.95);
+  --marquee-bg: linear-gradient(160deg, #edfafa 0%, #f0fdfa 100%);
+  --marquee-fade-left: linear-gradient(to right, #edfafa, transparent);
+  --marquee-fade-right: linear-gradient(to left, #f0fdfa, transparent);
+}
+
+[data-theme="dark"] {
+  --bg-main: #111113;
+  --bg-card: #18181b;
+  --bg-card-hover: #222227;
+  --bg-sidebar: #0b0b0c;
+  --text-primary: #f4f4f5;
+  --text-secondary: #8a8a93;
+  --accent-primary: #0d9488;
+  --accent-hover: #14b8a6;
+  --accent-gradient: linear-gradient(135deg, #0d9488, #14b8a6);
+  --border-color: #222227;
+  --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --bg-header-rgba: rgba(11, 11, 13, 0.95);
+  --marquee-bg: linear-gradient(160deg, #022c22 0%, #0b0b0c 100%);
+  --marquee-fade-left: linear-gradient(to right, #022c22, transparent);
+  --marquee-fade-right: linear-gradient(to left, #0b0b0c, transparent);
+}
+
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="datetime-local"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #1e1e24 !important;
+  color: #f4f4f5 !important;
+  border-color: #2e2e34 !important;
+}
+
+[data-theme="dark"] select option {
+  background-color: #18181b !important;
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .class-pill-btn:not(.active-pill) {
+  background: #18181b !important;
+  border-color: #222227 !important;
+  color: #8a8a93 !important;
+}
+
+[data-theme="dark"] .class-pill-btn:not(.active-pill) span {
+  background: #222227 !important;
+  color: #8a8a93 !important;
+}
+
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+[data-theme="dark"] .modal-content {
+  background: #18181b !important;
+  border-color: #222227 !important;
+  color: #f4f4f5 !important;
 }
 
 .handwritten-signature {

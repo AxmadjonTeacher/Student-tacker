@@ -39,6 +39,8 @@ interface SidebarDrawerProps {
   onTabChange?: (tab: 'settings' | 'news' | 'teachers' | 'trash') => void;
   showSummerPlan?: boolean;
   onToggleSummerPlan?: () => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
 const getClassGroupLocal = (clsName: string): string => {
@@ -74,7 +76,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   activeTab: propActiveTab,
   onTabChange,
   showSummerPlan = true,
-  onToggleSummerPlan
+  onToggleSummerPlan,
+  isDarkMode = true,
+  onToggleDarkMode
 }) => {
   // Responsive check
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -699,14 +703,14 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           width: '100%',
           maxWidth: isInline ? 'none' : '410px',
           boxSizing: 'border-box',
-          background: '#fcfcf9',
+          background: 'var(--bg-main)',
           boxShadow: isInline ? 'none' : '-10px 0 40px -10px rgba(15, 23, 42, 0.08)',
           zIndex: isInline ? 1 : 1000,
           transform: isInline ? 'none' : (isOpen ? 'translateX(0)' : 'translateX(100%)'),
           transition: isInline ? 'none' : 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
           flexDirection: 'column',
-          borderLeft: isInline ? 'none' : '1px solid #e5e7eb',
+          borderLeft: isInline ? 'none' : '1px solid var(--border-color)',
           minHeight: isInline ? 'calc(100vh - 120px)' : undefined
         }}
       >
@@ -716,11 +720,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: '1px solid rgba(229, 231, 235, 0.6)'
+          borderBottom: '1px solid var(--border-color)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Settings size={18} color="var(--accent-primary)" strokeWidth={2.5} />
-            <h2 style={{ fontSize: '1.05rem', fontWeight: 850, color: '#0f172a', margin: 0, letterSpacing: '0.02em' }}>
+            <h2 style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em' }}>
               BOSHQARUV PANELI
             </h2>
           </div>
@@ -931,10 +935,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#1e293b', letterSpacing: '0.01em' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)', letterSpacing: '0.01em' }}>
                         ADMIN REJIMI
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.15rem', maxWidth: '240px', lineHeight: 1.4 }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem', maxWidth: '240px', lineHeight: 1.4 }}>
                         O'quvchi qo'shish, o'chirish va tahrirlash imkoniyatlari
                       </div>
                     </div>
@@ -962,6 +966,50 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         background: '#ffffff',
                         position: 'absolute',
                         left: isAdminMode ? '24px' : '4px',
+                        transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
+                      }} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Dark Mode Toggle */}
+              {onToggleDarkMode && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)', letterSpacing: '0.01em' }}>
+                        QORONG'U REJIM
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem', maxWidth: '240px', lineHeight: 1.4 }}>
+                        Tizimning qorong'u/tungi ko'rinishi
+                      </div>
+                    </div>
+                    <button 
+                      onClick={onToggleDarkMode}
+                      style={{
+                        width: '46px',
+                        height: '24px',
+                        borderRadius: '9999px',
+                        background: isDarkMode ? 'var(--accent-primary)' : '#cbd5e1',
+                        border: 'none',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        padding: 0,
+                        transition: 'background-color 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexShrink: 0
+                      }}
+                    >
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        position: 'absolute',
+                        left: isDarkMode ? '24px' : '4px',
                         transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
                       }} />

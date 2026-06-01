@@ -27,10 +27,10 @@ const Header: React.FC<HeaderProps> = ({
       position: 'sticky',
       top: 0,
       zIndex: 999,
-      background: 'rgba(249, 248, 243, 0.95)',
+      background: 'var(--bg-header-rgba)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      borderBottom: '1px solid rgba(229, 231, 235, 0.5)',
+      borderBottom: '1px solid var(--border-color)',
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
@@ -238,10 +238,10 @@ const Header: React.FC<HeaderProps> = ({
             style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain' }} 
           />
           <div>
-            <h1 className="cabinet-header-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0, textAlign: 'left' }}>
+            <h1 className="cabinet-header-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textAlign: 'left' }}>
               AL-XORAZMIY SCHOOL
             </h1>
-            <p className="cabinet-header-subtitle" style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, margin: 0, textAlign: 'left' }}>
+            <p className="cabinet-header-subtitle" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, margin: 0, textAlign: 'left' }}>
               ADMIN KABINETI
             </p>
           </div>
@@ -339,7 +339,7 @@ const Header: React.FC<HeaderProps> = ({
                   case 'MATH': return '#0d9488'; // teal
                   case 'ALL': return '#4f46e5'; // indigo
                   case 'DETAILS': return '#db2777'; // pink
-                  case 'DASHBOARD': return '#6366f1'; // indigo-purple
+                  case 'DASHBOARD': return '#0d9488'; // teal
                   default: return '#0d9488';
                 }
               };

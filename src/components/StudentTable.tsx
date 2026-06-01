@@ -570,9 +570,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
               <div 
                 className="table-card-container"
                 style={{
-                  background: '#ffffff',
+                  background: 'var(--bg-card)',
                   borderRadius: '16px',
-                  border: '1px solid #e5e7eb',
+                  border: '1px solid var(--border-color)',
                   boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
                   overflow: 'hidden',
                   marginBottom: '2rem'
@@ -584,19 +584,19 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   gridTemplateColumns: isAdminMode ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
                   alignItems: 'stretch',
                   padding: '0 1.5rem',
-                  borderBottom: '1px solid #f1f5f9',
-                  background: '#fafaf9',
-                  color: '#64748b',
+                  borderBottom: '1px solid var(--border-color)',
+                  background: 'var(--bg-card-hover)',
+                  color: 'var(--text-secondary)',
                   fontSize: '0.65rem',
                   fontWeight: 700,
                   letterSpacing: '0.08em'
                 }}>
                   <div style={{ 
                     fontWeight: 900, 
-                    color: '#0f172a', 
+                    color: 'var(--text-primary)', 
                     fontSize: '0.85rem', 
                     letterSpacing: '0.04em', 
-                    borderRight: '1px solid #e5e7eb', 
+                    borderRight: '1px solid var(--border-color)', 
                     display: 'flex', 
                     alignItems: 'center', 
                     padding: '0.5rem 0',
@@ -611,9 +611,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             value={selectedWeek}
                             onChange={(e) => onWeekChange(e.target.value)}
                             style={{
-                              background: '#f8fafc',
-                              color: '#1e293b',
-                              border: '1.5px solid #cbd5e1',
+                              background: 'var(--bg-card-hover)',
+                              color: 'var(--text-primary)',
+                              border: '1.5px solid var(--border-color)',
                               borderRadius: '8px',
                               padding: '0.35rem 1.75rem 0.35rem 0.65rem',
                               fontSize: '0.75rem',
@@ -771,20 +771,20 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         gridTemplateColumns: isAdminMode ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
                         alignItems: 'center',
                         padding: '1.2rem 1.5rem',
-                        borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
-                        background: '#ffffff',
+                        borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
+                        background: 'var(--bg-card)',
                         transition: 'all 0.2s ease',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#fafaf9'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
                     >
                       {/* Name block */}
-                      <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid #e5e7eb', height: '100%' }}>
+                      <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid var(--border-color)', height: '100%' }}>
                         <div 
                           onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
                           style={{ 
                             width: '52px', height: '52px', borderRadius: '50%', 
-                            background: '#4f46e5', color: '#ffffff',
+                            background: 'var(--accent-primary)', color: '#ffffff',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '1.1rem', fontWeight: 600, flexShrink: 0,
                             cursor: onUpdatePhoto ? 'pointer' : 'default',
@@ -800,55 +800,55 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           )}
                         </div>
                         <div>
-                          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#1a1a1a' }}>
+                          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                             {student.name} {student.surname}
                           </h3>
-                          <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: '#9ca3af', letterSpacing: '0.05em' }}>
+                          <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                             SINF {student.className.toUpperCase()}
                           </p>
                         </div>
                       </div>
 
                       {/* Eng Score block */}
-                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Ingliz tili</span>
-                        <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                           {engPercent.toFixed(2)}%
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           {student.engScore || 0} / 15
                         </div>
                       </div>
 
                       {/* Math Score block */}
-                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Matematika</span>
-                        <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                           {mathPercent.toFixed(2)}%
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           {student.mathScore || 0} / 15
                         </div>
                       </div>
 
                       {/* Attendance block */}
-                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Davomat</span>
-                        <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                           {attPercent.toFixed(2)}%
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           {student.attendance || 1} ({absences} dars)
                         </div>
                       </div>
 
                       {/* Homework block */}
-                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid #e5e7eb', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Vazifalar</span>
-                        <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.95rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                           {hwPercent.toFixed(2)}%
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           {student.homework || 1} ({missedHw} vazifa)
                         </div>
                       </div>
@@ -859,7 +859,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onClick={() => setSelectedStudent(student)}
                         style={{ 
                           padding: '0 1.5rem', 
-                          borderRight: isAdminMode ? '1px solid #e5e7eb' : 'none', 
+                          borderRight: isAdminMode ? '1px solid var(--border-color)' : 'none', 
                           height: '100%', 
                           display: 'flex', 
                           alignItems: 'center',
@@ -886,7 +886,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               width="12" 
                               height={(engPercent / 100) * 32} 
                               rx="3" 
-                              fill="#6366f1"
+                              fill="#0d9488"
                             >
                               <title>English Score: {engPercent.toFixed(2)}% ({student.engScore || 0}/15)</title>
                             </rect>
@@ -899,7 +899,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               width="12" 
                               height={(mathPercent / 100) * 32} 
                               rx="3" 
-                              fill="#14b8a6"
+                              fill="#f97316"
                             >
                               <title>Math Score: {mathPercent.toFixed(2)}% ({student.mathScore || 0}/15)</title>
                             </rect>
@@ -912,7 +912,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               width="12" 
                               height={(attPercent / 100) * 32} 
                               rx="3" 
-                              fill="#f97316"
+                              fill="#6b7280"
                             >
                               <title>Attendance: {attPercent.toFixed(2)}% ({absences} absences)</title>
                             </rect>
@@ -931,7 +931,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             </rect>
                           </g>
                           {/* Bottom baseline */}
-                          <line x1="0" y1="39" x2="74" y2="39" stroke="#cbd5e1" strokeWidth="1" />
+                          <line x1="0" y1="39" x2="74" y2="39" stroke="var(--border-color)" strokeWidth="1" />
                         </svg>
                       </div>
 
@@ -979,9 +979,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
               <div 
                 className="table-card-container"
                 style={{
-                  background: '#ffffff',
+                  background: 'var(--bg-card)',
                   borderRadius: '16px',
-                  border: '1px solid #e5e7eb',
+                  border: '1px solid var(--border-color)',
                   boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
                   overflow: 'hidden',
                   marginBottom: '2rem'
@@ -993,19 +993,19 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2fr 1fr',
                   alignItems: 'stretch',
                   padding: '0 1.5rem',
-                  borderBottom: '1px solid #f1f5f9',
-                  background: '#fafaf9',
-                  color: '#64748b',
+                  borderBottom: '1px solid var(--border-color)',
+                  background: 'var(--bg-card-hover)',
+                  color: 'var(--text-secondary)',
                   fontSize: '0.65rem',
                   fontWeight: 700,
                   letterSpacing: '0.08em'
                 }}>
-                  <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', padding: '0.9rem 0' }}>
+                  <div style={{ fontWeight: 900, color: 'var(--text-primary)', fontSize: '0.85rem', letterSpacing: '0.04em', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', padding: '0.9rem 0' }}>
                     TAFSILOTLAR VA ID/PAROLLAR
                   </div>
-                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>ID RAQAMI</div>
-                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>PAROL (PASSCODE)</div>
-                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>TELEFON RAQAMI</div>
+                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>ID RAQAMI</div>
+                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>PAROL (PASSCODE)</div>
+                  <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>TELEFON RAQAMI</div>
                   <div style={{ 
                     padding: '0.5rem 1rem', 
                     display: 'flex', 
@@ -1082,17 +1082,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2fr 1fr',
                         alignItems: 'center',
                         padding: '1.1rem 1.5rem',
-                        borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
-                        background: '#ffffff',
+                        borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
+                        background: 'var(--bg-card)',
                         transition: 'all 0.15s ease',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#fafaf9'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
                     >
                       {/* Name/Surname Block */}
                       <div 
                         className="name-block" 
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid #e5e7eb', height: '100%', cursor: 'pointer' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--border-color)', height: '100%', cursor: 'pointer' }}
                         onDoubleClick={() => handleDoubleClick('name', fullName)}
                         title="Tahrirlash uchun ikki marta bosing"
                       >
@@ -1343,20 +1343,20 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     gridTemplateColumns: showSummerPlan ? '2.5fr 1fr 1.5fr 1.5fr 1.5fr' : '2.5fr 1.25fr 1.75fr 1.5fr',
                     alignItems: 'stretch',
                     padding: '0 1.5rem',
-                    borderBottom: '1px solid #f1f5f9',
-                    background: '#fafaf9',
-                    color: '#64748b',
+                    borderBottom: '1px solid var(--border-color)',
+                    background: 'var(--bg-card-hover)',
+                    color: 'var(--text-secondary)',
                     fontSize: '0.65rem',
                     fontWeight: 700,
                     letterSpacing: '0.08em'
                   }}>
-                    <div style={{ fontWeight: 900, color: '#0f172a', fontSize: '0.85rem', letterSpacing: '0.04em', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', padding: '0.9rem 0' }}>
+                    <div style={{ fontWeight: 900, color: 'var(--text-primary)', fontSize: '0.85rem', letterSpacing: '0.04em', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', padding: '0.9rem 0' }}>
                       {group.teacher ? `O'QITUVCHI: ${group.teacher.toUpperCase()}` : "O'QITUVCHI BIRIKTIRILMAGAN"}
                     </div>
-                    <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>AVVALGI DARAJA</div>
-                    <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>HOZIRGI DARAJA</div>
+                    <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>AVVALGI DARAJA</div>
+                    <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>HOZIRGI DARAJA</div>
                     {showSummerPlan && (
-                      <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', color: '#ea580c', fontWeight: 800 }}>☀️ YOZGI REJA</div>
+                      <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', color: '#ea580c', fontWeight: 800 }}>☀️ YOZGI REJA</div>
                     )}
                     <div style={{ 
                       padding: '0.9rem 1.5rem', 
@@ -1583,17 +1583,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           gridTemplateColumns: showSummerPlan ? '2.5fr 1fr 1.5fr 1.5fr 1.5fr' : '2.5fr 1.25fr 1.75fr 1.5fr',
                           alignItems: 'center',
                           padding: '1.2rem 1.5rem',
-                          borderBottom: isLast ? 'none' : '1px solid #f3f4f6',
-                          background: '#ffffff',
+                          borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
+                          background: 'var(--bg-card)',
                           transition: 'all 0.2s ease',
                           cursor: isAdminMode ? 'grab' : 'default',
                           opacity: draggedId === student.id ? 0.45 : 1
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fafaf9'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
                       >
                         {/* Name block */}
-                        <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid #e5e7eb', height: '100%' }}>
+                        <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid var(--border-color)', height: '100%' }}>
                           <div 
                             onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
                             style={{ 

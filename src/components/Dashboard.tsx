@@ -98,17 +98,17 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({ engData, mathData, labe
       {yTicks.map(tick => (
         <g key={tick}>
           <line x1={PL} y1={toY(tick)} x2={W - PR} y2={toY(tick)}
-            stroke="#e2e8f0" strokeWidth="1"
+            stroke="var(--border-color)" strokeWidth="1"
             strokeDasharray={tick === 0 ? 'none' : '5,4'} />
           <text x={PL - 6} y={toY(tick) + 4} textAnchor="end"
-            fontSize="10" fontWeight="700" fill="#94a3b8">{tick}%</text>
+            fontSize="10" fontWeight="700" fill="var(--text-secondary)">{tick}%</text>
         </g>
       ))}
 
       {/* X-axis labels */}
       {labels.map((lbl, i) => (
         <text key={i} x={toX(i)} y={H - PT + 16}
-          textAnchor="middle" fontSize="11" fontWeight="800" fill="#475569">{lbl}</text>
+          textAnchor="middle" fontSize="11" fontWeight="800" fill="var(--text-secondary)">{lbl}</text>
       ))}
 
       {/* Area fills — fade in after lines */}
@@ -209,7 +209,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
   const segments = [
     { value: engPct,  color: '#0d9488', offset: 0 },
     { value: mathPct, color: '#f97316', offset: engPct },
-    { value: restPct, color: '#e2e8f0', offset: engPct + mathPct },
+    { value: restPct, color: 'var(--border-color)', offset: engPct + mathPct },
   ];
 
   const dashFor = (pct: number) => (pct / 100) * circ;
@@ -227,7 +227,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
             <feDropShadow dx="0" dy="2" stdDeviation="5" floodOpacity="0.13" />
           </filter>
         </defs>
-        <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f1f5f9" strokeWidth={strokeW} />
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="var(--bg-main)" strokeWidth={strokeW} />
         {segments.map((seg, i) => {
           const dash = dashFor(visible ? seg.value : 0);
           const gap  = circ - dash;
@@ -245,10 +245,10 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
             />
           );
         })}
-        <text x={cx} y={cy - 10} textAnchor="middle" fontSize="30" fontWeight="900" fill="#0f172a">
+        <text x={cx} y={cy - 10} textAnchor="middle" fontSize="30" fontWeight="900" fill="var(--text-primary)">
           {displayTotal}
         </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#64748b">
+        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text-secondary)">
           o'quvchi
         </text>
       </svg>
@@ -259,11 +259,11 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <div style={{ width: '11px', height: '11px', borderRadius: '3px', background: '#0d9488' }} />
-              <span style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 700 }}>Inglizcha L4+</span>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Inglizcha L4+</span>
             </div>
             <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0d9488' }}>{displayEngPct}%</span>
           </div>
-          <div style={{ height: '6px', borderRadius: '99px', background: '#e2e8f0', overflow: 'hidden' }}>
+          <div style={{ height: '6px', borderRadius: '99px', background: 'var(--border-color)', overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: '99px',
               background: 'linear-gradient(90deg,#2dd4bf,#0d9488)',
@@ -277,11 +277,11 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <div style={{ width: '11px', height: '11px', borderRadius: '3px', background: '#f97316' }} />
-              <span style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 700 }}>Matematika L4+</span>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Matematika L4+</span>
             </div>
             <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#f97316' }}>{displayMathPct}%</span>
           </div>
-          <div style={{ height: '6px', borderRadius: '99px', background: '#e2e8f0', overflow: 'hidden' }}>
+          <div style={{ height: '6px', borderRadius: '99px', background: 'var(--border-color)', overflow: 'hidden' }}>
             <div style={{
               height: '100%', borderRadius: '99px',
               background: 'linear-gradient(90deg,#fdba74,#f97316)',
@@ -294,10 +294,18 @@ const DonutChart: React.FC<DonutChartProps> = ({ engPct, mathPct, total, visible
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <div style={{ width: '11px', height: '11px', borderRadius: '3px', background: '#cbd5e1' }} />
-              <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 700 }}>Rivojlanayotgan</span>
+              <div style={{ width: '11px', height: '11px', borderRadius: '3px', background: 'var(--border-color)' }} />
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Rivojlanayotgan</span>
             </div>
-            <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#94a3b8' }}>{displayRest}%</span>
+            <span style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-secondary)' }}>{displayRest}%</span>
+          </div>
+          <div style={{ height: '6px', borderRadius: '99px', background: 'var(--border-color)', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: '99px',
+              background: 'var(--border-color)',
+              width: visible ? `${restPct}%` : '0%',
+              transition: 'width 1.4s cubic-bezier(0.4,0,0.2,1) 0.7s'
+            }} />
           </div>
         </div>
       </div>
@@ -425,10 +433,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
       `}} />
 
       {/* ── Velocity Scroll Banner ─────────────────────────────────────────
-          Light teal-to-blue bg, solid clean text, NO sparks/separators     */}
+          Light teal bg, solid clean text, NO sparks/separators     */}
       <div style={{
-        background: 'linear-gradient(160deg, #edfafa 0%, #eff6ff 100%)',
-        border: '1.5px solid #e2e8f0',
+        background: 'var(--marquee-bg)',
+        border: '1.5px solid var(--border-color)',
         borderRadius: '24px',
         overflow: 'hidden',
         position: 'relative',
@@ -439,12 +447,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
           {/* Edge fades that match the background */}
           <div style={{
             position: 'absolute', top: 0, left: 0, bottom: 0, width: '72px',
-            background: 'linear-gradient(to right,#edfafa,transparent)',
+            background: 'var(--marquee-fade-left)',
             zIndex: 10, pointerEvents: 'none'
           }} />
           <div style={{
             position: 'absolute', top: 0, right: 0, bottom: 0, width: '72px',
-            background: 'linear-gradient(to left,#eff6ff,transparent)',
+            background: 'var(--marquee-fade-right)',
             zIndex: 10, pointerEvents: 'none'
           }} />
 
@@ -467,7 +475,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
               </div>
             </div>
 
-            {/* Row 2 ← Ta'limda Innovatsiya — solid indigo, bold, no sparks */}
+            {/* Row 2 ← Ta'limda Innovatsiya — solid teal accent, bold, no sparks */}
             <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
               <div className="marquee-right" style={{
                 display: 'inline-flex',
@@ -476,7 +484,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
                 fontSize: '2.3rem',
                 fontWeight: 800,
                 letterSpacing: '-0.01em',
-                color: '#6366f1'
+                color: '#14b8a6'
               }}>
                 {Array.from({ length: 12 }).map((_, i) => (
                   <span key={i}>Ta'limda Innovatsiya</span>
@@ -500,20 +508,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
       >
         {/* Chart 1 ── Rising Trend Line */}
         <div className="chart-card" style={{
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           borderRadius: '22px',
           padding: '1.75rem',
-          border: '1.5px solid #e2e8f0',
-          boxShadow: '0 10px 40px -10px rgba(13,148,136,0.09), 0 4px 6px -2px rgba(0,0,0,0.04)',
+          border: '1.5px solid var(--border-color)',
+          boxShadow: 'var(--glass-shadow)',
           display: 'flex',
           flexDirection: 'column',
           gap: '1.25rem'
         }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               Yuqori darajali o'quvchilar o'sishi
             </h3>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
               L3+ darajasiga erishgan o'quvchilar foizi (davr bo'yicha)
             </p>
           </div>
@@ -538,7 +546,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
               visible={chartsVisible}
             />
           ) : (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               Ma'lumot mavjud emas
             </div>
           )}
@@ -546,20 +554,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
 
         {/* Chart 2 ── Donut: Level 4+ Achievement */}
         <div className="chart-card" style={{
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           borderRadius: '22px',
           padding: '1.75rem',
-          border: '1.5px solid #e2e8f0',
-          boxShadow: '0 10px 40px -10px rgba(249,115,22,0.09), 0 4px 6px -2px rgba(0,0,0,0.04)',
+          border: '1.5px solid var(--border-color)',
+          boxShadow: 'var(--glass-shadow)',
           display: 'flex',
           flexDirection: 'column',
           gap: '1.25rem'
         }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               4-daraja yutuqlari
             </h3>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
               B2 / Level 4+ ga erishgan o'quvchilar foizi
             </p>
           </div>
@@ -572,7 +580,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, studentWeeks }) 
               visible={chartsVisible}
             />
           ) : (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8', fontSize: '0.9rem' }}>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               Ma'lumot mavjud emas
             </div>
           )}
