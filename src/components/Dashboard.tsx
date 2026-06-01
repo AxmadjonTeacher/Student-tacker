@@ -4,7 +4,7 @@ import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart
 } from 'recharts';
-import { Search, ChevronDown, Award, Sparkles, TrendingUp, Calendar, User } from 'lucide-react';
+import { Award, Calendar, User, TrendingUp } from 'lucide-react';
 
 interface DashboardProps {
   students: Student[];
@@ -58,13 +58,8 @@ const parseWeekValue = (weekStr: string): number => {
 export const Dashboard: React.FC<DashboardProps> = ({ 
   students, 
   studentWeeks, 
-  availableClasses, 
-  onSelectClass,
   authRole = null
 }) => {
-  const [selectedClassFilter, setSelectedClassFilter] = useState('Umumiy Tahlil');
-  const [searchTerm, setSearchTerm] = useState('');
-  
   // Active/non-deleted students
   const activeStudents = useMemo(() => students.filter(s => !s.isDeleted), [students]);
 
@@ -88,19 +83,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Chart States
   const [chartSubject, setChartSubject] = useState<'ENG' | 'MATH'>('ENG');
   const [chartClassGroup, setChartClassGroup] = useState<'5-6' | '7-8' | '9-11'>('5-6');
-
-  // Filter students by general header filters
-  const filteredStudents = useMemo(() => {
-    return activeStudents.filter(s => {
-      const matchSearch = (s.name + ' ' + s.surname).toLowerCase().includes(searchTerm.toLowerCase());
-      if (selectedClassFilter === 'Umumiy Tahlil') return matchSearch;
-      
-      const matchesClass = s.className === selectedClassFilter || 
-                           s.className.toUpperCase().startsWith(selectedClassFilter.toUpperCase()) ||
-                           s.className.toUpperCase().replace('-SINF', '') === selectedClassFilter.toUpperCase().replace('-SINF', '');
-      return matchSearch && matchesClass;
-    });
-  }, [activeStudents, selectedClassFilter, searchTerm]);
 
   // Role Formatted Display
   const roleDisplay = useMemo(() => {
@@ -127,7 +109,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Compute Top 3 Students
   const topStudents = useMemo(() => {
     const getTopInRange = (min: number, max: number) => {
-      const candidates = filteredStudents.filter(s => {
+      const candidates = activeStudents.filter(s => {
         const grade = getGradeNumber(s.className);
         return grade >= min && grade <= max;
       });
@@ -144,7 +126,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       grades7_8: getTopInRange(7, 8),
       grades9_11: getTopInRange(9, 11)
     };
-  }, [filteredStudents]);
+  }, [activeStudents]);
 
   // Compute Weekly Leaders
   const weeklyLeaders = useMemo(() => {
@@ -154,7 +136,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const weekRecords = studentWeeks.filter(sw => sw.week === activeLeaderWeek && !sw.is_deleted);
     
     const leaders = weekRecords.map(sw => {
-      const student = filteredStudents.find(s => s.id === sw.student_id);
+      const student = activeStudents.find(s => s.id === sw.student_id);
       if (!student) return null;
       
       const engPct = sw.eng_score != null ? Math.round((sw.eng_score / 15) * 100) : 0;
@@ -172,9 +154,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       };
     }).filter(Boolean) as any[];
 
-    // Sort descending by average
-    return leaders.sort((a, b) => b.avg - a.avg).slice(0, 5);
-  }, [filteredStudents, studentWeeks, activeLeaderWeek]);
+    // Sort descending by average - show top 10
+    return leaders.sort((a, b) => b.avg - a.avg).slice(0, 10);
+  }, [activeStudents, studentWeeks, activeLeaderWeek]);
 
   // Compute Term Mastery Line Chart data
   const termMasteryData = useMemo(() => {
@@ -184,7 +166,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const [minGrade, maxGrade] = chartClassGroup === '5-6' ? [5, 6] : chartClassGroup === '7-8' ? [7, 8] : [9, 11];
     
     // Filter active students in this range
-    const rangeStudents = filteredStudents.filter(s => {
+    const rangeStudents = activeStudents.filter(s => {
       const gr = getGradeNumber(s.className);
       return gr >= minGrade && gr <= maxGrade;
     });
@@ -220,7 +202,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         Natija: average
       };
     });
-  }, [filteredStudents, chartSubject, chartClassGroup]);
+  }, [activeStudents, chartSubject, chartClassGroup]);
 
   // Compute Average Attendance History Line Chart (last 4 weeks)
   const attendanceHistoryData = useMemo(() => {
@@ -230,14 +212,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       let count = 0;
 
       weekRecords.forEach(sw => {
-        // Check if student belongs to filtered/searched list
-        const existsInFiltered = filteredStudents.some(fs => fs.id === sw.student_id);
-        if (existsInFiltered) {
-          const absences = sw.attendance < 0 ? -sw.attendance : 0;
-          const attPercent = Math.max(0, 100 - absences * 16.67);
-          attendanceSum += attPercent;
-          count++;
-        }
+        const absences = sw.attendance < 0 ? -sw.attendance : 0;
+        const attPercent = Math.max(0, 100 - absences * 16.67);
+        attendanceSum += attPercent;
+        count++;
       });
 
       const average = count > 0 ? Math.round(attendanceSum / count) : 100;
@@ -246,33 +224,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         Davomat: average
       };
     });
-  }, [studentWeeks, last4Weeks, filteredStudents]);
-
-  const handleDropdownChange = (val: string) => {
-    setSelectedClassFilter(val);
-    if (val !== 'Umumiy Tahlil') {
-      onSelectClass(val);
-    }
-  };
+  }, [studentWeeks, last4Weeks]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', width: '100%', animation: 'fadeIn 0.4s ease-out' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', animation: 'fadeIn 0.4s ease-out', marginTop: '-0.85rem' }}>
       
       {/* ── STYLES ────────────────────────────────────────────────────────── */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
-        }
-        .header-dropdown-btn {
-          background: var(--bg-card);
-          border: 1.5px solid var(--border-color);
-          color: var(--text-primary);
-          transition: all 0.2s ease;
-        }
-        .header-dropdown-btn:hover {
-          border-color: var(--accent-primary);
-          background: var(--bg-card-hover);
         }
         .profile-badge {
           background: var(--bg-card);
@@ -353,111 +314,57 @@ export const Dashboard: React.FC<DashboardProps> = ({
       `}} />
 
       {/* ── HEADER ROW ────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1.25rem', width: '100%' }}>
-        
-        {/* Title & Dropdown Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.03em' }}>
-            Bosh Sahifa
-          </h1>
-          
-          <div style={{ position: 'relative' }}>
-            <select
-              value={selectedClassFilter}
-              onChange={(e) => handleDropdownChange(e.target.value)}
-              className="header-dropdown-btn"
-              style={{
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                padding: '0.6rem 2.25rem 0.6rem 1rem',
-                borderRadius: '9999px',
-                fontSize: '0.85rem',
-                fontWeight: 750,
-                outline: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit'
-              }}
-            >
-              <option value="Umumiy Tahlil">Umumiy Tahlil</option>
-              {availableClasses.map(cls => (
-                <option key={cls} value={cls}>{cls}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: '0.95rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', pointerEvents: 'none' }} />
-          </div>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '0.25rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.03em' }}>
+          Bosh Sahifa
+        </h1>
 
-        {/* Search Bar & Role Info Profile */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', width: '240px' }}>
-            <Search size={15} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-            <input
-              type="text"
-              placeholder="Qidirish..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.55rem 0.85rem 0.55rem 2.15rem',
-                borderRadius: '9999px',
-                border: '1.5px solid var(--border-color)',
-                background: 'var(--bg-card)',
-                color: 'var(--text-primary)',
-                fontSize: '0.85rem',
-                outline: 'none',
-                transition: 'all 0.2s',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {/* Profile Container */}
-          <div className="profile-container">
-            <div className="profile-badge" style={{
+        {/* Profile Container */}
+        <div className="profile-container">
+          <div className="profile-badge" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            padding: '0.45rem 1rem',
+            borderRadius: '9999px',
+            cursor: 'pointer'
+          }}>
+            {/* Avatar circular badge */}
+            <div style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              background: 'var(--accent-gradient)',
+              color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.6rem',
-              padding: '0.45rem 1rem',
-              borderRadius: '9999px',
-              cursor: 'pointer'
+              justifyContent: 'center',
+              fontSize: '0.75rem',
+              fontWeight: 900
             }}>
-              {/* Avatar circular badge */}
-              <div style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                background: 'var(--accent-gradient)',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}>
-                {avatarInitials}
-              </div>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>{roleDisplay}</span>
+              {avatarInitials}
             </div>
-            
-            {/* Small Hover role description popup */}
-            <div className="profile-hover-popup">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <User size={14} color="var(--accent-primary)" />
-                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Faol Rol:</span>
-                </div>
-                <div style={{ 
-                  fontSize: '0.85rem', 
-                  fontWeight: 900, 
-                  color: 'var(--text-primary)',
-                  background: 'var(--bg-card-hover)',
-                  padding: '0.4rem 0.6rem',
-                  borderRadius: '6px',
-                  border: '1px solid var(--border-color)',
-                  textAlign: 'center'
-                }}>
-                  {roleDisplay}
-                </div>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>{roleDisplay}</span>
+          </div>
+          
+          {/* Hover popup */}
+          <div className="profile-hover-popup">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <User size={14} color="var(--accent-primary)" />
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Faol Rol:</span>
+              </div>
+              <div style={{ 
+                fontSize: '0.85rem', 
+                fontWeight: 900, 
+                color: 'var(--text-primary)',
+                background: 'var(--bg-card-hover)',
+                padding: '0.4rem 0.6rem',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                textAlign: 'center'
+              }}>
+                {roleDisplay}
               </div>
             </div>
           </div>
@@ -465,16 +372,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* ── TOP 3 STUDENTS SECTION ───────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-        <h2 style={{ fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-          <Award size={18} color="var(--accent-primary)" strokeWidth={2.5} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+        <h2 style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <Award size={16} color="var(--accent-primary)" strokeWidth={2.5} />
           Top 3 O'quvchilar
         </h2>
         
         <div className="top3-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
           {/* Card 1: 5-6 Grades */}
           <div className="top3-card" style={{ borderRadius: '20px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.62rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '0.2rem 0.5rem', borderRadius: '999px', letterSpacing: '0.04em' }}>5-6 SINFLAR</span>
+            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.52rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '0.15rem 0.45rem', borderRadius: '999px', letterSpacing: '0.04em' }}>5-6 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades5_6?.pictureUrl ? (
                 <img src={topStudents.grades5_6.pictureUrl} alt="avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
@@ -496,7 +403,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Card 2: 7-8 Grades */}
           <div className="top3-card" style={{ borderRadius: '20px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.62rem', fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '0.2rem 0.5rem', borderRadius: '999px', letterSpacing: '0.04em' }}>7-8 SINFLAR</span>
+            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.52rem', fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '0.15rem 0.45rem', borderRadius: '999px', letterSpacing: '0.04em' }}>7-8 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades7_8?.pictureUrl ? (
                 <img src={topStudents.grades7_8.pictureUrl} alt="avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
@@ -518,7 +425,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Card 3: 9-11 Grades */}
           <div className="top3-card" style={{ borderRadius: '20px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.62rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '0.2rem 0.5rem', borderRadius: '999px', letterSpacing: '0.04em' }}>9-11 SINFLAR</span>
+            <span style={{ position: 'absolute', top: '0.75rem', right: '0.95rem', fontSize: '0.52rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '0.15rem 0.45rem', borderRadius: '999px', letterSpacing: '0.04em' }}>9-11 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades9_11?.pictureUrl ? (
                 <img src={topStudents.grades9_11.pictureUrl} alt="avatar" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
@@ -557,8 +464,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }}>
           {/* Header & Tabs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <Sparkles size={16} color="#f59e0b" />
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
               Hafta Liderlari
             </h2>
             

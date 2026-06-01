@@ -66,7 +66,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
         {payload.map((entry: any, index: number) => {
           let dotColor = entry.color;
           if (entry.dataKey === 'hwPercent' || entry.value === 'Vazifalar') {
-            dotColor = '#15803d';
+            dotColor = '#10b981';
           }
           return (
             <li key={`item-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
@@ -259,12 +259,12 @@ const GraphModal: React.FC<GraphModalProps> = ({
     {
       name: 'Davomat',
       value: Math.round(attPercent * 100) / 100,
-      color: '#f97316' // Orange
+      color: '#3b82f6'
     },
     {
       name: 'Vazifalar',
       value: Math.round(hwPercent * 100) / 100,
-      color: '#15803d' // Dark Green
+      color: '#10b981'
     }
   ];
 
@@ -857,19 +857,19 @@ const GraphModal: React.FC<GraphModalProps> = ({
                     type="monotone" 
                     dataKey="attPercent" 
                     name="Davomat" 
-                    stroke="#f97316" 
+                    stroke="#3b82f6" 
                     strokeWidth={3.5} 
-                    dot={{ r: 4, fill: '#ffffff', stroke: '#f97316', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#f97316', stroke: '#ffffff', strokeWidth: 2 }}
+                    dot={{ r: 4, fill: '#ffffff', stroke: '#3b82f6', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 2 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="hwPercent" 
                     name="Vazifalar" 
-                    stroke="#15803d" 
+                    stroke="#10b981" 
                     strokeWidth={3.5} 
-                    dot={{ r: 4, fill: '#ffffff', stroke: '#15803d', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#15803d', stroke: '#ffffff', strokeWidth: 2 }}
+                    dot={{ r: 4, fill: '#ffffff', stroke: '#10b981', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
