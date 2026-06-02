@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   UploadCloud, X, Download, Trash2, UserPlus, Settings,
   Calendar, AlertCircle, Tag, Image as ImageIcon, Plus, 
-  ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut
+  ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut, Edit3
 } from 'lucide-react';
 import Papa from 'papaparse';
 import type { Student, ActiveSubject, Teacher } from '../types';
@@ -34,6 +34,7 @@ interface SidebarDrawerProps {
   teachers: Teacher[];
   onAddTeacher: (name: string, subject: 'ENG' | 'MATH') => Promise<void>;
   onDeleteTeacher: (id: number) => Promise<void>;
+  onEditTeacher: (id: number, newName: string) => Promise<void>;
   authRole?: string | null;
   activeTab?: 'settings' | 'news' | 'teachers' | 'trash';
   onTabChange?: (tab: 'settings' | 'news' | 'teachers' | 'trash') => void;
@@ -72,6 +73,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   teachers,
   onAddTeacher,
   onDeleteTeacher,
+  onEditTeacher,
   authRole,
   activeTab: propActiveTab,
   onTabChange,
@@ -2023,8 +2025,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 
                 {/* English Teachers */}
                 <div>
-                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#166534', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#166534' }} />
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent-primary)', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />
                     INGLIZ TILI O'QITUVCHILARI ({teachers.filter(t => t.subject === 'ENG').length} ta)
                   </div>
                   
@@ -2049,24 +2051,57 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           }}
                         >
                           <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
-                           {isAdminMode && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
-                                  onDeleteTeacher(teacher.id);
-                                }
-                              }}
-                              style={{
-                                background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', color: '#ef4444', border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid #fee2e2',
-                                borderRadius: '8px', padding: '0.3rem', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                transition: 'all 0.15s'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                          {isAdminMode && (
+                            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                              <button
+                                onClick={() => {
+                                  const newName = window.prompt("O'qituvchi ismini tahrirlash:", teacher.name);
+                                  if (newName && newName.trim() !== '' && newName.trim() !== teacher.name) {
+                                    onEditTeacher(teacher.id, newName.trim());
+                                  }
+                                }}
+                                style={{
+                                  background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
+                                  color: '#3b82f6',
+                                  border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
+                                  borderRadius: '8px',
+                                  padding: '0.3rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; }}
+                              >
+                                <Edit3 size={13} />
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                    onDeleteTeacher(teacher.id);
+                                  }
+                                }}
+                                style={{
+                                  background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                                  color: '#ef4444',
+                                  border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
+                                  borderRadius: '8px',
+                                  padding: '0.3rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           )}
                         </div>
                       ))
@@ -2076,8 +2111,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
                 {/* Math Teachers */}
                 <div>
-                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent-primary)', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#f97316', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f97316' }} />
                     MATEMATIKA O'QITUVCHILARI ({teachers.filter(t => t.subject === 'MATH').length} ta)
                   </div>
                   
@@ -2102,24 +2137,57 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           }}
                         >
                           <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
-                           {isAdminMode && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
-                                  onDeleteTeacher(teacher.id);
-                                }
-                              }}
-                              style={{
-                                background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2', color: '#ef4444', border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid #fee2e2',
-                                borderRadius: '8px', padding: '0.3rem', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                transition: 'all 0.15s'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                          {isAdminMode && (
+                            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                              <button
+                                onClick={() => {
+                                  const newName = window.prompt("O'qituvchi ismini tahrirlash:", teacher.name);
+                                  if (newName && newName.trim() !== '' && newName.trim() !== teacher.name) {
+                                    onEditTeacher(teacher.id, newName.trim());
+                                  }
+                                }}
+                                style={{
+                                  background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
+                                  color: '#3b82f6',
+                                  border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
+                                  borderRadius: '8px',
+                                  padding: '0.3rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; }}
+                              >
+                                <Edit3 size={13} />
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                    onDeleteTeacher(teacher.id);
+                                  }
+                                }}
+                                style={{
+                                  background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                                  color: '#ef4444',
+                                  border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
+                                  borderRadius: '8px',
+                                  padding: '0.3rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           )}
                         </div>
                       ))

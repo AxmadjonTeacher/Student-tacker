@@ -1033,6 +1033,21 @@ function App() {
     );
   };
 
+  const handleEditTeacher = async (id: number, newName: string) => {
+    try {
+      const { error } = await supabase
+        .from('teachers')
+        .update({ name: newName })
+        .eq('id', id);
+      if (error) throw error;
+      setTeachers(prev => prev.map(t => t.id === id ? { ...t, name: newName } : t));
+      showAlert("Muvaffaqiyatli", "O'qituvchi ismi muvaffaqiyatli tahrirlandi!");
+    } catch (err: any) {
+      console.error('Failed to update teacher:', err);
+      showAlert("Xatolik", "O'qituvchini tahrirlashda xatolik yuz berdi: " + err.message);
+    }
+  };
+
   const handleUpdateStudentPhoto = async (studentId: string, photoUrl: string) => {
     setStudents(prev => prev.map(s =>
       s.id === studentId ? { ...s, pictureUrl: photoUrl } : s
@@ -2234,6 +2249,7 @@ function App() {
             teachers={teachers}
             onAddTeacher={handleAddTeacher}
             onDeleteTeacher={handleDeleteTeacher}
+            onEditTeacher={handleEditTeacher}
             authRole={authRole}
             showSummerPlan={showSummerPlan}
             onToggleSummerPlan={() => setShowSummerPlan(!showSummerPlan)}
@@ -2316,7 +2332,6 @@ function App() {
 
         {showPasscodeModal && (
           <PasscodeModal
-            activeSubject={activeSubject}
             onClose={() => setShowPasscodeModal(false)}
             onSuccess={() => {
               setIsAdminMode(true);
@@ -2813,6 +2828,7 @@ function App() {
               teachers={teachers}
               onAddTeacher={handleAddTeacher}
               onDeleteTeacher={handleDeleteTeacher}
+              onEditTeacher={handleEditTeacher}
               authRole={authRole}
               showSummerPlan={showSummerPlan}
               onToggleSummerPlan={() => setShowSummerPlan(!showSummerPlan)}
@@ -2850,7 +2866,6 @@ function App() {
       {/* Passcode Modal */}
       {showPasscodeModal && (
         <PasscodeModal
-          activeSubject={activeSubject}
           onClose={() => setShowPasscodeModal(false)}
           onSuccess={() => {
             setIsAdminMode(true);

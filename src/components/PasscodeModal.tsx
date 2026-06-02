@@ -1,24 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Lock, KeyRound } from 'lucide-react';
 
-import type { ActiveSubject } from '../types';
 
 interface PasscodeModalProps {
   onClose: () => void;
   onSuccess: () => void;
-  activeSubject: ActiveSubject;
 }
 
-const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activeSubject }) => {
+const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess }) => {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isMath = activeSubject === 'MATH';
-  const isAll = activeSubject === 'ALL';
-  const isDetails = activeSubject === 'DETAILS';
-  const activeThemeColor = isMath ? '#0d9488' : isAll ? '#4f46e5' : isDetails ? '#db2777' : '#166534';
+  const activeThemeColor = 'var(--accent-primary)';
 
   useEffect(() => {
     // Autofocus input on open
@@ -52,7 +47,7 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
         position: 'fixed',
         top: 0, left: 0, right: 0, bottom: 0,
         backdropFilter: 'blur(8px)', 
-        background: 'rgba(0, 0, 0, 0.45)', 
+        background: 'rgba(0, 0, 0, 0.6)', 
         zIndex: 2000,
         display: 'flex',
         alignItems: 'center',
@@ -65,11 +60,11 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
         style={{ 
           maxWidth: '400px', 
           width: '90%',
-          background: '#fcfcf9', 
+          background: 'var(--bg-card)', 
           borderRadius: '24px',
           padding: '2.2rem 2rem',
           boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-          border: '1px solid rgba(226, 232, 240, 0.8)',
+          border: '1px solid var(--border-color)',
           position: 'relative',
           transition: 'transform 0.3s ease'
         }}
@@ -91,12 +86,12 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
           style={{ 
             position: 'absolute', right: '15px', top: '15px', 
             background: 'transparent', border: 'none', 
-            cursor: 'pointer', color: '#64748b', display: 'flex', 
+            cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', 
             alignItems: 'center', justifyContent: 'center',
             padding: '6px', borderRadius: '50%',
             transition: 'background-color 0.2s'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-card-hover)'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
           <X size={18} />
@@ -107,7 +102,7 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
             width: '56px', 
             height: '56px', 
             borderRadius: '16px', 
-            backgroundColor: `${activeThemeColor}12`, 
+            backgroundColor: 'rgba(139, 92, 246, 0.12)', 
             color: activeThemeColor,
             display: 'flex',
             alignItems: 'center',
@@ -117,17 +112,17 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
             <Lock size={26} />
           </div>
 
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>
             Admin Tizimiga Kirish
           </h2>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', fontWeight: 500, lineHeight: 1.4 }}>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.4 }}>
             Ushbu bo'lim faqat administratorlar uchun mo'ljallangan. Iltimos, kirish parolini kiriting.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>
               <KeyRound size={18} />
             </span>
             <input 
@@ -142,15 +137,15 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
               style={{
                 width: '100%',
                 padding: '0.8rem 1rem 0.8rem 2.75rem',
-                border: error ? '2px solid #ef4444' : `1.5px solid #e2e8f0`,
+                border: error ? '2px solid #ef4444' : '1.5px solid var(--border-color)',
                 borderRadius: '12px',
                 fontSize: '0.95rem',
                 fontWeight: 600,
                 outline: 'none',
-                color: '#0f172a',
-                background: '#ffffff',
+                color: 'var(--text-primary)',
+                background: 'var(--bg-card-hover)',
                 boxSizing: 'border-box',
-                transition: 'border-color 0.2s'
+                transition: 'all 0.2s'
               }}
             />
           </div>
@@ -175,7 +170,7 @@ const PasscodeModal: React.FC<PasscodeModalProps> = ({ onClose, onSuccess, activ
             type="submit"
             style={{
               width: '100%',
-              background: activeThemeColor,
+              background: 'var(--accent-gradient)',
               color: '#ffffff',
               border: 'none',
               borderRadius: '12px',

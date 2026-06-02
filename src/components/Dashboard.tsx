@@ -155,8 +155,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       };
     }).filter(Boolean) as any[];
 
-    // Sort descending by average percentage and take top 10
-    return leaders.sort((a, b) => b.avg - a.avg).slice(0, 10);
+    // Sort descending by average percentage and take top 5
+    return leaders.sort((a, b) => b.avg - a.avg).slice(0, 5);
   }, [activeStudents, studentWeeks, activeLeaderWeek, leaderClassGroup]);
 
   // Compute Term Mastery Line Chart data
@@ -558,59 +558,93 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          {/* Leaders Table */}
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+          {/* Leaders Cards */}
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
             {weeklyLeaders.length === 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '180px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                 Natijalar topilmadi
               </div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1.5px solid var(--border-color)' }}>
-                    <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>O'QUVCHI</th>
-                    <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'center' }}>ENG</th>
-                    <th style={{ padding: '0.4rem 0.5rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', textAlign: 'center' }}>MATH</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {weeklyLeaders.map((lead, idx) => (
-                    <tr key={lead.id || idx} className="leaders-table-row">
-                      <td style={{ padding: '0.45rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-secondary)', width: '12px' }}>{idx + 1}</span>
-                        {lead.pictureUrl ? (
-                          <img src={lead.pictureUrl} alt="avatar" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            background: 'var(--bg-card-hover)',
-                            color: 'var(--text-secondary)',
-                            border: '1px solid var(--border-color)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.62rem',
-                            fontWeight: 800
-                          }}>
-                            {lead.name[0]}{lead.surname[0]}
-                          </div>
-                        )}
-                        <span style={{ fontSize: '0.78rem', fontWeight: 750, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
-                          {lead.surname} {lead.name}
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', fontSize: '0.8rem', fontWeight: 850, color: 'var(--accent-primary)', textAlign: 'center' }}>
-                        {lead.eng}%
-                      </td>
-                      <td style={{ padding: '0.45rem 0.5rem', fontSize: '0.8rem', fontWeight: 850, color: '#f97316', textAlign: 'center' }}>
-                        {lead.math}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              weeklyLeaders.map((lead, idx) => (
+                <div 
+                  key={lead.id || idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--bg-card-hover)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '16px',
+                    boxShadow: 'var(--glass-shadow)',
+                    transition: 'transform 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
+                >
+                  {/* Left Side: Avatar & Name */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: 'var(--bg-card)',
+                      border: '1.5px solid var(--border-color)',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.8rem',
+                      fontWeight: 900
+                    }}>
+                      #{idx + 1}
+                    </div>
+
+                    {lead.pictureUrl ? (
+                      <img 
+                        src={lead.pictureUrl} 
+                        alt="avatar" 
+                        style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--border-color)' }} 
+                      />
+                    ) : (
+                      <div style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '50%',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-secondary)',
+                        border: '1.5px solid var(--border-color)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.9rem',
+                        fontWeight: 800
+                      }}>
+                        {lead.name[0]}{lead.surname[0]}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {lead.surname} {lead.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Score Metrics */}
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '42px' }}>
+                      <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>ENG</span>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 900, color: 'var(--accent-primary)' }}>{lead.eng}%</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '42px' }}>
+                      <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>MATH</span>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 900, color: '#f97316' }}>{lead.math}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
