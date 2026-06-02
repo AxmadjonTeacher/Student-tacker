@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import type { Student } from '../types';
 import { 
   Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart
+  LineChart, BarChart, Bar
 } from 'recharts';
 import { Award, Calendar, User, TrendingUp } from 'lucide-react';
 
@@ -640,9 +640,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Recharts Line Chart */}
-            <div style={{ height: '200px', width: '100%', marginTop: '0.5rem' }}>
+            <div style={{ height: '160px', width: '100%', marginTop: '0.5rem' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={termMasteryData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <LineChart data={termMasteryData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.4} />
                   <XAxis 
                     dataKey="name" 
@@ -701,10 +701,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </p>
             </div>
 
-            {/* Recharts Attendance Line Chart */}
-            <div style={{ height: '200px', width: '100%' }}>
+            {/* Recharts Attendance Bar Chart */}
+            <div style={{ height: '150px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={attendanceHistoryData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <BarChart data={attendanceHistoryData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.4} />
                   <XAxis 
                     dataKey="name" 
@@ -720,6 +720,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     tickLine={false}
                   />
                   <Tooltip
+                    cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
                     contentStyle={{
                       background: 'var(--bg-card)',
                       border: '1px solid var(--border-color)',
@@ -728,15 +729,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       color: 'var(--text-primary)'
                     }}
                   />
-                  <Line 
-                    type="monotone" 
+                  <Bar 
                     dataKey="Davomat" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3}
-                    dot={{ r: 4, strokeWidth: 2, fill: '#ffffff' }}
-                    activeDot={{ r: 6 }}
+                    fill="#3b82f6"
+                    radius={[6, 6, 0, 0]}
+                    barSize={24}
                   />
-                </LineChart>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
