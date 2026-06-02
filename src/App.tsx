@@ -2712,7 +2712,7 @@ function App() {
       {/* Main Content Area */}
       <main style={{
         flex: 1,
-        padding: activeSubject === 'DASHBOARD' ? '1rem 2rem' : '2.5rem',
+        padding: activeSubject === 'DASHBOARD' ? '1rem 2rem' : '0',
         overflowY: activeSubject === 'DASHBOARD' ? 'hidden' : 'auto',
         display: 'flex',
         flexDirection: 'column',

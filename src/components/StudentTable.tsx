@@ -557,8 +557,25 @@ const StudentTable: React.FC<StudentTableProps> = ({
             height: auto !important;
           }
         }
+        .student-table-container {
+          padding: 1.5rem 2.5rem 3.5rem 2.5rem;
+          box-sizing: border-box;
+        }
+        @media (max-width: 768px) {
+          .student-table-container {
+            padding: 1rem 1rem 2rem 1rem !important;
+          }
+        }
       `}} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>
+      <div 
+        className="student-table-container"
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '1.5rem', 
+          width: '100%'
+        }}
+      >
         {students.length === 0 ? (
           <div className="empty-state">
             <Inbox size={48} />

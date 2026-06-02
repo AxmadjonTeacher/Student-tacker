@@ -38,10 +38,15 @@ const Header: React.FC<HeaderProps> = ({
       display: 'flex',
       flexDirection: 'column',
       marginTop: '0',
-      paddingLeft: '0.25rem',
-      paddingRight: '0.25rem'
+      paddingLeft: activeSubject === 'DASHBOARD' ? '0.25rem' : '2.5rem',
+      paddingRight: activeSubject === 'DASHBOARD' ? '0.25rem' : '2.5rem',
+      paddingTop: activeSubject === 'DASHBOARD' ? '0' : '1.5rem',
+      paddingBottom: activeSubject === 'DASHBOARD' ? '0' : '0.5rem'
     }}>
       <style dangerouslySetInnerHTML={{ __html: `
+        .sticky-header-container {
+          box-sizing: border-box;
+        }
         .mobile-header-menu-container {
           display: none;
         }
@@ -220,6 +225,12 @@ const Header: React.FC<HeaderProps> = ({
 
           .admin-tab-settings {
             display: none !important;
+          }
+          .sticky-header-container {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
           }
         }
       `}} />

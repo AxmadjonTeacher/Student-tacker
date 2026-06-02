@@ -21,30 +21,26 @@ const getGradeNumber = (className: string): number => {
 };
 
 // Evaluate overall performance index for a student (0 - 100)
+// Calculates the average of latest term scores and weekly tests for both math and english.
 const getStudentPerformance = (s: Student): number => {
-  const engPct = s.engScore != null ? (s.engScore / 15) * 100 : 0;
-  const mathPct = s.mathScore != null ? (s.mathScore / 15) * 100 : 0;
+  const weeklyEngPct = s.engScore != null ? (s.engScore / 15) * 100 : 0;
+  const weeklyMathPct = s.mathScore != null ? (s.mathScore / 15) * 100 : 0;
 
-  // Also include historical grand tests if available
+  // Latest English Term Score
   const engTests = s.englishGrandTests || s.grandTests || [];
-  const mathTests = s.mathGrandTests || [];
-
   const validEngTests = engTests.filter(t => t.score !== null && t.score !== undefined);
+  const latestEngTermPct = validEngTests.length > 0
+    ? parseFloat(validEngTests[validEngTests.length - 1].score as any)
+    : weeklyEngPct;
+
+  // Latest Math Term Score
+  const mathTests = s.mathGrandTests || [];
   const validMathTests = mathTests.filter(t => t.score !== null && t.score !== undefined);
+  const latestMathTermPct = validMathTests.length > 0
+    ? parseFloat(validMathTests[validMathTests.length - 1].score as any)
+    : weeklyMathPct;
 
-  const engTestAvg = validEngTests.length > 0
-    ? validEngTests.reduce((acc, t) => acc + parseInt(t.score as any, 10), 0) / validEngTests.length
-    : engPct;
-
-  const mathTestAvg = validMathTests.length > 0
-    ? validMathTests.reduce((acc, t) => acc + parseInt(t.score as any, 10), 0) / validMathTests.length
-    : mathPct;
-
-  // 60% active weekly score + 40% grand test average
-  const finalEng = engPct * 0.6 + engTestAvg * 0.4;
-  const finalMath = mathPct * 0.6 + mathTestAvg * 0.4;
-
-  return (finalEng + finalMath) / 2;
+  return (latestEngTermPct + latestMathTermPct + weeklyEngPct + weeklyMathPct) / 4;
 };
 
 // Helper to parse week sorting index
@@ -73,12 +69,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [studentWeeks]);
 
   const last4Weeks = useMemo(() => sortedWeeks.slice(-4), [sortedWeeks]);
-  const [selectedLeaderWeek, setSelectedLeaderWeek] = useState<string>(() => {
-    return last4Weeks.length > 0 ? last4Weeks[last4Weeks.length - 1] : '';
-  });
-
-  // Fallback to active week if leader week state is empty
-  const activeLeaderWeek = selectedLeaderWeek || (last4Weeks.length > 0 ? last4Weeks[last4Weeks.length - 1] : '');
 
   // Chart States
   const [chartSubject, setChartSubject] = useState<'ENG' | 'MATH'>('ENG');
@@ -128,19 +118,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
   }, [activeStudents]);
 
-  // Compute Weekly Leaders
+  // Compute Weekly Leaders across the last 4 weeks (cumulative score)
   const weeklyLeaders = useMemo(() => {
-    if (!activeLeaderWeek) return [];
+    if (last4Weeks.length === 0) return [];
     
-    // Get historical week scores
-    const weekRecords = studentWeeks.filter(sw => sw.week === activeLeaderWeek && !sw.is_deleted);
-    
-    const leaders = weekRecords.map(sw => {
-      const student = activeStudents.find(s => s.id === sw.student_id);
-      if (!student) return null;
+    const leaders = activeStudents.map(student => {
+      // Find all records for this student in the last 4 weeks
+      const records = studentWeeks.filter(sw => 
+        sw.student_id === student.id && 
+        last4Weeks.includes(sw.week) && 
+        !sw.is_deleted
+      );
       
-      const engPct = sw.eng_score != null ? Math.round((sw.eng_score / 15) * 100) : 0;
-      const mathPct = sw.math_score != null ? Math.round((sw.math_score / 15) * 100) : 0;
+      if (records.length === 0) return null;
+      
+      const engSum = records.reduce((sum, r) => sum + (r.eng_score || 0), 0);
+      const mathSum = records.reduce((sum, r) => sum + (r.math_score || 0), 0);
+      
+      const maxScorePerSubject = 15 * last4Weeks.length;
+      
+      const engPct = Math.round((engSum / maxScorePerSubject) * 100);
+      const mathPct = Math.round((mathSum / maxScorePerSubject) * 100);
       const avgPct = (engPct + mathPct) / 2;
 
       return {
@@ -154,9 +152,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       };
     }).filter(Boolean) as any[];
 
-    // Sort descending by average - show top 10
+    // Sort descending by average percentage and take top 10
     return leaders.sort((a, b) => b.avg - a.avg).slice(0, 10);
-  }, [activeStudents, studentWeeks, activeLeaderWeek]);
+  }, [activeStudents, studentWeeks, last4Weeks]);
 
   // Compute Term Mastery Line Chart data
   const termMasteryData = useMemo(() => {
@@ -182,7 +180,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
           ? (s.mathGrandTests || [])
           : (s.englishGrandTests || s.grandTests || []);
 
-        const namesToTry = [`grant ${termNum}`, `${termNum}-chorak`, `${termNum} chorak`, `${termNum}-term`, `${termNum} term`].map(n => n.toLowerCase());
+        const namesToTry = [
+          `grant ${termNum}`, 
+          `${termNum}-chorak`, 
+          `${termNum} chorak`, 
+          `${termNum}-term`, 
+          `${termNum} term`,
+          `chorak ${termNum}`,
+          `g${termNum}`,
+          termNum.toString()
+        ].map(n => n.toLowerCase());
+        
         const found = tests.find(t => namesToTry.includes(t?.name?.toLowerCase()));
 
         if (found && found.score !== null && found.score !== undefined && found.score.toString().trim() !== '-') {
@@ -194,8 +202,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
       });
 
-      // Default calculation fallback if no scores exist
-      const average = scoresCount > 0 ? Math.round(scoresSum / scoresCount) : 0;
+      // Returns null if no term scores exist to show blank/available points only
+      const average = scoresCount > 0 ? Math.round(scoresSum / scoresCount) : null;
 
       return {
         name: term,
@@ -204,15 +212,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
   }, [activeStudents, chartSubject, chartClassGroup]);
 
-  // Compute Average Attendance History Line Chart (last 4 weeks)
+  // Compute Average Attendance History Bar Chart (last 4 weeks) across all classes
   const attendanceHistoryData = useMemo(() => {
+    const activeStudentIds = new Set(activeStudents.map(s => s.id));
     return last4Weeks.map(week => {
-      const weekRecords = studentWeeks.filter(sw => sw.week === week && !sw.is_deleted);
+      const weekRecords = studentWeeks.filter(sw => 
+        sw.week === week && 
+        !sw.is_deleted && 
+        activeStudentIds.has(sw.student_id)
+      );
       let attendanceSum = 0;
       let count = 0;
 
       weekRecords.forEach(sw => {
-        const absences = sw.attendance < 0 ? -sw.attendance : 0;
+        const val = sw.attendance ?? 1;
+        const absences = val < 0 ? -val : 0;
         const attPercent = Math.max(0, 100 - absences * 16.67);
         attendanceSum += attPercent;
         count++;
@@ -224,7 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         Davomat: average
       };
     });
-  }, [studentWeeks, last4Weeks]);
+  }, [activeStudents, studentWeeks, last4Weeks]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', animation: 'fadeIn 0.4s ease-out', marginTop: '-0.85rem' }}>
@@ -476,24 +490,35 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Hafta Liderlari
             </h2>
             
-            {/* Last 4 weeks tabs */}
+            {/* Last 4 weeks indicators */}
             <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.2rem', scrollbarWidth: 'none' }}>
+              <span style={{
+                background: 'var(--accent-primary)',
+                color: '#ffffff',
+                padding: '0.35rem 0.8rem',
+                borderRadius: '8px',
+                fontSize: '0.72rem',
+                fontWeight: 750,
+                whiteSpace: 'nowrap'
+              }}>
+                So'nggi 4 hafta jami
+              </span>
               {last4Weeks.map(week => (
-                <button
+                <span
                   key={week}
-                  onClick={() => setSelectedLeaderWeek(week)}
-                  className={`tab-pill ${activeLeaderWeek === week ? 'active' : ''}`}
                   style={{
+                    background: 'var(--bg-card-hover)',
+                    color: 'var(--text-secondary)',
+                    border: '1.5px solid var(--border-color)',
                     padding: '0.35rem 0.8rem',
                     borderRadius: '8px',
                     fontSize: '0.72rem',
                     fontWeight: 750,
-                    cursor: 'pointer',
                     whiteSpace: 'nowrap'
                   }}
                 >
                   {week}
-                </button>
+                </span>
               ))}
             </div>
           </div>
@@ -502,7 +527,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {weeklyLeaders.length === 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '180px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Ushbu hafta uchun natijalar mavjud emas
+                Natijalar topilmadi
               </div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -673,6 +698,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     strokeWidth={3}
                     dot={{ r: 4, strokeWidth: 2, fill: '#ffffff' }}
                     activeDot={{ r: 6 }}
+                    connectNulls={true}
                   />
                 </LineChart>
               </ResponsiveContainer>
