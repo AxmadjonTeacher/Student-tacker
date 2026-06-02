@@ -188,16 +188,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           style={{
             background: isDarkMode ? '#09090b' : '#f8fafc',
             backgroundImage: isDarkMode 
-              ? 'radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 60%)' 
-              : 'radial-gradient(circle at 80% 20%, rgba(13, 148, 136, 0.15) 0%, transparent 60%)'
+              ? 'radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.18) 0%, transparent 70%)' 
+              : 'radial-gradient(circle at 50% 30%, rgba(13, 148, 136, 0.18) 0%, transparent 70%)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            textAlign: 'center',
+            padding: '4rem 2rem'
           }}
         >
-          {/* Top Logo Container */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Top Spacer to push content to center */}
+          <div style={{ flex: 1 }} />
+
+          {/* Center Content Group */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', maxWidth: '440px' }}>
+            {/* Logo Container */}
             <div style={{
               background: 'var(--bg-card)',
-              width: '80px',
-              height: '80px',
+              width: '90px',
+              height: '90px',
               borderRadius: '24px',
               border: '1px solid var(--border-color)',
               boxShadow: 'var(--glass-shadow)',
@@ -209,42 +219,45 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               <img 
                 src={isDarkMode ? iconDark : iconLight} 
                 alt="Logo" 
-                style={{ width: '56px', height: '56px', objectFit: 'contain' }} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} 
               />
+            </div>
+
+            {/* Slogan Text Area */}
+            <div>
+              <h1 style={{ 
+                fontSize: '2.5rem', 
+                fontWeight: 900, 
+                lineHeight: 1.15,
+                margin: 0,
+                letterSpacing: '-0.03em',
+                background: 'linear-gradient(135deg, var(--text-primary) 30%, var(--accent-primary) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                Al-Xorazmiy School
+              </h1>
+              <h1 style={{ 
+                fontSize: '2.5rem', 
+                fontWeight: 900, 
+                lineHeight: 1.15,
+                margin: '0 0 1.25rem 0',
+                letterSpacing: '-0.03em',
+                color: 'var(--text-primary)'
+              }}>
+                Ta'limda Innovatsiya
+              </h1>
+              <h2 style={{ fontSize: '1rem', fontWeight: 750, color: 'var(--accent-primary)', margin: '0 0 0.75rem 0', letterSpacing: '-0.01em' }}>
+                O'quvchilar o'zlashtirishi va davomati monitoringi platformasi
+              </h2>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, margin: 0 }}>
+                Tizim orqali haftalik test natijalari, choraklik natijalar hamda darslardagi davomatni real vaqt rejimida kuzatib boring.
+              </p>
             </div>
           </div>
 
-          {/* Slogan Text Area */}
-          <div style={{ maxWidth: '440px' }}>
-            <h1 style={{ 
-              fontSize: '2.5rem', 
-              fontWeight: 900, 
-              lineHeight: 1.15,
-              margin: 0,
-              letterSpacing: '-0.03em',
-              background: 'linear-gradient(135deg, var(--text-primary) 30%, var(--accent-primary) 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
-              Al-Xorazmiy
-            </h1>
-            <h1 style={{ 
-              fontSize: '2.5rem', 
-              fontWeight: 900, 
-              lineHeight: 1.15,
-              margin: '0 0 1.25rem 0',
-              letterSpacing: '-0.03em',
-              color: 'var(--text-primary)'
-            }}>
-              Ta'limda Innovatsiya
-            </h1>
-            <h2 style={{ fontSize: '1.05rem', fontWeight: 750, color: 'var(--accent-primary)', margin: '0 0 0.75rem 0', letterSpacing: '-0.01em' }}>
-              O'quvchilar o'zlashtirishi va davomati monitoringi platformasi
-            </h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, margin: 0 }}>
-              Tizim orqali haftalik test natijalari, choraklik natijalar hamda darslardagi davomatni real vaqt rejimida kuzatib boring.
-            </p>
-          </div>
+          {/* Bottom Spacer */}
+          <div style={{ flex: 1 }} />
 
           {/* Pagination/Theme Indicator Dots */}
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -254,7 +267,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               style={{
                 background: isDarkMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
                 opacity: isDarkMode ? 1 : 0.35,
-                transform: isDarkMode ? 'scale(1.2)' : 'scale(1)'
+                transform: isDarkMode ? 'scale(1.2)' : 'scale(1)',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
               }}
               title="Qorong'u mavzu"
             />
@@ -264,7 +282,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               style={{
                 background: !isDarkMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
                 opacity: !isDarkMode ? 1 : 0.35,
-                transform: !isDarkMode ? 'scale(1.2)' : 'scale(1)'
+                transform: !isDarkMode ? 'scale(1.2)' : 'scale(1)',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
               }}
               title="Yorug' mavzu"
             />
@@ -275,12 +298,21 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div className="login-right-panel" style={{ background: 'var(--bg-main)' }}>
           {/* Top Row: Logo & Bog'lanish */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <div>
-              {/* Show logo on mobile/tablet directly, on desktop it's optional but nice */}
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-card)',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
               <img 
                 src={isDarkMode ? iconDark : iconLight} 
                 alt="Logo Small" 
-                style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'contain' }} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} 
               />
             </div>
             
@@ -499,7 +531,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           {/* Footer links */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
             <div>
-              2026 Al-Xorazmiy <span style={{ opacity: 0.5, marginLeft: '0.25rem' }}>© Orion</span>
+              © Al-Xorazmiy School 2026
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <span style={{ cursor: 'pointer' }}>Privacy Policy</span>
