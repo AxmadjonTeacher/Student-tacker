@@ -69,6 +69,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [photoActionStudentId, setPhotoActionStudentId] = useState<string | null>(null);
   const [uploadingStudentId, setUploadingStudentId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -781,7 +782,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       {/* Name block */}
                       <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid var(--border-color)', height: '100%' }}>
                         <div 
-                          onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
+                          onClick={() => {
+                            if (onUpdatePhoto) {
+                              if (student.pictureUrl) {
+                                setPhotoActionStudentId(student.id);
+                              } else {
+                                handleAvatarClick(student.id);
+                              }
+                            }
+                          }}
                           style={{ 
                             width: '52px', height: '52px', borderRadius: '50%', 
                             background: 'var(--accent-primary)', color: '#ffffff',
@@ -791,7 +800,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             overflow: 'hidden',
                             position: 'relative'
                           }}
-                          title={onUpdatePhoto ? "Rasm yuklash" : ""}
+                          title={onUpdatePhoto ? (student.pictureUrl ? "Rasm yuklash / o'chirish" : "Rasm yuklash") : ""}
                         >
                           {student.pictureUrl ? (
                             <img src={student.pictureUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1594,7 +1603,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         {/* Name block */}
                         <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid var(--border-color)', height: '100%' }}>
                           <div 
-                            onClick={() => onUpdatePhoto && handleAvatarClick(student.id)}
+                            onClick={() => {
+                              if (onUpdatePhoto) {
+                                if (student.pictureUrl) {
+                                  setPhotoActionStudentId(student.id);
+                                } else {
+                                  handleAvatarClick(student.id);
+                                }
+                              }
+                            }}
                             style={{ 
                               width: '52px', height: '52px', borderRadius: '50%', 
                               background: theme.primary, color: '#ffffff',
@@ -1604,7 +1621,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               overflow: 'hidden',
                               position: 'relative'
                             }}
-                            title={onUpdatePhoto ? "Rasm yuklash" : ""}
+                            title={onUpdatePhoto ? (student.pictureUrl ? "Rasm yuklash / o'chirish" : "Rasm yuklash") : ""}
                           >
                             {student.pictureUrl ? (
                               <img src={student.pictureUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -2117,6 +2134,123 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   e.currentTarget.style.background = 'transparent';
                   e.currentTarget.style.color = 'var(--text-secondary)';
                 }}
+              >
+                Bekor qilish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {photoActionStudentId && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1.5rem',
+          background: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(8px)'
+        }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            width: '100%',
+            maxWidth: '400px',
+            borderRadius: '24px',
+            padding: '2rem',
+            border: '1.5px solid var(--border-color)',
+            boxShadow: 'var(--glass-shadow)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            textAlign: 'center'
+          }}>
+            <div>
+              <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 750, color: 'var(--text-primary)' }}>
+                Profil Rasmi
+              </h2>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                Mavjud profil rasmini o'zgartirmoqchimisiz yoki butunlay o'chirmoqchimisiz?
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const sId = photoActionStudentId;
+                  setPhotoActionStudentId(null);
+                  handleAvatarClick(sId);
+                }}
+                style={{
+                  background: 'var(--accent-primary)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '9999px',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-primary)'}
+              >
+                Yangi rasm yuklash
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const sId = photoActionStudentId;
+                  setPhotoActionStudentId(null);
+                  if (onUpdatePhoto) {
+                    onUpdatePhoto(sId, '');
+                  }
+                }}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: '#ef4444',
+                  border: '1.5px solid rgba(239, 68, 68, 0.2)',
+                  borderRadius: '9999px',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = '#ef4444';
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.borderColor = '#ef4444';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                  e.currentTarget.style.color = '#ef4444';
+                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                }}
+              >
+                Rasmni o'chirish
+              </button>
+              <button
+                type="button"
+                onClick={() => setPhotoActionStudentId(null)}
+                style={{
+                  background: 'transparent',
+                  border: '1.5px solid var(--border-color)',
+                  borderRadius: '9999px',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 Bekor qilish
               </button>

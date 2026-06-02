@@ -2721,18 +2721,20 @@ function App() {
       }}>
         {(activeAdminTab === 'home' || activeAdminTab === 'search' || activeAdminTab === 'stats') ? (
           <>
-            <Header
-              activeAdminTab={activeAdminTab}
-              classes={availableClasses}
-              activeClass={activeClass}
-              onClassSelect={setActiveClass}
-              classCounts={classCounts}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              onOpenDrawer={() => setActiveAdminTab('settings')}
-              activeSubject={activeSubject}
-              isDarkMode={isDarkMode}
-            />
+            {(!isMobile && activeSubject === 'DASHBOARD') ? null : (
+              <Header
+                activeAdminTab={activeAdminTab}
+                classes={availableClasses}
+                activeClass={activeClass}
+                onClassSelect={setActiveClass}
+                classCounts={classCounts}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onOpenDrawer={() => setActiveAdminTab('settings')}
+                activeSubject={activeSubject}
+                isDarkMode={isDarkMode}
+              />
+            )}
             {activeSubject === 'DASHBOARD' ? (
               <Dashboard
                 students={students}
