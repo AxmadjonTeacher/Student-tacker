@@ -69,6 +69,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [studentWeeks]);
 
   const last4Weeks = useMemo(() => sortedWeeks.slice(-4), [sortedWeeks]);
+  const [selectedLeaderWeek, setSelectedLeaderWeek] = useState<string>(() => {
+    return last4Weeks.length > 0 ? last4Weeks[last4Weeks.length - 1] : '';
+  });
+
+  const activeLeaderWeek = selectedLeaderWeek || (last4Weeks.length > 0 ? last4Weeks[last4Weeks.length - 1] : '');
 
   // Chart States
   const [chartSubject, setChartSubject] = useState<'ENG' | 'MATH'>('ENG');
@@ -118,27 +123,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
   }, [activeStudents]);
 
-  // Compute Weekly Leaders across the last 4 weeks (cumulative score)
+  // Compute Weekly Leaders for the selected week
   const weeklyLeaders = useMemo(() => {
-    if (last4Weeks.length === 0) return [];
+    if (!activeLeaderWeek) return [];
     
-    const leaders = activeStudents.map(student => {
-      // Find all records for this student in the last 4 weeks
-      const records = studentWeeks.filter(sw => 
-        sw.student_id === student.id && 
-        last4Weeks.includes(sw.week) && 
-        !sw.is_deleted
-      );
+    const weekRecords = studentWeeks.filter(sw => sw.week === activeLeaderWeek && !sw.is_deleted);
+    
+    const leaders = weekRecords.map(sw => {
+      const student = activeStudents.find(s => s.id === sw.student_id);
+      if (!student) return null;
       
-      if (records.length === 0) return null;
-      
-      const engSum = records.reduce((sum, r) => sum + (r.eng_score || 0), 0);
-      const mathSum = records.reduce((sum, r) => sum + (r.math_score || 0), 0);
-      
-      const maxScorePerSubject = 15 * last4Weeks.length;
-      
-      const engPct = Math.round((engSum / maxScorePerSubject) * 100);
-      const mathPct = Math.round((mathSum / maxScorePerSubject) * 100);
+      const engPct = sw.eng_score != null ? Math.round((sw.eng_score / 15) * 100) : 0;
+      const mathPct = sw.math_score != null ? Math.round((sw.math_score / 15) * 100) : 0;
       const avgPct = (engPct + mathPct) / 2;
 
       return {
@@ -154,7 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // Sort descending by average percentage and take top 10
     return leaders.sort((a, b) => b.avg - a.avg).slice(0, 10);
-  }, [activeStudents, studentWeeks, last4Weeks]);
+  }, [activeStudents, studentWeeks, activeLeaderWeek]);
 
   // Compute Term Mastery Line Chart data
   const termMasteryData = useMemo(() => {
@@ -491,34 +487,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </h2>
             
             {/* Last 4 weeks indicators */}
+            {/* Last 4 weeks tabs */}
             <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.2rem', scrollbarWidth: 'none' }}>
-              <span style={{
-                background: 'var(--accent-primary)',
-                color: '#ffffff',
-                padding: '0.35rem 0.8rem',
-                borderRadius: '8px',
-                fontSize: '0.72rem',
-                fontWeight: 750,
-                whiteSpace: 'nowrap'
-              }}>
-                So'nggi 4 hafta jami
-              </span>
               {last4Weeks.map(week => (
-                <span
+                <button
                   key={week}
+                  onClick={() => setSelectedLeaderWeek(week)}
+                  className={`tab-pill ${activeLeaderWeek === week ? 'active' : ''}`}
                   style={{
-                    background: 'var(--bg-card-hover)',
-                    color: 'var(--text-secondary)',
-                    border: '1.5px solid var(--border-color)',
                     padding: '0.35rem 0.8rem',
                     borderRadius: '8px',
                     fontSize: '0.72rem',
                     fontWeight: 750,
+                    cursor: 'pointer',
                     whiteSpace: 'nowrap'
                   }}
                 >
                   {week}
-                </span>
+                </button>
               ))}
             </div>
           </div>

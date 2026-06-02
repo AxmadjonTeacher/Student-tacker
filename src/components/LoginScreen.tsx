@@ -1,17 +1,26 @@
 import React, { useState, useRef } from 'react';
-import { Lock, User, Eye, EyeOff, GraduationCap, Loader2 } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, Loader2, Phone, X } from 'lucide-react';
 import { supabase } from '../supabase';
+import iconLight from '../assets/icon-light.png';
+import iconDark from '../assets/icon-dark.png';
 
 interface LoginScreenProps {
   onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor', studentData?: any) => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ 
+  onLoginSuccess, 
+  isDarkMode = false,
+  onToggleDarkMode 
+}) => {
   const [studentId, setStudentId] = useState('');
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -33,7 +42,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       // 1. Check Admin Credentials
       if (trimmedId.toLowerCase() === 'adminall') {
         if (trimmedPasscode === 'Azz21adminall') {
-          // Store in LocalStorage
           localStorage.setItem('auth_role', 'admin');
           localStorage.setItem('admin_passcode', trimmedPasscode);
           onLoginSuccess('admin');
@@ -95,7 +103,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       if (dbError) throw dbError;
 
       if (data) {
-        // Store in LocalStorage
         localStorage.setItem('auth_role', 'parent');
         localStorage.setItem('parent_student_id', data.id);
         localStorage.setItem('parent_student_passcode', data.passcode);
@@ -111,253 +118,467 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  const handleSupportClick = () => {
+    setShowSupport(true);
+  };
+
   return (
     <div style={{
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1e1b4b 0%, #0d9488 100%)',
-      padding: '1rem',
+      width: '100%',
       fontFamily: "'Inter', sans-serif",
-      position: 'relative',
-      overflow: 'hidden'
+      background: 'var(--bg-main)',
+      color: 'var(--text-primary)',
+      transition: 'all 0.3s ease',
+      boxSizing: 'border-box'
     }}>
-      {/* Decorative background shapes for aesthetic appeal */}
-      <div style={{
-        position: 'absolute', width: '300px', height: '300px',
-        background: 'rgba(13, 148, 136, 0.15)', borderRadius: '50%',
-        top: '-50px', left: '-50px', filter: 'blur(80px)'
-      }} />
-      <div style={{
-        position: 'absolute', width: '350px', height: '350px',
-        background: 'rgba(79, 70, 229, 0.15)', borderRadius: '50%',
-        bottom: '-50px', right: '-50px', filter: 'blur(90px)'
-      }} />
-
-      <div style={{
-        width: '100%',
-        maxWidth: '440px',
-        background: 'rgba(255, 255, 255, 0.88)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 255, 255, 0.5)',
-        borderRadius: '24px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        padding: '2.5rem 2rem',
-        zIndex: 10,
-        boxSizing: 'border-box'
-      }}>
-        {/* Responsive style adjustment for smaller phones */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media (max-width: 480px) {
-            div[class*="login-container"] {
-              padding: 1.75rem 1.25rem !important;
-            }
+      <style dangerouslySetInnerHTML={{ __html: `
+        .login-split-container {
+          display: flex;
+          width: 100%;
+          min-height: 100vh;
+        }
+        .login-left-panel {
+          width: 50%;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 3.5rem;
+          position: relative;
+          overflow: hidden;
+          box-sizing: border-box;
+          border-right: 1px solid var(--border-color);
+        }
+        .login-right-panel {
+          width: 50%;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 2rem;
+          box-sizing: border-box;
+          position: relative;
+        }
+        @media (max-width: 900px) {
+          .login-left-panel {
+            display: none !important;
           }
-        `}} />
+          .login-right-panel {
+            width: 100% !important;
+            padding: 1.5rem !important;
+          }
+        }
+        .login-input-field:focus {
+          border-color: var(--accent-primary) !important;
+          box-shadow: 0 0 0 3px var(--accent-border-focus) !important;
+        }
+        .theme-indicator-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+      `}} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '18px',
-            background: 'linear-gradient(135deg, #0d9488, #0f766e)',
-            color: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '1rem',
-            boxShadow: '0 8px 16px rgba(13, 148, 136, 0.25)'
-          }}>
-            <GraduationCap size={32} />
-          </div>
-          
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 850, color: '#0f172a', margin: '0 0 0.5rem 0', letterSpacing: '-0.025em' }}>
-            AL-XORAZMIY SCHOOL
-          </h2>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', fontWeight: 600, lineHeight: 1.4 }}>
-            Ota-onalar va o'quvchilar kabinetiga kirish
-          </p>
-        </div>
-
-        {error && (
-          <div style={{
-            background: '#fef2f2',
-            border: '1px solid #fee2e2',
-            borderRadius: '12px',
-            padding: '0.85rem 1rem',
-            color: '#b91c1c',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            marginBottom: '1.25rem',
-            textAlign: 'center',
-            lineHeight: 1.4
-          }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <label htmlFor="student-id" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-              STUDENT ID
-            </label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
-                <User size={18} />
-              </span>
-              <input
-                id="student-id"
-                type="text"
-                name="username"
-                autoComplete="username"
-                required
-                enterKeyHint="next"
-                placeholder="Student ID..."
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                disabled={isLoading}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 1rem 0.85rem 2.75rem',
-                  border: '1.5px solid #e2e8f0',
-                  borderRadius: '12px',
-                  fontSize: '0.95rem',
-                  fontWeight: 600,
-                  outline: 'none',
-                  color: '#0f172a',
-                  background: '#ffffff',
-                  boxSizing: 'border-box',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#0d9488';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.15)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#e2e8f0';
-                  e.target.style.boxShadow = 'none';
-                }}
+      <div className="login-split-container">
+        {/* LEFT SIDE PANEL (Desktop Only) */}
+        <div 
+          className="login-left-panel"
+          style={{
+            background: isDarkMode ? '#09090b' : '#f8fafc',
+            backgroundImage: isDarkMode 
+              ? 'radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 60%)' 
+              : 'radial-gradient(circle at 80% 20%, rgba(13, 148, 136, 0.15) 0%, transparent 60%)'
+          }}
+        >
+          {/* Top Logo Container */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{
+              background: 'var(--bg-card)',
+              width: '80px',
+              height: '80px',
+              borderRadius: '24px',
+              border: '1px solid var(--border-color)',
+              boxShadow: 'var(--glass-shadow)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden'
+            }}>
+              <img 
+                src={isDarkMode ? iconDark : iconLight} 
+                alt="Logo" 
+                style={{ width: '56px', height: '56px', objectFit: 'contain' }} 
               />
             </div>
           </div>
 
-          <div>
-            <label htmlFor="current-password" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-              Parol (Passcode)
-            </label>
-            <div style={{ position: 'relative' }}>
-              <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
-                <Lock size={18} />
-              </span>
-              <input
-                id="current-password"
-                type={showPasscode ? 'text' : 'password'}
-                name="password"
-                autoComplete="current-password"
-                required
-                enterKeyHint="done"
-                placeholder="Parolni kiriting..."
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                disabled={isLoading}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 3rem 0.85rem 2.75rem',
-                  border: '1.5px solid #e2e8f0',
-                  borderRadius: '12px',
-                  fontSize: '0.95rem',
-                  fontWeight: 600,
-                  outline: 'none',
-                  color: '#0f172a',
-                  background: '#ffffff',
-                  boxSizing: 'border-box',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#0d9488';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.15)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#e2e8f0';
-                  e.target.style.boxShadow = 'none';
-                }}
+          {/* Slogan Text Area */}
+          <div style={{ maxWidth: '440px' }}>
+            <h1 style={{ 
+              fontSize: '2.5rem', 
+              fontWeight: 900, 
+              lineHeight: 1.15,
+              margin: 0,
+              letterSpacing: '-0.03em',
+              background: 'linear-gradient(135deg, var(--text-primary) 30%, var(--accent-primary) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Al-Xorazmiy
+            </h1>
+            <h1 style={{ 
+              fontSize: '2.5rem', 
+              fontWeight: 900, 
+              lineHeight: 1.15,
+              margin: '0 0 1.25rem 0',
+              letterSpacing: '-0.03em',
+              color: 'var(--text-primary)'
+            }}>
+              Ta'limda Innovatsiya
+            </h1>
+            <h2 style={{ fontSize: '1.05rem', fontWeight: 750, color: 'var(--accent-primary)', margin: '0 0 0.75rem 0', letterSpacing: '-0.01em' }}>
+              O'quvchilar o'zlashtirishi va davomati monitoringi platformasi
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, margin: 0 }}>
+              Tizim orqali haftalik test natijalari, choraklik natijalar hamda darslardagi davomatni real vaqt rejimida kuzatib boring.
+            </p>
+          </div>
+
+          {/* Pagination/Theme Indicator Dots */}
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div 
+              onClick={onToggleDarkMode}
+              className="theme-indicator-dot"
+              style={{
+                background: isDarkMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                opacity: isDarkMode ? 1 : 0.35,
+                transform: isDarkMode ? 'scale(1.2)' : 'scale(1)'
+              }}
+              title="Qorong'u mavzu"
+            />
+            <div 
+              onClick={onToggleDarkMode}
+              className="theme-indicator-dot"
+              style={{
+                background: !isDarkMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                opacity: !isDarkMode ? 1 : 0.35,
+                transform: !isDarkMode ? 'scale(1.2)' : 'scale(1)'
+              }}
+              title="Yorug' mavzu"
+            />
+          </div>
+        </div>
+
+        {/* RIGHT SIDE FORM SCREEN */}
+        <div className="login-right-panel" style={{ background: 'var(--bg-main)' }}>
+          {/* Top Row: Logo & Bog'lanish */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <div>
+              {/* Show logo on mobile/tablet directly, on desktop it's optional but nice */}
+              <img 
+                src={isDarkMode ? iconDark : iconLight} 
+                alt="Logo Small" 
+                style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'contain' }} 
               />
-              <button
-                type="button"
-                onClick={() => setShowPasscode(!showPasscode)}
-                style={{
-                  position: 'absolute',
-                  right: '1rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#94a3b8',
+            </div>
+            
+            <div style={{ fontSize: '0.78rem', fontWeight: 650, color: 'var(--text-secondary)' }}>
+              Kabinetga kirishda muammo?{' '}
+              <button 
+                onClick={handleSupportClick}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: 'var(--accent-primary)', 
+                  fontWeight: 800, 
+                  cursor: 'pointer', 
                   padding: 0,
-                  display: 'flex',
-                  alignItems: 'center'
+                  textDecoration: 'underline'
                 }}
               >
-                {showPasscode ? <EyeOff size={18} /> : <Eye size={18} />}
+                Bog'lanish
               </button>
             </div>
           </div>
 
-          <button
-            ref={submitButtonRef}
-            type="submit"
-            disabled={isLoading}
-            style={{
-              width: '100%',
-              background: 'linear-gradient(135deg, #0d9488, #0f766e)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '0.9rem',
-              fontWeight: 800,
-              fontSize: '0.95rem',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 12px rgba(13, 148, 136, 0.2)',
-              transition: 'all 0.2s ease',
-              letterSpacing: '0.05em',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              marginTop: '0.5rem'
-            }}
-            onMouseEnter={(e) => {
-              if (!isLoading) {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(13, 148, 136, 0.3)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(13, 148, 136, 0.2)';
-            }}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 size={18} className="spin-loader" style={{ animation: 'spin 1s linear infinite' }} />
-                KIRILMOQDA...
-              </>
-            ) : (
-              'TIZIMGA KIRISH'
-            )}
-          </button>
-        </form>
+          {/* Center Form Container */}
+          <div style={{ width: '100%', maxWidth: '380px', margin: 'auto', padding: '1rem 0' }}>
+            <div style={{ marginBottom: '2.2rem' }}>
+              <h2 style={{ fontSize: '2.1rem', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 0.5rem 0', letterSpacing: '-0.035em' }}>
+                Xush Kelibsiz!
+              </h2>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.4 }}>
+                Iltimos kabinetga kirish uchun ID raqami va Parolni kiriting
+              </p>
+            </div>
 
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+            {error && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '12px',
+                padding: '0.85rem 1rem',
+                color: '#ef4444',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                marginBottom: '1.25rem',
+                textAlign: 'center',
+                lineHeight: 1.4
+              }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label 
+                  htmlFor="student-id" 
+                  style={{ 
+                    display: 'block', 
+                    fontSize: '0.72rem', 
+                    fontWeight: 800, 
+                    color: 'var(--text-secondary)', 
+                    letterSpacing: '0.04em', 
+                    marginBottom: '0.45rem', 
+                    textTransform: 'uppercase' 
+                  }}
+                >
+                  Student/Admin ID
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', opacity: 0.75 }}>
+                    <User size={18} />
+                  </span>
+                  <input
+                    id="student-id"
+                    type="text"
+                    name="username"
+                    autoComplete="username"
+                    required
+                    enterKeyHint="next"
+                    placeholder="ID kiriting..."
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    disabled={isLoading}
+                    className="login-input-field"
+                    style={{
+                      width: '100%',
+                      padding: '0.85rem 1rem 0.85rem 2.75rem',
+                      border: '1.5px solid var(--border-color)',
+                      borderRadius: '12px',
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-card)',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease',
+                      '--accent-border-focus': isDarkMode ? 'rgba(139, 92, 246, 0.15)' : 'rgba(13, 148, 136, 0.15)'
+                    } as any}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="current-password" 
+                  style={{ 
+                    display: 'block', 
+                    fontSize: '0.72rem', 
+                    fontWeight: 800, 
+                    color: 'var(--text-secondary)', 
+                    letterSpacing: '0.04em', 
+                    marginBottom: '0.45rem', 
+                    textTransform: 'uppercase' 
+                  }}
+                >
+                  Password
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', opacity: 0.75 }}>
+                    <Lock size={18} />
+                  </span>
+                  <input
+                    id="current-password"
+                    type={showPasscode ? 'text' : 'password'}
+                    name="password"
+                    autoComplete="current-password"
+                    required
+                    enterKeyHint="done"
+                    placeholder="Parol kiriting..."
+                    value={passcode}
+                    onChange={(e) => setPasscode(e.target.value)}
+                    disabled={isLoading}
+                    className="login-input-field"
+                    style={{
+                      width: '100%',
+                      padding: '0.85rem 3rem 0.85rem 2.75rem',
+                      border: '1.5px solid var(--border-color)',
+                      borderRadius: '12px',
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-card)',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease',
+                      '--accent-border-focus': isDarkMode ? 'rgba(139, 92, 246, 0.15)' : 'rgba(13, 148, 136, 0.15)'
+                    } as any}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasscode(!showPasscode)}
+                    style={{
+                      position: 'absolute',
+                      right: '1rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-secondary)',
+                      opacity: 0.7,
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    {showPasscode ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                ref={submitButtonRef}
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  background: 'var(--accent-gradient)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '0.9rem',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  boxShadow: isDarkMode ? '0 4px 12px rgba(139, 92, 246, 0.2)' : '0 4px 12px rgba(13, 148, 136, 0.2)',
+                  transition: 'all 0.2s ease',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  marginTop: '0.5rem'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isLoading) {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = isDarkMode ? '0 6px 16px rgba(139, 92, 246, 0.3)' : '0 6px 16px rgba(13, 148, 136, 0.3)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = isDarkMode ? '0 4px 12px rgba(139, 92, 246, 0.2)' : '0 4px 12px rgba(13, 148, 136, 0.2)';
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                    KIRILMOQDA...
+                  </>
+                ) : (
+                  'TIZIMGA KIRISH'
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer links */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            <div>
+              2026 Al-Xorazmiy <span style={{ opacity: 0.5, marginLeft: '0.25rem' }}>© Orion</span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <span style={{ cursor: 'pointer' }}>Privacy Policy</span>
+              <span>|</span>
+              <span onClick={handleSupportClick} style={{ cursor: 'pointer', color: 'var(--accent-primary)' }}>Support</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Support Details Dialog */}
+      {showSupport && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.65)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 2000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--glass-shadow)',
+            borderRadius: '24px',
+            padding: '2rem',
+            width: '90%',
+            maxWidth: '360px',
+            textAlign: 'center',
+            position: 'relative',
+            animation: 'scaleIn 0.2s ease-out'
+          }}>
+            <button 
+              onClick={() => setShowSupport(false)}
+              style={{
+                position: 'absolute', right: '15px', top: '15px',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              <X size={18} />
+            </button>
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '12px',
+              background: 'rgba(13, 148, 136, 0.1)', color: 'var(--accent-primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 1.25rem auto'
+            }}>
+              <Phone size={22} />
+            </div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>
+              Texnik Yordam
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.5, marginBottom: '1.25rem' }}>
+              Tizimga kirishda muammolar yuzaga kelsa, quyidagi aloqa kanallari orqali administrator bilan bog'laning:
+            </p>
+            <div style={{ 
+              background: 'var(--bg-card-hover)', 
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              padding: '0.85rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.45rem',
+              textAlign: 'left'
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                TELEGRAM: <strong style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', fontFamily: 'monospace' }}>@alxorazmiysupport</strong>
+              </div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                TELEFON: <strong style={{ color: 'var(--text-primary)', fontSize: '0.85rem', fontFamily: 'monospace' }}>+998 90 123 45 67</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

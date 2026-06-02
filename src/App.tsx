@@ -2069,7 +2069,13 @@ function App() {
   }
 
   if (authRole === null) {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <LoginScreen 
+        onLoginSuccess={handleLoginSuccess} 
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+      />
+    );
   }
 
   if (authRole === 'testor') {
