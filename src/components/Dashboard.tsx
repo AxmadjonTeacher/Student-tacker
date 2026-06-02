@@ -598,7 +598,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       fontSize: '0.8rem',
                       fontWeight: 900
                     }}>
-                      #{idx + 1}
+                      {idx + 1}
                     </div>
 
                     {lead.pictureUrl ? (

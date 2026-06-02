@@ -90,10 +90,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Navigation Tabs State
   const [activeTabState, setActiveTabState] = useState<'settings' | 'news' | 'teachers' | 'trash'>(() => {
     return authRole === 'publish' ? 'news' : 'settings';
   });
+
+  const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
 
   const activeTab = propActiveTab !== undefined ? propActiveTab : activeTabState;
   const setActiveTab = onTabChange !== undefined ? onTabChange : setActiveTabState;
@@ -2054,12 +2055,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           {isAdminMode && (
                             <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                               <button
-                                onClick={() => {
-                                  const newName = window.prompt("O'qituvchi ismini tahrirlash:", teacher.name);
-                                  if (newName && newName.trim() !== '' && newName.trim() !== teacher.name) {
-                                    onEditTeacher(teacher.id, newName.trim());
-                                  }
-                                }}
+                                onClick={() => setEditTeacher(teacher)}
                                 style={{
                                   background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
                                   color: '#3b82f6',
@@ -2140,12 +2136,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           {isAdminMode && (
                             <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                               <button
-                                onClick={() => {
-                                  const newName = window.prompt("O'qituvchi ismini tahrirlash:", teacher.name);
-                                  if (newName && newName.trim() !== '' && newName.trim() !== teacher.name) {
-                                    onEditTeacher(teacher.id, newName.trim());
-                                  }
-                                }}
+                                onClick={() => setEditTeacher(teacher)}
                                 style={{
                                   background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
                                   color: '#3b82f6',
@@ -2481,6 +2472,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         onAddStudent={onAddStudent}
         activeSubject={activeSubject}
         teachers={teachers}
+        activeClass={activeClass}
       />
 
       <CustomDialog
@@ -2498,6 +2490,24 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           }
         }}
         onClose={() => setDeleteNewsId(null)}
+      />
+
+      <CustomDialog
+        isOpen={editTeacher !== null}
+        type="prompt"
+        title="O'qituvchi ismini tahrirlash"
+        message="O'qituvchining yangi ismini kiriting:"
+        defaultValue={editTeacher?.name || ''}
+        placeholder="Ism..."
+        confirmText="Saqlash"
+        cancelText="Bekor qilish"
+        onConfirm={async (newName) => {
+          if (editTeacher !== null && newName && newName.trim() !== '') {
+            await onEditTeacher(editTeacher.id, newName.trim());
+          }
+          setEditTeacher(null);
+        }}
+        onClose={() => setEditTeacher(null)}
       />
     </>
   );

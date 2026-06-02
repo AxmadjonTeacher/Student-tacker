@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, UserPlus } from 'lucide-react';
 import type { Student, ActiveSubject, Teacher } from '../types';
 
@@ -8,6 +8,7 @@ interface AddStudentModalProps {
   onAddStudent: (studentData: Partial<Student>) => void;
   activeSubject: ActiveSubject;
   teachers: Teacher[];
+  activeClass?: string;
 }
 
 const LEVELS = [
@@ -16,7 +17,7 @@ const LEVELS = [
   'Level 11', 'Level 12', 'Level 13', 'Level 14', 'Level 15'
 ];
 
-const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent, activeSubject, teachers }) => {
+const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent, activeSubject, teachers, activeClass }) => {
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [startingLevel, setStartingLevel] = useState('Level 1');
@@ -25,6 +26,13 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
   const [englishTeacher, setEnglishTeacher] = useState('');
   const [mathTeacher, setMathTeacher] = useState('');
   const [parentPhone, setParentPhone] = useState('+998');
+  const [selectedClass, setSelectedClass] = useState('5-Sinf');
+
+  useEffect(() => {
+    if (isOpen && activeClass) {
+      setSelectedClass(activeClass);
+    }
+  }, [isOpen, activeClass]);
 
   if (!isOpen) return null;
 
@@ -39,6 +47,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
       name: name.trim(),
       surname: surname.trim(),
       parentPhone: parentPhone.trim() === '+998' ? '' : parentPhone.trim(),
+      className: selectedClass
     };
 
     if (activeSubject === 'MATH') {
@@ -86,6 +95,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
     setEnglishTeacher('');
     setMathTeacher('');
     setParentPhone('+998');
+    setSelectedClass('5-Sinf');
     onClose();
   };
 
@@ -280,31 +290,56 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
             </div>
           )}
 
-          <div className="form-group">
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-              Ota-ona telefon raqami <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
-            </label>
-            <input 
-              type="text" 
-              value={parentPhone}
-              onChange={e => {
-                const val = e.target.value;
-                if (!val.startsWith('+998')) {
-                  setParentPhone('+998');
-                } else {
-                  setParentPhone(val);
-                }
-              }}
-              placeholder="+998 90 123 45 67"
-              style={{
-                width: '100%', padding: '0.75rem', borderRadius: '10px',
-                border: '1px solid var(--border-color)', fontSize: '0.95rem',
-                background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
-                outline: 'none', transition: 'border-color 0.2s ease'
-              }}
-              onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-              onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Sinf *
+              </label>
+              <select 
+                value={selectedClass}
+                onChange={e => setSelectedClass(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '10px',
+                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
+                }}
+              >
+                <option value="5-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>5-Sinf</option>
+                <option value="6-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>6-Sinf</option>
+                <option value="7-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>7-Sinf</option>
+                <option value="8-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>8-Sinf</option>
+                <option value="9-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>9-Sinf</option>
+                <option value="10-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>10-Sinf</option>
+                <option value="11-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>11-Sinf</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Ota-ona telefon raqami <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
+              </label>
+              <input 
+                type="text" 
+                value={parentPhone}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (!val.startsWith('+998')) {
+                    setParentPhone('+998');
+                  } else {
+                    setParentPhone(val);
+                  }
+                }}
+                placeholder="+998 90 123 45 67"
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '10px',
+                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
+                  outline: 'none', transition: 'border-color 0.2s ease'
+                }}
+                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+              />
+            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>

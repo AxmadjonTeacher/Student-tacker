@@ -809,10 +809,11 @@ function App() {
   };
 
   const handleAddStudent = async (studentData: Partial<Student>) => {
+    const targetClass = studentData.className || activeClass;
     let inheritedEngOrder = 0;
     if (studentData.teacher) {
       const engStudent = students.find(s => 
-        getClassGroup(s.className.toUpperCase()) === activeClass &&
+        getClassGroup(s.className.toUpperCase()) === targetClass &&
         s.teacher?.trim() === studentData.teacher?.trim()
       );
       if (engStudent) inheritedEngOrder = engStudent.teacherOrder || 0;
@@ -821,7 +822,7 @@ function App() {
     let inheritedMathOrder = 0;
     if (studentData.mathTeacher) {
       const mathStudent = students.find(s => 
-        getClassGroup(s.className.toUpperCase()) === activeClass &&
+        getClassGroup(s.className.toUpperCase()) === targetClass &&
         s.mathTeacher?.trim() === studentData.mathTeacher?.trim()
       );
       if (mathStudent) inheritedMathOrder = mathStudent.mathTeacherOrder || 0;
@@ -835,7 +836,7 @@ function App() {
       id: tempId,
       name: studentData.name || '',
       surname: studentData.surname || '',
-      className: activeClass,
+      className: targetClass,
       dateJoined: new Date().toISOString().split('T')[0],
       startingLevel: studentData.startingLevel || 'Level 1',
       currentLevel: studentData.currentLevel || 'Level 1',
@@ -854,6 +855,8 @@ function App() {
       parentPhone: studentData.parentPhone || '',
       isSessionAdded: true
     };
+
+    setActiveClass(targetClass);
 
     setStudents(prev => [...prev, brandNew]);
 
@@ -2734,7 +2737,7 @@ function App() {
       <main style={{
         flex: 1,
         padding: activeSubject === 'DASHBOARD' ? '1rem 2rem' : '0',
-        overflowY: activeSubject === 'DASHBOARD' ? 'hidden' : 'auto',
+        overflowY: (activeSubject === 'DASHBOARD' && activeAdminTab === 'home') ? 'hidden' : 'auto',
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',

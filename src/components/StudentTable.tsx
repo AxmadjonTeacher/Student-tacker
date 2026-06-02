@@ -1056,23 +1056,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <Download size={10} />
                       <span>Excel</span>
                     </button>
-                    {isAdminMode && authRole !== 'admin123' && (
-                      <button
-                        onClick={() => setIsRegenerateModalOpen(true)}
-                        title="ID/Parollarni yangilash"
-                        style={{
-                          background: '#fdf2f8', color: '#db2777', border: '1px solid #fbcfe8',
-                          padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700,
-                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', transition: 'all 0.15s ease',
-                          width: '100%', whiteSpace: 'nowrap'
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fce7f3'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = '#fdf2f8'; }}
-                      >
-                        <RotateCw size={10} />
-                        <span>Yangilash</span>
-                      </button>
-                    )}
+
                   </div>
                 </div>
 
