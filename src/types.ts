@@ -32,6 +32,7 @@ export interface Student {
   passcode?: string;
   parentPhone?: string;
   isSessionAdded?: boolean;
+  idWrong?: boolean;
 }
 
 export type ClassName = '5A' | '5B' | '6A' | '6B' | '7A' | '7B' | '8A' | '8B' | string;

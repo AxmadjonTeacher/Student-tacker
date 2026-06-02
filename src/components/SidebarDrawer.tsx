@@ -5,6 +5,7 @@ import {
   ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut, Edit3
 } from 'lucide-react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import type { Student, ActiveSubject, Teacher } from '../types';
 import AddStudentModal from './AddStudentModal';
 import { supabase } from '../supabase';
@@ -185,15 +186,208 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
     }
   }, [isOpen, activeTab]);
 
-  // Handle student CSV file uploads
+  const processImportedRows = (rows: any[]) => {
+    const parsedStudents: Student[] = rows
+      .map((row: any) => {
+        const rawNameStr = (
+          row['O\'quvchining ismi va familiyasi'] || 
+          row['Ism va familiya'] || 
+          row['Students name surname'] || 
+          row['Name'] || 
+          row['name'] || ''
+        ).toString().trim();
+        
+        const nameParts = rawNameStr.split(' ').filter(Boolean);
+        let name = '';
+        let surname = '';
+
+        if (nameParts.length > 1) {
+          surname = nameParts.pop() || '';
+          name = nameParts.join(' ');
+        } else {
+          name = rawNameStr;
+        }
+
+        const className = (
+          row['sinf'] || 
+          row['Sinf'] || 
+          row['class'] || 
+          row['Class'] || 
+          row['className'] || '5A'
+        ).toString().trim().toUpperCase();
+
+        const dateJoined = (
+          row['qabul qilingan sana'] || 
+          row['Qabul qilingan sana'] || 
+          row['when'] || 
+          row['When'] || 
+          row['date joined'] || 'Sentyabr 2024'
+        ).toString().trim();
+
+        const parseImportScore = (val: any): number | null => {
+          if (val === undefined || val === null) return null;
+          const s = val.toString().trim();
+          if (s === '' || s === '-') return null;
+          const p = parseInt(s);
+          return isNaN(p) ? null : p;
+        };
+
+        const parseImportScoreStr = (val: any): { score: number | null, idWrong: boolean } => {
+          if (val === undefined || val === null) return { score: null, idWrong: false };
+          const s = val.toString().trim();
+          if (s === '*') return { score: null, idWrong: true };
+          if (s === '' || s === '-') return { score: null, idWrong: false };
+          const p = parseInt(s);
+          return { score: isNaN(p) ? null : p, idWrong: false };
+        };
+
+        // Initialize all fields to defaults
+        let finalEngStarting = 'Level 1';
+        let finalEngCurrent = 'Level 1';
+        let finalEngTests: { name: string; score: number | null }[] | undefined = undefined;
+        let teacherName: string | undefined = undefined;
+
+        let finalMathStarting = 'Level 1';
+        let finalMathCurrent = 'Level 1';
+        let finalMathTests: { name: string; score: number | null }[] | undefined = undefined;
+        let mathTeacherName: string | undefined = undefined;
+
+        let engScore = 0;
+        let mathScore = 0;
+        let attendance = 1;
+        let homework = 1;
+        let parentPhone = '';
+        let customId = '';
+        let customPasscode = '';
+        let idWrong = false;
+
+        // ALWAYS extract ID regardless of activeSubject
+        const rawId = row['ID'] || row['id'] || row['Id'] || row['O\'quvchi ID'] || row['ID raqami'] || '';
+        customId = rawId.toString().trim();
+
+        if (activeSubject === 'ENG') {
+          const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
+          const term2 = row['Grant 2 eng'] || row['Grant 2 ENG'] || row['grant 2 eng'] || row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'] || '';
+          const term3 = row['Grant 3 eng'] || row['Grant 3 ENG'] || row['grant 3 eng'] || row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'] || '';
+          const term4 = row['Grant 4 eng'] || row['Grant 4 ENG'] || row['grant 4 eng'] || row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'] || '';
+
+          const hasAnyEngScore = [term1, term2, term3, term4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
+          finalEngTests = hasAnyEngScore ? [
+            { name: 'Grant 1', score: parseImportScore(term1) },
+            { name: 'Grant 2', score: parseImportScore(term2) },
+            { name: 'Grant 3', score: parseImportScore(term3) },
+            { name: 'Grant 4', score: parseImportScore(term4) }
+          ] : [];
+
+          const rawEngStarting = row['boshlang\'ich daraja eng'] || row['Boshlang\'ich daraja eng'] || row['StartingLevelENG'] || row['boshlang\'ich daraja'] || row['Boshlang\'ich daraja'] || row['avvalgi daraja'] || row['Avvalgi daraja'] || row['initial level'] || row['initial level eng'] || row['Level'] || row['level'] || row['StartingLevel'] || '';
+          const rawEngCurrent = row['hozirgi daraja eng'] || row['Hozirgi daraja eng'] || row['CurrentLevelENG'] || row['hozirgi daraja'] || row['Hozirgi daraja'] || row['current level'] || row['CurrentLevel'] || row['currentLevel'] || row['current level eng'] || '';
+
+          finalEngStarting = normalizeLevel(rawEngStarting) || 'Level 1';
+          finalEngCurrent = normalizeLevel(rawEngCurrent) || 'Level 1';
+          
+          const rawT = row['O\'qituvchi'] || row['o\'qituvchi'] || row['teacher'] || row['Teacher'] || '';
+          if (rawT.toString().trim()) {
+            teacherName = rawT.toString().trim();
+          }
+        } else if (activeSubject === 'MATH') {
+          const mTerm1 = row['Grant 1 math'] || row['Grant 1 MATH'] || row['grant 1 math'] || row['1-chorak matematika'] || row['math term 1 score'] || '';
+          const mTerm2 = row['Grant 2 math'] || row['Grant 2 MATH'] || row['grant 2 math'] || row['2-chorak matematika'] || row['math term 2 score'] || '';
+          const mTerm3 = row['Grant 3 math'] || row['Grant 3 MATH'] || row['grant 3 math'] || row['3-chorak matematika'] || row['math term 3 score'] || '';
+          const mTerm4 = row['Grant 4 math'] || row['Grant 4 MATH'] || row['grant 4 math'] || row['4-chorak matematika'] || row['math term 4 score'] || '';
+
+          const hasAnyMathScore = [mTerm1, mTerm2, mTerm3, mTerm4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
+          finalMathTests = hasAnyMathScore ? [
+            { name: 'Grant 1', score: parseImportScore(mTerm1) },
+            { name: 'Grant 2', score: parseImportScore(mTerm2) },
+            { name: 'Grant 3', score: parseImportScore(mTerm3) },
+            { name: 'Grant 4', score: parseImportScore(mTerm4) }
+          ] : [];
+
+          const rawMathStarting = row['boshlang\'ich daraja math'] || row['Boshlang\'ich daraja math'] || row['StartingLevelMATH'] || row['initial level math'] || row['avvalgi daraja math'] || row['Avvalgi daraja math'] || '';
+          const rawMathCurrent = row['hozirgi daraja math'] || row['Hozirgi daraja math'] || row['CurrentLevelMATH'] || row['current level math'] || '';
+
+          finalMathStarting = normalizeLevel(rawMathStarting) || 'Level 1';
+          finalMathCurrent = normalizeLevel(rawMathCurrent) || 'Level 1';
+
+          const rawT = row['O\'qituvchi'] || row['o\'qituvchi'] || row['teacher'] || row['Teacher'] || '';
+          if (rawT.toString().trim()) {
+            mathTeacherName = rawT.toString().trim();
+          }
+        } else if (activeSubject === 'DETAILS') {
+          const rawPhone = row['Ota-ona telefon raqami'] || row['Phone number'] || row['phone'] || row['parent phone'] || row['Phone'] || row['Telefon raqami'] || '';
+          parentPhone = rawPhone.toString().trim();
+          if (parentPhone && !parentPhone.startsWith('+')) {
+            if (parentPhone.startsWith('998')) parentPhone = '+' + parentPhone;
+            else if (parentPhone.length === 9) parentPhone = '+998' + parentPhone;
+          }
+
+          const rawPass = row['Passcode'] || row['passcode'] || row['Parol'] || row['parol'] || row['Parol (Passcode)'] || '';
+          customPasscode = rawPass.toString().trim();
+        } else if (activeSubject === 'ALL') {
+          const rawEngScore = row['Eng score'] || row['English score'] || row['eng_score'] || row['eng score'] || '';
+          const engParsed = parseImportScoreStr(rawEngScore);
+          engScore = engParsed.score ?? 0;
+          
+          const rawMathScore = row['Math score'] || row['math_score'] || row['math score'] || '';
+          const mathParsed = parseImportScoreStr(rawMathScore);
+          mathScore = mathParsed.score ?? 0;
+
+          if (engParsed.idWrong || mathParsed.idWrong) {
+            idWrong = true;
+          }
+
+          const rawAttendance = row['Attendance'] || row['attendance'] || '';
+          attendance = rawAttendance !== '' ? parseInt(rawAttendance) || 1 : 1;
+
+          const rawHomework = row['Homework'] || row['homework'] || '';
+          homework = rawHomework !== '' ? parseInt(rawHomework) || 1 : 1;
+        }
+
+        return {
+          id: customId || generateRandomId(className),
+          name,
+          surname,
+          className,
+          dateJoined,
+          startingLevel: finalEngStarting,
+          currentLevel: finalEngCurrent,
+          grandTests: finalEngTests,
+          teacher: teacherName,
+          mathStartingLevel: finalMathStarting,
+          mathCurrentLevel: finalMathCurrent,
+          mathGrandTests: finalMathTests,
+          mathTeacher: mathTeacherName,
+          engScore,
+          mathScore,
+          attendance,
+          homework,
+          parentPhone,
+          passcode: customPasscode,
+          pictureUrl: row['PictureUrl'] || row['pictureUrl'] || '',
+          idWrong
+        };
+      })
+      .filter((s: Student) => s.name.trim() !== '' || s.surname.trim() !== '');
+
+    if (parsedStudents.length === 0) {
+      setUploadStatus({ type: 'error', message: '❌ Yaroqli o\'quvchilar topilmadi. Faylingiz namunadagi kabi ustun nomlariga ega ekanligini tekshiring.' });
+      return;
+    }
+
+    onStudentsUploaded(parsedStudents);
+    setUploadStatus({ type: 'success', message: `✅ ${parsedStudents.length} ta o'quvchi muvaffaqiyatli yuklandi!` });
+    setTimeout(() => setIsCsvModalOpen(false), 1500);
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith('.csv')) {
+    const ext = file.name.toLowerCase().split('.').pop();
+    if (ext !== 'csv' && ext !== 'xlsx' && ext !== 'xls') {
       setUploadStatus({ 
         type: 'error', 
-        message: '⚠️ Iltimos, faqat .CSV faylini yuklang. Agar namunani Google Sheets yoki Excel\'da ochgan bo\'lsangiz, uni birinchi bo\'lib CSV formatida yuklab oling.' 
+        message: '⚠️ Iltimos, faqat .CSV yoki .XLSX faylini yuklang.' 
       });
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -201,188 +395,36 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
     setUploadStatus(null);
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const parsedStudents: Student[] = (results.data as any[])
-          .map((row: any) => {
-            const rawNameStr = (
-              row['O\'quvchining ismi va familiyasi'] || 
-              row['Ism va familiya'] || 
-              row['Students name surname'] || 
-              row['Name'] || 
-              row['name'] || ''
-            ).toString().trim();
-            
-            const nameParts = rawNameStr.split(' ').filter(Boolean);
-            let name = '';
-            let surname = '';
-
-            if (nameParts.length > 1) {
-              surname = nameParts.pop() || '';
-              name = nameParts.join(' ');
-            } else {
-              name = rawNameStr;
-            }
-
-            const className = (
-              row['sinf'] || 
-              row['Sinf'] || 
-              row['class'] || 
-              row['Class'] || 
-              row['className'] || '5A'
-            ).toString().trim().toUpperCase();
-
-            const dateJoined = (
-              row['qabul qilingan sana'] || 
-              row['Qabul qilingan sana'] || 
-              row['when'] || 
-              row['When'] || 
-              row['date joined'] || 'Sentyabr 2024'
-            ).toString().trim();
-
-            const parseImportScore = (val: any): number | null => {
-              if (val === undefined || val === null) return null;
-              const s = val.toString().trim();
-              if (s === '' || s === '-') return null;
-              const p = parseInt(s);
-              return isNaN(p) ? null : p;
-            };
-
-            // Initialize all fields to defaults
-            let finalEngStarting = 'Level 1';
-            let finalEngCurrent = 'Level 1';
-            let finalEngTests: { name: string; score: number | null }[] | undefined = undefined;
-            let teacherName: string | undefined = undefined;
-
-            let finalMathStarting = 'Level 1';
-            let finalMathCurrent = 'Level 1';
-            let finalMathTests: { name: string; score: number | null }[] | undefined = undefined;
-            let mathTeacherName: string | undefined = undefined;
-
-            let engScore = 0;
-            let mathScore = 0;
-            let attendance = 1;
-            let homework = 1;
-            let parentPhone = '';
-            let customId = '';
-            let customPasscode = '';
-
-            if (activeSubject === 'ENG') {
-              const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
-              const term2 = row['Grant 2 eng'] || row['Grant 2 ENG'] || row['grant 2 eng'] || row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'] || '';
-              const term3 = row['Grant 3 eng'] || row['Grant 3 ENG'] || row['grant 3 eng'] || row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'] || '';
-              const term4 = row['Grant 4 eng'] || row['Grant 4 ENG'] || row['grant 4 eng'] || row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'] || '';
-
-              const hasAnyEngScore = [term1, term2, term3, term4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
-              finalEngTests = hasAnyEngScore ? [
-                { name: 'Grant 1', score: parseImportScore(term1) },
-                { name: 'Grant 2', score: parseImportScore(term2) },
-                { name: 'Grant 3', score: parseImportScore(term3) },
-                { name: 'Grant 4', score: parseImportScore(term4) }
-              ] : [];
-
-              const rawEngStarting = row['boshlang\'ich daraja eng'] || row['Boshlang\'ich daraja eng'] || row['StartingLevelENG'] || row['boshlang\'ich daraja'] || row['Boshlang\'ich daraja'] || row['avvalgi daraja'] || row['Avvalgi daraja'] || row['initial level'] || row['initial level eng'] || row['Level'] || row['level'] || row['StartingLevel'] || '';
-              const rawEngCurrent = row['hozirgi daraja eng'] || row['Hozirgi daraja eng'] || row['CurrentLevelENG'] || row['hozirgi daraja'] || row['Hozirgi daraja'] || row['current level'] || row['CurrentLevel'] || row['currentLevel'] || row['current level eng'] || '';
-
-              finalEngStarting = normalizeLevel(rawEngStarting) || 'Level 1';
-              finalEngCurrent = normalizeLevel(rawEngCurrent) || 'Level 1';
-              
-              const rawT = row['O\'qituvchi'] || row['o\'qituvchi'] || row['teacher'] || row['Teacher'] || '';
-              if (rawT.toString().trim()) {
-                teacherName = rawT.toString().trim();
-              }
-            } else if (activeSubject === 'MATH') {
-              const mTerm1 = row['Grant 1 math'] || row['Grant 1 MATH'] || row['grant 1 math'] || row['1-chorak matematika'] || row['math term 1 score'] || '';
-              const mTerm2 = row['Grant 2 math'] || row['Grant 2 MATH'] || row['grant 2 math'] || row['2-chorak matematika'] || row['math term 2 score'] || '';
-              const mTerm3 = row['Grant 3 math'] || row['Grant 3 MATH'] || row['grant 3 math'] || row['3-chorak matematika'] || row['math term 3 score'] || '';
-              const mTerm4 = row['Grant 4 math'] || row['Grant 4 MATH'] || row['grant 4 math'] || row['4-chorak matematika'] || row['math term 4 score'] || '';
-
-              const hasAnyMathScore = [mTerm1, mTerm2, mTerm3, mTerm4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
-              finalMathTests = hasAnyMathScore ? [
-                { name: 'Grant 1', score: parseImportScore(mTerm1) },
-                { name: 'Grant 2', score: parseImportScore(mTerm2) },
-                { name: 'Grant 3', score: parseImportScore(mTerm3) },
-                { name: 'Grant 4', score: parseImportScore(mTerm4) }
-              ] : [];
-
-              const rawMathStarting = row['boshlang\'ich daraja math'] || row['Boshlang\'ich daraja math'] || row['StartingLevelMATH'] || row['initial level math'] || row['avvalgi daraja math'] || row['Avvalgi daraja math'] || '';
-              const rawMathCurrent = row['hozirgi daraja math'] || row['Hozirgi daraja math'] || row['CurrentLevelMATH'] || row['current level math'] || '';
-
-              finalMathStarting = normalizeLevel(rawMathStarting) || 'Level 1';
-              finalMathCurrent = normalizeLevel(rawMathCurrent) || 'Level 1';
-
-              const rawT = row['O\'qituvchi'] || row['o\'qituvchi'] || row['teacher'] || row['Teacher'] || '';
-              if (rawT.toString().trim()) {
-                mathTeacherName = rawT.toString().trim();
-              }
-            } else if (activeSubject === 'DETAILS') {
-              const rawPhone = row['Ota-ona telefon raqami'] || row['Phone number'] || row['phone'] || row['parent phone'] || row['Phone'] || '';
-              parentPhone = rawPhone.toString().trim();
-              if (parentPhone && !parentPhone.startsWith('+')) {
-                if (parentPhone.startsWith('998')) parentPhone = '+' + parentPhone;
-                else if (parentPhone.length === 9) parentPhone = '+998' + parentPhone;
-              }
-
-              const rawId = row['ID'] || row['id'] || row['Id'] || row['O\'quvchi ID'] || '';
-              customId = rawId.toString().trim();
-
-              const rawPass = row['Passcode'] || row['passcode'] || row['Parol'] || row['parol'] || '';
-              customPasscode = rawPass.toString().trim();
-            } else if (activeSubject === 'ALL') {
-              const rawEngScore = row['Eng score'] || row['English score'] || row['eng_score'] || row['eng score'] || '';
-              engScore = rawEngScore !== '' ? Math.min(15, Math.max(0, parseInt(rawEngScore) || 0)) : 0;
-
-              const rawMathScore = row['Math score'] || row['math_score'] || row['math score'] || '';
-              mathScore = rawMathScore !== '' ? Math.min(15, Math.max(0, parseInt(rawMathScore) || 0)) : 0;
-
-              const rawAttendance = row['Attendance'] || row['attendance'] || '';
-              attendance = rawAttendance !== '' ? parseInt(rawAttendance) || 1 : 1;
-
-              const rawHomework = row['Homework'] || row['homework'] || '';
-              homework = rawHomework !== '' ? parseInt(rawHomework) || 1 : 1;
-            }
-
-            return {
-              id: customId || generateRandomId(),
-              name,
-              surname,
-              className,
-              dateJoined,
-              startingLevel: finalEngStarting,
-              currentLevel: finalEngCurrent,
-              grandTests: finalEngTests,
-              teacher: teacherName,
-              mathStartingLevel: finalMathStarting,
-              mathCurrentLevel: finalMathCurrent,
-              mathGrandTests: finalMathTests,
-              mathTeacher: mathTeacherName,
-              engScore,
-              mathScore,
-              attendance,
-              homework,
-              parentPhone,
-              passcode: customPasscode,
-              pictureUrl: row['PictureUrl'] || row['pictureUrl'] || '',
-            };
-          })
-          .filter((s: Student) => s.name.trim() !== '' || s.surname.trim() !== '');
-
-        if (parsedStudents.length === 0) {
-          setUploadStatus({ type: 'error', message: '❌ Yaroqli o\'quvchilar topilmadi. Faylingiz namunadagi kabi ustun nomlariga ega ekanligini tekshiring.' });
-          return;
+    if (ext === 'csv') {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          processImportedRows(results.data);
+        },
+        error: (error) => {
+          console.error('Error parsing CSV:', error);
+          setUploadStatus({ type: 'error', message: '❌ Faylni o\'qib bo\'lmadi.' });
         }
+      });
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json(worksheet);
+          processImportedRows(json);
+        } catch (err) {
+          console.error('Error parsing Excel:', err);
+          setUploadStatus({ type: 'error', message: '❌ Excel faylini o\'qib bo\'lmadi.' });
+        }
+      };
+      reader.readAsBinaryString(file);
+    }
 
-        onStudentsUploaded(parsedStudents);
-        setUploadStatus({ type: 'success', message: `✅ ${parsedStudents.length} ta o'quvchi muvaffaqiyatli yuklandi!` });
-        setTimeout(() => setIsCsvModalOpen(false), 1500);
-      },
-      error: (error) => {
-        console.error('Error parsing CSV:', error);
-        setUploadStatus({ type: 'error', message: '❌ Faylni o\'qib bo\'lmadi. Bu .CSV formatidagi fayl ekanligini tekshiring.' });
-      }
-    });
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 

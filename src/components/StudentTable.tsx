@@ -778,6 +778,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   const missedHw = (student.homework ?? 1) < 0 ? -(student.homework ?? 1) : 0;
                   const hwPercent = Math.max(0, 100 - missedHw * 20);
 
+                  const weekRecord = studentWeeks?.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+                  const isIdWrong = weekRecord?.id_wrong === true;
+
                   const isLast = idx === sortedStudents.length - 1;
 
                   return (
@@ -826,8 +829,30 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           )}
                         </div>
                         <div>
-                          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                            {student.name} {student.surname}
+                          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <span>{student.name} {student.surname}</span>
+                            {isIdWrong && (
+                              <span 
+                                title="Haftalik ballar yuklanganda ushbu talaba ismi/id topilmadi"
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.15)',
+                                  color: '#ef4444',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  borderRadius: '6px',
+                                  padding: '0.1rem 0.4rem',
+                                  fontSize: '0.65rem',
+                                  fontWeight: 700,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem'
+                                }}
+                              >
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }}></span>
+                                ID Xato
+                              </span>
+                            )}
                           </h3>
                           <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                             SINF {student.className.toUpperCase()}
@@ -1065,6 +1090,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   const isLast = idx === sortedStudents.length - 1;
                   const edits = unsavedChanges[student.id] || {};
                   
+                  const weekRecord = studentWeeks?.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+                  const isIdWrong = weekRecord?.id_wrong === true;
+                  
                   const nameVal = edits.name !== undefined ? edits.name : student.name;
                   const surnameVal = edits.surname !== undefined ? edits.surname : student.surname;
                   const idVal = edits.id !== undefined ? edits.id : student.id;
@@ -1144,10 +1172,32 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 fontWeight: 600, color: 'var(--text-primary)'
                               }}
                             />
-                          ) : (
+                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 650, color: 'var(--text-primary)' }}>
-                                {fullName || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Ism kiritilmagan</span>}
+                              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 650, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <span>{fullName || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Ism kiritilmagan</span>}</span>
+                                {isIdWrong && (
+                                  <span 
+                                    title="Haftalik ballar yuklanganda ushbu talaba ismi/id topilmadi"
+                                    style={{
+                                      background: 'rgba(239, 68, 68, 0.15)',
+                                      color: '#ef4444',
+                                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                                      borderRadius: '6px',
+                                      padding: '0.1rem 0.4rem',
+                                      fontSize: '0.65rem',
+                                      fontWeight: 700,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.05em',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.2rem'
+                                    }}
+                                  >
+                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }}></span>
+                                    ID Xato
+                                  </span>
+                                )}
                               </h3>
                               <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', marginTop: '0.1rem' }}>
                                 Sinf: {student.className.toUpperCase()}
@@ -1568,6 +1618,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     const improvement = calculateImprovement(student.startingLevel, student.currentLevel);
                     const isLast = idx === group.students.length - 1;
                     
+                    const weekRecord = studentWeeks?.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+                    const isIdWrong = weekRecord?.id_wrong === true;
+                    
                     const getTheme = () => {
                       return { 
                         primary: 'var(--accent-primary)', 
@@ -1631,8 +1684,30 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             )}
                           </div>
                           <div>
-                            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                              {student.name} {student.surname}
+                            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              <span>{student.name} {student.surname}</span>
+                              {isIdWrong && (
+                                <span 
+                                  title="Haftalik ballar yuklanganda ushbu talaba ismi/id topilmadi"
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.15)',
+                                    color: '#ef4444',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                    borderRadius: '6px',
+                                    padding: '0.1rem 0.4rem',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 700,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.2rem'
+                                  }}
+                                >
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }}></span>
+                                  ID Xato
+                                </span>
+                              )}
                             </h3>
                             <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                               SINF {student.className.toUpperCase()}

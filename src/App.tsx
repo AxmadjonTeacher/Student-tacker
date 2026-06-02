@@ -629,8 +629,18 @@ function App() {
     for (let i = 0; i < newStudents.length; i++) {
       const newS = newStudents[i];
       const matchIndex = localUpdatedList.findIndex(
-        old => old.name.toLowerCase().trim() === newS.name.toLowerCase().trim() &&
-               old.surname.toLowerCase().trim() === newS.surname.toLowerCase().trim()
+        old => {
+          // 1. Try matching by ID first (starts with AL followed by digits)
+          if (newS.id && /^AL\d+$/.test(newS.id) && old.id === newS.id) return true;
+          // 2. Try matching by standard name order
+          const oldFull = `${old.name} ${old.surname}`.toLowerCase().trim();
+          const newFull = `${newS.name} ${newS.surname}`.toLowerCase().trim();
+          if (oldFull === newFull) return true;
+          // 3. Try matching by inverted name order
+          const oldFullInv = `${old.surname} ${old.name}`.toLowerCase().trim();
+          if (oldFullInv === newFull) return true;
+          return false;
+        }
       );
 
       if (matchIndex > -1) {
@@ -655,7 +665,7 @@ function App() {
         localUpdatedList[matchIndex] = merged;
         existingUpserts.push(merged);
       } else {
-        const tempId = generateRandomId();
+        const tempId = generateRandomId(newS.className, localUpdatedList.map(s => s.id));
         let inheritedEngOrder = 0;
         if (newS.teacher) {
           const engStudent = localUpdatedList.find(s => 
@@ -705,7 +715,13 @@ function App() {
         // Add their week data
         if (selectedWeek) {
           existingUpserts.forEach(s => {
-            const newS = newStudents.find(ns => ns.name.toLowerCase().trim() === s.name.toLowerCase().trim() && ns.surname.toLowerCase().trim() === s.surname.toLowerCase().trim());
+            const newS = newStudents.find(ns => {
+              if (ns.id && ns.id === s.id) return true;
+              const nsFull = `${ns.name} ${ns.surname}`.toLowerCase().trim();
+              const sFull = `${s.name} ${s.surname}`.toLowerCase().trim();
+              const sFullInv = `${s.surname} ${s.name}`.toLowerCase().trim();
+              return nsFull === sFull || nsFull === sFullInv;
+            });
             const existingWeekRecord = studentWeeks.find(sw => sw.student_id === s.id && sw.week === selectedWeek);
             if (newS) {
               finalUpsertedWeeks.push({
@@ -720,7 +736,8 @@ function App() {
                 grand_tests: activeSubject === 'ENG' ? (newS.grandTests || existingWeekRecord?.grand_tests || s.grandTests || []) : (existingWeekRecord?.grand_tests || s.grandTests || []),
                 math_starting_level: activeSubject === 'MATH' ? (newS.mathStartingLevel || existingWeekRecord?.math_starting_level || s.mathStartingLevel || 'Level 1') : (existingWeekRecord?.math_starting_level || s.startingLevel || 'Level 1'),
                 math_current_level: activeSubject === 'MATH' ? (newS.mathCurrentLevel || existingWeekRecord?.math_current_level || s.currentLevel || 'Level 1') : (existingWeekRecord?.math_current_level || s.currentLevel || 'Level 1'),
-                math_grand_tests: activeSubject === 'MATH' ? (newS.mathGrandTests || existingWeekRecord?.math_grand_tests || s.mathGrandTests || []) : (existingWeekRecord?.math_grand_tests || s.mathGrandTests || [])
+                math_grand_tests: activeSubject === 'MATH' ? (newS.mathGrandTests || existingWeekRecord?.math_grand_tests || s.mathGrandTests || []) : (existingWeekRecord?.math_grand_tests || s.mathGrandTests || []),
+                id_wrong: activeSubject === 'ALL' ? (newS.idWrong ?? existingWeekRecord?.id_wrong ?? false) : (existingWeekRecord?.id_wrong ?? false)
               });
             }
           });
@@ -756,24 +773,30 @@ function App() {
                 uploadedStudentsUpdatedList.push(matchedDb);
               }
 
-              // Create week payload for this new student using their real ID
               if (selectedWeek) {
-                const newS = newStudents.find(ns => ns.name.toLowerCase().trim() === s.name.toLowerCase().trim() && ns.surname.toLowerCase().trim() === s.surname.toLowerCase().trim());
+                const newS = newStudents.find(ns => {
+                  if (ns.id && ns.id === s.id) return true;
+                  const nsFull = `${ns.name} ${ns.surname}`.toLowerCase().trim();
+                  const sFull = `${s.name} ${s.surname}`.toLowerCase().trim();
+                  const sFullInv = `${s.surname} ${s.name}`.toLowerCase().trim();
+                  return nsFull === sFull || nsFull === sFullInv;
+                });
                 finalUpsertedWeeks.push({
                   student_id: matchedDb.id,
                   week: selectedWeek,
-                eng_score: activeSubject === 'ALL' ? (newS?.engScore ?? 0) : 0,
-                math_score: activeSubject === 'ALL' ? (newS?.mathScore ?? 0) : 0,
-                attendance: activeSubject === 'ALL' ? (newS?.attendance ?? 1) : 1,
-                homework: activeSubject === 'ALL' ? (newS?.homework ?? 1) : 1,
-                starting_level: newS?.startingLevel || 'Level 1',
-                current_level: newS?.currentLevel || 'Level 1',
-                grand_tests: newS?.grandTests || [],
-                math_starting_level: newS?.mathStartingLevel || 'Level 1',
-                math_current_level: newS?.mathCurrentLevel || 'Level 1',
-                math_grand_tests: newS?.mathGrandTests || []
-              });
-            }
+                  eng_score: activeSubject === 'ALL' ? (newS?.engScore ?? 0) : 0,
+                  math_score: activeSubject === 'ALL' ? (newS?.mathScore ?? 0) : 0,
+                  attendance: activeSubject === 'ALL' ? (newS?.attendance ?? 1) : 1,
+                  homework: activeSubject === 'ALL' ? (newS?.homework ?? 1) : 1,
+                  starting_level: newS?.startingLevel || 'Level 1',
+                  current_level: newS?.currentLevel || 'Level 1',
+                  grand_tests: newS?.grandTests || [],
+                  math_starting_level: newS?.mathStartingLevel || 'Level 1',
+                  math_current_level: newS?.mathCurrentLevel || 'Level 1',
+                  math_grand_tests: newS?.mathGrandTests || [],
+                  id_wrong: activeSubject === 'ALL' ? (newS?.idWrong ?? false) : false
+                });
+              }
             }
           });
         }
@@ -828,10 +851,7 @@ function App() {
       if (mathStudent) inheritedMathOrder = mathStudent.mathTeacherOrder || 0;
     }
 
-    let tempId = generateRandomId();
-    while (students.some(s => s.id === tempId)) {
-      tempId = generateRandomId();
-    }
+    const tempId = generateRandomId(targetClass, students.map(s => s.id));
     const brandNew: Student = {
       id: tempId,
       name: studentData.name || '',
@@ -1585,10 +1605,8 @@ function App() {
     for (const student of targetStudents) {
       const edits: Partial<Student> = {};
       if (regenerateIds) {
-        let newId = generateRandomId();
-        while (existingIds.has(newId) || newlyGeneratedIds.has(newId)) {
-          newId = generateRandomId();
-        }
+        const combinedIds = Array.from(new Set([...Array.from(existingIds), ...Array.from(newlyGeneratedIds)]));
+        const newId = generateRandomId(student.className, combinedIds);
         newlyGeneratedIds.add(newId);
         edits.id = newId;
       }
