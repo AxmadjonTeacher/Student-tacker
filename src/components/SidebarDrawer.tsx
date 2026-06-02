@@ -431,6 +431,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const downloadTemplate = () => {
     if (activeSubject === 'ALL') {
       const headers = [
+        "ID",
         "O'quvchining ismi va familiyasi",
         "sinf",
         "Eng score",
@@ -440,6 +441,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       ].join(",");
 
       const row1 = [
+        "AL305",
         "Yodgorov Axmadjon",
         "5A",
         "14",
@@ -449,6 +451,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       ].join(",");
 
       const row2 = [
+        "AL320",
         "Salohiddinov Otabek",
         "5B",
         "8",

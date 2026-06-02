@@ -42,10 +42,10 @@
   --marquee-fade-left: linear-gradient(to right, #1e1b4b, transparent);
   --marquee-fade-right: linear-gradient(to left, #0c0c0e, transparent);
 
-  /* Purple profiles in ID & Tafsilotlar in dark mode */
-  --profile-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.35));
-  --profile-text: #a78bfa;
-  --profile-border: rgba(167, 139, 250, 0.3);
+  /* Teal profiles in ID & Tafsilotlar (remain teal even in dark mode) */
+  --profile-bg: linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(13, 148, 136, 0.35));
+  --profile-text: #14b8a6;
+  --profile-border: rgba(20, 184, 166, 0.3);
 }
 
 [data-theme="dark"] input[type="text"],

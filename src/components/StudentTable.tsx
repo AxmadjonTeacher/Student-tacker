@@ -73,7 +73,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [uploadingStudentId, setUploadingStudentId] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'HL' | 'AZ' | 'DEFAULT'>('DEFAULT');
+  const [sortBy, setSortBy] = useState<'HL' | 'AZ' | 'ID_ASC' | 'ID_DESC' | 'DEFAULT'>('DEFAULT');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // States for inline credentials editing
@@ -176,6 +176,92 @@ const StudentTable: React.FC<StudentTableProps> = ({
     );
   };
 
+  const renderDetailsSectionMenu = () => {
+    const dropdownId = 'details-section-menu';
+    const isOpen = openDropdownId === dropdownId;
+    return (
+      <div 
+        className="table-actions-dropdown-container" 
+        style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+      >
+        <button 
+          onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isOpen ? null : dropdownId); }}
+          style={{
+            background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer',
+            padding: '0.25rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+        >
+          <MoreVertical size={16} />
+        </button>
+        
+        <div 
+          className="table-actions-menu"
+          style={{
+            position: 'absolute', top: '100%', right: 0, paddingTop: '6px',
+            display: isOpen ? 'flex' : 'none', zIndex: 100,
+          }}
+          onMouseEnter={() => setOpenDropdownId(dropdownId)}
+          onMouseLeave={() => setOpenDropdownId(null)}
+        >
+          <div style={{
+            width: '210px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-color)',
+            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+            padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'left'
+          }}>
+            <button
+              onClick={() => { setOpenDropdownId(null); setSortBy('AZ'); }}
+              style={{
+                background: sortBy === 'AZ' ? 'var(--bg-card-hover)' : 'transparent', border: 'none', padding: '0.5rem 0.75rem',
+                borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer',
+                textAlign: 'left', width: '100%'
+              }}
+            >
+              Ism bo'yicha tartiblash (A-Z)
+            </button>
+            <button
+              onClick={() => { setOpenDropdownId(null); setSortBy('ID_ASC'); }}
+              style={{
+                background: sortBy === 'ID_ASC' ? 'var(--bg-card-hover)' : 'transparent', border: 'none', padding: '0.5rem 0.75rem',
+                borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer',
+                textAlign: 'left', width: '100%'
+              }}
+            >
+              ID bo'yicha (O'suvchi)
+            </button>
+            <button
+              onClick={() => { setOpenDropdownId(null); setSortBy('ID_DESC'); }}
+              style={{
+                background: sortBy === 'ID_DESC' ? 'var(--bg-card-hover)' : 'transparent', border: 'none', padding: '0.5rem 0.75rem',
+                borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer',
+                textAlign: 'left', width: '100%'
+              }}
+            >
+              ID bo'yicha (Kamayuvchi)
+            </button>
+            <button
+              onClick={() => { setOpenDropdownId(null); handleExportCredentialsToExcel(sortedStudents); }}
+              style={{
+                background: 'transparent', border: 'none', padding: '0.5rem 0.75rem',
+                borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer',
+                textAlign: 'left', width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem'
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Excel Yuklash
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const sortedStudents = React.useMemo(() => {
     if (activeSubject !== 'ALL' && activeSubject !== 'DETAILS') return students;
 
@@ -196,8 +282,22 @@ const StudentTable: React.FC<StudentTableProps> = ({
     // Sort existing students
     if (activeSubject === 'ALL' && sortBy === 'HL') {
       existingStudents.sort((a, b) => getAveragePercentage(b) - getAveragePercentage(a));
+    } else if (sortBy === 'ID_ASC') {
+      existingStudents.sort((a, b) => {
+        const numA = parseInt((a.id || '').replace(/\D/g, '')) || 0;
+        const numB = parseInt((b.id || '').replace(/\D/g, '')) || 0;
+        return numA - numB;
+      });
+    } else if (sortBy === 'ID_DESC') {
+      existingStudents.sort((a, b) => {
+        const numA = parseInt((a.id || '').replace(/\D/g, '')) || 0;
+        const numB = parseInt((b.id || '').replace(/\D/g, '')) || 0;
+        return numB - numA;
+      });
+    } else if (sortBy === 'AZ') {
+      existingStudents.sort((a, b) => `${a.name} ${a.surname}`.localeCompare(`${b.name} ${b.surname}`, 'uz'));
     } else {
-      // Default sorting is alphabetical A-Z (covers AZ selection or default)
+      // Default sorting is alphabetical A-Z
       existingStudents.sort((a, b) => `${a.name} ${a.surname}`.localeCompare(`${b.name} ${b.surname}`, 'uz'));
     }
 
@@ -347,6 +447,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const handleExportAllToExcel = (studentsList: Student[]) => {
     const data = studentsList.map(student => {
       return {
+        "ID": student.id,
         "O'quvchining ismi va familiyasi": `${student.name} ${student.surname}`,
         "sinf": student.className,
         "Eng score": student.engScore ?? 0,
@@ -359,6 +460,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
     const worksheet = XLSX.utils.json_to_sheet(data);
 
     worksheet['!cols'] = [
+      { wch: 12 }, // ID
       { wch: 30 }, // O'quvchining ismi va familiyasi
       { wch: 10 }, // sinf
       { wch: 15 }, // Eng score
@@ -1060,10 +1162,10 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   <div style={{ 
                     padding: '0.5rem 1rem', 
                     display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'stretch', 
-                    justifyContent: 'center',
-                    gap: '0.25rem',
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    gap: '0.35rem',
                     position: 'relative'
                   }}>
                     <button
@@ -1073,7 +1175,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0',
                         padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700,
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', transition: 'all 0.15s ease',
-                        width: '100%', whiteSpace: 'nowrap'
+                        flex: 1, whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
@@ -1081,7 +1183,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <Download size={10} />
                       <span>Excel</span>
                     </button>
-
+                    {renderDetailsSectionMenu()}
                   </div>
                 </div>
 
