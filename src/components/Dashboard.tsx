@@ -78,6 +78,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Chart States
   const [chartSubject, setChartSubject] = useState<'ENG' | 'MATH'>('ENG');
   const [chartClassGroup, setChartClassGroup] = useState<'5-6' | '7-8' | '9-11'>('5-6');
+  
+  // Weekly Leaders State
+  const [leaderClassGroup, setLeaderClassGroup] = useState<'5-6' | '7-8' | '9-11'>('5-6');
 
   // Role Formatted Display
   const roleDisplay = useMemo(() => {
@@ -123,15 +126,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
   }, [activeStudents]);
 
-  // Compute Weekly Leaders for the selected week
+  // Compute Weekly Leaders for the selected week & selected class range
   const weeklyLeaders = useMemo(() => {
     if (!activeLeaderWeek) return [];
     
+    const [minGrade, maxGrade] = leaderClassGroup === '5-6' ? [5, 6] : leaderClassGroup === '7-8' ? [7, 8] : [9, 11];
     const weekRecords = studentWeeks.filter(sw => sw.week === activeLeaderWeek && !sw.is_deleted);
     
     const leaders = weekRecords.map(sw => {
       const student = activeStudents.find(s => s.id === sw.student_id);
       if (!student) return null;
+      
+      const gr = getGradeNumber(student.className);
+      if (gr < minGrade || gr > maxGrade) return null;
       
       const engPct = sw.eng_score != null ? Math.round((sw.eng_score / 15) * 100) : 0;
       const mathPct = sw.math_score != null ? Math.round((sw.math_score / 15) * 100) : 0;
@@ -150,7 +157,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // Sort descending by average percentage and take top 10
     return leaders.sort((a, b) => b.avg - a.avg).slice(0, 10);
-  }, [activeStudents, studentWeeks, activeLeaderWeek]);
+  }, [activeStudents, studentWeeks, activeLeaderWeek, leaderClassGroup]);
 
   // Compute Term Mastery Line Chart data
   const termMasteryData = useMemo(() => {
@@ -486,26 +493,68 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Hafta Liderlari
             </h2>
             
-            {/* Last 4 weeks indicators */}
-            {/* Last 4 weeks tabs */}
-            <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.2rem', scrollbarWidth: 'none' }}>
-              {last4Weeks.map(week => (
-                <button
-                  key={week}
-                  onClick={() => setSelectedLeaderWeek(week)}
-                  className={`tab-pill ${activeLeaderWeek === week ? 'active' : ''}`}
+            {/* Week Dropdown & Grade Filter Toggles */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.65rem' }}>
+              {/* Week Dropdown */}
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <select
+                  value={activeLeaderWeek}
+                  onChange={(e) => setSelectedLeaderWeek(e.target.value)}
                   style={{
-                    padding: '0.35rem 0.8rem',
+                    background: 'var(--bg-card-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1.5px solid var(--border-color)',
                     borderRadius: '8px',
+                    padding: '0.35rem 1.75rem 0.35rem 0.65rem',
                     fontSize: '0.72rem',
                     fontWeight: 750,
                     cursor: 'pointer',
-                    whiteSpace: 'nowrap'
+                    outline: 'none',
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    boxSizing: 'border-box'
                   }}
                 >
-                  {week}
-                </button>
-              ))}
+                  {last4Weeks.map(week => (
+                    <option key={week} value={week}>{week}</option>
+                  ))}
+                </select>
+                {/* Custom Chevron indicator */}
+                <div style={{
+                  position: 'absolute',
+                  right: '0.65rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                  borderTop: '5px solid var(--text-secondary)',
+                  borderLeft: '4px solid transparent',
+                  borderRight: '4px solid transparent'
+                }} />
+              </div>
+              
+              {/* Grade Toggles */}
+              <div style={{ display: 'flex', gap: '0.3rem' }}>
+                {[
+                  { id: '5-6', label: '5-6' },
+                  { id: '7-8', label: '7-8' },
+                  { id: '9-11', label: '9-11' }
+                ].map(grp => (
+                  <button
+                    key={grp.id}
+                    onClick={() => setLeaderClassGroup(grp.id as any)}
+                    className={`tab-pill ${leaderClassGroup === grp.id ? 'active' : ''}`}
+                    style={{
+                      padding: '0.3rem 0.65rem',
+                      borderRadius: '8px',
+                      fontSize: '0.68rem',
+                      fontWeight: 750,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {grp.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
