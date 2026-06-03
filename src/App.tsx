@@ -67,8 +67,8 @@ export const formatDateLabel = (dateStr: string): string => {
 };
 
 // Import shared ID and passcode generators for local use, and re-export
-import { generateRandomId, generateRandomPasscode } from './utils/idGenerator';
-export { generateRandomId, generateRandomPasscode };
+import { generateRandomId, generateRandomPasscode, normalizeStudentId } from './utils/idGenerator';
+export { generateRandomId, generateRandomPasscode, normalizeStudentId };
 
 // Helper to get local date string YYYY-MM-DD
 export const getLocalDateString = (): string => {
@@ -630,8 +630,10 @@ function App() {
       const newS = newStudents[i];
       const matchIndex = localUpdatedList.findIndex(
         old => {
-          // 1. Try matching by ID first
-          if (newS.id && /^AL\d+$/.test(newS.id) && old.id === newS.id) return true;
+          // 1. Try matching by ID first using normalized ID helper
+          const normalizedNewId = normalizeStudentId(newS.id);
+          const normalizedOldId = normalizeStudentId(old.id);
+          if (normalizedNewId && normalizedOldId && normalizedNewId === normalizedOldId) return true;
 
           // 2. Fallback name/surname matching checking standard and inverted orders
           const oldFull1 = `${old.name} ${old.surname}`.toLowerCase().replace(/\s+/g, ' ').trim();

@@ -10,7 +10,7 @@ import type { Student, ActiveSubject, Teacher } from '../types';
 import AddStudentModal from './AddStudentModal';
 import { supabase } from '../supabase';
 import CustomDialog from './CustomDialog';
-import { generateRandomId } from '../utils/idGenerator';
+import { generateRandomId, normalizeStudentId } from '../utils/idGenerator';
 
 interface SidebarDrawerProps {
   isOpen: boolean;
@@ -235,10 +235,14 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         const parseImportScoreStr = (val: any): { score: number | null, idWrong: boolean } => {
           if (val === undefined || val === null) return { score: null, idWrong: false };
           const s = val.toString().trim();
-          if (s === '*') return { score: null, idWrong: true };
           if (s === '' || s === '-') return { score: null, idWrong: false };
-          const p = parseInt(s);
-          return { score: isNaN(p) ? null : p, idWrong: false };
+          
+          const idWrong = s.includes('*');
+          const cleanStr = s.replace(/\*/g, '').trim();
+          if (cleanStr === '' || cleanStr === '-') return { score: null, idWrong };
+          
+          const p = parseInt(cleanStr);
+          return { score: isNaN(p) ? null : p, idWrong };
         };
 
         // Initialize all fields to defaults
@@ -263,7 +267,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
         // ALWAYS extract ID regardless of activeSubject
         const rawId = row['ID'] || row['id'] || row['Id'] || row['O\'quvchi ID'] || row['ID raqami'] || '';
-        customId = rawId.toString().trim();
+        customId = normalizeStudentId(rawId);
 
         if (activeSubject === 'ENG') {
           const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
@@ -344,7 +348,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         }
 
         return {
-          id: customId || generateRandomId(className),
+          id: customId || generateRandomId(className, students.map(s => s.id)),
           name,
           surname,
           className,
@@ -433,6 +437,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
     let rows: any[] = [];
     let filename = '';
 
+    const activeClassStudents = students.filter(s => getClassGroupLocal(s.className) === activeClass);
+
     if (activeSubject === 'ALL') {
       headers = [
         "ID",
@@ -443,11 +449,23 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "Attendance",
         "Homework"
       ];
-      rows = [
-        ["AL305", "Yodgorov Axmadjon", "5A", "14", "11", "1", "1"],
-        ["AL320", "Salohiddinov Otabek", "5B", "8", "10", "-1", "-2"]
-      ];
-      filename = "o_quvchilar_all_namuna.xlsx";
+      if (activeClassStudents.length > 0) {
+        rows = activeClassStudents.map(s => [
+          s.id,
+          `${s.name} ${s.surname}`,
+          s.className,
+          s.engScore !== undefined ? s.engScore.toString() : "0",
+          s.mathScore !== undefined ? s.mathScore.toString() : "0",
+          s.attendance !== undefined ? s.attendance.toString() : "1",
+          s.homework !== undefined ? s.homework.toString() : "1"
+        ]);
+      } else {
+        rows = [
+          ["AL305", "Yodgorov Axmadjon", "5A", "14", "11", "1", "1"],
+          ["AL320", "Salohiddinov Otabek", "5B", "8", "10", "-1", "-2"]
+        ];
+      }
+      filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_haftalik_tahlil.xlsx`;
     } else if (activeSubject === 'ENG') {
       headers = [
         "ID",
@@ -461,11 +479,26 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "Grant 3 eng",
         "Grant 4 eng"
       ];
-      rows = [
-        ["AL305", "Yodgorov Axmadjon", "5A", "1", "5", "Aliyev Vali", "70", "72", "90", "67"],
-        ["AL320", "Salohiddinov Otabek", "5B", "3", "5", "Karimova Laylo", "55", "40", "68", "90"]
-      ];
-      filename = "o_quvchilar_english_namuna.xlsx";
+      if (activeClassStudents.length > 0) {
+        rows = activeClassStudents.map(s => [
+          s.id,
+          `${s.name} ${s.surname}`,
+          s.className,
+          s.startingLevel || "Level 1",
+          s.currentLevel || "Level 1",
+          s.teacher || "",
+          s.grandTests?.[0]?.score?.toString() || "",
+          s.grandTests?.[1]?.score?.toString() || "",
+          s.grandTests?.[2]?.score?.toString() || "",
+          s.grandTests?.[3]?.score?.toString() || ""
+        ]);
+      } else {
+        rows = [
+          ["AL305", "Yodgorov Axmadjon", "5A", "1", "5", "Aliyev Vali", "70", "72", "90", "67"],
+          ["AL320", "Salohiddinov Otabek", "5B", "3", "5", "Karimova Laylo", "55", "40", "68", "90"]
+        ];
+      }
+      filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_english.xlsx`;
     } else if (activeSubject === 'MATH') {
       headers = [
         "ID",
@@ -479,11 +512,26 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "Grant 3 math",
         "Grant 4 math"
       ];
-      rows = [
-        ["AL305", "Yodgorov Axmadjon", "5A", "2", "4", "Toshmatov Dilshod", "60", "68", "75", "82"],
-        ["AL320", "Salohiddinov Otabek", "5B", "1", "3", "Sodiqov Jasur", "45", "55", "62", "70"]
-      ];
-      filename = "o_quvchilar_math_namuna.xlsx";
+      if (activeClassStudents.length > 0) {
+        rows = activeClassStudents.map(s => [
+          s.id,
+          `${s.name} ${s.surname}`,
+          s.className,
+          s.mathStartingLevel || "Level 1",
+          s.mathCurrentLevel || "Level 1",
+          s.mathTeacher || "",
+          s.mathGrandTests?.[0]?.score?.toString() || "",
+          s.mathGrandTests?.[1]?.score?.toString() || "",
+          s.mathGrandTests?.[2]?.score?.toString() || "",
+          s.mathGrandTests?.[3]?.score?.toString() || ""
+        ]);
+      } else {
+        rows = [
+          ["AL305", "Yodgorov Axmadjon", "5A", "2", "4", "Toshmatov Dilshod", "60", "68", "75", "82"],
+          ["AL320", "Salohiddinov Otabek", "5B", "1", "3", "Sodiqov Jasur", "45", "55", "62", "70"]
+        ];
+      }
+      filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_math.xlsx`;
     } else if (activeSubject === 'DETAILS') {
       headers = [
         "O'quvchining ismi va familiyasi",
@@ -492,11 +540,21 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "ID",
         "Passcode"
       ];
-      rows = [
-        ["Yodgorov Axmadjon", "5A", "+998901234567", "AL557", "1234567"],
-        ["Salohiddinov Otabek", "5B", "+998907654321", "AL231", "7654321"]
-      ];
-      filename = "o_quvchilar_tafsilotlar_namuna.xlsx";
+      if (activeClassStudents.length > 0) {
+        rows = activeClassStudents.map(s => [
+          `${s.name} ${s.surname}`,
+          s.className,
+          s.parentPhone || "",
+          s.id,
+          s.passcode || ""
+        ]);
+      } else {
+        rows = [
+          ["Yodgorov Axmadjon", "5A", "+998901234567", "AL557", "1234567"],
+          ["Salohiddinov Otabek", "5B", "+998907654321", "AL231", "7654321"]
+        ];
+      }
+      filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_tafsilotlar.xlsx`;
     }
 
     if (headers.length > 0) {
