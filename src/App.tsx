@@ -630,16 +630,16 @@ function App() {
       const newS = newStudents[i];
       const matchIndex = localUpdatedList.findIndex(
         old => {
-          // 1. Try matching by ID first (starts with AL followed by digits)
+          // 1. Try matching by ID first
           if (newS.id && /^AL\d+$/.test(newS.id) && old.id === newS.id) return true;
-          // 2. Try matching by standard name order
-          const oldFull = `${old.name} ${old.surname}`.toLowerCase().trim();
-          const newFull = `${newS.name} ${newS.surname}`.toLowerCase().trim();
-          if (oldFull === newFull) return true;
-          // 3. Try matching by inverted name order
-          const oldFullInv = `${old.surname} ${old.name}`.toLowerCase().trim();
-          if (oldFullInv === newFull) return true;
-          return false;
+
+          // 2. Fallback name/surname matching checking standard and inverted orders
+          const oldFull1 = `${old.name} ${old.surname}`.toLowerCase().replace(/\s+/g, ' ').trim();
+          const oldFull2 = `${old.surname} ${old.name}`.toLowerCase().replace(/\s+/g, ' ').trim();
+          const newFull1 = `${newS.name} ${newS.surname}`.toLowerCase().replace(/\s+/g, ' ').trim();
+          const newFull2 = `${newS.surname} ${newS.name}`.toLowerCase().replace(/\s+/g, ' ').trim();
+
+          return (oldFull1 === newFull1 || oldFull1 === newFull2 || oldFull2 === newFull1 || oldFull2 === newFull2);
         }
       );
 

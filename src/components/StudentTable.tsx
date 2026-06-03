@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { Student, ActiveSubject, Teacher } from '../types';
 import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, Key, Phone, Save, RotateCw, Download, X } from 'lucide-react';
 import GraphModal from './GraphModal';
@@ -92,6 +92,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [regenIds, setRegenIds] = useState(true);
   const [regenPasscodes, setRegenPasscodes] = useState(true);
   const [regenTarget, setRegenTarget] = useState<'class' | 'all'>('class');
+
+  const [showAllWeeks, setShowAllWeeks] = useState(false);
+  const displayedWeeks = useMemo(() => {
+    if (showAllWeeks || weeksList.length <= 6) return weeksList;
+    const last6 = weeksList.slice(-6);
+    if (selectedWeek && !last6.includes(selectedWeek)) {
+      return [...weeksList.filter(w => w === selectedWeek), ...last6];
+    }
+    return last6;
+  }, [weeksList, showAllWeeks, selectedWeek]);
 
   const handleCopyText = (text: string, studentId: string, field: string) => {
     if (!text) return;
@@ -747,10 +757,10 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               lineHeight: 1.2
                             }}
                           >
-                            {weeksList.length === 0 ? (
+                            {displayedWeeks.length === 0 ? (
                               <option value="">Hafta yo'q</option>
                             ) : (
-                              weeksList.map(w => (
+                              displayedWeeks.map(w => (
                                 <option key={w} value={w}>{w}</option>
                               ))
                             )}
@@ -770,6 +780,37 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             </svg>
                           </div>
                         </div>
+
+                        {weeksList.length > 6 && (
+                          <button
+                            onClick={() => setShowAllWeeks(!showAllWeeks)}
+                            title={showAllWeeks ? "Faqat oxirgi 6 haftani ko'rsatish" : "Barcha haftalarni ko'rsatish"}
+                            style={{
+                              background: showAllWeeks ? 'var(--accent-primary)' : 'var(--bg-card-hover)',
+                              color: showAllWeeks ? '#ffffff' : 'var(--text-secondary)',
+                              border: showAllWeeks ? '1.5px solid var(--accent-primary)' : '1.5px solid var(--border-color)',
+                              borderRadius: '8px',
+                              padding: '0.35rem 0.65rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              outline: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.25rem'
+                            }}
+                          >
+                            <span>Barchasi</span>
+                            <span style={{
+                              fontSize: '0.65rem',
+                              opacity: 0.8,
+                              background: showAllWeeks ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)',
+                              padding: '1px 4px',
+                              borderRadius: '4px'
+                            }}>{weeksList.length}</span>
+                          </button>
+                        )}
 
                         {isAdminMode && selectedWeek && authRole !== 'admin123' && onDeleteWeekClick && (
                           <button
@@ -965,22 +1006,54 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       {/* Eng Score block */}
                       <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Ingliz tili</span>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                          {engPercent.toFixed(2)}%
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <span>{engPercent.toFixed(2)}%</span>
+                          {isIdWrong && (
+                            <span 
+                              style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '1.1rem', lineHeight: 1 }} 
+                              title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
+                            >
+                              *
+                            </span>
+                          )}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                          {student.engScore || 0} / 15
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <span>{student.engScore || 0} / 15</span>
+                          {isIdWrong && (
+                            <span 
+                              style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '0.85rem', lineHeight: 1 }} 
+                              title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
+                            >
+                              *
+                            </span>
+                          )}
                         </div>
                       </div>
 
                       {/* Math Score block */}
                       <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Matematika</span>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                          {mathPercent.toFixed(2)}%
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <span>{mathPercent.toFixed(2)}%</span>
+                          {isIdWrong && (
+                            <span 
+                              style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '1.1rem', lineHeight: 1 }} 
+                              title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
+                            >
+                              *
+                            </span>
+                          )}
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                          {student.mathScore || 0} / 15
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                          <span>{student.mathScore || 0} / 15</span>
+                          {isIdWrong && (
+                            <span 
+                              style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '0.85rem', lineHeight: 1 }} 
+                              title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
+                            >
+                              *
+                            </span>
+                          )}
                         </div>
                       </div>
 

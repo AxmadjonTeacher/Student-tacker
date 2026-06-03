@@ -429,8 +429,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   };
 
   const downloadTemplate = () => {
+    let headers: string[] = [];
+    let rows: any[] = [];
+    let filename = '';
+
     if (activeSubject === 'ALL') {
-      const headers = [
+      headers = [
         "ID",
         "O'quvchining ismi va familiyasi",
         "sinf",
@@ -438,42 +442,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "Math score",
         "Attendance",
         "Homework"
-      ].join(",");
-
-      const row1 = [
-        "AL305",
-        "Yodgorov Axmadjon",
-        "5A",
-        "14",
-        "11",
-        "1",
-        "1"
-      ].join(",");
-
-      const row2 = [
-        "AL320",
-        "Salohiddinov Otabek",
-        "5B",
-        "8",
-        "10",
-        "-1",
-        "-2"
-      ].join(",");
-
-      const csvContent = headers + "\n" + row1 + "\n" + row2;
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "o_quvchilar_all_namuna.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      return;
-    }
-
-    if (activeSubject === 'ENG') {
-      const headers = [
+      ];
+      rows = [
+        ["AL305", "Yodgorov Axmadjon", "5A", "14", "11", "1", "1"],
+        ["AL320", "Salohiddinov Otabek", "5B", "8", "10", "-1", "-2"]
+      ];
+      filename = "o_quvchilar_all_namuna.xlsx";
+    } else if (activeSubject === 'ENG') {
+      headers = [
+        "ID",
         "O'quvchining ismi va familiyasi",
         "sinf",
         "boshlang'ich daraja eng",
@@ -483,40 +460,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "Grant 2 eng",
         "Grant 3 eng",
         "Grant 4 eng"
-      ].join(",");
-
-      const row1 = [
-        "Yodgorov Axmadjon",
-        "5A",
-        "1",
-        "5",
-        "Aliyev Vali",
-        "70", "72", "90", "67"
-      ].join(",");
-
-      const row2 = [
-        "Salohiddinov Otabek",
-        "5B",
-        "3",
-        "5",
-        "Karimova Laylo",
-        "55", "40", "68", "90"
-      ].join(",");
-
-      const csvContent = headers + "\n" + row1 + "\n" + row2;
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "o_quvchilar_english_namuna.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      return;
-    }
-
-    if (activeSubject === 'MATH') {
-      const headers = [
+      ];
+      rows = [
+        ["AL305", "Yodgorov Axmadjon", "5A", "1", "5", "Aliyev Vali", "70", "72", "90", "67"],
+        ["AL320", "Salohiddinov Otabek", "5B", "3", "5", "Karimova Laylo", "55", "40", "68", "90"]
+      ];
+      filename = "o_quvchilar_english_namuna.xlsx";
+    } else if (activeSubject === 'MATH') {
+      headers = [
+        "ID",
         "O'quvchining ismi va familiyasi",
         "sinf",
         "boshlang'ich daraja math",
@@ -526,73 +478,33 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         "Grant 2 math",
         "Grant 3 math",
         "Grant 4 math"
-      ].join(",");
-
-      const row1 = [
-        "Yodgorov Axmadjon",
-        "5A",
-        "2",
-        "4",
-        "Toshmatov Dilshod",
-        "60", "68", "75", "82"
-      ].join(",");
-
-      const row2 = [
-        "Salohiddinov Otabek",
-        "5B",
-        "1",
-        "3",
-        "Sodiqov Jasur",
-        "45", "55", "62", "70"
-      ].join(",");
-
-      const csvContent = headers + "\n" + row1 + "\n" + row2;
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "o_quvchilar_math_namuna.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      return;
-    }
-
-    if (activeSubject === 'DETAILS') {
-      const headers = [
+      ];
+      rows = [
+        ["AL305", "Yodgorov Axmadjon", "5A", "2", "4", "Toshmatov Dilshod", "60", "68", "75", "82"],
+        ["AL320", "Salohiddinov Otabek", "5B", "1", "3", "Sodiqov Jasur", "45", "55", "62", "70"]
+      ];
+      filename = "o_quvchilar_math_namuna.xlsx";
+    } else if (activeSubject === 'DETAILS') {
+      headers = [
         "O'quvchining ismi va familiyasi",
         "sinf",
         "Ota-ona telefon raqami",
         "ID",
         "Passcode"
-      ].join(",");
+      ];
+      rows = [
+        ["Yodgorov Axmadjon", "5A", "+998901234567", "AL557", "1234567"],
+        ["Salohiddinov Otabek", "5B", "+998907654321", "AL231", "7654321"]
+      ];
+      filename = "o_quvchilar_tafsilotlar_namuna.xlsx";
+    }
 
-      const row1 = [
-        "Yodgorov Axmadjon",
-        "5A",
-        "+998901234567",
-        "AL557",
-        "1234567"
-      ].join(",");
-
-      const row2 = [
-        "Salohiddinov Otabek",
-        "5B",
-        "+998907654321",
-        "AL231",
-        "7654321"
-      ].join(",");
-
-      const csvContent = headers + "\n" + row1 + "\n" + row2;
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "o_quvchilar_tafsilotlar_namuna.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      return;
+    if (headers.length > 0) {
+      const wsData = [headers, ...rows];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Template");
+      XLSX.writeFile(wb, filename);
     }
   };
 
@@ -1211,7 +1123,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         }}
                       >
                         <UploadCloud size={15} />
-                        <span>GURUHLI YUKLASH (CSV)</span>
+                        <span>GURUHLI YUKLASH (EXCEL / CSV)</span>
                       </button>
 
                       {authRole !== 'admin123' && (
@@ -2438,7 +2350,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
             </div>
             
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.85rem', lineHeight: 1.5 }}>
-              Sinf o'quvchilarini ommaviy CSV fayl orqali tizimga yuklang. To'g'ri ustunlar mos kelishi uchun quyidagi namunani yuklab oling.
+              Sinf o'quvchilarini ommaviy Excel (.xlsx) yoki CSV fayl orqali tizimga yuklang. To'g'ri ustunlar mos kelishi uchun quyidagi namunani yuklab oling.
             </p>
 
             <div style={{ 
@@ -2446,8 +2358,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               borderRadius: '12px', padding: '0.8rem 1rem', marginBottom: '1.25rem',
               fontSize: '0.8rem', color: 'var(--text-primary)', lineHeight: 1.5
             }}>
-              <strong>⚠️ Diqqat:</strong> Yuklanadigan fayl faqat <strong>.CSV</strong> formatida bo'lishi shart.<br />
-              Excel yoki Google Sheets da tahrirlab bo'lgach, <em>Vergul bilan ajratilgan qiymatlar (.csv)</em> sifatida yuklab oling.
+              <strong>⚠️ Diqqat:</strong> Yuklanadigan fayl <strong>.XLSX</strong>, <strong>.XLS</strong> yoki <strong>.CSV</strong> formatida bo'lishi shart.<br />
+              Excel yoki Google Sheets da tayyorlangan jadvalni to'g'ridan-to'g'ri yuklashingiz mumkin.
             </div>
 
              <button 
@@ -2463,7 +2375,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               onClick={downloadTemplate}
             >
               <Download size={16} />
-              Namunaviy CSV faylini yuklab olish
+              Namunaviy Excel faylini yuklab olish
             </button>
 
             {uploadStatus && (
@@ -2496,11 +2408,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               <UploadCloud className="icon" size={32} style={{ color: 'var(--text-secondary)', marginBottom: '0.75rem' }} />
               <div>
                 <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.85rem', margin: 0 }}>Faylni tanlash uchun bosing</p>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: '0.25rem 0 0' }}>yoki faylni sudrab bu yerga tashlang (.csv formatda)</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: '0.25rem 0 0' }}>yoki faylni sudrab bu yerga tashlang (.xlsx, .xls, .csv formatda)</p>
               </div>
               <input 
                 type="file" 
-                accept=".csv" 
+                accept=".csv,.xlsx,.xls" 
                 ref={fileInputRef} 
                 style={{ display: 'none' }} 
                 onChange={handleFileUpload}
