@@ -273,7 +273,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   };
 
   const sortedStudents = React.useMemo(() => {
-    if (activeSubject !== 'ALL' && activeSubject !== 'DETAILS') return students;
+    if (activeSubject !== 'ALL' && activeSubject !== 'PRIMARY' && activeSubject !== 'DETAILS') return students;
 
     const getAveragePercentage = (s: Student) => {
       const eng = (s.engScore || 0) / 15 * 100;
@@ -290,7 +290,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
     const sessionNewStudents = students.filter(s => s.isSessionAdded);
 
     // Sort existing students
-    if (activeSubject === 'ALL' && sortBy === 'HL') {
+    if ((activeSubject === 'ALL' || activeSubject === 'PRIMARY') && sortBy === 'HL') {
       existingStudents.sort((a, b) => getAveragePercentage(b) - getAveragePercentage(a));
     } else if (sortBy === 'ID_ASC') {
       existingStudents.sort((a, b) => {
@@ -696,7 +696,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           </div>
         ) : (
           <>
-            {activeSubject === 'ALL' ? (
+            {activeSubject === 'ALL' || activeSubject === 'PRIMARY' ? (
               <div 
                 className="table-card-container"
                 style={{

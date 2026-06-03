@@ -11,18 +11,9 @@ interface AddStudentModalProps {
   activeClass?: string;
 }
 
-const LEVELS = [
-  'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5',
-  'Level 6', 'Level 7', 'Level 8', 'Level 9', 'Level 10',
-  'Level 11', 'Level 12', 'Level 13', 'Level 14', 'Level 15'
-];
-
-const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent, activeSubject, teachers, activeClass }) => {
+const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAddStudent, activeSubject: _activeSubject, teachers, activeClass }) => {
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
-  const [startingLevel, setStartingLevel] = useState('Level 1');
-  const [currentLevel, setCurrentLevel] = useState('Level 1');
-  const [teacher, setTeacher] = useState('');
   const [englishTeacher, setEnglishTeacher] = useState('');
   const [mathTeacher, setMathTeacher] = useState('');
   const [parentPhone, setParentPhone] = useState('+998');
@@ -46,52 +37,25 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
     const studentData: Partial<Student> = {
       name: name.trim(),
       surname: surname.trim(),
+      className: selectedClass,
+      teacher: englishTeacher.trim() || undefined,
+      mathTeacher: mathTeacher.trim() || undefined,
       parentPhone: parentPhone.trim() === '+998' ? '' : parentPhone.trim(),
-      className: selectedClass
+      startingLevel: 'Level 1',
+      currentLevel: 'Level 1',
+      mathStartingLevel: 'Level 1',
+      mathCurrentLevel: 'Level 1',
+      engScore: 0,
+      mathScore: 0,
+      attendance: 1,
+      homework: 1
     };
-
-    if (activeSubject === 'MATH') {
-      studentData.mathStartingLevel = startingLevel;
-      studentData.mathCurrentLevel = currentLevel;
-      studentData.mathTeacher = teacher.trim();
-      studentData.startingLevel = 'Level 1';
-      studentData.currentLevel = 'Level 1';
-    } else if (activeSubject === 'ENG') {
-      studentData.startingLevel = startingLevel;
-      studentData.currentLevel = currentLevel;
-      studentData.teacher = teacher.trim();
-      studentData.mathStartingLevel = 'Level 1';
-      studentData.mathCurrentLevel = 'Level 1';
-    } else if (activeSubject === 'DETAILS') {
-      studentData.teacher = englishTeacher.trim();
-      studentData.mathTeacher = mathTeacher.trim();
-      studentData.startingLevel = 'Level 1';
-      studentData.currentLevel = 'Level 1';
-      studentData.mathStartingLevel = 'Level 1';
-      studentData.mathCurrentLevel = 'Level 1';
-      studentData.engScore = 0;
-      studentData.mathScore = 0;
-      studentData.attendance = 1;
-      studentData.homework = 1;
-    } else {
-      studentData.startingLevel = 'Level 1';
-      studentData.currentLevel = 'Level 1';
-      studentData.mathStartingLevel = 'Level 1';
-      studentData.mathCurrentLevel = 'Level 1';
-      studentData.engScore = 0;
-      studentData.mathScore = 0;
-      studentData.attendance = 1;
-      studentData.homework = 1;
-    }
 
     onAddStudent(studentData);
     
     // Reset and close
     setName('');
     setSurname('');
-    setStartingLevel('Level 1');
-    setCurrentLevel('Level 1');
-    setTeacher('');
     setEnglishTeacher('');
     setMathTeacher('');
     setParentPhone('+998');
@@ -191,105 +155,6 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
             </div>
           </div>
 
-          {(activeSubject === 'ENG' || activeSubject === 'MATH') && (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Avvalgi daraja</label>
-                  <select 
-                    value={startingLevel}
-                    onChange={e => setStartingLevel(e.target.value)}
-                    style={{
-                      width: '100%', padding: '0.75rem', borderRadius: '10px',
-                      border: '1px solid var(--border-color)', fontSize: '0.95rem',
-                      backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
-                    }}
-                  >
-                    {LEVELS.map(l => <option key={l} value={l} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{l}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Hozirgi daraja</label>
-                  <select 
-                    value={currentLevel}
-                    onChange={e => setCurrentLevel(e.target.value)}
-                    style={{
-                      width: '100%', padding: '0.75rem', borderRadius: '10px',
-                      border: '1px solid var(--border-color)', fontSize: '0.95rem',
-                      backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
-                    }}
-                  >
-                    {LEVELS.map(l => <option key={l} value={l} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{l}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                  O'qituvchi <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
-                </label>
-                <select 
-                  value={teacher}
-                  onChange={e => setTeacher(e.target.value)}
-                  style={{
-                    width: '100%', padding: '0.75rem', borderRadius: '10px',
-                    border: '1px solid var(--border-color)', fontSize: '0.95rem',
-                    backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
-                  }}
-                >
-                  <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Tanlanmagan</option>
-                  {(activeSubject === 'ENG' ? engTeachers : mathTeachers).map(t => (
-                    <option key={t.id} value={t.name} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
-
-          {activeSubject === 'DETAILS' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                  Ingliz tili o'qituvchisi <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
-                </label>
-                <select 
-                  value={englishTeacher}
-                  onChange={e => setEnglishTeacher(e.target.value)}
-                  style={{
-                    width: '100%', padding: '0.75rem', borderRadius: '10px',
-                    border: '1px solid var(--border-color)', fontSize: '0.95rem',
-                    backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
-                  }}
-                >
-                  <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Tanlanmagan</option>
-                  {engTeachers.map(t => (
-                    <option key={t.id} value={t.name} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                  Matematika o'qituvchisi <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
-                </label>
-                <select 
-                  value={mathTeacher}
-                  onChange={e => setMathTeacher(e.target.value)}
-                  style={{
-                    width: '100%', padding: '0.75rem', borderRadius: '10px',
-                    border: '1px solid var(--border-color)', fontSize: '0.95rem',
-                    backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
-                  }}
-                >
-                  <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Tanlanmagan</option>
-                  {mathTeachers.map(t => (
-                    <option key={t.id} value={t.name} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
@@ -320,7 +185,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
 
             <div className="form-group">
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                Ota-ona telefon raqami <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(ixtiyoriy)</span>
+                Ota-ona telefon raqami
               </label>
               <input 
                 type="text" 
@@ -343,6 +208,48 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
                 onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
               />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Ingliz tili o'qituvchisi
+              </label>
+              <select 
+                value={englishTeacher}
+                onChange={e => setEnglishTeacher(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '10px',
+                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
+                }}
+              >
+                <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Tanlanmagan</option>
+                {engTeachers.map(t => (
+                  <option key={t.id} value={t.name} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Matematika o'qituvchisi
+              </label>
+              <select 
+                value={mathTeacher}
+                onChange={e => setMathTeacher(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '10px',
+                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
+                }}
+              >
+                <option value="" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>Tanlanmagan</option>
+                {mathTeachers.map(t => (
+                  <option key={t.id} value={t.name} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{t.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 

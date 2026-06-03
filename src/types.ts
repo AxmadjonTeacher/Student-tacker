@@ -49,7 +49,7 @@ export interface NewsEvent {
   type?: 'news' | 'event' | 'reminder';
 }
 
-export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD';
+export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD' | 'PRIMARY';
 
 export interface Teacher {
   id: number;

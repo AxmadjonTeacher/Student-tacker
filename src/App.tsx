@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   Home, Search, BarChart2, Settings, LogOut,
-  BookOpen, Binary, Activity, ShieldAlert, Bell, Users, Trash2,
+  BookOpen, Binary, Activity, ShieldAlert, Bell, Users, Trash2, GraduationCap,
   PanelLeftClose, Shield, Sun, Moon
 } from 'lucide-react';
 import Header from './components/Header';
@@ -604,6 +604,20 @@ function App() {
     }
   }, [activeSubject, activeClass]);
 
+  // Reset activeClass based on subject and grade range
+  useEffect(() => {
+    const grade = parseInt(activeClass);
+    if (activeSubject === 'PRIMARY') {
+      if (isNaN(grade) || grade < 1 || grade > 4) {
+        setActiveClass('1-Sinf');
+      }
+    } else if (activeSubject === 'ENG' || activeSubject === 'MATH' || activeSubject === 'ALL' || activeSubject === 'DETAILS') {
+      if (!isNaN(grade) && grade >= 1 && grade <= 4) {
+        setActiveClass('5-Sinf');
+      }
+    }
+  }, [activeSubject, activeClass]);
+
 
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
@@ -643,12 +657,13 @@ function App() {
           mathGrandTests: newS.mathGrandTests || existing.mathGrandTests,
           teacher: newS.teacher || existing.teacher,
           mathTeacher: newS.mathTeacher || existing.mathTeacher,
-          engScore: activeSubject === 'ALL' ? newS.engScore : existing.engScore,
-          mathScore: activeSubject === 'ALL' ? newS.mathScore : existing.mathScore,
-          attendance: activeSubject === 'ALL' ? newS.attendance : existing.attendance,
-          homework: activeSubject === 'ALL' ? newS.homework : existing.homework,
+          engScore: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? newS.engScore : existing.engScore,
+          mathScore: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? newS.mathScore : existing.mathScore,
+          attendance: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? newS.attendance : existing.attendance,
+          homework: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? newS.homework : existing.homework,
           passcode: newS.passcode || existing.passcode,
-          parentPhone: newS.parentPhone || existing.parentPhone
+          parentPhone: newS.parentPhone || existing.parentPhone,
+          isDeleted: false
         };
         localUpdatedList[matchIndex] = merged;
         existingUpserts.push(merged);
@@ -715,17 +730,17 @@ function App() {
               finalUpsertedWeeks.push({
                 student_id: s.id,
                 week: selectedWeek,
-                eng_score: activeSubject === 'ALL' && newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score ?? s.engScore ?? 0),
-                math_score: activeSubject === 'ALL' && newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score ?? s.mathScore ?? 0),
-                attendance: activeSubject === 'ALL' && newS.attendance !== undefined ? newS.attendance : (existingWeekRecord?.attendance ?? s.attendance ?? 1),
-                homework: activeSubject === 'ALL' && newS.homework !== undefined ? newS.homework : (existingWeekRecord?.homework ?? s.homework ?? 1),
+                eng_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score ?? s.engScore ?? 0),
+                math_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score ?? s.mathScore ?? 0),
+                attendance: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.attendance !== undefined ? newS.attendance : (existingWeekRecord?.attendance ?? s.attendance ?? 1),
+                homework: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.homework !== undefined ? newS.homework : (existingWeekRecord?.homework ?? s.homework ?? 1),
                 starting_level: activeSubject === 'ENG' ? (newS.startingLevel || existingWeekRecord?.starting_level || s.startingLevel || 'Level 1') : (existingWeekRecord?.starting_level || s.startingLevel || 'Level 1'),
                 current_level: activeSubject === 'ENG' ? (newS.currentLevel || existingWeekRecord?.current_level || s.currentLevel || 'Level 1') : (existingWeekRecord?.current_level || s.currentLevel || 'Level 1'),
                 grand_tests: activeSubject === 'ENG' ? (newS.grandTests || existingWeekRecord?.grand_tests || s.grandTests || []) : (existingWeekRecord?.grand_tests || s.grandTests || []),
                 math_starting_level: activeSubject === 'MATH' ? (newS.mathStartingLevel || existingWeekRecord?.math_starting_level || s.mathStartingLevel || 'Level 1') : (existingWeekRecord?.math_starting_level || s.startingLevel || 'Level 1'),
                 math_current_level: activeSubject === 'MATH' ? (newS.mathCurrentLevel || existingWeekRecord?.math_current_level || s.currentLevel || 'Level 1') : (existingWeekRecord?.math_current_level || s.currentLevel || 'Level 1'),
                 math_grand_tests: activeSubject === 'MATH' ? (newS.mathGrandTests || existingWeekRecord?.math_grand_tests || s.mathGrandTests || []) : (existingWeekRecord?.math_grand_tests || s.mathGrandTests || []),
-                id_wrong: activeSubject === 'ALL' ? (newS.idWrong ?? existingWeekRecord?.id_wrong ?? false) : (existingWeekRecord?.id_wrong ?? false)
+                id_wrong: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS.idWrong ?? existingWeekRecord?.id_wrong ?? false) : (existingWeekRecord?.id_wrong ?? false)
               });
             }
           });
@@ -772,17 +787,17 @@ function App() {
                 finalUpsertedWeeks.push({
                   student_id: matchedDb.id,
                   week: selectedWeek,
-                  eng_score: activeSubject === 'ALL' ? (newS?.engScore ?? 0) : 0,
-                  math_score: activeSubject === 'ALL' ? (newS?.mathScore ?? 0) : 0,
-                  attendance: activeSubject === 'ALL' ? (newS?.attendance ?? 1) : 1,
-                  homework: activeSubject === 'ALL' ? (newS?.homework ?? 1) : 1,
+                  eng_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.engScore ?? 0) : 0,
+                  math_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.mathScore ?? 0) : 0,
+                  attendance: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.attendance ?? 1) : 1,
+                  homework: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.homework ?? 1) : 1,
                   starting_level: newS?.startingLevel || 'Level 1',
                   current_level: newS?.currentLevel || 'Level 1',
                   grand_tests: newS?.grandTests || [],
                   math_starting_level: newS?.mathStartingLevel || 'Level 1',
                   math_current_level: newS?.mathCurrentLevel || 'Level 1',
                   math_grand_tests: newS?.mathGrandTests || [],
-                  id_wrong: activeSubject === 'ALL' ? (newS?.idWrong ?? false) : false
+                  id_wrong: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.idWrong ?? false) : false
                 });
               }
             }
@@ -1172,13 +1187,13 @@ function App() {
     setIsAdminMode(false);
   };
 
-  const handleBulkDeleteClass = () => {
+  const handleBulkDeleteClass = (targetClass: string) => {
     showConfirm(
       "Sinfni tozalash",
-      `Haqiqatan ham ${activeClass} guruhidagi BARCHA o'quvchilarni o'chirmoqchimisiz? (O'quvchilar savatga o'tkaziladi)`,
+      `Haqiqatan ham ${targetClass} guruhidagi BARCHA o'quvchilarni o'chirmoqchimisiz? (O'quvchilar savatga o'tkaziladi)`,
       true,
       async () => {
-        const studentsToDelete = students.filter(s => getClassGroup(s.className.toUpperCase()) === activeClass && !s.isDeleted);
+        const studentsToDelete = students.filter(s => getClassGroup(s.className.toUpperCase()) === targetClass && !s.isDeleted);
         const idsToDelete = studentsToDelete.map(s => s.id);
 
         setStudents(prev => prev.map(s => idsToDelete.includes(s.id) ? { ...s, isDeleted: true } : s));
@@ -1191,6 +1206,80 @@ function App() {
           if (error) throw error;
         } catch (err) {
           console.error('Failed bulk delete in Supabase:', err);
+        }
+      }
+    );
+  };
+
+  const handleBulkRestoreStudents = async (studentIds: string[]) => {
+    setStudents(prev => prev.map(s => studentIds.includes(s.id) ? { ...s, isDeleted: false } : s));
+    try {
+      const { error } = await supabase
+        .from('Students')
+        .update({ is_deleted: false })
+        .in('id', studentIds);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed bulk restore students in Supabase:', err);
+    }
+  };
+
+  const handleBulkPermanentDeleteStudents = (studentIds: string[], className: string) => {
+    showConfirm(
+      "O'quvchilarni butunlay o'chirish",
+      `Haqiqatan ham ${className} guruhidagi BARCHA o'chirilgan o'quvchilarni butunlay o'chirib tashlamoqchimisiz? Ushbu amalni ortga qaytarib bo'lmaydi va ularning barcha haftalik natijalari o'chib ketadi!`,
+      true,
+      async () => {
+        setStudents(prev => prev.filter(s => !studentIds.includes(s.id)));
+        try {
+          await supabase
+            .from('student_weeks')
+            .delete()
+            .in('student_id', studentIds);
+
+          const { error } = await supabase
+            .from('Students')
+            .delete()
+            .in('id', studentIds);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed bulk permanent delete students in Supabase:', err);
+        }
+      }
+    );
+  };
+
+  const handleBulkRestoreWeeks = async (weekNames: string[]) => {
+    setStudentWeeks(prev => prev.map(sw => weekNames.includes(sw.week) ? { ...sw, is_deleted: false } : sw));
+    try {
+      const { error } = await supabase
+        .from('student_weeks')
+        .update({ is_deleted: false })
+        .in('week', weekNames);
+      if (error) throw error;
+      if (weekNames.length > 0) {
+        setSelectedWeek(weekNames[weekNames.length - 1]);
+      }
+    } catch (err) {
+      console.error('Failed bulk restore weeks in Supabase:', err);
+    }
+  };
+
+  const handleBulkPermanentDeleteWeeks = (weekNames: string[]) => {
+    showConfirm(
+      "Haftalarni butunlay o'chirish",
+      `Haqiqatan ham tanlangan BARCHA o'quv haftalarini butunlay o'chirib tashlamoqchimisiz? Ushbu haftalardagi barcha o'quvchilar ballari butunlay yo'qoladi va bu amalni ortga qaytarib bo'lmaydi!`,
+      true,
+      async () => {
+        setStudentWeeks(prev => prev.filter(sw => !weekNames.includes(sw.week)));
+        try {
+          const { error } = await supabase
+            .from('student_weeks')
+            .delete()
+            .in('week', weekNames);
+          if (error) throw error;
+        } catch (err) {
+          console.error('Failed bulk permanent delete weeks in Supabase:', err);
         }
       }
     );
@@ -1235,10 +1324,23 @@ function App() {
       if (!isNaN(intA) && !isNaN(intB)) return intA - intB;
       return a.localeCompare(b);
     });
-    if (activeSubject === 'DETAILS') {
-      return ['Barchasi', ...sorted];
+    
+    if (activeSubject === 'PRIMARY') {
+      return sorted.filter(c => {
+        const grade = parseInt(c);
+        return grade >= 1 && grade <= 4;
+      });
+    } else {
+      // For ENG, MATH, ALL, DETAILS, etc. filter out grades 1 to 4
+      const filtered = sorted.filter(c => {
+        const grade = parseInt(c);
+        return isNaN(grade) || grade < 1 || grade > 4;
+      });
+      if (activeSubject === 'DETAILS') {
+        return ['Barchasi', ...filtered];
+      }
+      return filtered;
     }
-    return sorted;
   }, [activeStudents, activeSubject]);
 
   const classCounts = useMemo(() => {
@@ -1333,7 +1435,7 @@ function App() {
           grandTests: mathGrandTests || [],
           teacherOrder: student.mathTeacherOrder || 0
         };
-      } else if (activeSubject === 'ALL' || activeSubject === 'DETAILS') {
+      } else if (activeSubject === 'ALL' || activeSubject === 'PRIMARY' || activeSubject === 'DETAILS') {
         return {
           ...studentWithEng,
           teacher: '',
@@ -2269,6 +2371,10 @@ function App() {
             authRole={authRole}
             showSummerPlan={showSummerPlan}
             onToggleSummerPlan={() => setShowSummerPlan(!showSummerPlan)}
+            onBulkRestoreStudents={handleBulkRestoreStudents}
+            onBulkPermanentDeleteStudents={handleBulkPermanentDeleteStudents}
+            onBulkRestoreWeeks={handleBulkRestoreWeeks}
+            onBulkPermanentDeleteWeeks={handleBulkPermanentDeleteWeeks}
           />
         </div>
 
@@ -2468,6 +2574,7 @@ function App() {
               {
                 title: 'Fanlar & Tahlil',
                 items: [
+                  { id: 'subj_primary', label: 'Boshlang\'ich', icon: GraduationCap, isActive: activeAdminTab === 'home' && activeSubject === 'PRIMARY', action: () => { setActiveAdminTab('home'); setActiveSubject('PRIMARY'); } },
                   { id: 'subj_eng', label: 'Ingliz tili', icon: BookOpen, isActive: activeAdminTab === 'home' && activeSubject === 'ENG', action: () => { setActiveAdminTab('home'); setActiveSubject('ENG'); } },
                   { id: 'subj_math', label: 'Matematika', icon: Binary, isActive: activeAdminTab === 'home' && activeSubject === 'MATH', action: () => { setActiveAdminTab('home'); setActiveSubject('MATH'); } },
                   { id: 'subj_all', label: 'Haftalik tahlil', icon: Activity, isActive: activeAdminTab === 'home' && activeSubject === 'ALL', action: () => { setActiveAdminTab('home'); setActiveSubject('ALL'); } },
@@ -2848,6 +2955,10 @@ function App() {
               authRole={authRole}
               showSummerPlan={showSummerPlan}
               onToggleSummerPlan={() => setShowSummerPlan(!showSummerPlan)}
+              onBulkRestoreStudents={handleBulkRestoreStudents}
+              onBulkPermanentDeleteStudents={handleBulkPermanentDeleteStudents}
+              onBulkRestoreWeeks={handleBulkRestoreWeeks}
+              onBulkPermanentDeleteWeeks={handleBulkPermanentDeleteWeeks}
             />
             
             {/* Symmetrical Footer */}

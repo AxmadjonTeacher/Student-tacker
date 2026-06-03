@@ -25,7 +25,7 @@ interface SidebarDrawerProps {
   onPermanentDeleteStudent: (studentId: string) => void;
   activeClass: string;
   onStudentsUploaded: (students: Student[]) => void;
-  onBulkDeleteClass: () => void;
+  onBulkDeleteClass: (targetClass: string) => void;
   onAddStudent: (studentData: Partial<Student>) => void;
   deletedWeeks: string[];
   onRestoreWeek: (weekName: string) => void;
@@ -43,7 +43,16 @@ interface SidebarDrawerProps {
   onToggleSummerPlan?: () => void;
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
+  onBulkRestoreStudents?: (ids: string[]) => void;
+  onBulkPermanentDeleteStudents?: (ids: string[], className: string) => void;
+  onBulkRestoreWeeks?: (weeks: string[]) => void;
+  onBulkPermanentDeleteWeeks?: (weeks: string[]) => void;
 }
+
+const INITIAL_CLASSES = [
+  '1-Sinf', '2-Sinf', '3-Sinf', '4-Sinf', '5-Sinf',
+  '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'
+];
 
 const getClassGroupLocal = (clsName: string): string => {
   const trimmed = clsName?.toString().trim() || '';
@@ -81,7 +90,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   showSummerPlan = true,
   onToggleSummerPlan,
   isDarkMode = true,
-  onToggleDarkMode
+  onToggleDarkMode,
+  onBulkRestoreStudents,
+  onBulkPermanentDeleteStudents,
+  onBulkRestoreWeeks,
+  onBulkPermanentDeleteWeeks
 }) => {
   // Responsive check
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -146,17 +159,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
     return groups;
   }, [deletedStudents]);
 
-  // Normalize level helper
-  const normalizeLevel = (raw: string): string => {
-    const trimmed = raw?.toString().trim() || '';
-    if (!trimmed) return '';
-    if (/^level\s*\d+$/i.test(trimmed)) {
-      const num = trimmed.match(/\d+/)?.[0];
-      return `Level ${num}`;
-    }
-    if (/^\d+$/.test(trimmed)) return `Level ${trimmed}`;
-    return trimmed;
-  };
+
 
   // Fetch News and Events
   const fetchNewsEvents = async () => {
@@ -186,167 +189,99 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
     }
   }, [isOpen, activeTab]);
 
+  const getRowValueByKeys = (row: any, keys: string[]): string => {
+    if (!row) return '';
+    const rowKeys = Object.keys(row);
+    const cleanKeys = keys.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    
+    for (const rKey of rowKeys) {
+      const cleanRKey = rKey.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (cleanKeys.includes(cleanRKey)) {
+        return (row[rKey] ?? '').toString().trim();
+      }
+    }
+    return '';
+  };
+
   const processImportedRows = (rows: any[]) => {
     const generatedIdsInBatch = new Set<string>();
     const parsedStudents: Student[] = rows
       .map((row: any) => {
-        const rawNameStr = (
-          row['O\'quvchining ismi va familiyasi'] || 
-          row['Ism va familiya'] || 
-          row['Students name surname'] || 
-          row['Name'] || 
-          row['name'] || ''
-        ).toString().trim();
+        const rawNameStr = getRowValueByKeys(row, [
+          "O'quvchining ismi va familiyasi",
+          "Ism va familiya",
+          "Students name surname",
+          "Name",
+          "name",
+          "Student name",
+          "FIO",
+          "F.I.O.",
+          "Ism familiya",
+          "fullname",
+          "Full Name"
+        ]);
         
         const nameParts = rawNameStr.split(' ').filter(Boolean);
         let name = '';
         let surname = '';
 
-        if (nameParts.length > 1) {
-          surname = nameParts.pop() || '';
-          name = nameParts.join(' ');
-        } else {
-          name = rawNameStr;
+        if (nameParts.length > 0) {
+          name = nameParts[0];
+          surname = nameParts.slice(1).join(' ');
         }
 
-        const className = (
-          row['sinf'] || 
-          row['Sinf'] || 
-          row['class'] || 
-          row['Class'] || 
-          row['className'] || '5A'
-        ).toString().trim().toUpperCase();
+        const className = (getRowValueByKeys(row, [
+          "sinf",
+          "Sinf",
+          "class",
+          "Class",
+          "className",
+          "Sinfni tanlang",
+          "Group",
+          "guruh"
+        ]) || '5-Sinf').toUpperCase();
 
-        const dateJoined = (
-          row['qabul qilingan sana'] || 
-          row['Qabul qilingan sana'] || 
-          row['when'] || 
-          row['When'] || 
-          row['date joined'] || 'Sentyabr 2024'
-        ).toString().trim();
+        let parentPhone = getRowValueByKeys(row, [
+          "Ota-Ona Telfon Raqami",
+          "Ota-One Telfon Raqami",
+          "Ota-Ona telefon raqami",
+          "Ota-One telefon raqami",
+          "Phone number",
+          "phone",
+          "parent phone",
+          "Phone",
+          "Telefon raqami",
+          "tel",
+          "telefon"
+        ]).toString().trim();
 
-        const parseImportScore = (val: any): number | null => {
-          if (val === undefined || val === null) return null;
-          const s = val.toString().trim();
-          if (s === '' || s === '-') return null;
-          const p = parseInt(s);
-          return isNaN(p) ? null : p;
-        };
-
-        const parseImportScoreStr = (val: any): { score: number | null, idWrong: boolean } => {
-          if (val === undefined || val === null) return { score: null, idWrong: false };
-          const s = val.toString().trim();
-          if (s === '' || s === '-') return { score: null, idWrong: false };
-          
-          const idWrong = s.includes('*');
-          const cleanStr = s.replace(/\*/g, '').trim();
-          if (cleanStr === '' || cleanStr === '-') return { score: null, idWrong };
-          
-          const p = parseInt(cleanStr);
-          return { score: isNaN(p) ? null : p, idWrong };
-        };
-
-        // Initialize all fields to defaults
-        let finalEngStarting = 'Level 1';
-        let finalEngCurrent = 'Level 1';
-        let finalEngTests: { name: string; score: number | null }[] | undefined = undefined;
-        let teacherName: string | undefined = undefined;
-
-        let finalMathStarting = 'Level 1';
-        let finalMathCurrent = 'Level 1';
-        let finalMathTests: { name: string; score: number | null }[] | undefined = undefined;
-        let mathTeacherName: string | undefined = undefined;
-
-        let engScore = 0;
-        let mathScore = 0;
-        let attendance = 1;
-        let homework = 1;
-        let parentPhone = '';
-        let customId = '';
-        let customPasscode = '';
-        let idWrong = false;
-
-        // ALWAYS extract ID regardless of activeSubject
-        const rawId = row['ID'] || row['id'] || row['Id'] || row['O\'quvchi ID'] || row['ID raqami'] || '';
-        customId = normalizeStudentId(rawId);
-
-        if (activeSubject === 'ENG') {
-          const term1 = row['Grant 1 eng'] || row['Grant 1 ENG'] || row['grant 1 eng'] || row['Grant 1'] || row['grant 1'] || row['1-chorak natijasi'] || row['1-chorak'] || row['term 1 score'] || '';
-          const term2 = row['Grant 2 eng'] || row['Grant 2 ENG'] || row['grant 2 eng'] || row['Grant 2'] || row['grant 2'] || row['2-chorak natijasi'] || row['2-chorak'] || row['term 2 score'] || '';
-          const term3 = row['Grant 3 eng'] || row['Grant 3 ENG'] || row['grant 3 eng'] || row['Grant 3'] || row['grant 3'] || row['3-chorak natijasi'] || row['3-chorak'] || row['term 3 score'] || '';
-          const term4 = row['Grant 4 eng'] || row['Grant 4 ENG'] || row['grant 4 eng'] || row['Grant 4'] || row['grant 4'] || row['4-chorak natijasi'] || row['4-chorak'] || row['term 4 score'] || '';
-
-          const hasAnyEngScore = [term1, term2, term3, term4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
-          finalEngTests = hasAnyEngScore ? [
-            { name: 'Grant 1', score: parseImportScore(term1) },
-            { name: 'Grant 2', score: parseImportScore(term2) },
-            { name: 'Grant 3', score: parseImportScore(term3) },
-            { name: 'Grant 4', score: parseImportScore(term4) }
-          ] : [];
-
-          const rawEngStarting = row['boshlang\'ich daraja eng'] || row['Boshlang\'ich daraja eng'] || row['StartingLevelENG'] || row['boshlang\'ich daraja'] || row['Boshlang\'ich daraja'] || row['avvalgi daraja'] || row['Avvalgi daraja'] || row['initial level'] || row['initial level eng'] || row['Level'] || row['level'] || row['StartingLevel'] || '';
-          const rawEngCurrent = row['hozirgi daraja eng'] || row['Hozirgi daraja eng'] || row['CurrentLevelENG'] || row['hozirgi daraja'] || row['Hozirgi daraja'] || row['current level'] || row['CurrentLevel'] || row['currentLevel'] || row['current level eng'] || '';
-
-          finalEngStarting = normalizeLevel(rawEngStarting) || 'Level 1';
-          finalEngCurrent = normalizeLevel(rawEngCurrent) || 'Level 1';
-          
-          const rawT = row['O\'qituvchi'] || row['o\'qituvchi'] || row['teacher'] || row['Teacher'] || '';
-          if (rawT.toString().trim()) {
-            teacherName = rawT.toString().trim();
+        if (parentPhone) {
+          const digitsOnly = parentPhone.replace(/[^\d+]/g, '');
+          if (digitsOnly.length === 9) {
+            parentPhone = '+998' + digitsOnly;
+          } else if (digitsOnly.length === 12 && digitsOnly.startsWith('998')) {
+            parentPhone = '+' + digitsOnly;
+          } else {
+            parentPhone = digitsOnly;
           }
-        } else if (activeSubject === 'MATH') {
-          const mTerm1 = row['Grant 1 math'] || row['Grant 1 MATH'] || row['grant 1 math'] || row['1-chorak matematika'] || row['math term 1 score'] || '';
-          const mTerm2 = row['Grant 2 math'] || row['Grant 2 MATH'] || row['grant 2 math'] || row['2-chorak matematika'] || row['math term 2 score'] || '';
-          const mTerm3 = row['Grant 3 math'] || row['Grant 3 MATH'] || row['grant 3 math'] || row['3-chorak matematika'] || row['math term 3 score'] || '';
-          const mTerm4 = row['Grant 4 math'] || row['Grant 4 MATH'] || row['grant 4 math'] || row['4-chorak matematika'] || row['math term 4 score'] || '';
-
-          const hasAnyMathScore = [mTerm1, mTerm2, mTerm3, mTerm4].some(val => val !== undefined && val !== null && val.toString().trim() !== '');
-          finalMathTests = hasAnyMathScore ? [
-            { name: 'Grant 1', score: parseImportScore(mTerm1) },
-            { name: 'Grant 2', score: parseImportScore(mTerm2) },
-            { name: 'Grant 3', score: parseImportScore(mTerm3) },
-            { name: 'Grant 4', score: parseImportScore(mTerm4) }
-          ] : [];
-
-          const rawMathStarting = row['boshlang\'ich daraja math'] || row['Boshlang\'ich daraja math'] || row['StartingLevelMATH'] || row['initial level math'] || row['avvalgi daraja math'] || row['Avvalgi daraja math'] || '';
-          const rawMathCurrent = row['hozirgi daraja math'] || row['Hozirgi daraja math'] || row['CurrentLevelMATH'] || row['current level math'] || '';
-
-          finalMathStarting = normalizeLevel(rawMathStarting) || 'Level 1';
-          finalMathCurrent = normalizeLevel(rawMathCurrent) || 'Level 1';
-
-          const rawT = row['O\'qituvchi'] || row['o\'qituvchi'] || row['teacher'] || row['Teacher'] || '';
-          if (rawT.toString().trim()) {
-            mathTeacherName = rawT.toString().trim();
-          }
-        } else if (activeSubject === 'DETAILS') {
-          const rawPhone = row['Ota-ona telefon raqami'] || row['Phone number'] || row['phone'] || row['parent phone'] || row['Phone'] || row['Telefon raqami'] || '';
-          parentPhone = rawPhone.toString().trim();
-          if (parentPhone && !parentPhone.startsWith('+')) {
-            if (parentPhone.startsWith('998')) parentPhone = '+' + parentPhone;
-            else if (parentPhone.length === 9) parentPhone = '+998' + parentPhone;
-          }
-
-          const rawPass = row['Passcode'] || row['passcode'] || row['Parol'] || row['parol'] || row['Parol (Passcode)'] || '';
-          customPasscode = rawPass.toString().trim();
-        } else if (activeSubject === 'ALL') {
-          const rawEngScore = row['Eng score'] || row['English score'] || row['eng_score'] || row['eng score'] || '';
-          const engParsed = parseImportScoreStr(rawEngScore);
-          engScore = engParsed.score ?? 0;
-          
-          const rawMathScore = row['Math score'] || row['math_score'] || row['math score'] || '';
-          const mathParsed = parseImportScoreStr(rawMathScore);
-          mathScore = mathParsed.score ?? 0;
-
-          if (engParsed.idWrong || mathParsed.idWrong) {
-            idWrong = true;
-          }
-
-          const rawAttendance = row['Attendance'] || row['attendance'] || '';
-          attendance = rawAttendance !== '' ? parseInt(rawAttendance) || 1 : 1;
-
-          const rawHomework = row['Homework'] || row['homework'] || '';
-          homework = rawHomework !== '' ? parseInt(rawHomework) || 1 : 1;
         }
+
+        const rawId = getRowValueByKeys(row, [
+          "ID",
+          "id",
+          "Id",
+          "O'quvchi ID",
+          "ID raqami",
+          "Student ID",
+          "Raqami",
+          "ID number",
+          "student_id"
+        ]);
+        let processedRawId = rawId.toString().trim();
+        if (/^\d{3}$/.test(processedRawId)) {
+          processedRawId = "AL" + processedRawId;
+        }
+        const customId = normalizeStudentId(processedRawId);
 
         const existingAllIds = [
           ...students.map(s => s.id),
@@ -362,23 +297,23 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           name,
           surname,
           className,
-          dateJoined,
-          startingLevel: finalEngStarting,
-          currentLevel: finalEngCurrent,
-          grandTests: finalEngTests,
-          teacher: teacherName,
-          mathStartingLevel: finalMathStarting,
-          mathCurrentLevel: finalMathCurrent,
-          mathGrandTests: finalMathTests,
-          mathTeacher: mathTeacherName,
-          engScore,
-          mathScore,
-          attendance,
-          homework,
+          dateJoined: new Date().toISOString().split('T')[0],
+          startingLevel: 'Level 1',
+          currentLevel: 'Level 1',
+          grandTests: [],
+          teacher: undefined,
+          mathStartingLevel: 'Level 1',
+          mathCurrentLevel: 'Level 1',
+          mathGrandTests: [],
+          mathTeacher: undefined,
+          engScore: 0,
+          mathScore: 0,
+          attendance: 1,
+          homework: 1,
           parentPhone,
-          passcode: customPasscode,
-          pictureUrl: row['PictureUrl'] || row['pictureUrl'] || '',
-          idWrong
+          passcode: '',
+          pictureUrl: undefined,
+          idWrong: false
         };
       })
       .filter((s: Student) => s.name.trim() !== '' || s.surname.trim() !== '');
@@ -443,137 +378,30 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   };
 
   const downloadTemplate = () => {
-    let headers: string[] = [];
-    let rows: any[] = [];
-    let filename = '';
-
+    const headers = ["ID", "O'quvchining ismi va familiyasi", "sinf", "Ota-Ona Telfon Raqami"];
     const activeClassStudents = students.filter(s => getClassGroupLocal(s.className) === activeClass);
 
-    if (activeSubject === 'ALL') {
-      headers = [
-        "ID",
-        "O'quvchining ismi va familiyasi",
-        "sinf",
-        "Eng score",
-        "Math score",
-        "Attendance",
-        "Homework"
+    let rows: any[] = [];
+    if (activeClassStudents.length > 0) {
+      rows = activeClassStudents.map(s => [
+        s.id,
+        `${s.name} ${s.surname}`,
+        s.className,
+        s.parentPhone || ""
+      ]);
+    } else {
+      rows = [
+        ["AL305", "Yodgorov Axmadjon", "5-Sinf", "+998901234567"],
+        ["AL320", "Salohiddinov Otabek", "5-Sinf", "+998907654321"]
       ];
-      if (activeClassStudents.length > 0) {
-        rows = activeClassStudents.map(s => [
-          s.id,
-          `${s.name} ${s.surname}`,
-          s.className,
-          s.engScore !== undefined ? s.engScore.toString() : "0",
-          s.mathScore !== undefined ? s.mathScore.toString() : "0",
-          s.attendance !== undefined ? s.attendance.toString() : "1",
-          s.homework !== undefined ? s.homework.toString() : "1"
-        ]);
-      } else {
-        rows = [
-          ["AL305", "Yodgorov Axmadjon", "5A", "14", "11", "1", "1"],
-          ["AL320", "Salohiddinov Otabek", "5B", "8", "10", "-1", "-2"]
-        ];
-      }
-      filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_haftalik_tahlil.xlsx`;
-    } else if (activeSubject === 'ENG') {
-      headers = [
-        "ID",
-        "O'quvchining ismi va familiyasi",
-        "sinf",
-        "boshlang'ich daraja eng",
-        "hozirgi daraja eng",
-        "O'qituvchi",
-        "Grant 1 eng",
-        "Grant 2 eng",
-        "Grant 3 eng",
-        "Grant 4 eng"
-      ];
-      if (activeClassStudents.length > 0) {
-        rows = activeClassStudents.map(s => [
-          s.id,
-          `${s.name} ${s.surname}`,
-          s.className,
-          s.startingLevel || "Level 1",
-          s.currentLevel || "Level 1",
-          s.teacher || "",
-          s.grandTests?.[0]?.score?.toString() || "",
-          s.grandTests?.[1]?.score?.toString() || "",
-          s.grandTests?.[2]?.score?.toString() || "",
-          s.grandTests?.[3]?.score?.toString() || ""
-        ]);
-      } else {
-        rows = [
-          ["AL305", "Yodgorov Axmadjon", "5A", "1", "5", "Aliyev Vali", "70", "72", "90", "67"],
-          ["AL320", "Salohiddinov Otabek", "5B", "3", "5", "Karimova Laylo", "55", "40", "68", "90"]
-        ];
-      }
-      filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_english.xlsx`;
-    } else if (activeSubject === 'MATH') {
-      headers = [
-        "ID",
-        "O'quvchining ismi va familiyasi",
-        "sinf",
-        "boshlang'ich daraja math",
-        "hozirgi daraja math",
-        "O'qituvchi",
-        "Grant 1 math",
-        "Grant 2 math",
-        "Grant 3 math",
-        "Grant 4 math"
-      ];
-      if (activeClassStudents.length > 0) {
-        rows = activeClassStudents.map(s => [
-          s.id,
-          `${s.name} ${s.surname}`,
-          s.className,
-          s.mathStartingLevel || "Level 1",
-          s.mathCurrentLevel || "Level 1",
-          s.mathTeacher || "",
-          s.mathGrandTests?.[0]?.score?.toString() || "",
-          s.mathGrandTests?.[1]?.score?.toString() || "",
-          s.mathGrandTests?.[2]?.score?.toString() || "",
-          s.mathGrandTests?.[3]?.score?.toString() || ""
-        ]);
-      } else {
-        rows = [
-          ["AL305", "Yodgorov Axmadjon", "5A", "2", "4", "Toshmatov Dilshod", "60", "68", "75", "82"],
-          ["AL320", "Salohiddinov Otabek", "5B", "1", "3", "Sodiqov Jasur", "45", "55", "62", "70"]
-        ];
-      }
-      filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_math.xlsx`;
-    } else if (activeSubject === 'DETAILS') {
-      headers = [
-        "O'quvchining ismi va familiyasi",
-        "sinf",
-        "Ota-ona telefon raqami",
-        "ID",
-        "Passcode"
-      ];
-      if (activeClassStudents.length > 0) {
-        rows = activeClassStudents.map(s => [
-          `${s.name} ${s.surname}`,
-          s.className,
-          s.parentPhone || "",
-          s.id,
-          s.passcode || ""
-        ]);
-      } else {
-        rows = [
-          ["Yodgorov Axmadjon", "5A", "+998901234567", "AL557", "1234567"],
-          ["Salohiddinov Otabek", "5B", "+998907654321", "AL231", "7654321"]
-        ];
-      }
-      filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_tafsilotlar.xlsx`;
     }
 
-    if (headers.length > 0) {
-      const wsData = [headers, ...rows];
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Template");
-      XLSX.writeFile(wb, filename);
-    }
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    const filename = `o_quvchilar_${activeClass.replace(/\s+/g, '_')}_shablon.xlsx`;
+    XLSX.writeFile(wb, filename);
   };
 
   // News Images Upload and Compression helper
@@ -895,6 +723,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                     {(() => {
                       const subjects = [
+                        { id: 'PRIMARY', title: "Boshlang'ich", desc: "Boshlang'ich sinflar (1-4) uchun progress va tahlillar", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
@@ -1000,7 +829,174 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 </div>
               )}
 
-              {/* Dark Mode Toggle */}
+              {/* Section 3: Admin Actions */}
+              {isAdminMode && (
+                <div style={{ 
+                  marginTop: '1.5rem', 
+                  marginBottom: '1.5rem',
+                  animation: 'fadeIn 0.25s ease-out',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}>
+                  <div style={{ height: '1px', background: 'var(--border-color)', margin: '0' }} />
+                  
+                  <div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                      ADMIN AMALLARI
+                    </div>
+                    
+                    <div style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '16px',
+                      padding: '0.9rem 1.1rem',
+                      marginBottom: '1rem',
+                      boxShadow: 'var(--glass-shadow)'
+                    }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>Faol sinf ({activeClass}):</span>
+                        <strong style={{ color: 'var(--text-primary)' }}>{students.filter(s => getClassGroupLocal(s.className) === activeClass).length} ta</strong>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '0.35rem' }}>
+                        <span>Jami o'quvchilar:</span>
+                        <strong style={{ color: 'var(--text-primary)' }}>{students.length} ta</strong>
+                      </div>
+                    </div>
+
+                    {/* Class-wise overview */}
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem',
+                      maxHeight: '240px',
+                      overflowY: 'auto',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '16px',
+                      padding: '0.75rem',
+                      background: 'var(--bg-card)',
+                      marginBottom: '1rem'
+                    }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.4rem', marginBottom: '0.25rem' }}>
+                        SINFLAR BO'YICHA O'QUVCHILAR
+                      </div>
+                      {INITIAL_CLASSES.map(cls => {
+                        const count = students.filter(s => getClassGroupLocal(s.className) === cls).length;
+                        return (
+                          <div 
+                            key={cls}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '0.4rem 0.6rem',
+                              borderRadius: '8px',
+                              background: 'var(--bg-card-hover)',
+                              border: '1px solid var(--border-color)'
+                            }}
+                          >
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{cls}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{count} ta o'quvchi</span>
+                              {authRole !== 'admin123' && (
+                                <button
+                                  type="button"
+                                  onClick={() => onBulkDeleteClass?.(cls)}
+                                  style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: '#ef4444',
+                                    cursor: 'pointer',
+                                    padding: '0.25rem',
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'background-color 0.2s'
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+                                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                  title={`${cls} sinfini o'chirish`}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <button
+                        onClick={() => setIsAddStudentOpen(true)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          width: '100%',
+                          padding: '0.75rem 1.25rem',
+                          borderRadius: '12px',
+                          background: 'var(--bg-card)',
+                          color: 'var(--accent-primary)',
+                          border: '1.5px solid var(--accent-primary)',
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          boxShadow: 'var(--glass-shadow)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--accent-primary)';
+                          e.currentTarget.style.color = '#ffffff';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'var(--bg-card)';
+                          e.currentTarget.style.color = 'var(--accent-primary)';
+                        }}
+                      >
+                        <UserPlus size={15} />
+                        <span>YANGI O'QUVCHI QO'SHISH</span>
+                      </button>
+
+                      <button
+                        onClick={() => { setUploadStatus(null); setIsCsvModalOpen(true); }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          width: '100%',
+                          padding: '0.75rem 1.25rem',
+                          borderRadius: '12px',
+                          background: 'var(--accent-primary)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '0.9';
+                          e.currentTarget.style.transform = 'translateY(-0.5px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        <UploadCloud size={15} />
+                        <span>GURUHLI YUKLASH (EXCEL / CSV)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Section 4: Dark Mode Toggle */}
               {onToggleDarkMode && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1044,7 +1040,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 </div>
               )}
 
-              {/* Summer Plan Toggle */}
+              {/* Section 5: Summer Plan Toggle */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
@@ -1086,153 +1082,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 </div>
               </div>
 
-              {/* Section 3: Admin Actions */}
-              {isAdminMode && (
-                <div style={{ 
-                  marginTop: '2rem', 
-                  animation: 'fadeIn 0.25s ease-out',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1.5rem'
-                }}>
-                  <div style={{ height: '1px', background: 'var(--border-color)', margin: '0' }} />
-                  
-                  <div>
-                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
-                      ADMIN AMALLARI
-                    </div>
-                    
-                    <div style={{
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '16px',
-                      padding: '0.9rem 1.1rem',
-                      marginBottom: '1.25rem',
-                      boxShadow: 'var(--glass-shadow)'
-                    }}>
-                      {(() => {
-                        const activeClassCount = students.filter(s => getClassGroupLocal(s.className) === activeClass).length;
-                        return (
-                          <>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                              <span>Faol sinf ({activeClass}):</span>
-                              <strong style={{ color: 'var(--text-primary)' }}>{activeClassCount} ta</strong>
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '0.35rem' }}>
-                              <span>Jami o'quvchilar:</span>
-                              <strong style={{ color: 'var(--text-primary)' }}>{students.length} ta</strong>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {activeSubject !== 'ALL' && (
-                        <button
-                          onClick={() => setIsAddStudentOpen(true)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.5rem',
-                            width: '100%',
-                            padding: '0.75rem 1.25rem',
-                            borderRadius: '12px',
-                            background: 'var(--bg-card)',
-                            color: 'var(--accent-primary)',
-                            border: '1.5px solid var(--accent-primary)',
-                            fontSize: '0.8rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            boxShadow: 'var(--glass-shadow)'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'var(--accent-primary)';
-                            e.currentTarget.style.color = '#ffffff';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'var(--bg-card)';
-                            e.currentTarget.style.color = 'var(--accent-primary)';
-                          }}
-                        >
-                          <UserPlus size={15} />
-                          <span>YANGI O'QUVCHI QO'SHISH</span>
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => { setUploadStatus(null); setIsCsvModalOpen(true); }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem',
-                          width: '100%',
-                          padding: '0.75rem 1.25rem',
-                          borderRadius: '12px',
-                          background: 'var(--accent-primary)',
-                          color: '#ffffff',
-                          border: 'none',
-                          fontSize: '0.8rem',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.opacity = '0.9';
-                          e.currentTarget.style.transform = 'translateY(-0.5px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.opacity = '1';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                        }}
-                      >
-                        <UploadCloud size={15} />
-                        <span>GURUHLI YUKLASH (EXCEL / CSV)</span>
-                      </button>
-
-                      {authRole !== 'admin123' && (
-                        <button
-                          onClick={onBulkDeleteClass}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.5rem',
-                            width: '100%',
-                            padding: '0.75rem 1.25rem',
-                            borderRadius: '12px',
-                            background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
-                            color: isDarkMode ? '#fc8181' : '#b91c1c',
-                            border: `1.5px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#fca5a5'}`,
-                            fontSize: '0.8rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            marginTop: '0.75rem'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = isDarkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2';
-                            e.currentTarget.style.borderColor = isDarkMode ? 'rgba(239, 68, 68, 0.5)' : '#ef4444';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2';
-                            e.currentTarget.style.borderColor = isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#fca5a5';
-                          }}
-                        >
-                          <Trash2 size={15} />
-                          <span>{activeClass} SINFINI O'CHIRISH</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Section 4: Logout/Sign Out Button */}
+              {/* Section 6: Logout/Sign Out Button */}
               {onLogout && (
                 <div style={{ marginTop: '2rem' }}>
                 <div style={{ height: '1px', background: 'var(--border-color)', margin: '1.5rem 0' }} />
@@ -2242,16 +2092,62 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       boxShadow: 'var(--glass-shadow)'
                     }}>
                       <div style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 800,
-                        color: 'var(--accent-primary)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         borderBottom: `1px solid var(--border-color)`,
                         paddingBottom: '0.5rem',
-                        marginBottom: '0.75rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
+                        marginBottom: '0.75rem'
                       }}>
-                        {className} Guruhi ({list.length} ta)
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          color: 'var(--accent-primary)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em'
+                        }}>
+                          {className} Guruhi ({list.length} ta)
+                        </span>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => onBulkRestoreStudents?.(list.map(s => s.id))}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--accent-primary)',
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              transition: 'opacity 0.2s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                          >
+                            Barchasini tiklash
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onBulkPermanentDeleteStudents?.(list.map(s => s.id), className)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#ef4444',
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              transition: 'opacity 0.2s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                          >
+                            Barchasini o'chirish
+                          </button>
+                        </div>
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -2323,9 +2219,59 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               )}
 
               {/* Deleted Weeks Section */}
-              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2rem', marginBottom: '1rem' }}>
-                <Calendar size={12} />
-                SAVATDAGI HAFTALAR ({deletedWeeks.length} ta)
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                marginTop: '2rem', 
+                marginBottom: '1rem' 
+              }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Calendar size={12} />
+                  SAVATDAGI HAFTALAR ({deletedWeeks.length} ta)
+                </div>
+                {deletedWeeks.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => onBulkRestoreWeeks?.(deletedWeeks)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--accent-primary)',
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        transition: 'opacity 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
+                      Barchasini tiklash
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onBulkPermanentDeleteWeeks?.(deletedWeeks)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#ef4444',
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        transition: 'opacity 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
+                      Barchasini o'chirish
+                    </button>
+                  </div>
+                )}
               </div>
 
               {deletedWeeks.length === 0 ? (
