@@ -2619,7 +2619,7 @@ function App() {
                   return {
                     ...group,
                     items: group.items.filter(item => {
-                      if (item.id === 'subj_all') return true;
+                      if (item.id === 'subj_all' || item.id === 'subj_grant') return true;
                       if (teacherSubject === 'ENG' && item.id === 'subj_eng') return true;
                       if (teacherSubject === 'MATH' && item.id === 'subj_math') return true;
                       return false;
