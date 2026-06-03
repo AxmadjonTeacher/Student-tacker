@@ -597,6 +597,13 @@ function App() {
     }
   }, [students, loading, authRole]);
 
+  // Reset activeClass to '5-Sinf' if activeClass is 'Barchasi' and subject is switched from DETAILS
+  useEffect(() => {
+    if (activeSubject !== 'DETAILS' && activeClass === 'Barchasi') {
+      setActiveClass('5-Sinf');
+    }
+  }, [activeSubject, activeClass]);
+
 
 
   const handleStudentsUploaded = async (newStudents: Student[]) => {
@@ -1222,13 +1229,17 @@ function App() {
       ...INITIAL_CLASSES,
       ...activeStudents.map(s => getClassGroup(s.className.toUpperCase()))
     ]);
-    return Array.from(groups).sort((a, b) => {
+    const sorted = Array.from(groups).sort((a, b) => {
       const intA = parseInt(a);
       const intB = parseInt(b);
       if (!isNaN(intA) && !isNaN(intB)) return intA - intB;
       return a.localeCompare(b);
     });
-  }, [activeStudents]);
+    if (activeSubject === 'DETAILS') {
+      return ['Barchasi', ...sorted];
+    }
+    return sorted;
+  }, [activeStudents, activeSubject]);
 
   const classCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -1241,6 +1252,9 @@ function App() {
         counts[group] = 1;
       }
     });
+    if (availableClasses.includes('Barchasi')) {
+      counts['Barchasi'] = activeStudents.length;
+    }
     return counts;
   }, [activeStudents, availableClasses]);
 
@@ -1339,7 +1353,7 @@ function App() {
   const filteredStudents = useMemo(() => {
     return projectedStudents.filter(s => {
       const group = getClassGroup(s.className.toUpperCase());
-      const matchesClass = group === activeClass;
+      const matchesClass = activeClass === 'Barchasi' ? true : group === activeClass;
       const matchesSearch = `${s.name} ${s.surname}`.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesClass && matchesSearch;
     });
