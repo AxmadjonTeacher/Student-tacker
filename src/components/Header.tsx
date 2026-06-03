@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings } from 'lucide-react';
+import { Search, Settings, ChevronDown } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
 import iconDark from '../assets/icon-dark.png';
 import type { ActiveSubject } from '../types';
@@ -11,6 +11,8 @@ interface HeaderProps {
   classCounts: Record<string, number>;
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  searchFilter?: 'both' | 'student' | 'teacher';
+  onSearchFilterChange?: (filter: 'both' | 'student' | 'teacher') => void;
   onOpenDrawer: () => void;
   activeSubject: ActiveSubject;
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash';
@@ -19,7 +21,10 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
+  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange,
+  searchFilter = 'both',
+  onSearchFilterChange = () => {},
+  onOpenDrawer,
   activeSubject,
   activeAdminTab = 'home',
   isDarkMode = false,
@@ -398,26 +403,74 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           )}
     
-          <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
-            <div className="mobile-sticky-search" style={{ position: 'relative', width: '320px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-              <input 
-                type="text" 
-                placeholder="O'quvchilarni qidirish..." 
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem 1rem 0.85rem 2.75rem',
-                  borderRadius: '9999px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--bg-card)',
-                  fontSize: '0.95rem',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)'
-                }}
-              />
+          <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '0 0 auto' }}>
+            <div className="mobile-sticky-search" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', maxWidth: '420px', position: 'relative' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                <input 
+                  type="text" 
+                  placeholder={
+                    searchFilter === 'student' ? "O'quvchini qidirish..." :
+                    searchFilter === 'teacher' ? "O'qituvchini qidirish..." :
+                    "Qidirish..."
+                  }
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem 1rem 0.85rem 2.75rem',
+                    borderRadius: '9999px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-card)',
+                    fontSize: '0.95rem',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <select
+                  value={searchFilter}
+                  onChange={(e) => onSearchFilterChange(e.target.value as any)}
+                  style={{
+                    appearance: 'none',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '9999px',
+                    padding: '0.85rem 2rem 0.85rem 1rem',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    outline: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    transition: 'all 0.2s ease',
+                    boxSizing: 'border-box',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                >
+                  <option value="both">Barchasi</option>
+                  <option value="student">O'quvchilar</option>
+                  <option value="teacher">O'qituvchilar</option>
+                </select>
+                <div style={{
+                  position: 'absolute',
+                  right: '0.85rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                  color: 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>
+                  <ChevronDown size={14} />
+                </div>
+              </div>
             </div>
           </div>
         </div>

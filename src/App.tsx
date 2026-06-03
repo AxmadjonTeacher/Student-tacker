@@ -105,6 +105,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchFilter, setSearchFilter] = useState<'both' | 'student' | 'teacher'>('both');
   const [isAdminMode, setIsAdminMode] = useState(() => {
     return localStorage.getItem('isAdminMode') === 'true';
   });
@@ -1138,6 +1139,8 @@ function App() {
 
   const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher', studentData?: any) => {
     setAuthRole(role);
+    setActiveSubject('DASHBOARD');
+    setActiveAdminTab('home');
     if (role === 'admin' || role === 'admin123' || role === 'publish' || role === 'testor' || role === 'teacher') {
       setIsAdminMode(false);
       await fetchAllData();
@@ -1480,10 +1483,29 @@ function App() {
     return projectedStudents.filter(s => {
       const group = getClassGroup(s.className.toUpperCase());
       const matchesClass = (activeClass === 'Barchasi' || activeSubject === 'ENG_MATH') ? true : group === activeClass;
-      const matchesSearch = `${s.name} ${s.surname}`.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      let matchesSearch = false;
+      const term = searchTerm.toLowerCase().trim();
+      if (!term) {
+        matchesSearch = true;
+      } else {
+        const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term);
+        const teacherNameMatches = (
+          (s.teacher && s.teacher.toLowerCase().includes(term)) ||
+          (s.mathTeacher && s.mathTeacher.toLowerCase().includes(term))
+        );
+        
+        if (searchFilter === 'student') {
+          matchesSearch = studentNameMatches;
+        } else if (searchFilter === 'teacher') {
+          matchesSearch = teacherNameMatches;
+        } else {
+          matchesSearch = studentNameMatches || teacherNameMatches;
+        }
+      }
       return matchesClass && matchesSearch;
     });
-  }, [projectedStudents, activeClass, searchTerm, activeSubject]);
+  }, [projectedStudents, activeClass, searchTerm, activeSubject, searchFilter]);
 
   const handleUpdateProgress = async (
     studentId: string, 
@@ -2323,6 +2345,8 @@ function App() {
           classCounts={classCounts}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
+          searchFilter={searchFilter}
+          onSearchFilterChange={setSearchFilter}
           onOpenDrawer={() => setActiveAdminTab('settings')}
           activeSubject={activeSubject}
           isDarkMode={isDarkMode}
@@ -2932,6 +2956,8 @@ function App() {
                 classCounts={classCounts}
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
+                searchFilter={searchFilter}
+                onSearchFilterChange={setSearchFilter}
                 onOpenDrawer={() => setActiveAdminTab('settings')}
                 activeSubject={activeSubject}
                 isDarkMode={isDarkMode}

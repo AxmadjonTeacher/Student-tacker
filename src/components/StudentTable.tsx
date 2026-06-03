@@ -2570,158 +2570,175 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             </span>
                           </h2>
 
-                          {/* Cards Grid */}
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
-                            gap: '1rem',
-                            marginBottom: '1rem'
-                          }}>
-                            {teacherStudents.map(student => {
-                              const attVal = student.attendance ?? 1;
-                              const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
-                              const hwVal = student.homework ?? 1;
-                              const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+                          {/* Table checklist grouped by teacher */}
+                          <div style={{ overflowX: 'auto', marginBottom: '1.25rem' }}>
+                            <div 
+                              className="table-card-container"
+                              style={{
+                                background: 'var(--bg-card)',
+                                borderRadius: '16px',
+                                border: '1px solid var(--border-color)',
+                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
+                                overflow: 'hidden',
+                                minWidth: '650px'
+                              }}
+                            >
+                              {/* Header row */}
+                              <div className="table-header-row" style={{
+                                display: 'grid',
+                                gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr',
+                                alignItems: 'stretch',
+                                padding: '0 1.5rem',
+                                borderBottom: '1px solid var(--border-color)',
+                                background: 'var(--bg-card-hover)',
+                                color: 'var(--text-secondary)',
+                                fontSize: '0.65rem',
+                                fontWeight: 700,
+                                letterSpacing: '0.08em',
+                                height: '40px'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>O'QUVCHINING ISMI VA FAMILIYASI</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>SINF</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>DAVOMAT</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>UYGA VAZIFA</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{engMathSubSubject === 'ENG' ? 'INGLIZ TILI' : 'MATEMATIKA'} BALLI (15)</div>
+                              </div>
 
-                              const scoreVal = engMathSubSubject === 'ENG' ? student.engScore : student.mathScore;
-                              const isEditingScore = editingEngMathScore?.studentId === student.id && editingEngMathScore?.subject === engMathSubSubject;
+                              {/* Rows */}
+                              {teacherStudents.map((student, sIdx) => {
+                                const attVal = student.attendance ?? 1;
+                                const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
+                                const hwVal = student.homework ?? 1;
+                                const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
 
-                              return (
-                                <div
-                                  key={student.id}
-                                  style={{
-                                    background: 'var(--bg-card)',
-                                    border: '1.5px solid var(--border-color)',
-                                    borderRadius: '20px',
-                                    padding: '1.25rem',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '1rem',
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                                    e.currentTarget.style.boxShadow = 'var(--glass-shadow)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.borderColor = 'var(--border-color)';
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.01)';
-                                  }}
-                                >
-                                  {/* Header Info */}
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <div style={{
-                                      width: '44px',
-                                      height: '44px',
-                                      borderRadius: '50%',
-                                      background: 'var(--accent-gradient)',
-                                      color: '#ffffff',
-                                      display: 'flex',
+                                const scoreVal = engMathSubSubject === 'ENG' ? student.engScore : student.mathScore;
+                                const isEditingScore = editingEngMathScore?.studentId === student.id && editingEngMathScore?.subject === engMathSubSubject;
+                                const isLast = sIdx === teacherStudents.length - 1;
+
+                                return (
+                                  <div
+                                    key={student.id}
+                                    className="table-row"
+                                    style={{
+                                      display: 'grid',
+                                      gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr',
+                                      padding: '0.65rem 1.5rem',
                                       alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: '0.95rem',
-                                      fontWeight: 800,
-                                      overflow: 'hidden'
-                                    }}>
-                                      {student.pictureUrl ? (
-                                        <img src={student.pictureUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
+                                      background: 'var(--bg-card)',
+                                      transition: 'background 0.2s ease',
+                                      minHeight: '44px'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
+                                  >
+                                    {/* Name and Avatar */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--border-color)', height: '100%', paddingRight: '0.5rem' }}>
+                                      <div style={{
+                                        width: '28px',
+                                        height: '28px',
+                                        borderRadius: '50%',
+                                        background: 'var(--accent-gradient)',
+                                        color: '#ffffff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        overflow: 'hidden',
+                                        flexShrink: 0
+                                      }}>
+                                        {student.pictureUrl ? (
+                                          <img src={student.pictureUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                          getInitials(student.name, student.surname)
+                                        )}
+                                      </div>
+                                      <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                                        {student.name} {student.surname}
+                                      </span>
+                                    </div>
+
+                                    {/* Sinf */}
+                                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                      {student.className}
+                                    </div>
+
+                                    {/* Davomat */}
+                                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: attPercent >= 90 ? '#16a34a' : attPercent >= 70 ? '#d97706' : '#ef4444' }}>
+                                        {attPercent.toFixed(0)}%
+                                      </span>
+                                    </div>
+
+                                    {/* Uyga vazifa */}
+                                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: hwPercent >= 90 ? '#16a34a' : hwPercent >= 70 ? '#d97706' : '#ef4444' }}>
+                                        {hwPercent.toFixed(0)}%
+                                      </span>
+                                    </div>
+
+                                    {/* Score */}
+                                    <div style={{ textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      {isEditingScore ? (
+                                        <input
+                                          type="text"
+                                          value={engMathScoreValue}
+                                          autoFocus
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
+                                              setEngMathScoreValue(val);
+                                            }
+                                          }}
+                                          onBlur={() => handleEngMathScoreSave(student, engMathSubSubject, engMathScoreValue)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleEngMathScoreSave(student, engMathSubSubject, engMathScoreValue);
+                                            if (e.key === 'Escape') setEditingEngMathScore(null);
+                                          }}
+                                          style={{
+                                            width: '60px',
+                                            padding: '0.2rem 0.4rem',
+                                            borderRadius: '8px',
+                                            border: '2px solid var(--accent-primary)',
+                                            outline: 'none',
+                                            fontWeight: 800,
+                                            fontSize: '0.85rem',
+                                            textAlign: 'center',
+                                            background: 'var(--bg-card)',
+                                            color: 'var(--text-primary)'
+                                          }}
+                                        />
                                       ) : (
-                                        getInitials(student.name, student.surname)
+                                        <div
+                                          onDoubleClick={() => handleEngMathScoreDoubleClick(student.id, scoreVal ?? null, engMathSubSubject)}
+                                          title="Tahrirlash uchun ikki marta bosing"
+                                          style={{
+                                            fontSize: '0.85rem',
+                                            fontWeight: 850,
+                                            color: 'var(--accent-primary)',
+                                            cursor: 'pointer',
+                                            padding: '0.15rem 0.45rem',
+                                            borderRadius: '8px',
+                                            background: 'var(--bg-card)',
+                                            border: '1.5px solid var(--border-color)',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            minWidth: '40px',
+                                            justifyContent: 'center',
+                                            transition: 'all 0.15s ease'
+                                          }}
+                                          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                                          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                                        >
+                                          {scoreVal !== null && scoreVal !== undefined ? `${scoreVal} / 15` : '—'}
+                                        </div>
                                       )}
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                      <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{student.name} {student.surname}</span>
-                                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginTop: '0.1rem' }}>Sinf: {student.className}</span>
-                                    </div>
                                   </div>
-
-                                  {/* Progress metrics */}
-                                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    <div style={{ flex: 1, minWidth: '80px', background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem' }}>
-                                      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-secondary)' }}>DAVOMAT</span>
-                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: attPercent >= 90 ? '#16a34a' : attPercent >= 70 ? '#d97706' : '#ef4444' }}>{attPercent.toFixed(1)}%</span>
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: '80px', background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem' }}>
-                                      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-secondary)' }}>UYGA VAZIFA</span>
-                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: hwPercent >= 90 ? '#16a34a' : hwPercent >= 70 ? '#d97706' : '#ef4444' }}>{hwPercent.toFixed(1)}%</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Double-click editable Score */}
-                                  <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    background: 'rgba(13, 148, 136, 0.03)',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: '14px',
-                                    padding: '0.5rem 0.75rem',
-                                    marginTop: 'auto'
-                                  }}>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)' }}>
-                                      {engMathSubSubject === 'ENG' ? 'INGLIZ TILI BALLI' : 'MATEMATIKA BALLI'}
-                                    </span>
-                                    {isEditingScore ? (
-                                      <input
-                                        type="text"
-                                        value={engMathScoreValue}
-                                        autoFocus
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
-                                            setEngMathScoreValue(val);
-                                          }
-                                        }}
-                                        onBlur={() => handleEngMathScoreSave(student, engMathSubSubject, engMathScoreValue)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') handleEngMathScoreSave(student, engMathSubSubject, engMathScoreValue);
-                                          if (e.key === 'Escape') setEditingEngMathScore(null);
-                                        }}
-                                        style={{
-                                          width: '60px',
-                                          padding: '0.2rem 0.4rem',
-                                          borderRadius: '8px',
-                                          border: '2px solid var(--accent-primary)',
-                                          outline: 'none',
-                                          fontWeight: 800,
-                                          fontSize: '0.85rem',
-                                          textAlign: 'center',
-                                          background: 'var(--bg-card)',
-                                          color: 'var(--text-primary)'
-                                        }}
-                                      />
-                                    ) : (
-                                      <div
-                                        onDoubleClick={() => handleEngMathScoreDoubleClick(student.id, scoreVal ?? null, engMathSubSubject)}
-                                        title="Tahrirlash uchun ikki marta bosing"
-                                        style={{
-                                          fontSize: '0.9rem',
-                                          fontWeight: 850,
-                                          color: 'var(--accent-primary)',
-                                          cursor: 'pointer',
-                                          padding: '0.2rem 0.5rem',
-                                          borderRadius: '8px',
-                                          background: 'var(--bg-card)',
-                                          border: '1.5px solid var(--border-color)',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          minWidth: '40px',
-                                          justifyContent: 'center',
-                                          transition: 'all 0.15s ease'
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-                                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
-                                      >
-                                        {scoreVal !== null && scoreVal !== undefined ? `${scoreVal} / 15` : '—'}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       );
