@@ -105,7 +105,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   }, []);
 
   const [activeTabState, setActiveTabState] = useState<'settings' | 'news' | 'teachers' | 'trash'>(() => {
-    return authRole === 'publish' ? 'news' : 'settings';
+    return (authRole === 'publish' || authRole === 'teacher') ? 'news' : 'settings';
   });
 
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
@@ -608,7 +608,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         </div>
 
         {/* Navigation Tabs Selector */}
-        {authRole !== 'admin123' && (!isInline || isMobile) && (
+        {authRole !== 'admin123' && authRole !== 'teacher' && (!isInline || isMobile) && (
           <div style={{
             display: 'flex',
             background: '#f1f5f9',
@@ -711,7 +711,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 1.5rem 1.5rem' }}>
           
           {/* TAB 1: System Settings */}
-          {activeTab === 'settings' && (
+          {activeTab === 'settings' && authRole !== 'teacher' && (
             <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
               {/* Section 1: Subject Select */}
               {(!isInline || isMobile) && (
@@ -722,13 +722,18 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                     {(() => {
-                      const subjects = [
+                      let subjects = [
                         { id: 'PRIMARY', title: "Boshlang'ich", desc: "Boshlang'ich sinflar (1-4) uchun progress va tahlillar", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
+                        { id: 'GRANT', title: 'Grant Testlar', desc: 'Sinflarning darajalari va grant test natijalari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' }
                       ];
+                      if (authRole === 'teacher') {
+                        const tSubject = localStorage.getItem('teacher_subject');
+                        subjects = subjects.filter(s => s.id === tSubject || s.id === 'GRANT');
+                      }
                       return subjects;
                     })().map(subj => {
                       const isSelected = activeSubject === subj.id;
@@ -786,7 +791,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               )}
 
               {/* Section 2: Admin Mode Toggle */}
-              {authRole !== 'publish' && (!isInline || isMobile) && (
+              {authRole !== 'publish' && authRole !== 'teacher' && (!isInline || isMobile) && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
@@ -1751,7 +1756,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           )}
 
           {/* TAB: Teachers / O'qituvchilar */}
-          {activeTab === 'teachers' && (
+          {activeTab === 'teachers' && authRole !== 'teacher' && (
             <div style={{ animation: 'fadeIn 0.2s ease-out', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
               {/* Form to Add Teacher */}

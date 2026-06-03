@@ -15,13 +15,15 @@ interface HeaderProps {
   activeSubject: ActiveSubject;
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash';
   isDarkMode?: boolean;
+  authRole?: string | null;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange, onOpenDrawer,
   activeSubject,
   activeAdminTab = 'home',
-  isDarkMode = false
+  isDarkMode = false,
+  authRole
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -256,7 +258,7 @@ const Header: React.FC<HeaderProps> = ({
               AL-XORAZMIY SCHOOL
             </h1>
             <p className="cabinet-header-subtitle" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, margin: 0, textAlign: 'left' }}>
-              ADMIN KABINETI
+              {authRole === 'teacher' ? 'O\'QITUVCHI KABINETI' : 'ADMIN KABINETI'}
             </p>
           </div>
         </div>

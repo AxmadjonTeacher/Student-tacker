@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Student, ActiveSubject, Teacher } from '../types';
-import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, Key, Phone, Save, RotateCw, Download, X } from 'lucide-react';
+import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, Key, Phone, Save, RotateCw, Download, X, Calendar, Plus } from 'lucide-react';
 import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
 import * as XLSX from 'xlsx';
+import { supabase } from '../supabase';
 
 interface StudentTableProps {
   students: Student[];
@@ -80,6 +81,209 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [editingCell, setEditingCell] = useState<{ studentId: string, field: 'name' | 'id' | 'passcode' | 'parentPhone' } | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const [unsavedChanges, setUnsavedChanges] = useState<Record<string, Partial<Student>>>({});
+
+  const isEditable = isAdminMode || authRole === 'teacher';
+
+  // Grant Subject Selector
+  const [grantSubject, setGrantSubject] = useState<'ENG' | 'MATH'>('ENG');
+
+  // Daily Records States
+  const [selectedDailyDate, setSelectedDailyDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [selectedDailyWeek, setSelectedDailyWeek] = useState(selectedWeek || '1-Hafta');
+  const [dailyRecords, setDailyRecords] = useState<any[]>([]);
+  const [isDailyPanelOpen, setIsDailyPanelOpen] = useState(false);
+  const [isSavingDaily, setIsSavingDaily] = useState<string | null>(null);
+  const [weeklyDailyRecords, setWeeklyDailyRecords] = useState<any[]>([]);
+
+  const classStudentIds = useMemo(() => students.map(s => s.id), [students]);
+
+  useEffect(() => {
+    if (selectedWeek) {
+      setSelectedDailyWeek(selectedWeek);
+    }
+  }, [selectedWeek]);
+
+  const fetchDailyRecords = async () => {
+    if (!selectedDailyDate || !activeSubject) return;
+    try {
+      const { data, error } = await supabase
+        .from('daily_records')
+        .select('*')
+        .eq('date', selectedDailyDate)
+        .eq('subject', activeSubject);
+      if (error) throw error;
+      setDailyRecords(data || []);
+    } catch (err) {
+      console.error('Error fetching daily records:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDailyRecords();
+  }, [selectedDailyDate, activeSubject]);
+
+  useEffect(() => {
+    const fetchWeeklyDailyRecords = async () => {
+      if (!selectedWeek || classStudentIds.length === 0) return;
+      try {
+        const { data, error } = await supabase
+          .from('daily_records')
+          .select('*')
+          .in('student_id', classStudentIds)
+          .eq('week', selectedWeek);
+        if (error) throw error;
+        setWeeklyDailyRecords(data || []);
+      } catch (err) {
+        console.error('Error fetching weekly daily records:', err);
+      }
+    };
+    fetchWeeklyDailyRecords();
+  }, [selectedWeek, classStudentIds]);
+
+  const recalculateWeeklyMetrics = async (studentId: string, week: string, subject: 'ENG' | 'MATH') => {
+    try {
+      const { data: records, error: fetchErr } = await supabase
+        .from('daily_records')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('week', week)
+        .eq('subject', subject);
+        
+      if (fetchErr) throw fetchErr;
+      
+      const total = records ? records.length : 0;
+      if (total === 0) return;
+      
+      const absencesCount = records.filter(r => r.attendance === false).length;
+      const missedHwCount = records.filter(r => r.homework === false).length;
+      
+      const attendanceVal = absencesCount > 0 ? -absencesCount : 1;
+      const homeworkVal = missedHwCount > 0 ? -missedHwCount : 1;
+      
+      const { data: weekRecord, error: weekErr } = await supabase
+        .from('student_weeks')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('week', week)
+        .eq('is_deleted', false)
+        .maybeSingle();
+        
+      if (weekErr) throw weekErr;
+      
+      if (weekRecord) {
+        const { error: updateErr } = await supabase
+          .from('student_weeks')
+          .update({
+            attendance: attendanceVal,
+            homework: homeworkVal
+          })
+          .eq('id', weekRecord.id);
+        if (updateErr) throw updateErr;
+      } else {
+        const { error: insertErr } = await supabase
+          .from('student_weeks')
+          .insert([{
+            student_id: studentId,
+            week: week,
+            attendance: attendanceVal,
+            homework: homeworkVal,
+            eng_score: 0,
+            math_score: 0,
+            starting_level: 'Level 1',
+            current_level: 'Level 1',
+            is_deleted: false
+          }]);
+        if (insertErr) throw insertErr;
+      }
+    } catch (err) {
+      console.error("Error recalculating weekly metrics:", err);
+    }
+  };
+
+  const handleAddNewLesson = async () => {
+    if (students.length === 0) {
+      alert("Sinfda o'quvchilar mavjud emas!");
+      return;
+    }
+    
+    const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
+    
+    const newRecords = students.map(student => ({
+      student_id: student.id,
+      date: selectedDailyDate,
+      week: selectedDailyWeek,
+      subject: activeSubject as 'ENG' | 'MATH',
+      attendance: true,
+      homework: true,
+      teacher_name: teacherName
+    }));
+
+    try {
+      const { error } = await supabase
+        .from('daily_records')
+        .insert(newRecords);
+        
+      if (error) throw error;
+      
+      await fetchDailyRecords();
+      
+      // Trigger weekly metrics recalculation for all students in the class
+      for (const student of students) {
+        await recalculateWeeklyMetrics(student.id, selectedDailyWeek, activeSubject as 'ENG' | 'MATH');
+      }
+      
+      // Refetch weekly daily records to keep tooltip cache in sync
+      const { data: updatedWeekly } = await supabase
+        .from('daily_records')
+        .select('*')
+        .in('student_id', classStudentIds)
+        .eq('week', selectedDailyWeek);
+      if (updatedWeekly) {
+        setWeeklyDailyRecords(updatedWeekly);
+      }
+      
+      alert("Yangi dars muvaffaqiyatli qo'shildi!");
+    } catch (err) {
+      console.error("Error adding new lesson:", err);
+      alert("Dars qo'shishda xatolik yuz berdi.");
+    }
+  };
+
+  const handleToggleDailyRecord = async (studentId: string, field: 'attendance' | 'homework') => {
+    const existing = dailyRecords.find(r => r.student_id === studentId);
+    if (!existing) {
+      alert("Iltimos, avval dars qo'shing!");
+      return;
+    }
+    
+    setIsSavingDaily(studentId);
+    
+    const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
+    const updatedValue = !existing[field];
+    
+    try {
+      const { error } = await supabase
+        .from('daily_records')
+        .update({
+          [field]: updatedValue,
+          teacher_name: teacherName
+        })
+        .eq('id', existing.id);
+        
+      if (error) throw error;
+      
+      // Update local states
+      setDailyRecords(prev => prev.map(r => r.id === existing.id ? { ...r, [field]: updatedValue, teacher_name: teacherName } : r));
+      setWeeklyDailyRecords(prev => prev.map(r => r.id === existing.id ? { ...r, [field]: updatedValue, teacher_name: teacherName } : r));
+      
+      // Recalculate weekly metrics for this student
+      await recalculateWeeklyMetrics(studentId, selectedDailyWeek, activeSubject as 'ENG' | 'MATH');
+    } catch (err) {
+      console.error("Error updating daily record:", err);
+    } finally {
+      setIsSavingDaily(null);
+    }
+  };
 
   // Copy to clipboard notification toast state
   const [copiedId, setCopiedId] = useState<{ id: string; field: string } | null>(null);
@@ -678,6 +882,32 @@ const StudentTable: React.FC<StudentTableProps> = ({
             padding: 1rem 1rem 2rem 1rem !important;
           }
         }
+        .tooltip-trigger {
+          position: relative;
+          cursor: help;
+        }
+        .tooltip-content {
+          display: none;
+          position: absolute;
+          bottom: 110%;
+          left: 50%;
+          transform: translateX(-50%);
+          background: var(--bg-card);
+          border: 1.5px solid var(--border-color);
+          border-radius: 12px;
+          padding: 0.75rem;
+          box-shadow: var(--glass-shadow);
+          z-index: 9999;
+          width: max-content;
+          min-width: 180px;
+          max-width: 250px;
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+        .tooltip-trigger:hover .tooltip-content {
+          display: block;
+          animation: fadeIn 0.15s ease-out;
+        }
       `}} />
       <div 
         className="student-table-container"
@@ -688,6 +918,298 @@ const StudentTable: React.FC<StudentTableProps> = ({
           width: '100%'
         }}
       >
+        {/* Daily Attendance & Homework Module */}
+        {(activeSubject === 'ENG' || activeSubject === 'MATH') && (
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1.5px solid var(--border-color)',
+            borderRadius: '24px',
+            padding: '1.5rem',
+            boxShadow: 'var(--glass-shadow)',
+            marginBottom: '1rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            {/* Panel Title & Toggle */}
+            <div 
+              onClick={() => setIsDailyPanelOpen(!isDailyPanelOpen)}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer',
+                userSelect: 'none'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(13, 148, 136, 0.1)',
+                  color: 'var(--accent-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Calendar size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                    Kunlik Davomat va Vazifalar
+                  </h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, fontWeight: 500 }}>
+                    Sana bo'yicha davomat va uy vazifalarini tekshirish paneli
+                  </p>
+                </div>
+              </div>
+              <button style={{
+                background: 'var(--bg-card-hover)',
+                border: '1.5px solid var(--border-color)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                transition: 'transform 0.2s ease',
+                transform: isDailyPanelOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                borderWidth: '1.5px'
+              }}>
+                ▼
+              </button>
+            </div>
+
+            {isDailyPanelOpen && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.25rem',
+                borderTop: '1px solid var(--border-color)',
+                paddingTop: '1.25rem',
+                animation: 'slideUp 0.2s ease-out'
+              }}>
+                {/* Controls row */}
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
+                  alignItems: 'flex-end'
+                }}>
+                  {/* Date picker */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+                      SANA TANLASH
+                    </label>
+                    <input 
+                      type="date"
+                      value={selectedDailyDate}
+                      onChange={(e) => setSelectedDailyDate(e.target.value)}
+                      style={{
+                        padding: '0.65rem 1rem',
+                        border: '1.5px solid var(--border-color)',
+                        borderRadius: '12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        background: 'var(--bg-card-hover)',
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    />
+                  </div>
+
+                  {/* Week indicator */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+                      HAFTA
+                    </label>
+                    <div style={{
+                      padding: '0.65rem 1.25rem',
+                      border: '1.5px solid var(--border-color)',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      background: 'rgba(13, 148, 136, 0.05)',
+                      color: 'var(--accent-primary)',
+                      minWidth: '100px',
+                      textAlign: 'center'
+                    }}>
+                      {selectedDailyWeek}
+                    </div>
+                  </div>
+
+                  {/* Add new lesson button */}
+                  <button 
+                    onClick={handleAddNewLesson}
+                    style={{
+                      background: 'var(--accent-gradient)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '0.75rem 1.25rem',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(13, 148, 136, 0.15)',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <Plus size={16} />
+                    Yangi dars qo'shish
+                  </button>
+                </div>
+
+                {/* Student list grid */}
+                <div style={{
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  background: 'var(--bg-card-hover)'
+                }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr 1fr',
+                    padding: '0.75rem 1.25rem',
+                    background: 'var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.05em'
+                  }}>
+                    <span>O'QUVCHI ISMI</span>
+                    <span style={{ textAlign: 'center' }}>DAVOMAT</span>
+                    <span style={{ textAlign: 'center' }}>UY VAZIFASI</span>
+                  </div>
+
+                  {students.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                      O'quvchilar topilmadi
+                    </div>
+                  ) : dailyRecords.length === 0 ? (
+                    <div style={{ padding: '2.5rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '1.5rem' }}>📅</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                        Ushbu sana uchun dars hali boshlanmagan.
+                      </span>
+                      <button 
+                        onClick={handleAddNewLesson}
+                        style={{
+                          background: 'transparent',
+                          border: '1.5px solid var(--accent-primary)',
+                          color: 'var(--accent-primary)',
+                          borderRadius: '10px',
+                          padding: '0.45rem 1rem',
+                          fontSize: '0.8rem',
+                          fontWeight: 750,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(13, 148, 136, 0.05)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        Dars boshlash
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {students.map((student, sIdx) => {
+                        const record = dailyRecords.find(r => r.student_id === student.id);
+                        const isSaving = isSavingDaily === student.id;
+                        
+                        return (
+                          <div 
+                            key={student.id}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '2fr 1fr 1fr',
+                              padding: '0.9rem 1.25rem',
+                              alignItems: 'center',
+                              borderBottom: sIdx === students.length - 1 ? 'none' : '1px solid var(--border-color)',
+                              background: 'var(--bg-card)'
+                            }}
+                          >
+                            {/* Name */}
+                            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                              {student.name} {student.surname}
+                            </span>
+
+                            {/* Attendance Toggle */}
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                              {record ? (
+                                <button
+                                  disabled={isSaving}
+                                  onClick={() => handleToggleDailyRecord(student.id, 'attendance')}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    padding: '0.4rem 0.85rem',
+                                    borderRadius: '9999px',
+                                    border: 'none',
+                                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                                    fontWeight: 750,
+                                    fontSize: '0.75rem',
+                                    transition: 'all 0.2s ease',
+                                    background: record.attendance ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                    color: record.attendance ? '#16a34a' : '#ef4444',
+                                    boxShadow: record.attendance ? '0 2px 6px rgba(22, 163, 74, 0.05)' : 'none'
+                                  }}
+                                >
+                                  <span>{record.attendance ? '✅ Keldi' : '❌ Kelmadi'}</span>
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>-</span>
+                              )}
+                            </div>
+
+                            {/* Homework Toggle */}
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                              {record ? (
+                                <button
+                                  disabled={isSaving}
+                                  onClick={() => handleToggleDailyRecord(student.id, 'homework')}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    padding: '0.4rem 0.85rem',
+                                    borderRadius: '9999px',
+                                    border: 'none',
+                                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                                    fontWeight: 750,
+                                    fontSize: '0.75rem',
+                                    transition: 'all 0.2s ease',
+                                    background: record.homework ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                    color: record.homework ? '#16a34a' : '#ef4444',
+                                    boxShadow: record.homework ? '0 2px 6px rgba(22, 163, 74, 0.05)' : 'none'
+                                  }}
+                                >
+                                  <span>{record.homework ? '✅ Bajarilgan' : '❌ Bajarilmagan'}</span>
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>-</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {students.length === 0 ? (
           <div className="empty-state">
             <Inbox size={48} />
@@ -711,7 +1233,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 {/* Header row */}
                 <div className="table-header-row" style={{
                   display: 'grid',
-                  gridTemplateColumns: isAdminMode ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
+                  gridTemplateColumns: isEditable ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
                   alignItems: 'stretch',
                   padding: '0 1.5rem',
                   borderBottom: '1px solid var(--border-color)',
@@ -932,7 +1454,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       className="student-row"
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: isAdminMode ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
+                        gridTemplateColumns: isEditable ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
                         alignItems: 'center',
                         padding: '1.2rem 1.5rem',
                         borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
@@ -1058,7 +1580,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
 
                       {/* Attendance block */}
-                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell tooltip-trigger" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Davomat</span>
                         <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                           {attPercent.toFixed(2)}%
@@ -1066,10 +1588,60 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           {student.attendance || 1} ({absences} dars)
                         </div>
+
+                        {/* Tooltip Content */}
+                        {(() => {
+                          const studentRecords = weeklyDailyRecords.filter(r => r.student_id === student.id);
+                          const engAtt = studentRecords.filter(r => r.subject === 'ENG');
+                          const mathAtt = studentRecords.filter(r => r.subject === 'MATH');
+                          return (
+                            <div className="tooltip-content" style={{ pointerEvents: 'none' }}>
+                              <div style={{ fontWeight: 900, fontSize: '0.72rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
+                                KUNLIK DAVOMAT
+                              </div>
+                              {engAtt.length === 0 && mathAtt.length === 0 ? (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Yozuvlar mavjud emas</div>
+                              ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  {engAtt.length > 0 && (
+                                    <div>
+                                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--accent-primary)', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>INGLIZ TILI:</div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                        {engAtt.map(r => (
+                                          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', gap: '1rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>{r.date}</span>
+                                            <span style={{ fontWeight: 700, color: r.attendance ? '#16a34a' : '#ef4444' }}>
+                                              {r.attendance ? '✅ Kelgan' : '❌ Kelmagan'}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {mathAtt.length > 0 && (
+                                    <div>
+                                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#8b5cf6', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>MATEMATIKA:</div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                        {mathAtt.map(r => (
+                                          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', gap: '1rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>{r.date}</span>
+                                            <span style={{ fontWeight: 700, color: r.attendance ? '#16a34a' : '#ef4444' }}>
+                                              {r.attendance ? '✅ Kelgan' : '❌ Kelmagan'}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Homework block */}
-                      <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div className="table-cell tooltip-trigger" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Vazifalar</span>
                         <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
                           {hwPercent.toFixed(2)}%
@@ -1077,6 +1649,56 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           {student.homework || 1} ({missedHw} vazifa)
                         </div>
+
+                        {/* Tooltip Content */}
+                        {(() => {
+                          const studentRecords = weeklyDailyRecords.filter(r => r.student_id === student.id);
+                          const engHw = studentRecords.filter(r => r.subject === 'ENG');
+                          const mathHw = studentRecords.filter(r => r.subject === 'MATH');
+                          return (
+                            <div className="tooltip-content" style={{ pointerEvents: 'none' }}>
+                              <div style={{ fontWeight: 900, fontSize: '0.72rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
+                                KUNLIK VAZIFALAR
+                              </div>
+                              {engHw.length === 0 && mathHw.length === 0 ? (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Yozuvlar mavjud emas</div>
+                              ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  {engHw.length > 0 && (
+                                    <div>
+                                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--accent-primary)', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>INGLIZ TILI:</div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                        {engHw.map(r => (
+                                          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', gap: '1rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>{r.date}</span>
+                                            <span style={{ fontWeight: 700, color: r.homework ? '#16a34a' : '#ef4444' }}>
+                                              {r.homework ? '✅ Bajarilgan' : '❌ Bajarilmagan'}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {mathHw.length > 0 && (
+                                    <div>
+                                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#8b5cf6', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>MATEMATIKA:</div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                        {mathHw.map(r => (
+                                          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', gap: '1rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>{r.date}</span>
+                                            <span style={{ fontWeight: 700, color: r.homework ? '#16a34a' : '#ef4444' }}>
+                                              {r.homework ? '✅ Bajarilgan' : '❌ Bajarilmagan'}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Chart block */}
@@ -1085,7 +1707,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onClick={() => setSelectedStudent(student)}
                         style={{ 
                           padding: '0 1.5rem', 
-                          borderRight: isAdminMode ? '1px solid var(--border-color)' : 'none', 
+                          borderRight: isEditable ? '1px solid var(--border-color)' : 'none', 
                           height: '100%', 
                           display: 'flex', 
                           alignItems: 'center',
@@ -1948,7 +2570,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         )}
 
                         {/* Actions/Progress block */}
-                        {!isAdminMode ? (
+                        {!isEditable ? (
                           <div className="table-cell no-border" style={{ padding: '0 0 0 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                             <span className="mobile-label">Progress</span>
                             <button 
@@ -1985,36 +2607,40 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             >
                               <Pencil size={16} />
                             </button>
-                            <button 
-                              onClick={() => setAssigningStudent({ id: student.id, currentTeacher: student.teacher || '' })}
-                              title="O'qituvchi biriktirish"
-                              style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: '#f0fdf4', color: '#16a34a',
-                                border: '1px solid #bbf7d0', borderRadius: '50%',
-                                width: '36px', height: '36px',
-                                cursor: 'pointer', transition: 'all 0.2s ease'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.transform = 'scale(1)'; }}
-                            >
-                              <Users size={16} />
-                            </button>
-                            <button 
-                              onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
-                              title="O'chirib yuborish"
-                              style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: '#fee2e2', color: '#b91c1c',
-                                border: '1px solid #fca5a5', borderRadius: '50%',
-                                width: '36px', height: '36px',
-                                cursor: 'pointer', transition: 'all 0.2s ease'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            {authRole !== 'teacher' && (
+                              <button 
+                                onClick={() => setAssigningStudent({ id: student.id, currentTeacher: student.teacher || '' })}
+                                title="O'qituvchi biriktirish"
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  background: '#f0fdf4', color: '#16a34a',
+                                  border: '1px solid #bbf7d0', borderRadius: '50%',
+                                  width: '36px', height: '36px',
+                                  cursor: 'pointer', transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.transform = 'scale(1)'; }}
+                              >
+                                <Users size={16} />
+                              </button>
+                            )}
+                            {authRole !== 'teacher' && (
+                              <button 
+                                onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
+                                title="O'chirib yuborish"
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  background: '#fee2e2', color: '#b91c1c',
+                                  border: '1px solid #fca5a5', borderRadius: '50%',
+                                  width: '36px', height: '36px',
+                                  cursor: 'pointer', transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2049,6 +2675,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
         <EditProgressModal
           student={editingStudent}
           activeSubject={activeSubject}
+          authRole={authRole}
           onClose={() => setEditingStudent(null)}
           onSave={(sl, cl, gt, n, s, c, eng, math, att, hw, phone) => {
             if (onUpdateProgress) {

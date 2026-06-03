@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { 
   Home, Search, BarChart2, Settings, LogOut,
   BookOpen, Binary, Activity, ShieldAlert, Bell, Users, Trash2, GraduationCap,
-  PanelLeftClose, Shield, Sun, Moon
+  PanelLeftClose, Shield, Sun, Moon, Award
 } from 'lucide-react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
@@ -116,7 +116,7 @@ function App() {
   const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash'>('home');
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
-  const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | null>(null);
+  const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher' | null>(null);
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -534,6 +534,14 @@ function App() {
         const storedPass = localStorage.getItem('admin_passcode');
         if (storedPass === 'Azz21testor') {
           setAuthRole('testor');
+          setIsAdminMode(false);
+          await fetchAllData();
+          return;
+        }
+      } else if (storedRole === 'teacher') {
+        const teacherId = localStorage.getItem('teacher_id');
+        if (teacherId) {
+          setAuthRole('teacher');
           setIsAdminMode(false);
           await fetchAllData();
           return;
@@ -1128,9 +1136,9 @@ function App() {
     }
   };
 
-  const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor', studentData?: any) => {
+  const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher', studentData?: any) => {
     setAuthRole(role);
-    if (role === 'admin' || role === 'admin123' || role === 'publish' || role === 'testor') {
+    if (role === 'admin' || role === 'admin123' || role === 'publish' || role === 'testor' || role === 'teacher') {
       setIsAdminMode(false);
       await fetchAllData();
     } else if (role === 'parent' && studentData) {
@@ -1179,6 +1187,9 @@ function App() {
     localStorage.removeItem('parent_student_id');
     localStorage.removeItem('parent_student_passcode');
     localStorage.removeItem('parent_children');
+    localStorage.removeItem('teacher_id');
+    localStorage.removeItem('teacher_name');
+    localStorage.removeItem('teacher_subject');
     
     setAuthRole(null);
     setParentStudents([]);
@@ -2563,7 +2574,8 @@ function App() {
           scrollbarWidth: 'none'
         }}>
           {(() => {
-            const sidebarGroups = [
+            const teacherSubject = localStorage.getItem('teacher_subject');
+            const rawSidebarGroups = [
               {
                 title: 'Tizim',
                 items: [
@@ -2577,6 +2589,7 @@ function App() {
                   { id: 'subj_primary', label: 'Boshlang\'ich', icon: GraduationCap, isActive: activeAdminTab === 'home' && activeSubject === 'PRIMARY', action: () => { setActiveAdminTab('home'); setActiveSubject('PRIMARY'); } },
                   { id: 'subj_eng', label: 'Ingliz tili', icon: BookOpen, isActive: activeAdminTab === 'home' && activeSubject === 'ENG', action: () => { setActiveAdminTab('home'); setActiveSubject('ENG'); } },
                   { id: 'subj_math', label: 'Matematika', icon: Binary, isActive: activeAdminTab === 'home' && activeSubject === 'MATH', action: () => { setActiveAdminTab('home'); setActiveSubject('MATH'); } },
+                  { id: 'subj_grant', label: 'Grant testlar', icon: Award, isActive: activeAdminTab === 'home' && activeSubject === 'GRANT', action: () => { setActiveAdminTab('home'); setActiveSubject('GRANT'); } },
                   { id: 'subj_all', label: 'Haftalik tahlil', icon: Activity, isActive: activeAdminTab === 'home' && activeSubject === 'ALL', action: () => { setActiveAdminTab('home'); setActiveSubject('ALL'); } },
                 ]
               },
@@ -2590,6 +2603,35 @@ function App() {
                 ]
               }
             ];
+
+            const sidebarGroups = rawSidebarGroups.map(group => {
+              if (authRole === 'teacher') {
+                if (group.title === 'Tizim') {
+                  return {
+                    ...group,
+                    items: group.items.filter(item => item.id === 'home')
+                  };
+                }
+                if (group.title === 'Fanlar & Tahlil') {
+                  return {
+                    ...group,
+                    items: group.items.filter(item => {
+                      if (item.id === 'subj_all') return true;
+                      if (teacherSubject === 'ENG' && item.id === 'subj_eng') return true;
+                      if (teacherSubject === 'MATH' && item.id === 'subj_math') return true;
+                      return false;
+                    })
+                  };
+                }
+                if (group.title === 'Boshqaruv') {
+                  return {
+                    ...group,
+                    items: []
+                  };
+                }
+              }
+              return group;
+            }).filter(group => group.items.length > 0);
 
             return sidebarGroups.map((group, groupIdx) => (
               <div key={groupIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -2664,51 +2706,53 @@ function App() {
           {isSidebarExpanded ? (
             <>
               {/* Admin Mode Toggle */}
-              <div style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px',
-                padding: '0.65rem 0.8rem',
-                width: '100%',
-                boxSizing: 'border-box',
-                marginBottom: '0.5rem',
-                boxShadow: 'var(--glass-shadow)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.72rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>ADMIN REJIMI</div>
-                    <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', marginTop: '0.05rem' }}>Tahrirlash imkoniyati</div>
+              {authRole !== 'teacher' && (
+                <div style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '0.65rem 0.8rem',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  marginBottom: '0.5rem',
+                  boxShadow: 'var(--glass-shadow)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.72rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>ADMIN REJIMI</div>
+                      <div style={{ fontSize: '0.58rem', color: 'var(--text-secondary)', marginTop: '0.05rem' }}>Tahrirlash imkoniyati</div>
+                    </div>
+                    <button 
+                      onClick={handleToggleAdmin}
+                      style={{
+                        width: '36px',
+                        height: '18px',
+                        borderRadius: '9999px',
+                        background: isAdminMode ? 'var(--accent-primary)' : '#cbd5e1',
+                        border: 'none',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        padding: 0,
+                        transition: 'background-color 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexShrink: 0
+                      }}
+                    >
+                      <div style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        position: 'absolute',
+                        left: isAdminMode ? '20px' : '4px',
+                        transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                      }} />
+                    </button>
                   </div>
-                  <button 
-                    onClick={handleToggleAdmin}
-                    style={{
-                      width: '36px',
-                      height: '18px',
-                      borderRadius: '9999px',
-                      background: isAdminMode ? 'var(--accent-primary)' : '#cbd5e1',
-                      border: 'none',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      padding: 0,
-                      transition: 'background-color 0.2s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexShrink: 0
-                    }}
-                  >
-                    <div style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      background: '#ffffff',
-                      position: 'absolute',
-                      left: isAdminMode ? '20px' : '4px',
-                      transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                    }} />
-                  </button>
                 </div>
-              </div>
+              )}
 
               {/* Dark Mode Toggle */}
               <div style={{
@@ -2759,38 +2803,40 @@ function App() {
             </>
           ) : (
             <>
-              <button
-                onClick={handleToggleAdmin}
-                title={isAdminMode ? "Admin rejimidan chiqish" : "Admin rejimini yoqish"}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  background: isAdminMode ? 'rgba(13, 148, 136, 0.12)' : 'transparent',
-                  color: isAdminMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                  border: isAdminMode ? '1px solid rgba(13, 148, 136, 0.2)' : '1px solid transparent',
-                  cursor: 'pointer',
-                  marginBottom: '0.5rem',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseEnter={e => {
-                  if (!isAdminMode) {
-                    e.currentTarget.style.background = 'var(--bg-card-hover)';
-                    e.currentTarget.style.color = 'var(--text-primary)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isAdminMode) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                  }
-                }}
-              >
-                <Shield size={16} strokeWidth={isAdminMode ? 2.5 : 2} />
-              </button>
+              {authRole !== 'teacher' && (
+                <button
+                  onClick={handleToggleAdmin}
+                  title={isAdminMode ? "Admin rejimidan chiqish" : "Admin rejimini yoqish"}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: isAdminMode ? 'rgba(13, 148, 136, 0.12)' : 'transparent',
+                    color: isAdminMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                    border: isAdminMode ? '1px solid rgba(13, 148, 136, 0.2)' : '1px solid transparent',
+                    cursor: 'pointer',
+                    marginBottom: '0.5rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => {
+                    if (!isAdminMode) {
+                      e.currentTarget.style.background = 'var(--bg-card-hover)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isAdminMode) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                    }
+                  }}
+                >
+                  <Shield size={16} strokeWidth={isAdminMode ? 2.5 : 2} />
+                </button>
+              )}
 
               <button
                 onClick={() => setIsDarkMode(!isDarkMode)}

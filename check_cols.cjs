@@ -6,16 +6,15 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function main() {
-  const { data, error } = await supabase.from('Students').select('*').limit(1);
+  const { data, error } = await supabase
+    .from('student_weeks')
+    .select('student_id, week, attendance, homework')
+    .or('attendance.lt.1,homework.lt.1')
+    .limit(10);
   if (error) {
     console.error('Error:', error);
   } else {
-    if (data && data.length > 0) {
-      console.log('Columns:', Object.keys(data[0]));
-    } else {
-      console.log('No data');
-    }
+    console.log('Non-default rows:', data);
   }
 }
-
 main();

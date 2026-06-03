@@ -49,12 +49,28 @@ export interface NewsEvent {
   type?: 'news' | 'event' | 'reminder';
 }
 
-export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD' | 'PRIMARY';
+export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD' | 'PRIMARY' | 'GRANT';
 
 export interface Teacher {
   id: number;
   name: string;
   subject: 'ENG' | 'MATH';
   created_at?: string;
+  login_id?: string;
+  passcode?: string;
 }
+
+export interface DailyRecord {
+  id?: string;
+  student_id: string;
+  date: string;
+  subject: 'ENG' | 'MATH';
+  attendance: boolean;
+  homework: boolean;
+  teacher_name: string;
+  week: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 

@@ -5,7 +5,7 @@ import iconLight from '../assets/icon-light.png';
 import iconDark from '../assets/icon-dark.png';
 
 interface LoginScreenProps {
-  onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor', studentData?: any) => void;
+  onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher', studentData?: any) => void;
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
 }
@@ -91,6 +91,26 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         return;
       }
 
+      // 1.5. Check Teacher Credentials in Supabase
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('teachers')
+        .select('*')
+        .eq('login_id', trimmedId.toLowerCase())
+        .eq('passcode', trimmedPasscode)
+        .maybeSingle();
+
+      if (teacherError) throw teacherError;
+
+      if (teacherData) {
+        localStorage.setItem('auth_role', 'teacher');
+        localStorage.setItem('teacher_id', teacherData.id.toString());
+        localStorage.setItem('teacher_name', teacherData.name);
+        localStorage.setItem('teacher_subject', teacherData.subject);
+        onLoginSuccess('teacher');
+        setIsLoading(false);
+        return;
+      }
+
       // 2. Check Student/Parent Credentials in Supabase
       const { data, error: dbError } = await supabase
         .from('Students')
@@ -108,7 +128,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         localStorage.setItem('parent_student_passcode', data.passcode);
         onLoginSuccess('parent', data);
       } else {
-        setError("O'quvchi ID yoki paroli noto'g'ri. Qayta tekshirib ko'ring.");
+        setError("ID yoki parol noto'g'ri. Qayta tekshirib ko'ring.");
       }
     } catch (err: any) {
       console.error('Login error:', err);

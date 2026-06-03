@@ -19,18 +19,21 @@ interface EditProgressModalProps {
     parentPhone?: string
   ) => void;
   activeSubject: ActiveSubject;
+  authRole?: string | null;
 }
 
 const EditProgressModal: React.FC<EditProgressModalProps> = ({ 
   student, 
   onClose, 
   onSave, 
-  activeSubject 
+  activeSubject,
+  authRole
 }) => {
   const isMath = activeSubject === 'MATH';
   const isAll = activeSubject === 'ALL';
   const subjectName = isMath ? 'Matematika' : isAll ? 'Barcha natijalar' : 'Ingliz tili';
   const activeThemeColor = isMath ? '#0d9488' : isAll ? '#4f46e5' : '#166534';
+  const teacherSubject = localStorage.getItem('teacher_subject');
 
   const [name, setName] = useState(student.name);
   const [surname, setSurname] = useState(student.surname);
@@ -236,10 +239,13 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
+                disabled={authRole === 'teacher'}
                 style={{
                   width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                   borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                  color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
+                  color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
+                  cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
+                  opacity: authRole === 'teacher' ? 0.7 : 1
                 }}
               />
             </div>
@@ -252,10 +258,13 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 value={surname}
                 onChange={e => setSurname(e.target.value)}
                 required
+                disabled={authRole === 'teacher'}
                 style={{
                   width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                   borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                  color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
+                  color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
+                  cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
+                  opacity: authRole === 'teacher' ? 0.7 : 1
                 }}
               />
             </div>
@@ -270,10 +279,13 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               value={className}
               onChange={e => setClassName(e.target.value)}
               required
+              disabled={authRole === 'teacher'}
               style={{
                 width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                 borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
+                color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
+                cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
+                opacity: authRole === 'teacher' ? 0.7 : 1
               }}
             />
           </div>
@@ -388,10 +400,13 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     value={engScore}
                     onChange={e => setEngScore(e.target.value)}
                     required
+                    disabled={authRole === 'teacher' && teacherSubject !== 'ENG'}
                     style={{
                       width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                       borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
+                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
+                      cursor: authRole === 'teacher' && teacherSubject !== 'ENG' ? 'not-allowed' : 'text',
+                      opacity: authRole === 'teacher' && teacherSubject !== 'ENG' ? 0.7 : 1
                     }}
                   />
                 </div>
@@ -406,10 +421,13 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     value={mathScore}
                     onChange={e => setMathScore(e.target.value)}
                     required
+                    disabled={authRole === 'teacher' && teacherSubject !== 'MATH'}
                     style={{
                       width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                       borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
+                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
+                      cursor: authRole === 'teacher' && teacherSubject !== 'MATH' ? 'not-allowed' : 'text',
+                      opacity: authRole === 'teacher' && teacherSubject !== 'MATH' ? 0.7 : 1
                     }}
                   />
                 </div>
@@ -426,10 +444,13 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     value={attendance}
                     onChange={e => setAttendance(e.target.value)}
                     required
+                    disabled={authRole === 'teacher'}
                     style={{
                       width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                       borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
+                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
+                      cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
+                      opacity: authRole === 'teacher' ? 0.7 : 1
                     }}
                   />
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.3 }}>
@@ -446,10 +467,13 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     value={homework}
                     onChange={e => setHomework(e.target.value)}
                     required
+                    disabled={authRole === 'teacher'}
                     style={{
                       width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
                       borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
-                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none'
+                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
+                      cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
+                      opacity: authRole === 'teacher' ? 0.7 : 1
                     }}
                   />
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.3 }}>
@@ -468,6 +492,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 <select 
                   value={startingLevel}
                   onChange={(e) => setStartingLevel(e.target.value)}
+                  disabled={authRole === 'teacher'}
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
@@ -478,7 +503,8 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     color: 'var(--text-primary)',
                     background: 'var(--bg-card-hover)',
                     outline: 'none',
-                    cursor: 'pointer'
+                    cursor: authRole === 'teacher' ? 'not-allowed' : 'pointer',
+                    opacity: authRole === 'teacher' ? 0.7 : 1
                   }}
                 >
                   {levelOptions.map(opt => (
@@ -495,6 +521,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 <select 
                   value={currentLevel}
                   onChange={(e) => setCurrentLevel(e.target.value)}
+                  disabled={authRole === 'teacher'}
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
@@ -505,7 +532,8 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     color: 'var(--text-primary)',
                     background: 'var(--bg-card-hover)',
                     outline: 'none',
-                    cursor: 'pointer'
+                    cursor: authRole === 'teacher' ? 'not-allowed' : 'pointer',
+                    opacity: authRole === 'teacher' ? 0.7 : 1
                   }}
                 >
                   {levelOptions.map(opt => (
@@ -530,7 +558,9 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     fontWeight: 600,
                     outline: 'none',
                     color: 'var(--text-primary)',
-                    background: 'var(--bg-card-hover)'
+                    background: 'var(--bg-card-hover)',
+                    cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
+                    opacity: authRole === 'teacher' ? 0.7 : 1
                   };
 
                   return (
@@ -542,6 +572,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                           value={grant1}
                           onChange={(e) => handleScoreChange(e.target.value, setGrant1)}
                           placeholder="-"
+                          disabled={authRole === 'teacher'}
                           style={inputStyle}
                         />
                       </div>
@@ -553,6 +584,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                           value={grant2}
                           onChange={(e) => handleScoreChange(e.target.value, setGrant2)}
                           placeholder="-"
+                          disabled={authRole === 'teacher'}
                           style={inputStyle}
                         />
                       </div>
@@ -564,6 +596,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                           value={grant3}
                           onChange={(e) => handleScoreChange(e.target.value, setGrant3)}
                           placeholder="-"
+                          disabled={authRole === 'teacher'}
                           style={inputStyle}
                         />
                       </div>
@@ -575,6 +608,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                           value={grant4}
                           onChange={(e) => handleScoreChange(e.target.value, setGrant4)}
                           placeholder="-"
+                          disabled={authRole === 'teacher'}
                           style={inputStyle}
                         />
                       </div>

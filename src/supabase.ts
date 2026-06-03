@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Student } from './types';
+import type { Student, Teacher, DailyRecord } from './types';
 
 const SUPABASE_URL = 'https://mvrywaffldfzzjgfctfp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12cnl3YWZmbGRmenpqZ2ZjdGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NTk5OTcsImV4cCI6MjA5NDUzNTk5N30.BmzKU0SEbGW4oy7Ib8h5Yxs8bXoLc3Hv1g2ckg6zPpU';
@@ -69,3 +69,45 @@ export const mapStudentToDb = (student: Student) => {
 
   return dbRecord;
 };
+
+export const mapDbToTeacher = (db: any): Teacher => ({
+  id: Number(db.id),
+  name: db.name || '',
+  subject: db.subject || 'ENG',
+  created_at: db.created_at,
+  login_id: db.login_id || '',
+  passcode: db.passcode || ''
+});
+
+export const mapTeacherToDb = (teacher: Teacher) => ({
+  id: teacher.id,
+  name: teacher.name,
+  subject: teacher.subject,
+  login_id: teacher.login_id || null,
+  passcode: teacher.passcode || null
+});
+
+export const mapDbToDailyRecord = (db: any): DailyRecord => ({
+  id: db.id,
+  student_id: db.student_id,
+  date: db.date,
+  subject: db.subject,
+  attendance: !!db.attendance,
+  homework: !!db.homework,
+  teacher_name: db.teacher_name,
+  week: db.week,
+  created_at: db.created_at,
+  updated_at: db.updated_at
+});
+
+export const mapDailyRecordToDb = (record: DailyRecord) => ({
+  id: record.id,
+  student_id: record.student_id,
+  date: record.date,
+  subject: record.subject,
+  attendance: record.attendance,
+  homework: record.homework,
+  teacher_name: record.teacher_name,
+  week: record.week
+});
+
