@@ -172,15 +172,16 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
     }
   };
 
-  // Score metrics calculations
-  const engPercentage = Math.round(((student.engScore || 0) / 15 * 100) * 10) / 10;
-  const mathPercentage = Math.round(((student.mathScore || 0) / 15 * 100) * 10) / 10;
+  const engPercentage = student.engScore !== null && student.engScore !== undefined ? Math.round((student.engScore / 15 * 100) * 10) / 10 : null;
+  const mathPercentage = student.mathScore !== null && student.mathScore !== undefined ? Math.round((student.mathScore / 15 * 100) * 10) / 10 : null;
 
-  const absences = (student.attendance ?? 1) < 0 ? -(student.attendance ?? 1) : 0;
-  const attPercentage = Math.max(0, Math.round((100 - absences * 16.67) * 10) / 10);
+  const attVal = student.attendance ?? 1;
+  const attPercentage = attVal < 0 ? Math.max(0, Math.round((100 + attVal * 16.67) * 10) / 10) : (attVal === 1 ? 100 : attVal);
+  const absences = attVal < 0 ? -attVal : 0;
   
-  const missedHw = (student.homework ?? 1) < 0 ? -(student.homework ?? 1) : 0;
-  const hwPercentage = Math.max(0, Math.round((100 - missedHw * 20) * 10) / 10);
+  const hwVal = student.homework ?? 1;
+  const hwPercentage = hwVal < 0 ? Math.max(0, Math.round((100 + hwVal * 20) * 10) / 10) : (hwVal === 1 ? 100 : hwVal);
+  const missedHw = hwVal < 0 ? -hwVal : 0;
 
   const getUrgencyColor = (val: string) => {
     switch (val) {
@@ -652,13 +653,13 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>INGLIZ TILI</span>
-                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#4f46e5' }}>{student.engScore || 0}/15</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#4f46e5' }}>{student.engScore !== null && student.engScore !== undefined ? `${student.engScore}/15` : '—/15'}</span>
                   </div>
                   <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${engPercentage}%`, height: '100%', background: '#4f46e5', borderRadius: '4px' }} />
+                    <div style={{ width: `${engPercentage ?? 0}%`, height: '100%', background: '#4f46e5', borderRadius: '4px' }} />
                   </div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginTop: '0.5rem', textAlign: 'right' }}>
-                    {engPercentage}% progress
+                    {engPercentage !== null ? `${engPercentage}% progress` : '— progress'}
                   </div>
                 </div>
 
@@ -666,13 +667,13 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>MATEMATIKA</span>
-                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#0d9488' }}>{student.mathScore || 0}/15</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#0d9488' }}>{student.mathScore !== null && student.mathScore !== undefined ? `${student.mathScore}/15` : '—/15'}</span>
                   </div>
                   <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${mathPercentage}%`, height: '100%', background: '#0d9488', borderRadius: '4px' }} />
+                    <div style={{ width: `${mathPercentage ?? 0}%`, height: '100%', background: '#0d9488', borderRadius: '4px' }} />
                   </div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginTop: '0.5rem', textAlign: 'right' }}>
-                    {mathPercentage}% progress
+                    {mathPercentage !== null ? `${mathPercentage}% progress` : '— progress'}
                   </div>
                 </div>
 
@@ -680,15 +681,15 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>DAVOMAT (ATTENDANCE)</span>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 900, color: absences > 0 ? '#b91c1c' : '#166534' }}>
-                      {absences === 0 ? "100%" : `-${absences} dars`}
+                    <span style={{ fontSize: '0.9rem', fontWeight: 900, color: attPercentage < 100 ? '#b91c1c' : '#166534' }}>
+                      {attVal < 0 ? `-${absences} dars` : `${attPercentage}%`}
                     </span>
                   </div>
                   <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${attPercentage}%`, height: '100%', background: '#f97316', borderRadius: '4px' }} />
                   </div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{absences > 0 ? `${absences} ta dars qoldirilgan` : "Barcha darslarda qatnashgan"}</span>
+                    <span>{attVal < 0 ? `${absences} ta dars qoldirilgan` : (attPercentage === 100 ? "Barcha darslarda qatnashgan" : "Darslar qoldirilgan")}</span>
                     <span>{attPercentage}%</span>
                   </div>
                 </div>
@@ -697,15 +698,15 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>UY VAZIFALARI (HOMEWORK)</span>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 900, color: missedHw > 0 ? '#b91c1c' : '#166534' }}>
-                      {missedHw === 0 ? "100%" : `-${missedHw} ta`}
+                    <span style={{ fontSize: '0.9rem', fontWeight: 900, color: hwPercentage < 100 ? '#b91c1c' : '#166534' }}>
+                      {hwVal < 0 ? `-${missedHw} ta` : `${hwPercentage}%`}
                     </span>
                   </div>
                   <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${hwPercentage}%`, height: '100%', background: '#15803d', borderRadius: '4px' }} />
                   </div>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{missedHw > 0 ? `${missedHw} ta vazifa bajarilmagan` : "Barcha vazifalar bajarilgan"}</span>
+                    <span>{hwVal < 0 ? `${missedHw} ta vazifa bajarilmagan` : (hwPercentage === 100 ? "Barcha vazifalar bajarilgan" : "Bajarilmagan vazifalar mavjud")}</span>
                     <span>{hwPercentage}%</span>
                   </div>
                 </div>

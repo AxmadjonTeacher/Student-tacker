@@ -1,177 +1,133 @@
-# Student Progress Tracker - UI/UX Design Specification
-This document serves as the comprehensive design system and visual style guide for the **Al-Xorazmiy School Student Progress Tracker** application. It details the theme variables, color tokens, typography, component styling, animations, and layouts to ensure all future UI updates match the existing aesthetics.
+# Student Progress Tracker - Premium UI/UX Design Specification
+
+This document serves as the comprehensive design system and visual style guide for the **Al-Xorazmiy School Student Progress Tracker** application. It details the theme variables, color tokens, typography, component styling, animations, and layouts. The core design language is rooted in **Refined Glassmorphism** and **High-Contrast Modernism**, aiming for a premium, lightweight, and highly intentional aesthetic.
 
 ---
 
 ## 1. Design Tokens & CSS Variables
 
-The application uses custom CSS variables to support dynamic themes (Light and Dark Mode). 
+The application uses custom CSS variables to support dynamic themes (Light and Dark Mode), leaning heavily into translucent surfaces, microscopic borders, and deep, multi-layered shadows.
 
-### 1.1 Color Tokens
+### 1.1 Color Tokens & Hierarchy
 
 | Variable | Light Theme | Dark Theme | Purpose / Usage |
 | :--- | :--- | :--- | :--- |
-| `--bg-main` | `#f9f8f3` (Creamy beige) | `#0c0c0e` (Deep charcoal) | Main application background |
-| `--bg-sidebar` | `#f8fafc` (Off-white) | `#121214` (Dark charcoal) | Left sidebar menu container |
-| `--bg-card` | `#ffffff` | `#151518` (Elevation level 1) | Cards, tables, modals background |
-| `--bg-card-hover` | `#f8fafc` | `#1f1f23` (Elevation level 2) | Row and card interactive hover background |
-| `--border-color` | `#e5e7eb` | `#1e1e22` | Component borders, separators, cell borders |
-| `--text-primary` | `#1a1a1a` | `#ffffff` | Primary text and headings |
-| `--text-secondary` | `#6b7280` | `#8f8f98` | Secondary/metadata text and labels |
-| `--accent-primary` | `#0d9488` (Teal) | `#8b5cf6` (Purple) | Primary action items, active states |
-| `--accent-hover` | `#0f766e` | `#a78bfa` | Hover state for primary items |
-| `--accent-gradient`| `linear-gradient(135deg, #0d9488, #0f766e)` | `linear-gradient(135deg, #7c3aed, #4f46e5)` (Purple/Indigo) | Primary buttons, headers active states |
-| `--marquee-bg` | `linear-gradient(160deg, #edfafa, #f0fdfa)` | `linear-gradient(160deg, #1e1b4b, #0c0c0e)` | Custom banner/infobox backgrounds |
+| `--bg-main` | `#f6f8fa` (Cool off-white) | `#050505` (Pitch black/Deep void) | Main application canvas |
+| `--bg-sidebar` | `rgba(255, 255, 255, 0.4)` | `rgba(15, 15, 15, 0.4)` | Sidebar container (Requires backdrop blur) |
+| `--bg-card` | `rgba(255, 255, 255, 0.7)` | `rgba(24, 24, 27, 0.65)` | Cards, tables, and modals |
+| `--bg-card-hover` | `rgba(255, 255, 255, 0.95)` | `rgba(39, 39, 42, 0.8)` | Row and card interactive hover background |
+| `--border-subtle` | `rgba(0, 0, 0, 0.06)` | `rgba(255, 255, 255, 0.08)` | Micro-borders for structure, replacing heavy solid lines |
+| `--border-highlight`| `rgba(255, 255, 255, 0.6)` | `rgba(255, 255, 255, 0.12)` | Top/inner borders to simulate light reflection |
+| `--text-primary` | `#0f172a` (Deep slate) | `#ffffff` (Pure white) | Primary text and headings |
+| `--text-secondary` | `#64748b` | `#a1a1aa` | Secondary/metadata text and labels |
+| `--accent-hero` | `#000000` (Stark black) | `#6366f1` (Vibrant Indigo) | The single hero accent color |
+| `--accent-hover` | `#333333` | `#818cf8` | Hover state for primary items |
+| `--accent-glow` | `rgba(0, 0, 0, 0.15)` | `rgba(99, 102, 241, 0.4)` | For active states and button shadows |
 
-### 1.2 Layout & Shadow Tokens
+### 1.2 Depth, Elevation & Texture Tokens
 
-* **Shadow (`--glass-shadow`)**:
-  * *Light*: `0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)`
-  * *Dark*: `0 4px 10px rgba(0, 0, 0, 0.4)`
-* **Backdrop Blur (`--backdrop-blur`)**: `blur(12px)` (or `blur(16px)` on sticky headers)
-* **Fonts**:
-  * *Primary System*: `'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif`
-  * *Handwritten*: `'Caveat', cursive, sans-serif` (utilized for signatures and hand-drawn accents)
+* **Shadows (`--glass-shadow-soft`)**:
+  * *Light*: `0 12px 32px -8px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.04)`
+  * *Dark*: `0 24px 48px -12px rgba(0, 0, 0, 0.4), 0 12px 24px -8px rgba(0, 0, 0, 0.2)`
+* **Inner Shadows (`--inner-inset`)** (Used for pressed states or segmented control tracks):
+  * *Light*: `inset 0 2px 4px rgba(0, 0, 0, 0.06)`
+  * *Dark*: `inset 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)`
+* **Backdrop Blur (`--backdrop-blur-md`)**: `blur(24px)` (Used extensively on cards, modals, and headers).
+* **Typography**:
+  * *Primary System*: `'Inter', -apple-system, BlinkMacSystemFont, sans-serif`
+  * *Tracking (Letter Spacing)*: Headings must use `-0.03em` for a tighter, premium feel.
 
 ---
 
 ## 2. Component Design & Styling Rules
 
-### 2.1 Buttons
+### 2.1 Buttons & Controls
 
-#### Primary Action Button (`.btn-primary`)
-* **Styling**: `background: var(--accent-gradient)`, `color: #ffffff`, `font-weight: 800`, `border-radius: 8px` (modals) or `9999px` (dialogs).
-* **Hover Interaction**: Triggers subtle scale/translate effect (`transform: translateY(-1px)`) and glows with shadow (`box-shadow: 0 4px 12px rgba(accent-color, 0.2)`).
-* **Code Sample**:
-```tsx
-<button style={{
-  background: 'var(--accent-gradient)',
-  color: '#ffffff',
-  border: 'none',
-  borderRadius: '12px',
-  padding: '0.9rem',
-  fontWeight: 800,
-  boxShadow: isDarkMode ? '0 4px 12px rgba(139, 92, 246, 0.2)' : '0 4px 12px rgba(13, 148, 136, 0.2)',
-  transition: 'all 0.2s ease',
-  cursor: 'pointer'
-}}>
-  BUTTON TEXT
-</button>
-```
+#### Primary Hero Button (`.btn-primary`)
+* **Styling**: `background: var(--accent-hero)`, `color: #ffffff` (Light) or `#ffffff` (Dark), `font-weight: 600`, `letter-spacing: -0.01em`.
+* **Shape**: Pill-shaped (`border-radius: 9999px`) for a soft, tactile feel.
+* **Elevation**: `box-shadow: 0 8px 16px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2)`. (The inset creates a crisp 3D top-edge).
+* **Hover Interaction**: Smooth scale (`transform: scale(1.02) translateY(-1px)`) with expanded shadow spread.
 
-#### Secondary Cancel/Neutral Button
-* **Styling**: Transparent or subtle grey background, explicit border `1.5px solid var(--border-color)`, `color: var(--text-secondary)`, `border-radius: 9999px`.
-* **Hover Interaction**: Backed by `var(--bg-card-hover)`, changes text to `var(--text-primary)`.
+#### Secondary / Icon Buttons
+* **Styling**: Translucent background (`rgba(0,0,0,0.03)` / `rgba(255,255,255,0.05)`), `color: var(--text-secondary)`, `border-radius: 50%` or `9999px`.
+* **Border**: Explicitly avoid solid 1px borders. Use `border: 1px solid var(--border-subtle)` paired with a soft inner shadow.
+* **Hover Interaction**: Background shifts to `var(--text-primary)` with low opacity (e.g., `8%`). Icon color shifts to `var(--text-primary)`.
 
-#### Round Icon Buttons (e.g. Edit, Delete, Assign)
-* **Design**: Standardized circular shape (`width: 36px`, `height: 36px`, `border-radius: 50%`).
-* **Edit Button**: Blue color scheme (`background: #eff6ff`, `color: #2563eb`, `border: 1px solid #bfdbfe`).
-* **Users Assign Button**: Green color scheme (`background: #f0fdf4`, `color: #16a34a`, `border: 1px solid #bbf7d0`).
-* **Delete Button**: Red color scheme (`background: #fee2e2`, `color: #b91c1c`, `border: 1px solid #fca5a5`).
-* **Interaction**: Scale up to `1.1` on hover and deepen background color.
+#### Segmented Controls (Tabs)
+* **Track**: Deep inset shadow (`var(--inner-inset)`), rounded pill container (`9999px`).
+* **Active Indicator**: Floating pill inside the track. White (Light) or Dark Gray (Dark) background, distinct drop shadow to make it "pop" off the track, `transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)`.
 
 ---
 
-### 2.2 Badges & Status Indicators
+### 2.2 Layout Containers & Data Lists
 
-The app maps student outcomes using specific badges:
+#### Cards & Modals (The Glass Canvas)
+* **Background**: `var(--bg-card)` combined with `backdrop-filter: var(--backdrop-blur-md)`.
+* **Borders**: Micro-borders to define edges without adding visual weight. `border: 1px solid var(--border-subtle)`.
+* **Highlight Edge**: Add a top highlight to simulate glass thickness: `box-shadow: inset 0 1px 0 var(--border-highlight)`.
+* **Radii**: Generous rounding. `24px` to `32px` for main modals/containers. `16px` for inner elements.
+* **Spatial Contrast (Padding)**: Extreme padding is required. Minimum `24px` for internal card padding, `32px` or `40px` for layout sections. Let the data breathe.
 
-#### 1. General Alert Badges
-* **Success**: `background: rgba(18, 159, 135, 0.1)`, `color: #0f766e`, border-color `rgba(18, 159, 135, 0.2)`.
-* **Warning**: `background: rgba(245, 158, 11, 0.1)`, `color: #b45309`, border-color `rgba(245, 158, 11, 0.2)`.
-* **Info**: `background: rgba(14, 165, 233, 0.1)`, `color: #0369a1`, border-color `rgba(14, 165, 233, 0.2)`.
-
-#### 2. Progress Improvement Badge
-* Displays positive level gains (e.g. `+1` or `+2` levels).
-* **Style**: Light teal background (`rgba(13, 148, 136, 0.12)`), text color `var(--accent-hover)`, pill layout (`border-radius: 9999px`), inline icon `ArrowRight` rotated `-45deg`.
-
-#### 3. ID Wrong Badge (`ID Xato`)
-* Indicates database sync exceptions.
-* **Style**: `background: rgba(239, 68, 68, 0.15)`, `color: #ef4444`, `border: 1px solid rgba(239, 68, 68, 0.3)`, `border-radius: 6px`. Contains a small red pulsing circular dot.
-
-#### 4. Summer Plan Badge (`☀️ Yozgi Reja`)
-* Highlights summer projection paths.
-* **Style**: Orange gradient (`background: linear-gradient(135deg, #fff7ed, #ffedd5)`), `color: #ea580c`, `border: 1px dashed #fdba74`, `border-radius: 12px`, strong font weight (`850`).
+#### Data Lists & Rows
+* **Hover Effect**: Entire row shifts background to `var(--bg-card-hover)` with a slight horizontal translate `transform: translateX(4px)`.
+* **Separators**: Avoid harsh row borders. Use ultra-faint lines `border-bottom: 1px solid var(--border-subtle)` or rely purely on whitespace.
 
 ---
 
-### 2.3 Interactive Modals & Dialogs
+### 2.3 Badges & Micro-Aesthetics
 
-* **Overlay**: Fixed screen fill, `background: rgba(15, 23, 42, 0.4)` (with a dark overlay style in dark mode `rgba(0, 0, 0, 0.8)`), backdrop blur `blur(8px)`.
-* **Content Container**: Rounded boundaries (`border-radius: 24px`), bordered `1.5px solid var(--border-color)`, drop shadow `var(--glass-shadow)`, scale in animation.
-* **Inputs/Selects**: Rounded corners (`border-radius: 12px`), background `var(--bg-card-hover)`, border `1.5px solid var(--border-color)`.
-* **Focus State**: border changes to `1.5px solid var(--accent-primary)`, background to `var(--bg-card)`, and is surrounded by a drop outline.
+Badges must feel like floating tags, not heavy stickers.
 
----
+* **Style Formula**: Extremely low opacity background (`8%` to `12%` of the target color) combined with highly saturated text for contrast.
+* **Borders**: Zero borders, or a 1px border matching the background opacity.
+* **Shape**: Pill-shaped (`border-radius: 9999px`).
+* **Typography**: Smaller font size (`0.75rem`), bold weight (`600` or `700`), slight uppercase tracking (`letter-spacing: 0.05em`) for categorical tags.
 
-### 2.4 Floating Banners
-
-#### Unsaved Changes Banner
-* Used when changes are staged inline in a data cell.
-* **Style**: Fixed at the bottom center (`bottom: 80px`), glassmorphic backdrop (`backdrop-filter: blur(16px)`), distinct pink theme border (`border: 1.5px solid #db2777`), `border-radius: 24px`.
-* **Pulsing Indicator**: A pink circle dot animations in a infinite loop:
-```css
-@keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(219, 39, 119, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(219, 39, 119, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(219, 39, 119, 0); }
-}
-```
+#### Specific System Badges
+* **Success**: `background: rgba(16, 185, 129, 0.1)`, `color: #059669` (Light) / `#34d399` (Dark).
+* **Warning**: `background: rgba(245, 158, 11, 0.1)`, `color: #d97706` (Light) / `#fbbf24` (Dark).
+* **Error / ID Wrong**: `background: rgba(239, 68, 68, 0.1)`, `color: #dc2626` (Light) / `#f87171` (Dark).
 
 ---
 
-## 3. Layout Grid & Structure
+## 3. Interactive Modals & Dialogs
 
-### 3.1 App Layout
-* **Desktop Structure**:
-  * Responsive layout maximum width: `1200px`.
-  * Desktop sidebar features vertical navigation icons, while dashboard utilizes responsive charts.
-  * Standard student tables are grouped visually by teacher name (using custom panels with `border-radius: 16px`, spacing margin `2rem`).
-
-### 3.2 Responsive Adaptations (Mobile Screen <= 768px)
-* **Padding**: Standard container padding falls back to `0.75rem`.
-* **Headers**: Left and right side splits collapse into stacked grids or toggle drawers.
-* **Search Bar**: Transitions into a full-width search input nested in a sticky header container.
-* **Tab Selectors**: Sidebar tabs hide, giving priority to a horizontal sliding class selector pill row with a smooth right-hand fade mask (`mask-image: linear-gradient(to right, black 85%, transparent 100%)`).
+* **The Overlay**: True depth requires dimming the background. Use `background: rgba(0, 0, 0, 0.4)` (Light) or `rgba(0, 0, 0, 0.7)` (Dark) paired with `backdrop-filter: blur(8px)`.
+* **The Modal Body**: Must feel like a floating pane of glass.
+  * `background: var(--bg-card)`
+  * `backdrop-filter: var(--backdrop-blur-md)`
+  * `border: 1px solid var(--border-subtle)`
+  * `box-shadow: var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)`
+  * `border-radius: 32px`
+* **Entrance Animation**: Elegant scale-in and fade. Spring-like physics.
 
 ---
 
 ## 4. Animation Keyframes
 
 ```css
-/* Modals / Overlays Fade In */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Premium Spring Entrance */
+@keyframes premiumScaleIn {
+  0% { transform: scale(0.92) translateY(16px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* Modals Slide Up */
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-/* Popups / Dialog Scale In */
-@keyframes scaleIn {
-  from { transform: scale(0.95) translateY(10px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
-}
-
-/* Loader Spins */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Subtle Floating Pulse for Indicators */
+@keyframes softPulse {
+  0% { box-shadow: 0 0 0 0 rgba(var(--accent-hero-rgb), 0.4); }
+  70% { box-shadow: 0 0 0 12px rgba(var(--accent-hero-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--accent-hero-rgb), 0); }
 }
 ```
 
 ---
 
-## 5. UI/UX Style Checklist for Code Modifications
+## 5. UI/UX Style Checklist (Premium Upgrade)
 
-When adding/modifying UI features, cross-reference this list:
-- [ ] **Dynamic Accents**: Ensure colors adapt correctly when theme changes (`#0d9488` teal on Light Mode vs `#8b5cf6` purple on Dark Mode).
-- [ ] **Typography**: Headings must be clean with negative letter spacing (`letter-spacing: -0.02em` or `-0.03em`).
-- [ ] **Animations**: All modals must utilize `fadeIn` on the overlay and `scaleIn` or `slideUp` on the content wrapper.
-- [ ] **Tappable Regions**: For touch devices, ensure elements have `-webkit-tap-highlight-color: transparent` and adequate spacing.
-- [ ] **Inputs & Controls**: Do not use hard borders; use `var(--border-color)` (1.5px thick) with subtle border radius (`12px` or `9999px`).
-- [ ] **Interactive Hover States**: All buttons, cards, and list rows must have hover definitions (`transform` shifts or background shifts) with `transition: all 0.2s ease` or similar.
+Before shipping UI changes, verify against the following:
+- [ ] **Border Fatigue Check**: Are there heavy solid borders? Replace with `var(--border-subtle)` or remove them entirely using layout spacing.
+- [ ] **Glass Reflection**: Do elevated elements (modals, cards) have an inner top shadow simulating a light reflection (`inset 0 1px 0`)?
+- [ ] **Spatial Generosity**: Is there at least `24px` to `32px` of padding inside primary containers? Does the typography have room to breathe?
+- [ ] **Contrast Hierarchy**: Are secondary text items appropriately dimmed (`var(--text-secondary)`) so the primary data points stand out?
+- [ ] **Tactile Interactions**: Do interactive elements (buttons, rows) provide smooth, physics-based feedback on hover (`transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)`)?

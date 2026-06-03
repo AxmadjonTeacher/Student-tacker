@@ -24,8 +24,8 @@ export interface Student {
   englishGrandTests?: { name: string; score: number | null }[];
   englishTeacherOrder?: number;
   // ALL subject specific fields
-  engScore?: number;
-  mathScore?: number;
+  engScore?: number | null;
+  mathScore?: number | null;
   attendance?: number;
   homework?: number;
   isDeleted?: boolean;
@@ -49,7 +49,7 @@ export interface NewsEvent {
   type?: 'news' | 'event' | 'reminder';
 }
 
-export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD' | 'PRIMARY' | 'GRANT';
+export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD' | 'PRIMARY' | 'GRANT' | 'ENG_MATH';
 
 export interface Teacher {
   id: number;
@@ -58,6 +58,7 @@ export interface Teacher {
   created_at?: string;
   login_id?: string;
   passcode?: string;
+  phone?: string;
 }
 
 export interface DailyRecord {

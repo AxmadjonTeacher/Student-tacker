@@ -229,8 +229,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       weekRecords.forEach(sw => {
         const val = sw.attendance ?? 1;
-        const absences = val < 0 ? -val : 0;
-        const attPercent = Math.max(0, 100 - absences * 16.67);
+        const attPercent = val < 0 ? Math.max(0, 100 + val * 16.67) : (val === 1 ? 100 : val);
         attendanceSum += attPercent;
         count++;
       });

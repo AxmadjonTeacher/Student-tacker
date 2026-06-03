@@ -334,67 +334,69 @@ const Header: React.FC<HeaderProps> = ({
           marginTop: '0.5rem',
           marginBottom: '1rem'
         }}>
-          <div className="class-selector" style={{ 
-            display: 'flex', 
-            gap: '0.25rem', 
-            background: 'var(--bg-card)', 
-            padding: '0.5rem', 
-            borderRadius: '9999px',
-            boxShadow: 'var(--glass-shadow)',
-            border: '1px solid var(--border-color)',
-            overflowX: 'auto',
-            flex: '1 1 auto',
-            maxWidth: '100%'
-          }}>
-            {classes.map(cls => {
-              const isActive = activeClass === cls;
-              
-              const getSubjectColor = () => {
-                return 'var(--accent-primary)'; // Dynamic theme-based color
-              };
-              const subjectColor = getSubjectColor();
+          {activeSubject !== 'ENG_MATH' && (
+            <div className="class-selector" style={{ 
+              display: 'flex', 
+              gap: '0.25rem', 
+              background: 'var(--bg-card)', 
+              padding: '0.5rem', 
+              borderRadius: '9999px',
+              boxShadow: 'var(--glass-shadow)',
+              border: '1px solid var(--border-color)',
+              overflowX: 'auto',
+              flex: '1 1 auto',
+              maxWidth: '100%'
+            }}>
+              {classes.map(cls => {
+                const isActive = activeClass === cls;
+                
+                const getSubjectColor = () => {
+                  return 'var(--accent-primary)'; // Dynamic theme-based color
+                };
+                const subjectColor = getSubjectColor();
 
-              return (
-                <button
-                  key={cls}
-                  onClick={() => onClassSelect(cls)}
-                  className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    background: isActive ? subjectColor : 'var(--bg-card)',
-                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                    border: isActive ? `1px solid ${subjectColor}` : '1px solid var(--border-color)',
-                    boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : '0 1px 2px rgba(0,0,0,0.02)',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '9999px',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '0.9rem',
-                    transition: 'all 0.2s ease',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  {cls}
-                  <span style={{
-                    background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-card-hover)',
-                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.7rem',
-                    fontWeight: 700
-                  }}>
-                    {classCounts[cls] || 0}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={cls}
+                    onClick={() => onClassSelect(cls)}
+                    className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      background: isActive ? subjectColor : 'var(--bg-card)',
+                      color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                      border: isActive ? `1px solid ${subjectColor}` : '1px solid var(--border-color)',
+                      boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : '0 1px 2px rgba(0,0,0,0.02)',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '9999px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {cls}
+                    <span style={{
+                      background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-card-hover)',
+                      color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.7rem',
+                      fontWeight: 700
+                    }}>
+                      {classCounts[cls] || 0}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
     
           <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
             <div className="mobile-sticky-search" style={{ position: 'relative', width: '320px' }}>

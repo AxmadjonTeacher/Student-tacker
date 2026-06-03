@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   Home, Search, BarChart2, Settings, LogOut,
-  BookOpen, Binary, Activity, ShieldAlert, Bell, Users, Trash2, GraduationCap,
+  BookOpen, Activity, ShieldAlert, Bell, Users, Trash2, GraduationCap,
   PanelLeftClose, Shield, Sun, Moon, Award
 } from 'lucide-react';
 import Header from './components/Header';
@@ -738,8 +738,8 @@ function App() {
               finalUpsertedWeeks.push({
                 student_id: s.id,
                 week: selectedWeek,
-                eng_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score ?? s.engScore ?? 0),
-                math_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score ?? s.mathScore ?? 0),
+                eng_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.engScore !== undefined ? newS.engScore : (existingWeekRecord?.eng_score !== undefined ? existingWeekRecord.eng_score : (s.engScore !== undefined ? s.engScore : null)),
+                math_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.mathScore !== undefined ? newS.mathScore : (existingWeekRecord?.math_score !== undefined ? existingWeekRecord.math_score : (s.mathScore !== undefined ? s.mathScore : null)),
                 attendance: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.attendance !== undefined ? newS.attendance : (existingWeekRecord?.attendance ?? s.attendance ?? 1),
                 homework: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') && newS.homework !== undefined ? newS.homework : (existingWeekRecord?.homework ?? s.homework ?? 1),
                 starting_level: activeSubject === 'ENG' ? (newS.startingLevel || existingWeekRecord?.starting_level || s.startingLevel || 'Level 1') : (existingWeekRecord?.starting_level || s.startingLevel || 'Level 1'),
@@ -795,8 +795,8 @@ function App() {
                 finalUpsertedWeeks.push({
                   student_id: matchedDb.id,
                   week: selectedWeek,
-                  eng_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.engScore ?? 0) : 0,
-                  math_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.mathScore ?? 0) : 0,
+                  eng_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.engScore !== undefined ? newS.engScore : null) : null,
+                  math_score: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.mathScore !== undefined ? newS.mathScore : null) : null,
                   attendance: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.attendance ?? 1) : 1,
                   homework: (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (newS?.homework ?? 1) : 1,
                   starting_level: newS?.startingLevel || 'Level 1',
@@ -913,8 +913,8 @@ function App() {
           const weekPayload = {
             student_id: dbStudent.id,
             week: selectedWeek,
-            eng_score: dbStudent.engScore ?? 0,
-            math_score: dbStudent.mathScore ?? 0,
+            eng_score: dbStudent.engScore !== undefined ? dbStudent.engScore : null,
+            math_score: dbStudent.mathScore !== undefined ? dbStudent.mathScore : null,
             attendance: dbStudent.attendance ?? 1,
             homework: dbStudent.homework ?? 1,
             starting_level: dbStudent.startingLevel || 'Level 1',
@@ -951,8 +951,8 @@ function App() {
       if (s.id === studentId) {
         return {
           ...s,
-          mathScore: isMath ? scorePercent : (s.mathScore ?? 0),
-          engScore: !isMath ? scorePercent : (s.engScore ?? 0)
+          mathScore: isMath ? scorePercent : (s.mathScore !== undefined ? s.mathScore : null),
+          engScore: !isMath ? scorePercent : (s.engScore !== undefined ? s.engScore : null)
         };
       }
       return s;
@@ -965,16 +965,16 @@ function App() {
       if (idx !== -1) {
         updated[idx] = {
           ...updated[idx],
-          math_score: isMath ? scorePercent : (updated[idx].math_score ?? 0),
-          eng_score: !isMath ? scorePercent : (updated[idx].eng_score ?? 0)
+          math_score: isMath ? scorePercent : (updated[idx].math_score !== undefined ? updated[idx].math_score : null),
+          eng_score: !isMath ? scorePercent : (updated[idx].eng_score !== undefined ? updated[idx].eng_score : null)
         };
       } else {
         updated.push({
           id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
           student_id: studentId,
           week: targetWeek,
-          eng_score: isMath ? 0 : scorePercent,
-          math_score: isMath ? scorePercent : 0,
+          eng_score: isMath ? null : scorePercent,
+          math_score: isMath ? scorePercent : null,
           attendance: 1,
           homework: 1,
           is_deleted: false,
@@ -1013,8 +1013,8 @@ function App() {
         const newDbRec = {
           student_id: studentId,
           week: targetWeek,
-          eng_score: isMath ? 0 : scorePercent,
-          math_score: isMath ? scorePercent : 0,
+          eng_score: isMath ? null : scorePercent,
+          math_score: isMath ? scorePercent : null,
           attendance: 1,
           homework: 1,
           is_deleted: false
@@ -1028,11 +1028,11 @@ function App() {
     }
   };
 
-  const handleAddTeacher = async (name: string, subject: 'ENG' | 'MATH') => {
+  const handleAddTeacher = async (name: string, subject: 'ENG' | 'MATH', phone?: string) => {
     try {
       const { data, error } = await supabase
         .from('teachers')
-        .insert([{ name, subject }])
+        .insert([{ name, subject, phone }])
         .select();
       if (error) throw error;
       if (data && data.length > 0) {
@@ -1067,15 +1067,15 @@ function App() {
     );
   };
 
-  const handleEditTeacher = async (id: number, newName: string) => {
+  const handleEditTeacher = async (id: number, newName: string, phone?: string) => {
     try {
       const { error } = await supabase
         .from('teachers')
-        .update({ name: newName })
+        .update({ name: newName, phone })
         .eq('id', id);
       if (error) throw error;
-      setTeachers(prev => prev.map(t => t.id === id ? { ...t, name: newName } : t));
-      showAlert("Muvaffaqiyatli", "O'qituvchi ismi muvaffaqiyatli tahrirlandi!");
+      setTeachers(prev => prev.map(t => t.id === id ? { ...t, name: newName, phone } : t));
+      showAlert("Muvaffaqiyatli", "O'qituvchi muvaffaqiyatli tahrirlandi!");
     } catch (err: any) {
       console.error('Failed to update teacher:', err);
       showAlert("Xatolik", "O'qituvchini tahrirlashda xatolik yuz berdi: " + err.message);
@@ -1407,8 +1407,8 @@ function App() {
           mathStartingLevel = hist.math_starting_level ?? student.mathStartingLevel;
           mathCurrentLevel = hist.math_current_level ?? student.mathCurrentLevel;
           mathGrandTests = hist.math_grand_tests ?? student.mathGrandTests;
-          engScore = hist.eng_score ?? student.engScore;
-          mathScore = hist.math_score ?? student.mathScore;
+          engScore = hist.eng_score !== undefined ? hist.eng_score : student.engScore;
+          mathScore = hist.math_score !== undefined ? hist.math_score : student.mathScore;
           attendance = hist.attendance ?? student.attendance;
           homework = hist.homework ?? student.homework;
         } else {
@@ -1418,8 +1418,8 @@ function App() {
           mathStartingLevel = student.mathStartingLevel || 'Level 1';
           mathCurrentLevel = student.mathCurrentLevel || 'Level 1';
           mathGrandTests = student.mathGrandTests || [];
-          engScore = student.engScore ?? 0;
-          mathScore = student.mathScore ?? 0;
+          engScore = student.engScore !== undefined ? student.engScore : null;
+          mathScore = student.mathScore !== undefined ? student.mathScore : null;
           attendance = student.attendance ?? 1;
           homework = student.homework ?? 1;
         }
@@ -1430,8 +1430,8 @@ function App() {
         mathStartingLevel = student.mathStartingLevel || 'Level 1';
         mathCurrentLevel = student.mathCurrentLevel || 'Level 1';
         mathGrandTests = student.mathGrandTests || [];
-        engScore = student.engScore ?? 0;
-        mathScore = student.mathScore ?? 0;
+        engScore = student.engScore !== undefined ? student.engScore : null;
+        mathScore = student.mathScore !== undefined ? student.mathScore : null;
         attendance = student.attendance ?? 1;
         homework = student.homework ?? 1;
       }
@@ -1479,11 +1479,11 @@ function App() {
   const filteredStudents = useMemo(() => {
     return projectedStudents.filter(s => {
       const group = getClassGroup(s.className.toUpperCase());
-      const matchesClass = activeClass === 'Barchasi' ? true : group === activeClass;
+      const matchesClass = (activeClass === 'Barchasi' || activeSubject === 'ENG_MATH') ? true : group === activeClass;
       const matchesSearch = `${s.name} ${s.surname}`.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesClass && matchesSearch;
     });
-  }, [projectedStudents, activeClass, searchTerm]);
+  }, [projectedStudents, activeClass, searchTerm, activeSubject]);
 
   const handleUpdateProgress = async (
     studentId: string, 
@@ -1493,8 +1493,8 @@ function App() {
     newName?: string,
     newSurname?: string,
     newClassName?: string,
-    engScore?: number,
-    mathScore?: number,
+    engScore?: number | null,
+    mathScore?: number | null,
     attendance?: number,
     homework?: number,
     parentPhone?: string,
@@ -1575,8 +1575,8 @@ function App() {
       const weekPayload = {
         student_id: studentId,
         week: selectedWeek,
-        eng_score: engScore !== undefined ? engScore : (existing?.eng_score ?? baseStudent?.engScore ?? 0),
-        math_score: mathScore !== undefined ? mathScore : (existing?.math_score ?? baseStudent?.mathScore ?? 0),
+        eng_score: engScore !== undefined ? engScore : (existing?.eng_score !== undefined ? existing.eng_score : (baseStudent?.engScore !== undefined ? baseStudent.engScore : null)),
+        math_score: mathScore !== undefined ? mathScore : (existing?.math_score !== undefined ? existing.math_score : (baseStudent?.mathScore !== undefined ? baseStudent.mathScore : null)),
         attendance: attendance !== undefined ? attendance : (existing?.attendance ?? baseStudent?.attendance ?? 1),
         homework: homework !== undefined ? homework : (existing?.homework ?? baseStudent?.homework ?? 1),
         starting_level: targetSubject === 'ENG' ? startingLevel : (existing?.starting_level ?? baseStudent?.startingLevel ?? 'Level 1'),
@@ -2014,8 +2014,8 @@ function App() {
           const snapshotPayload = activeStudentsList.map(s => ({
             student_id: s.id,
             week: weekName,
-            eng_score: 0,
-            math_score: 0,
+            eng_score: null,
+            math_score: null,
             attendance: 1,
             homework: 1,
             starting_level: s.startingLevel || 'Level 1',
@@ -2042,7 +2042,7 @@ function App() {
           }
 
           setSelectedWeek(weekName);
-          showAlert("Muvaffaqiyatli", `"${weekName}" muvaffaqiyatli boshlandi! Yangi hafta barcha o'quvchilar uchun 0 ball bilan ochildi.`);
+          showAlert("Muvaffaqiyatli", `"${weekName}" muvaffaqiyatli boshlandi! Yangi hafta barcha o'quvchilar uchun bo'sh ball bilan ochildi.`);
         } catch (err) {
           console.error("Yangi haftani boshlashda xatolik:", err);
           showAlert("Xatolik", "Haftani arxivlashda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
@@ -2590,7 +2590,6 @@ function App() {
           scrollbarWidth: 'none'
         }}>
           {(() => {
-            const teacherSubject = localStorage.getItem('teacher_subject');
             const rawSidebarGroups = [
               {
                 title: 'Tizim',
@@ -2603,10 +2602,9 @@ function App() {
                 title: 'Fanlar & Tahlil',
                 items: [
                   { id: 'subj_primary', label: 'Boshlang\'ich', icon: GraduationCap, isActive: activeAdminTab === 'home' && activeSubject === 'PRIMARY', action: () => { setActiveAdminTab('home'); setActiveSubject('PRIMARY'); } },
-                  { id: 'subj_eng', label: 'Ingliz tili', icon: BookOpen, isActive: activeAdminTab === 'home' && activeSubject === 'ENG', action: () => { setActiveAdminTab('home'); setActiveSubject('ENG'); } },
-                  { id: 'subj_math', label: 'Matematika', icon: Binary, isActive: activeAdminTab === 'home' && activeSubject === 'MATH', action: () => { setActiveAdminTab('home'); setActiveSubject('MATH'); } },
                   { id: 'subj_grant', label: 'Grant testlar', icon: Award, isActive: activeAdminTab === 'home' && activeSubject === 'GRANT', action: () => { setActiveAdminTab('home'); setActiveSubject('GRANT'); } },
                   { id: 'subj_all', label: 'Haftalik tahlil', icon: Activity, isActive: activeAdminTab === 'home' && activeSubject === 'ALL', action: () => { setActiveAdminTab('home'); setActiveSubject('ALL'); } },
+                  { id: 'subj_eng_math', label: 'Eng/Math', icon: BookOpen, isActive: activeAdminTab === 'home' && activeSubject === 'ENG_MATH', action: () => { setActiveAdminTab('home'); setActiveSubject('ENG_MATH'); } },
                 ]
               },
               {
@@ -2632,9 +2630,7 @@ function App() {
                   return {
                     ...group,
                     items: group.items.filter(item => {
-                      if (item.id === 'subj_all' || item.id === 'subj_grant') return true;
-                      if (teacherSubject === 'ENG' && item.id === 'subj_eng') return true;
-                      if (teacherSubject === 'MATH' && item.id === 'subj_math') return true;
+                      if (item.id === 'subj_all' || item.id === 'subj_grant' || item.id === 'subj_eng_math') return true;
                       return false;
                     })
                   };

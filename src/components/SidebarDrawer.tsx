@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   UploadCloud, X, Download, Trash2, UserPlus, Settings,
   Calendar, AlertCircle, Tag, Image as ImageIcon, Plus, 
-  ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut, Edit3
+  ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut, Edit3, Phone
 } from 'lucide-react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -33,9 +33,9 @@ interface SidebarDrawerProps {
   isInline?: boolean;
   onLogout?: () => void;
   teachers: Teacher[];
-  onAddTeacher: (name: string, subject: 'ENG' | 'MATH') => Promise<void>;
+  onAddTeacher: (name: string, subject: 'ENG' | 'MATH', phone?: string) => Promise<void>;
   onDeleteTeacher: (id: number) => Promise<void>;
-  onEditTeacher: (id: number, newName: string) => Promise<void>;
+  onEditTeacher: (id: number, newName: string, phone?: string) => Promise<void>;
   authRole?: string | null;
   activeTab?: 'settings' | 'news' | 'teachers' | 'trash';
   onTabChange?: (tab: 'settings' | 'news' | 'teachers' | 'trash') => void;
@@ -109,6 +109,18 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   });
 
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
+  const [editTeacherName, setEditTeacherName] = useState('');
+  const [editTeacherPhone, setEditTeacherPhone] = useState('');
+
+  useEffect(() => {
+    if (editTeacher) {
+      setEditTeacherName(editTeacher.name || '');
+      setEditTeacherPhone(editTeacher.phone || '');
+    } else {
+      setEditTeacherName('');
+      setEditTeacherPhone('');
+    }
+  }, [editTeacher]);
 
   const activeTab = propActiveTab !== undefined ? propActiveTab : activeTabState;
   const setActiveTab = onTabChange !== undefined ? onTabChange : setActiveTabState;
@@ -146,6 +158,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   // Teachers Form states
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherSubject, setNewTeacherSubject] = useState<'ENG' | 'MATH'>('ENG');
+  const [newTeacherPhone, setNewTeacherPhone] = useState('');
   const [isAddingTeacher, setIsAddingTeacher] = useState(false);
 
   // Group deleted students by class
@@ -724,10 +737,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     {(() => {
                       let subjects = [
                         { id: 'PRIMARY', title: "Boshlang'ich", desc: "Boshlang'ich sinflar (1-4) uchun progress va tahlillar", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
-                        { id: 'ENG', title: 'Ingliz Tili', desc: 'Sinflarning darajalari va grand testlari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
-                        { id: 'MATH', title: 'Matematika', desc: 'Matematika darajalari va grand testlari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'GRANT', title: 'Grant Testlar', desc: 'Sinflarning darajalari va grant test natijalari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
+                        { id: 'ENG_MATH', title: 'Eng/Math', desc: 'Ingliz tili va Matematika progress va ballari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
                         { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' }
                       ];
                       if (authRole === 'teacher') {
@@ -1767,8 +1779,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   if (!newTeacherName.trim()) return;
                   setIsAddingTeacher(true);
                   try {
-                    await onAddTeacher(newTeacherName.trim(), newTeacherSubject);
+                    await onAddTeacher(newTeacherName.trim(), newTeacherSubject, newTeacherPhone.trim());
                     setNewTeacherName('');
+                    setNewTeacherPhone('');
                   } catch (err) {
                     console.error(err);
                   } finally {
@@ -1801,6 +1814,47 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     placeholder="Ism va familiya..."
                     value={newTeacherName}
                     onChange={(e) => setNewTeacherName(e.target.value)}
+                    disabled={isAddingTeacher}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      border: '1.5px solid var(--border-color)',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-card-hover)',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'var(--accent-primary)';
+                      e.target.style.background = 'var(--bg-card)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'var(--border-color)';
+                      e.target.style.background = 'var(--bg-card-hover)';
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="teacher-phone" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                    TELEFON RAQAMI
+                  </label>
+                  <input
+                    id="teacher-phone"
+                    type="text"
+                    placeholder="+998901234567"
+                    value={newTeacherPhone}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (!val.startsWith('+998') && val !== '' && val !== '+') {
+                        val = '+998' + val.replace(/^\+?998?/, '');
+                      }
+                      setNewTeacherPhone(val);
+                    }}
                     disabled={isAddingTeacher}
                     style={{
                       width: '100%',
@@ -1931,7 +1985,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             boxShadow: 'var(--glass-shadow)'
                           }}
                         >
-                          <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                              <Phone size={10} />
+                              {teacher.phone || <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Telefon kiritilmagan</span>}
+                            </span>
+                          </div>
                           {isAdminMode && (
                             <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                               <button
@@ -2012,7 +2072,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             boxShadow: 'var(--glass-shadow)'
                           }}
                         >
-                          <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                              <Phone size={10} />
+                              {teacher.phone || <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Telefon kiritilmagan</span>}
+                            </span>
+                          </div>
                           {isAdminMode && (
                             <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                               <button
@@ -2468,23 +2534,190 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         onClose={() => setDeleteNewsId(null)}
       />
 
-      <CustomDialog
-        isOpen={editTeacher !== null}
-        type="prompt"
-        title="O'qituvchi ismini tahrirlash"
-        message="O'qituvchining yangi ismini kiriting:"
-        defaultValue={editTeacher?.name || ''}
-        placeholder="Ism..."
-        confirmText="Saqlash"
-        cancelText="Bekor qilish"
-        onConfirm={async (newName) => {
-          if (editTeacher !== null && newName && newName.trim() !== '') {
-            await onEditTeacher(editTeacher.id, newName.trim());
-          }
-          setEditTeacher(null);
-        }}
-        onClose={() => setEditTeacher(null)}
-      />
+      {editTeacher !== null && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.3)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1.5rem',
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '24px',
+            padding: '2rem',
+            width: '100%',
+            maxWidth: '440px',
+            boxShadow: 'var(--glass-shadow)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setEditTeacher(null)}
+              style={{
+                position: 'absolute',
+                top: '1.25rem',
+                right: '1.25rem',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                padding: '0.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+            >
+              <X size={18} />
+            </button>
+
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                O'qituvchi ma'lumotlarini tahrirlash
+              </h3>
+              <p style={{ margin: '0.35rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                Ism va telefon raqamni tahrirlang
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                  Ismi va Familiyasi
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ism va familiya..."
+                  value={editTeacherName}
+                  onChange={(e) => setEditTeacherName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: '1.5px solid var(--border-color)',
+                    borderRadius: '12px',
+                    fontSize: '0.85rem',
+                    fontWeight: 650,
+                    outline: 'none',
+                    color: 'var(--text-primary)',
+                    background: 'var(--bg-card-hover)',
+                    boxSizing: 'border-box',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'var(--accent-primary)';
+                    e.target.style.background = 'var(--bg-card)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'var(--border-color)';
+                    e.target.style.background = 'var(--bg-card-hover)';
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                  Telefon Raqami
+                </label>
+                <input
+                  type="text"
+                  placeholder="+998901234567"
+                  value={editTeacherPhone}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (!val.startsWith('+998') && val !== '' && val !== '+') {
+                      val = '+998' + val.replace(/^\+?998?/, '');
+                    }
+                    setEditTeacherPhone(val);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: '1.5px solid var(--border-color)',
+                    borderRadius: '12px',
+                    fontSize: '0.85rem',
+                    fontWeight: 650,
+                    outline: 'none',
+                    color: 'var(--text-primary)',
+                    background: 'var(--bg-card-hover)',
+                    boxSizing: 'border-box',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'var(--accent-primary)';
+                    e.target.style.background = 'var(--bg-card)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'var(--border-color)';
+                    e.target.style.background = 'var(--bg-card-hover)';
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+              <button
+                onClick={() => setEditTeacher(null)}
+                style={{
+                  flex: 1,
+                  background: 'none',
+                  border: '1.5px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '0.75rem',
+                  fontWeight: 750,
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--text-secondary)'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+              >
+                Bekor qilish
+              </button>
+              <button
+                onClick={async () => {
+                  if (editTeacher !== null && editTeacherName.trim() !== '') {
+                    await onEditTeacher(editTeacher.id, editTeacherName.trim(), editTeacherPhone.trim());
+                    setEditTeacher(null);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  background: 'var(--accent-primary)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '0.75rem',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                Saqlash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

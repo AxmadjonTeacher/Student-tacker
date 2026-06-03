@@ -238,12 +238,12 @@ const GraphModal: React.FC<GraphModalProps> = ({
   const activeThemeColor = 'var(--accent-primary)';
 
   // Calculate percentages for ALL section
-  const engPercent = ((student.engScore || 0) / 15 * 100);
-  const mathPercent = ((student.mathScore || 0) / 15 * 100);
-  const absences = (student.attendance ?? 1) < 0 ? -(student.attendance ?? 1) : 0;
-  const attPercent = Math.max(0, 100 - absences * 16.67);
-  const missedHw = (student.homework ?? 1) < 0 ? -(student.homework ?? 1) : 0;
-  const hwPercent = Math.max(0, 100 - missedHw * 20);
+  const engPercent = student.engScore !== null && student.engScore !== undefined ? (student.engScore / 15 * 100) : 0;
+  const mathPercent = student.mathScore !== null && student.mathScore !== undefined ? (student.mathScore / 15 * 100) : 0;
+  const attVal = student.attendance ?? 1;
+  const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
+  const hwVal = student.homework ?? 1;
+  const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
 
   const barData = [
     {
@@ -272,14 +272,16 @@ const GraphModal: React.FC<GraphModalProps> = ({
   const progressionData = (() => {
     const historicalWeeks = studentWeeks.filter(sw => sw.student_id === student.id);
     const compiledHistorical = historicalWeeks.map(sw => {
-      const absences = sw.attendance < 0 ? -sw.attendance : 0;
-      const attPercent = Math.max(0, 100 - absences * 16.67);
-      const missedHw = sw.homework < 0 ? -sw.homework : 0;
-      const hwPercent = Math.max(0, 100 - missedHw * 20);
+      const attVal = sw.attendance ?? 1;
+      const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
+      const hwVal = sw.homework ?? 1;
+      const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+      const eScore = sw.eng_score !== null && sw.eng_score !== undefined ? Math.round((sw.eng_score / 15 * 100) * 100) / 100 : null;
+      const mScore = sw.math_score !== null && sw.math_score !== undefined ? Math.round((sw.math_score / 15 * 100) * 100) / 100 : null;
       return {
         week: sw.week,
-        engPercent: Math.round(((sw.eng_score || 0) / 15 * 100) * 100) / 100,
-        mathPercent: Math.round(((sw.math_score || 0) / 15 * 100) * 100) / 100,
+        engPercent: eScore,
+        mathPercent: mScore,
         attPercent: Math.round(attPercent * 100) / 100,
         hwPercent: Math.round(hwPercent * 100) / 100
       };

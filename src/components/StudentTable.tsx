@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Student, ActiveSubject, Teacher } from '../types';
-import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, Key, Phone, Save, RotateCw, Download, X, Calendar, Plus } from 'lucide-react';
+import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, Key, Phone, Save, RotateCw, Download, X, Calendar, Plus, FileSpreadsheet } from 'lucide-react';
 import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
 import * as XLSX from 'xlsx';
@@ -83,7 +83,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [editingValue, setEditingValue] = useState<string>('');
   const [unsavedChanges, setUnsavedChanges] = useState<Record<string, Partial<Student>>>({});
 
+  // States for inline Eng/Math score editing
+  const [editingEngMathScore, setEditingEngMathScore] = useState<{ studentId: string, subject: 'ENG' | 'MATH' } | null>(null);
+  const [engMathScoreValue, setEngMathScoreValue] = useState<string>('');
+  const [engMathGradeRange, setEngMathGradeRange] = useState<'5-6' | '7-8' | '9-11'>('5-6');
+  const [engMathSubSubject, setEngMathSubSubject] = useState<'ENG' | 'MATH'>('ENG');
+
   const isEditable = isAdminMode || authRole === 'teacher';
+
+  const [teacherSelectedClass, setTeacherSelectedClass] = useState<string>('Barchasi');
 
   // Grant Subject Selector
   const [grantSubject, setGrantSubject] = useState<'ENG' | 'MATH'>('ENG');
@@ -149,25 +157,22 @@ const StudentTable: React.FC<StudentTableProps> = ({
     fetchWeeklyDailyRecords();
   }, [selectedWeek, classStudentIds]);
 
-  const recalculateWeeklyMetrics = async (studentId: string, week: string, subject: 'ENG' | 'MATH') => {
+  const recalculateWeeklyMetrics = async (studentId: string, week: string, _subject?: 'ENG' | 'MATH') => {
     try {
       const { data: records, error: fetchErr } = await supabase
         .from('daily_records')
         .select('*')
         .eq('student_id', studentId)
-        .eq('week', week)
-        .eq('subject', subject);
+        .eq('week', week);
         
       if (fetchErr) throw fetchErr;
       
-      const total = records ? records.length : 0;
-      if (total === 0) return;
+      const totalRecords = records ? records.length : 0;
+      const presentCount = records ? records.filter(r => r.attendance === true).length : 0;
+      const doneHwCount = records ? records.filter(r => r.homework === true).length : 0;
       
-      const absencesCount = records.filter(r => r.attendance === false).length;
-      const missedHwCount = records.filter(r => r.homework === false).length;
-      
-      const attendanceVal = absencesCount > 0 ? -absencesCount : 1;
-      const homeworkVal = missedHwCount > 0 ? -missedHwCount : 1;
+      const attendanceVal = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 100;
+      const homeworkVal = totalRecords > 0 ? Math.round((doneHwCount / totalRecords) * 100) : 100;
       
       const { data: weekRecord, error: weekErr } = await supabase
         .from('student_weeks')
@@ -196,8 +201,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
             week: week,
             attendance: attendanceVal,
             homework: homeworkVal,
-            eng_score: 0,
-            math_score: 0,
+            eng_score: null,
+            math_score: null,
             starting_level: 'Level 1',
             current_level: 'Level 1',
             is_deleted: false
@@ -291,6 +296,92 @@ const StudentTable: React.FC<StudentTableProps> = ({
       console.error("Error updating daily record:", err);
     } finally {
       setIsSavingDaily(null);
+    }
+  };
+
+  const handleEngMathScoreDoubleClick = (studentId: string, currentScore: number | null, subject: 'ENG' | 'MATH') => {
+    setEditingEngMathScore({ studentId, subject });
+    setEngMathScoreValue(currentScore !== null && currentScore !== undefined ? currentScore.toString() : '');
+  };
+
+  const handleEngMathScoreSave = (student: Student, subject: 'ENG' | 'MATH', valueStr: string) => {
+    setEditingEngMathScore(null);
+    if (valueStr.trim() === '') {
+      if (onUpdateProgress) {
+        if (subject === 'ENG') {
+          onUpdateProgress(
+            student.id,
+            student.englishStartingLevel || 'Level 1',
+            student.englishCurrentLevel || 'Level 1',
+            student.englishGrandTests || [],
+            undefined,
+            undefined,
+            undefined,
+            null as any,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            'ENG'
+          );
+        } else {
+          onUpdateProgress(
+            student.id,
+            student.mathStartingLevel || 'Level 1',
+            student.mathCurrentLevel || 'Level 1',
+            student.mathGrandTests || [],
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            null as any,
+            undefined,
+            undefined,
+            undefined,
+            'MATH'
+          );
+        }
+      }
+      return;
+    }
+
+    const parsed = parseFloat(valueStr);
+    if (isNaN(parsed)) return;
+
+    if (onUpdateProgress) {
+      if (subject === 'ENG') {
+        onUpdateProgress(
+          student.id,
+          student.englishStartingLevel || 'Level 1',
+          student.englishCurrentLevel || 'Level 1',
+          student.englishGrandTests || [],
+          undefined,
+          undefined,
+          undefined,
+          parsed,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          'ENG'
+        );
+      } else {
+        onUpdateProgress(
+          student.id,
+          student.mathStartingLevel || 'Level 1',
+          student.mathCurrentLevel || 'Level 1',
+          student.mathGrandTests || [],
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          parsed,
+          undefined,
+          undefined,
+          undefined,
+          'MATH'
+        );
+      }
     }
   };
 
@@ -489,13 +580,27 @@ const StudentTable: React.FC<StudentTableProps> = ({
     if (activeSubject !== 'ALL' && activeSubject !== 'PRIMARY' && activeSubject !== 'DETAILS') return students;
 
     const getAveragePercentage = (s: Student) => {
-      const eng = (s.engScore || 0) / 15 * 100;
-      const math = (s.mathScore || 0) / 15 * 100;
-      const absences = (s.attendance ?? 1) < 0 ? -(s.attendance ?? 1) : 0;
-      const att = Math.max(0, 100 - absences * 16.67);
-      const missedHw = (s.homework ?? 1) < 0 ? -(s.homework ?? 1) : 0;
-      const hw = Math.max(0, 100 - missedHw * 20);
-      return (eng + math + att + hw) / 4;
+      let sum = 0;
+      let count = 0;
+      if (s.engScore !== null && s.engScore !== undefined) {
+        sum += (s.engScore / 15 * 100);
+        count++;
+      }
+      if (s.mathScore !== null && s.mathScore !== undefined) {
+        sum += (s.mathScore / 15 * 100);
+        count++;
+      }
+      const attVal = s.attendance ?? 1;
+      const att = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
+      sum += att;
+      count++;
+
+      const hwVal = s.homework ?? 1;
+      const hw = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+      sum += hw;
+      count++;
+
+      return count > 0 ? sum / count : 100;
     };
 
     // Separate new session-added students to always keep them at the bottom
@@ -667,14 +772,49 @@ const StudentTable: React.FC<StudentTableProps> = ({
     XLSX.writeFile(workbook, filename);
   };
 
+  const handleExportEngMathToExcel = (studentsList: Student[], subSubject: 'ENG' | 'MATH') => {
+    const data = studentsList.map(student => {
+      const teacherName = (subSubject === 'ENG' ? student.teacher : student.mathTeacher)?.trim() || 'O\'qituvchi kiritilmagan';
+      const score = subSubject === 'ENG' ? student.engScore : student.mathScore;
+      const attVal = student.attendance ?? 1;
+      const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
+      const hwVal = student.homework ?? 1;
+      const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+
+      return {
+        "O'quvchining ismi va familiyasi": `${student.name} ${student.surname}`,
+        "Sinf": student.className,
+        "O'qituvchi": teacherName,
+        "Davomat": `${attPercent.toFixed(2)}%`,
+        "Uyga vazifa": `${hwPercent.toFixed(2)}%`,
+        "Ball": score !== null && score !== undefined ? score : "Jarayonda"
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    worksheet['!cols'] = [
+      { wch: 30 }, // O'quvchining ismi va familiyasi
+      { wch: 10 }, // Sinf
+      { wch: 25 }, // O'qituvchi
+      { wch: 15 }, // Davomat
+      { wch: 15 }, // Uyga vazifa
+      { wch: 15 }  // Ball
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, `${subSubject} natijalari`);
+    const filename = `${subSubject}_natijalari_${selectedWeek || 'Hafta'}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+  };
+
   const handleExportAllToExcel = (studentsList: Student[]) => {
     const data = studentsList.map(student => {
       return {
         "ID": student.id,
         "O'quvchining ismi va familiyasi": `${student.name} ${student.surname}`,
         "sinf": student.className,
-        "Eng score": student.engScore ?? 0,
-        "Math score": student.mathScore ?? 0,
+        "Eng score": student.engScore !== undefined ? student.engScore : null,
+        "Math score": student.mathScore !== undefined ? student.mathScore : null,
         "Attendance": student.attendance ?? 1,
         "Homework": student.homework ?? 1
       };
@@ -1424,12 +1564,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                 {/* Rows */}
                 {sortedStudents.map((student, idx) => {
-                  const engPercent = ((student.engScore || 0) / 15 * 100);
-                  const mathPercent = ((student.mathScore || 0) / 15 * 100);
-                  const absences = (student.attendance ?? 1) < 0 ? -(student.attendance ?? 1) : 0;
-                  const attPercent = Math.max(0, 100 - absences * 16.67);
-                  const missedHw = (student.homework ?? 1) < 0 ? -(student.homework ?? 1) : 0;
-                  const hwPercent = Math.max(0, 100 - missedHw * 20);
+                  const engPercent = student.engScore !== null && student.engScore !== undefined ? (student.engScore / 15 * 100) : null;
+                  const mathPercent = student.mathScore !== null && student.mathScore !== undefined ? (student.mathScore / 15 * 100) : null;
+                  const engPercentVal = engPercent !== null ? engPercent : 0;
+                  const mathPercentVal = mathPercent !== null ? mathPercent : 0;
+                  const attVal = student.attendance ?? 1;
+                  const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
+                  const absences = attVal < 0 ? -attVal : 0;
+                  const hwVal = student.homework ?? 1;
+                  const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+                  const missedHw = hwVal < 0 ? -hwVal : 0;
 
                   const weekRecord = studentWeeks?.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
                   const isIdWrong = weekRecord?.id_wrong === true;
@@ -1516,55 +1660,97 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       {/* Eng Score block */}
                       <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Ingliz tili</span>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                          <span>{engPercent.toFixed(2)}%</span>
-                          {isIdWrong && (
-                            <span 
-                              style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '1.1rem', lineHeight: 1 }} 
-                              title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
-                            >
-                              *
+                        {student.engScore === null || student.engScore === undefined ? (
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <span style={{
+                              background: 'rgba(245, 158, 11, 0.08)',
+                              color: '#d97706',
+                              border: '1px solid rgba(245, 158, 11, 0.2)',
+                              borderRadius: '8px',
+                              padding: '0.15rem 0.45rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              whiteSpace: 'nowrap',
+                              display: 'inline-flex',
+                              alignItems: 'center'
+                            }}>
+                              Jarayonda
                             </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                          <span>{student.engScore || 0} / 15</span>
-                          {isIdWrong && (
-                            <span 
-                              style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '0.85rem', lineHeight: 1 }} 
-                              title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
-                            >
-                              *
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <span>{engPercent !== null ? `${engPercent.toFixed(2)}%` : '—'}</span>
+                              {isIdWrong && (
+                                <span 
+                                  style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '1.1rem', lineHeight: 1 }} 
+                                  title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
+                                >
+                                  *
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <span>{`${student.engScore} / 15`}</span>
+                              {isIdWrong && (
+                                <span 
+                                  style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '0.85rem', lineHeight: 1 }} 
+                                  title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
+                                >
+                                  *
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Math Score block */}
                       <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <span className="mobile-label">Matematika</span>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                          <span>{mathPercent.toFixed(2)}%</span>
-                          {isIdWrong && (
-                            <span 
-                              style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '1.1rem', lineHeight: 1 }} 
-                              title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
-                            >
-                              *
+                        {student.mathScore === null || student.mathScore === undefined ? (
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <span style={{
+                              background: 'rgba(245, 158, 11, 0.08)',
+                              color: '#d97706',
+                              border: '1px solid rgba(245, 158, 11, 0.2)',
+                              borderRadius: '8px',
+                              padding: '0.15rem 0.45rem',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              whiteSpace: 'nowrap',
+                              display: 'inline-flex',
+                              alignItems: 'center'
+                            }}>
+                              Jarayonda
                             </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                          <span>{student.mathScore || 0} / 15</span>
-                          {isIdWrong && (
-                            <span 
-                              style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '0.85rem', lineHeight: 1 }} 
-                              title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
-                            >
-                              *
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <span>{mathPercent !== null ? `${mathPercent.toFixed(2)}%` : '—'}</span>
+                              {isIdWrong && (
+                                <span 
+                                  style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '1.1rem', lineHeight: 1 }} 
+                                  title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
+                                >
+                                  *
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <span>{`${student.mathScore} / 15`}</span>
+                              {isIdWrong && (
+                                <span 
+                                  style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '0.85rem', lineHeight: 1 }} 
+                                  title="ID noto'g'ri bo'lgani sababli bu natija xato bo'lishi mumkin"
+                                >
+                                  *
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Attendance block */}
@@ -1574,7 +1760,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           {attPercent.toFixed(2)}%
                         </div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                          {student.attendance || 1} ({absences} dars)
+                          {attVal < 0 ? `${attVal} (${absences} dars)` : (attVal === 1 ? '1 (0 dars)' : `${attPercent}%`)}
                         </div>
 
                         {/* Tooltip Content */}
@@ -1635,7 +1821,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           {hwPercent.toFixed(2)}%
                         </div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                          {student.homework || 1} ({missedHw} vazifa)
+                          {hwVal < 0 ? `${hwVal} (${missedHw} vazifa)` : (hwVal === 1 ? '1 (0 vazifa)' : `${hwPercent}%`)}
                         </div>
 
                         {/* Tooltip Content */}
@@ -1718,26 +1904,26 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           <g>
                             <rect 
                               x="5" 
-                              y={38 - (engPercent / 100) * 32} 
+                              y={38 - (engPercentVal / 100) * 32} 
                               width="12" 
-                              height={(engPercent / 100) * 32} 
+                              height={(engPercentVal / 100) * 32} 
                               rx="3" 
                               fill="var(--accent-primary)"
                             >
-                              <title>English Score: {engPercent.toFixed(2)}% ({student.engScore || 0}/15)</title>
+                              <title>English Score: {engPercent !== null ? `${engPercent.toFixed(2)}%` : '—'} ({student.engScore !== null && student.engScore !== undefined ? student.engScore : '—'}/15)</title>
                             </rect>
                           </g>
                           {/* Math Bar */}
                           <g>
                             <rect 
                               x="22" 
-                              y={38 - (mathPercent / 100) * 32} 
+                              y={38 - (mathPercentVal / 100) * 32} 
                               width="12" 
-                              height={(mathPercent / 100) * 32} 
+                              height={(mathPercentVal / 100) * 32} 
                               rx="3" 
                               fill="#f97316"
                             >
-                              <title>Math Score: {mathPercent.toFixed(2)}% ({student.mathScore || 0}/15)</title>
+                              <title>Math Score: {mathPercent !== null ? `${mathPercent.toFixed(2)}%` : '—'} ({student.mathScore !== null && student.mathScore !== undefined ? student.mathScore : '—'}/15)</title>
                             </rect>
                           </g>
                           {/* Attendance Bar */}
@@ -1811,6 +1997,739 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   );
                 })}
               </div>
+            ) : activeSubject === 'ENG_MATH' ? (
+              (() => {
+              if (authRole === 'teacher') {
+                // Teacher view
+                const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
+                const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
+                const cabinetTitle = teacherSubject === 'MATH' ? `Matematika kabineti: ${teacherName}` : `Ingliz tili kabineti: ${teacherName}`;
+
+                const teacherClasses = Array.from(new Set(students.map(s => s.className))).filter(Boolean).sort();
+                const classTabs = ['Barchasi', ...teacherClasses];
+
+                const filteredTeacherStudents = students.filter(student => teacherSelectedClass === 'Barchasi' || student.className === teacherSelectedClass);
+
+                const classGroupsMap: { [cls: string]: Student[] } = {};
+                filteredTeacherStudents.forEach(student => {
+                  const cls = student.className || 'Sinf kiritilmagan';
+                  if (!classGroupsMap[cls]) {
+                    classGroupsMap[cls] = [];
+                  }
+                  classGroupsMap[cls].push(student);
+                });
+                const sortedClasses = Object.keys(classGroupsMap).sort();
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', animation: 'fadeIn 0.2s ease-out' }}>
+                    {/* Professional Cabinet Header */}
+                    <div style={{
+                      background: 'var(--accent-gradient)',
+                      color: '#ffffff',
+                      borderRadius: '24px',
+                      padding: '1.75rem 2rem',
+                      boxShadow: 'var(--glass-shadow)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '1rem'
+                    }}>
+                      <div>
+                        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{cabinetTitle}</h1>
+                        <p style={{ margin: '0.35rem 0 0', opacity: 0.9, fontSize: '0.85rem', fontWeight: 650 }}>Kundalik dars davomati va uyga vazifalarni tekshirish paneli</p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.15)', padding: '0.5rem 1rem', borderRadius: '12px', backdropFilter: 'blur(4px)' }}>
+                        <Users size={18} />
+                        <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{students.length} nafar o'quvchi</span>
+                      </div>
+                    </div>
+
+                    {/* Class Slider Tabs */}
+                    <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.25rem', scrollbarWidth: 'none' }}>
+                      {classTabs.map(cls => {
+                        const active = teacherSelectedClass === cls;
+                        return (
+                          <button
+                            key={cls}
+                            onClick={() => setTeacherSelectedClass(cls)}
+                            style={{
+                              padding: '0.6rem 1.2rem',
+                              borderRadius: '9999px',
+                              border: '1.5px solid var(--border-color)',
+                              background: active ? 'var(--accent-gradient)' : 'var(--bg-card)',
+                              color: active ? '#ffffff' : 'var(--text-secondary)',
+                              fontWeight: 800,
+                              fontSize: '0.82rem',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                              transition: 'all 0.2s ease',
+                              boxShadow: active ? '0 4px 10px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.02)'
+                            }}
+                          >
+                            {cls}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Inner controls */}
+                    <div style={{
+                      background: 'var(--bg-card)',
+                      border: '1.5px solid var(--border-color)',
+                      borderRadius: '24px',
+                      padding: '1.25rem 1.5rem',
+                      boxShadow: 'var(--glass-shadow)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '1rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        {/* Date Picker */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sana</span>
+                          <input
+                            type="date"
+                            value={selectedDailyDate}
+                            onChange={(e) => setSelectedDailyDate(e.target.value)}
+                            style={{
+                              background: 'var(--bg-card-hover)',
+                              color: 'var(--text-primary)',
+                              border: '1.5px solid var(--border-color)',
+                              borderRadius: '12px',
+                              padding: '0.45rem 0.75rem',
+                              fontSize: '0.8rem',
+                              fontWeight: 750,
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+
+                        {/* Week selection */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
+                          <div style={{ position: 'relative' }}>
+                            <select
+                              value={selectedDailyWeek}
+                              onChange={(e) => setSelectedDailyWeek(e.target.value)}
+                              style={{
+                                background: 'var(--bg-card-hover)',
+                                color: 'var(--text-primary)',
+                                border: '1.5px solid var(--border-color)',
+                                borderRadius: '12px',
+                                padding: '0.45rem 2rem 0.45rem 0.75rem',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                outline: 'none',
+                                cursor: 'pointer',
+                                appearance: 'none',
+                                lineHeight: 1.2
+                              }}
+                            >
+                              {weeksList.length === 0 ? (
+                                <option value="">Hafta yo'q</option>
+                              ) : (
+                                weeksList.map(w => (
+                                  <option key={w} value={w}>{w}</option>
+                                ))
+                              )}
+                            </select>
+                            <div style={{
+                              position: 'absolute',
+                              right: '0.75rem',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              pointerEvents: 'none',
+                              color: '#64748b',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <ChevronDown size={14} />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Plus button to add a new lesson */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', justifyContent: 'flex-end', height: '100%' }}>
+                          <span style={{ fontSize: '0.65rem', opacity: 0, pointerEvents: 'none' }}>Label</span>
+                          <button
+                            onClick={handleAddNewLesson}
+                            title="Yangi dars qo'shish"
+                            style={{
+                              background: 'var(--accent-primary)',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '12px',
+                              padding: '0.45rem 1rem',
+                              fontSize: '0.8rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              transition: 'transform 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                          >
+                            <Plus size={16} />
+                            <span>Dars qo'shish</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Excel export for teacher */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <button
+                          onClick={() => handleExportEngMathToExcel(filteredTeacherStudents, teacherSubject as 'ENG' | 'MATH')}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            color: '#10b981',
+                            border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                            borderRadius: '12px',
+                            padding: '0.5rem 1rem',
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#10b981';
+                            e.currentTarget.style.color = '#ffffff';
+                            e.currentTarget.style.borderColor = '#10b981';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                            e.currentTarget.style.color = '#10b981';
+                            e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                          }}
+                        >
+                          <FileSpreadsheet size={16} />
+                          <span>Excel yuklash</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Table checklist grouped by classes */}
+                    {sortedClasses.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '3rem 1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '24px' }}>
+                        <Inbox size={48} style={{ color: 'var(--text-secondary)', opacity: 0.6 }} />
+                        <p style={{ margin: '0.5rem 0 0', fontWeight: 650, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Ushbu sinfda sizning o'quvchilaringiz topilmadi.</p>
+                      </div>
+                    ) : (
+                      sortedClasses.map(clsName => {
+                        const classStudents = classGroupsMap[clsName];
+                        return (
+                          <div 
+                            key={clsName} 
+                            style={{
+                              background: 'var(--bg-card)',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '24px',
+                              boxShadow: 'var(--glass-shadow)',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            {/* Class Header row */}
+                            <div style={{
+                              background: 'var(--bg-card-hover)',
+                              padding: '1rem 1.5rem',
+                              borderBottom: '1px solid var(--border-color)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between'
+                            }}>
+                              <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
+                                {clsName.toUpperCase()} SINF
+                              </span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--border-color)', padding: '0.2rem 0.5rem', borderRadius: '8px' }}>
+                                {classStudents.length} o'quvchi
+                              </span>
+                            </div>
+
+                            {/* Table content header */}
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: '2fr 1fr 1fr',
+                              padding: '0.75rem 1.5rem',
+                              borderBottom: '1px solid var(--border-color)',
+                              background: 'var(--bg-card-hover)',
+                              fontSize: '0.65rem',
+                              fontWeight: 800,
+                              color: 'var(--text-secondary)',
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase'
+                            }}>
+                              <div>O'quvchining ismi va familiyasi</div>
+                              <div style={{ textAlign: 'center' }}>Davomat</div>
+                              <div style={{ textAlign: 'center' }}>Uyga vazifa</div>
+                            </div>
+
+                            {/* Table content rows */}
+                            {classStudents.map((student, sIdx) => {
+                              const record = dailyRecords.find(r => r.student_id === student.id);
+                              const isSaving = isSavingDaily === student.id;
+
+                              return (
+                                <div
+                                  key={student.id}
+                                  style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '2fr 1fr 1fr',
+                                    padding: '0.9rem 1.5rem',
+                                    alignItems: 'center',
+                                    borderBottom: sIdx === classStudents.length - 1 ? 'none' : '1px solid var(--border-color)',
+                                    background: 'var(--bg-card)',
+                                    transition: 'background 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
+                                >
+                                  {/* Student Name */}
+                                  <span style={{ fontWeight: 750, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                                    {student.name} {student.surname}
+                                  </span>
+
+                                  {/* Attendance Toggle */}
+                                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    {record ? (
+                                      <button
+                                        disabled={isSaving}
+                                        onClick={() => handleToggleDailyRecord(student.id, 'attendance')}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.35rem',
+                                          padding: '0.4rem 0.85rem',
+                                          borderRadius: '9999px',
+                                          border: 'none',
+                                          cursor: isSaving ? 'not-allowed' : 'pointer',
+                                          fontWeight: 750,
+                                          fontSize: '0.75rem',
+                                          transition: 'all 0.2s ease',
+                                          background: record.attendance ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                          color: record.attendance ? '#16a34a' : '#ef4444',
+                                        }}
+                                      >
+                                        <span>{record.attendance ? '✅ Keldi' : '❌ Kelmadi'}</span>
+                                      </button>
+                                    ) : (
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Dars yo'q</span>
+                                    )}
+                                  </div>
+
+                                  {/* Homework Toggle */}
+                                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    {record ? (
+                                      <button
+                                        disabled={isSaving}
+                                        onClick={() => handleToggleDailyRecord(student.id, 'homework')}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.35rem',
+                                          padding: '0.4rem 0.85rem',
+                                          borderRadius: '9999px',
+                                          border: 'none',
+                                          cursor: isSaving ? 'not-allowed' : 'pointer',
+                                          fontWeight: 750,
+                                          fontSize: '0.75rem',
+                                          transition: 'all 0.2s ease',
+                                          background: record.homework ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                          color: record.homework ? '#16a34a' : '#ef4444',
+                                        }}
+                                      >
+                                        <span>{record.homework ? '✅ Bajarilgan' : '❌ Bajarilmagan'}</span>
+                                      </button>
+                                    ) : (
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Dars yo'q</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                );
+              }
+
+              // Admin view
+              const matchesGradeRange = (className: string, range: '5-6' | '7-8' | '9-11') => {
+                const match = className.match(/^(\d+)/);
+                if (!match) return false;
+                const gradeNum = parseInt(match[1], 10);
+                if (range === '5-6') return gradeNum === 5 || gradeNum === 6;
+                if (range === '7-8') return gradeNum === 7 || gradeNum === 8;
+                if (range === '9-11') return gradeNum >= 9 && gradeNum <= 11;
+                return false;
+              };
+
+              const filteredEngMathStudents = students.filter(student => matchesGradeRange(student.className, engMathGradeRange));
+
+              const groupsMap: { [teacher: string]: Student[] } = {};
+              filteredEngMathStudents.forEach(student => {
+                const tName = (engMathSubSubject === 'ENG' ? student.teacher : student.mathTeacher)?.trim() || 'O\'qituvchi kiritilmagan';
+                if (!groupsMap[tName]) {
+                  groupsMap[tName] = [];
+                }
+                groupsMap[tName].push(student);
+              });
+
+              const sortedTeachers = Object.keys(groupsMap).sort((a, b) => {
+                if (a === 'O\'qituvchi kiritilmagan') return 1;
+                if (b === 'O\'qituvchi kiritilmagan') return -1;
+                return a.localeCompare(b);
+              });
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', animation: 'fadeIn 0.2s ease-out' }}>
+                  {/* Top Control Panel */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                    background: 'var(--bg-card)',
+                    border: '1.5px solid var(--border-color)',
+                    borderRadius: '24px',
+                    padding: '1.5rem',
+                    boxShadow: 'var(--glass-shadow)',
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '1rem'
+                    }}>
+                      {/* Grade Slider */}
+                      <div style={{ display: 'flex', background: 'var(--bg-card-hover)', borderRadius: '12px', padding: '0.25rem', border: '1px solid var(--border-color)' }}>
+                        {(['5-6', '7-8', '9-11'] as const).map(range => {
+                          const active = engMathGradeRange === range;
+                          return (
+                            <button
+                              key={range}
+                              onClick={() => setEngMathGradeRange(range)}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: active ? 'var(--accent-gradient)' : 'none',
+                                color: active ? '#ffffff' : 'var(--text-secondary)',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: active ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                              }}
+                            >
+                              {range === '5-6' ? '5-6 Sinf' : range === '7-8' ? '7-8 Sinflar' : '9-11 Sinflar'}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Sub-Subject Toggle & Controls */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        {/* Eng / Math Toggles */}
+                        <div style={{ display: 'flex', background: 'var(--bg-card-hover)', borderRadius: '12px', padding: '0.25rem', border: '1px solid var(--border-color)' }}>
+                          {(['ENG', 'MATH'] as const).map(sub => {
+                            const active = engMathSubSubject === sub;
+                            return (
+                              <button
+                                key={sub}
+                                onClick={() => setEngMathSubSubject(sub)}
+                                style={{
+                                  padding: '0.5rem 1rem',
+                                  borderRadius: '8px',
+                                  border: 'none',
+                                  background: active ? 'var(--accent-gradient)' : 'none',
+                                  color: active ? '#ffffff' : 'var(--text-secondary)',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  boxShadow: active ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                                }}
+                              >
+                                {sub === 'ENG' ? 'Ingliz tili' : 'Matematika'}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Week Dropdown */}
+                        {onWeekChange && weeksList && (
+                          <div style={{ position: 'relative' }}>
+                            <select
+                              value={selectedWeek}
+                              onChange={(e) => onWeekChange(e.target.value)}
+                              style={{
+                                background: 'var(--bg-card-hover)',
+                                color: 'var(--text-primary)',
+                                border: '1.5px solid var(--border-color)',
+                                borderRadius: '12px',
+                                padding: '0.5rem 2rem 0.5rem 0.75rem',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                outline: 'none',
+                                cursor: 'pointer',
+                                appearance: 'none',
+                                lineHeight: 1.2
+                              }}
+                            >
+                              {weeksList.length === 0 ? (
+                                <option value="">Hafta yo'q</option>
+                              ) : (
+                                weeksList.map(w => (
+                                  <option key={w} value={w}>{w}</option>
+                                ))
+                              )}
+                            </select>
+                            <div style={{
+                              position: 'absolute',
+                              right: '0.75rem',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              pointerEvents: 'none',
+                              color: '#64748b',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <ChevronDown size={14} />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Excel Export Button */}
+                        <button
+                          onClick={() => handleExportEngMathToExcel(filteredEngMathStudents, engMathSubSubject)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            color: '#10b981',
+                            border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                            borderRadius: '12px',
+                            padding: '0.5rem 1rem',
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#10b981';
+                            e.currentTarget.style.color = '#ffffff';
+                            e.currentTarget.style.borderColor = '#10b981';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                            e.currentTarget.style.color = '#10b981';
+                            e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                          }}
+                        >
+                          <FileSpreadsheet size={16} />
+                          <span>Excelga yuklash</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Student Cards grouped by Teacher */}
+                  {sortedTeachers.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '3rem 1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '24px' }}>
+                      <Inbox size={48} style={{ color: 'var(--text-secondary)', opacity: 0.6 }} />
+                      <p style={{ margin: '0.5rem 0 0', fontWeight: 650, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>O'quvchilar topilmadi.</p>
+                    </div>
+                  ) : (
+                    sortedTeachers.map(teacherName => {
+                      const teacherStudents = groupsMap[teacherName];
+                      return (
+                        <div key={teacherName} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          <h2 style={{
+                            fontSize: '0.95rem',
+                            fontWeight: 800,
+                            color: 'var(--text-primary)',
+                            margin: '0.5rem 0 0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            <span>O'qituvchi: {teacherName}</span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--border-color)', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
+                              {teacherStudents.length} ta o'quvchi
+                            </span>
+                          </h2>
+
+                          {/* Cards Grid */}
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+                            gap: '1rem',
+                            marginBottom: '1rem'
+                          }}>
+                            {teacherStudents.map(student => {
+                              const attVal = student.attendance ?? 1;
+                              const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
+                              const hwVal = student.homework ?? 1;
+                              const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+
+                              const scoreVal = engMathSubSubject === 'ENG' ? student.engScore : student.mathScore;
+                              const isEditingScore = editingEngMathScore?.studentId === student.id && editingEngMathScore?.subject === engMathSubSubject;
+
+                              return (
+                                <div
+                                  key={student.id}
+                                  style={{
+                                    background: 'var(--bg-card)',
+                                    border: '1.5px solid var(--border-color)',
+                                    borderRadius: '20px',
+                                    padding: '1.25rem',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '1rem',
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                    e.currentTarget.style.boxShadow = 'var(--glass-shadow)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.01)';
+                                  }}
+                                >
+                                  {/* Header Info */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{
+                                      width: '44px',
+                                      height: '44px',
+                                      borderRadius: '50%',
+                                      background: 'var(--accent-gradient)',
+                                      color: '#ffffff',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '0.95rem',
+                                      fontWeight: 800,
+                                      overflow: 'hidden'
+                                    }}>
+                                      {student.pictureUrl ? (
+                                        <img src={student.pictureUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      ) : (
+                                        getInitials(student.name, student.surname)
+                                      )}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                      <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{student.name} {student.surname}</span>
+                                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginTop: '0.1rem' }}>Sinf: {student.className}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Progress metrics */}
+                                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <div style={{ flex: 1, minWidth: '80px', background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem' }}>
+                                      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-secondary)' }}>DAVOMAT</span>
+                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: attPercent >= 90 ? '#16a34a' : attPercent >= 70 ? '#d97706' : '#ef4444' }}>{attPercent.toFixed(1)}%</span>
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: '80px', background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15rem' }}>
+                                      <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-secondary)' }}>UYGA VAZIFA</span>
+                                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: hwPercent >= 90 ? '#16a34a' : hwPercent >= 70 ? '#d97706' : '#ef4444' }}>{hwPercent.toFixed(1)}%</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Double-click editable Score */}
+                                  <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    background: 'rgba(13, 148, 136, 0.03)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '14px',
+                                    padding: '0.5rem 0.75rem',
+                                    marginTop: 'auto'
+                                  }}>
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)' }}>
+                                      {engMathSubSubject === 'ENG' ? 'INGLIZ TILI BALLI' : 'MATEMATIKA BALLI'}
+                                    </span>
+                                    {isEditingScore ? (
+                                      <input
+                                        type="text"
+                                        value={engMathScoreValue}
+                                        autoFocus
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
+                                            setEngMathScoreValue(val);
+                                          }
+                                        }}
+                                        onBlur={() => handleEngMathScoreSave(student, engMathSubSubject, engMathScoreValue)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleEngMathScoreSave(student, engMathSubSubject, engMathScoreValue);
+                                          if (e.key === 'Escape') setEditingEngMathScore(null);
+                                        }}
+                                        style={{
+                                          width: '60px',
+                                          padding: '0.2rem 0.4rem',
+                                          borderRadius: '8px',
+                                          border: '2px solid var(--accent-primary)',
+                                          outline: 'none',
+                                          fontWeight: 800,
+                                          fontSize: '0.85rem',
+                                          textAlign: 'center',
+                                          background: 'var(--bg-card)',
+                                          color: 'var(--text-primary)'
+                                        }}
+                                      />
+                                    ) : (
+                                      <div
+                                        onDoubleClick={() => handleEngMathScoreDoubleClick(student.id, scoreVal ?? null, engMathSubSubject)}
+                                        title="Tahrirlash uchun ikki marta bosing"
+                                        style={{
+                                          fontSize: '0.9rem',
+                                          fontWeight: 850,
+                                          color: 'var(--accent-primary)',
+                                          cursor: 'pointer',
+                                          padding: '0.2rem 0.5rem',
+                                          borderRadius: '8px',
+                                          background: 'var(--bg-card)',
+                                          border: '1.5px solid var(--border-color)',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          minWidth: '40px',
+                                          justifyContent: 'center',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                                      >
+                                        {scoreVal !== null && scoreVal !== undefined ? `${scoreVal} / 15` : '—'}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              );
+            })()
             ) : activeSubject === 'DETAILS' ? (
               <div 
                 className="table-card-container"
@@ -2715,7 +3634,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
         <GraphModal 
           student={selectedStudent} 
           onClose={() => setSelectedStudent(null)} 
-          activeSubject={activeSubject}
+          activeSubject={activeSubject === 'GRANT' ? grantSubject : (activeSubject === 'ENG_MATH' ? (authRole === 'teacher' ? (localStorage.getItem('teacher_subject') as ActiveSubject || 'ENG') : engMathSubSubject) : activeSubject)}
           studentWeeks={studentWeeks}
           showSummerPlan={showSummerPlan}
         />
