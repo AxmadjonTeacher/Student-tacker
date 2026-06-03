@@ -26,7 +26,8 @@ interface StudentTableProps {
     mathScore?: number,
     attendance?: number,
     homework?: number,
-    parentPhone?: string
+    parentPhone?: string,
+    subjectOverride?: 'ENG' | 'MATH'
   ) => void;
   onRenameTeacherTable?: (oldName: string) => void;
   onDeleteTeacherTable?: (teacherName: string) => void;
@@ -2723,12 +2724,26 @@ const StudentTable: React.FC<StudentTableProps> = ({
       {editingStudent && (
         <EditProgressModal
           student={editingStudent}
-          activeSubject={activeSubject}
+          activeSubject={activeSubject === 'GRANT' ? grantSubject : activeSubject}
           authRole={authRole}
           onClose={() => setEditingStudent(null)}
           onSave={(sl, cl, gt, n, s, c, eng, math, att, hw, phone) => {
             if (onUpdateProgress) {
-              onUpdateProgress(editingStudent.id, sl, cl, gt, n, s, c, eng, math, att, hw, phone);
+              onUpdateProgress(
+                editingStudent.id,
+                sl,
+                cl,
+                gt,
+                n,
+                s,
+                c,
+                eng,
+                math,
+                att,
+                hw,
+                phone,
+                activeSubject === 'GRANT' ? grantSubject : undefined
+              );
             }
             setEditingStudent(null);
           }}

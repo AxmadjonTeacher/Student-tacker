@@ -1484,8 +1484,11 @@ function App() {
     mathScore?: number,
     attendance?: number,
     homework?: number,
-    parentPhone?: string
+    parentPhone?: string,
+    subjectOverride?: 'ENG' | 'MATH'
   ) => {
+    const targetSubject = subjectOverride || activeSubject;
+
     // 1. Update local students state for baseline identity & progress edits
     setStudents(prev => prev.map(s => {
       if (s.id === studentId) {
@@ -1501,7 +1504,7 @@ function App() {
           parentPhone: parentPhone !== undefined ? parentPhone : s.parentPhone
         };
 
-        if (activeSubject === 'ENG') {
+        if (targetSubject === 'ENG') {
           updated.startingLevel = startingLevel;
           updated.currentLevel = currentLevel;
           updated.grandTests = grandTests;
@@ -1509,7 +1512,7 @@ function App() {
           updated.englishStartingLevel = startingLevel;
           updated.englishCurrentLevel = currentLevel;
           updated.englishGrandTests = grandTests;
-        } else if (activeSubject === 'MATH') {
+        } else if (targetSubject === 'MATH') {
           updated.mathStartingLevel = startingLevel;
           updated.mathCurrentLevel = currentLevel;
           updated.mathGrandTests = grandTests;
@@ -1533,11 +1536,11 @@ function App() {
       if (homework !== undefined) payload.homework = homework;
       if (parentPhone !== undefined) payload.parent_phone = parentPhone;
       
-      if (activeSubject === 'ENG') {
+      if (targetSubject === 'ENG') {
         payload.starting_level = startingLevel;
         payload.current_level = currentLevel;
         payload.grand_tests = grandTests;
-      } else if (activeSubject === 'MATH') {
+      } else if (targetSubject === 'MATH') {
         payload.math_starting_level = startingLevel;
         payload.math_current_level = currentLevel;
         payload.math_grand_tests = grandTests;
@@ -1563,12 +1566,12 @@ function App() {
         math_score: mathScore !== undefined ? mathScore : (existing?.math_score ?? baseStudent?.mathScore ?? 0),
         attendance: attendance !== undefined ? attendance : (existing?.attendance ?? baseStudent?.attendance ?? 1),
         homework: homework !== undefined ? homework : (existing?.homework ?? baseStudent?.homework ?? 1),
-        starting_level: activeSubject === 'ENG' ? startingLevel : (existing?.starting_level ?? baseStudent?.startingLevel ?? 'Level 1'),
-        current_level: activeSubject === 'ENG' ? currentLevel : (existing?.current_level ?? baseStudent?.currentLevel ?? 'Level 1'),
-        grand_tests: activeSubject === 'ENG' ? grandTests : (existing?.grand_tests ?? baseStudent?.grandTests ?? []),
-        math_starting_level: activeSubject === 'MATH' ? startingLevel : (existing?.math_starting_level ?? baseStudent?.mathStartingLevel ?? 'Level 1'),
-        math_current_level: activeSubject === 'MATH' ? currentLevel : (existing?.math_current_level ?? baseStudent?.mathCurrentLevel ?? 'Level 1'),
-        math_grand_tests: activeSubject === 'MATH' ? grandTests : (existing?.math_grand_tests ?? baseStudent?.mathGrandTests ?? [])
+        starting_level: targetSubject === 'ENG' ? startingLevel : (existing?.starting_level ?? baseStudent?.startingLevel ?? 'Level 1'),
+        current_level: targetSubject === 'ENG' ? currentLevel : (existing?.current_level ?? baseStudent?.currentLevel ?? 'Level 1'),
+        grand_tests: targetSubject === 'ENG' ? grandTests : (existing?.grand_tests ?? baseStudent?.grandTests ?? []),
+        math_starting_level: targetSubject === 'MATH' ? startingLevel : (existing?.math_starting_level ?? baseStudent?.mathStartingLevel ?? 'Level 1'),
+        math_current_level: targetSubject === 'MATH' ? currentLevel : (existing?.math_current_level ?? baseStudent?.mathCurrentLevel ?? 'Level 1'),
+        math_grand_tests: targetSubject === 'MATH' ? grandTests : (existing?.math_grand_tests ?? baseStudent?.mathGrandTests ?? [])
       };
 
       setStudentWeeks(prev => {
