@@ -87,11 +87,19 @@ const StudentTable: React.FC<StudentTableProps> = ({
   // Grant Subject Selector
   const [grantSubject, setGrantSubject] = useState<'ENG' | 'MATH'>('ENG');
 
+  useEffect(() => {
+    if (authRole === 'teacher') {
+      const tSubject = localStorage.getItem('teacher_subject');
+      if (tSubject === 'ENG' || tSubject === 'MATH') {
+        setGrantSubject(tSubject);
+      }
+    }
+  }, [authRole]);
+
   // Daily Records States
   const [selectedDailyDate, setSelectedDailyDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedDailyWeek, setSelectedDailyWeek] = useState(selectedWeek || '1-Hafta');
   const [dailyRecords, setDailyRecords] = useState<any[]>([]);
-  const [isDailyPanelOpen, setIsDailyPanelOpen] = useState(false);
   const [isSavingDaily, setIsSavingDaily] = useState<string | null>(null);
   const [weeklyDailyRecords, setWeeklyDailyRecords] = useState<any[]>([]);
 
@@ -932,14 +940,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
             gap: '1.25rem',
             animation: 'fadeIn 0.2s ease-out'
           }}>
-            {/* Panel Title & Toggle */}
+            {/* Panel Title */}
             <div 
-              onClick={() => setIsDailyPanelOpen(!isDailyPanelOpen)}
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                cursor: 'pointer',
                 userSelect: 'none'
               }}
             >
@@ -965,34 +971,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   </p>
                 </div>
               </div>
-              <button style={{
-                background: 'var(--bg-card-hover)',
-                border: '1.5px solid var(--border-color)',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: 'var(--text-secondary)',
-                transition: 'transform 0.2s ease',
-                transform: isDailyPanelOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                borderWidth: '1.5px'
-              }}>
-                ▼
-              </button>
             </div>
 
-            {isDailyPanelOpen && (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1.25rem',
-                borderTop: '1px solid var(--border-color)',
-                paddingTop: '1.25rem',
-                animation: 'slideUp 0.2s ease-out'
-              }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem',
+              borderTop: '1px solid var(--border-color)',
+              paddingTop: '1.25rem',
+              animation: 'slideUp 0.2s ease-out'
+            }}>
                 {/* Controls row */}
                 <div style={{
                   display: 'flex',
@@ -1207,7 +1195,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   )}
                 </div>
               </div>
-            )}
           </div>
         )}
         {students.length === 0 ? (
@@ -2148,10 +2135,10 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   );
                 })}
               </div>
-            ) : (() => {
+            ) : activeSubject === 'GRANT' ? (() => {
               const groupsMap: { [teacher: string]: Student[] } = {};
               students.forEach((student) => {
-                const currentTeacher = student.teacher?.trim() || '';
+                const currentTeacher = (grantSubject === 'MATH' ? student.mathTeacher : student.teacher)?.trim() || '';
                 if (!groupsMap[currentTeacher]) {
                   groupsMap[currentTeacher] = [];
                 }
@@ -2160,8 +2147,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
               // Convert map to array and sort: orderIndex, unassigned teachers at the very bottom
               const groups = Object.keys(groupsMap).map((teacher) => {
-                // Find the maximum teacherOrder in the group (ignores newly added 0s if group is non-zero)
-                const orderIndex = Math.max(...groupsMap[teacher].map(s => s.teacherOrder ?? 0));
+                const orderIndex = Math.max(...groupsMap[teacher].map(s => (grantSubject === 'MATH' ? s.mathTeacherOrder : s.teacherOrder) ?? 0));
                 return {
                   teacher,
                   orderIndex,
@@ -2181,9 +2167,63 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 g.students.sort((a, b) => `${a.name} ${a.surname}`.localeCompare(`${b.name} ${b.surname}`, 'uz'));
               });
 
-              return groups.map((group, groupIdx) => (
-                <div 
-                  key={group.teacher || `unassigned-${groupIdx}`}
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* Subject Toggle for Grant view */}
+                  {authRole !== 'teacher' && (
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        background: 'var(--bg-card-hover)',
+                        border: '1.5px solid var(--border-color)',
+                        borderRadius: '12px',
+                        padding: '0.25rem',
+                        gap: '0.25rem',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                      }}>
+                        <button
+                          onClick={() => setGrantSubject('ENG')}
+                          style={{
+                            padding: '0.5rem 1.25rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 800,
+                            fontSize: '0.8rem',
+                            transition: 'all 0.2s',
+                            background: grantSubject === 'ENG' ? 'var(--accent-gradient)' : 'transparent',
+                            color: grantSubject === 'ENG' ? '#ffffff' : 'var(--text-secondary)'
+                          }}
+                        >
+                          Ingliz Tili
+                        </button>
+                        <button
+                          onClick={() => setGrantSubject('MATH')}
+                          style={{
+                            padding: '0.5rem 1.25rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 800,
+                            fontSize: '0.8rem',
+                            transition: 'all 0.2s',
+                            background: grantSubject === 'MATH' ? 'var(--accent-gradient)' : 'transparent',
+                            color: grantSubject === 'MATH' ? '#ffffff' : 'var(--text-secondary)'
+                          }}
+                        >
+                          Matematika
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {groups.map((group, groupIdx) => (
+                    <div 
+                      key={group.teacher || `unassigned-${groupIdx}`}
                   className="table-card-container"
                   style={{
                     background: 'var(--bg-card)',
@@ -2412,7 +2452,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                   {/* Student rows inside this teacher's card */}
                   {group.students.map((student, idx) => {
-                    const improvement = calculateImprovement(student.startingLevel, student.currentLevel);
+                    const startLevel = grantSubject === 'MATH' ? (student.mathStartingLevel || 'Level 1') : (student.startingLevel || 'Level 1');
+                    const currLevel = grantSubject === 'MATH' ? (student.mathCurrentLevel || 'Level 1') : (student.currentLevel || 'Level 1');
+                    const improvement = calculateImprovement(startLevel, currLevel);
                     const isLast = idx === group.students.length - 1;
                     
                     const weekRecord = studentWeeks?.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
@@ -2516,7 +2558,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                           <span className="mobile-label">Avvalgi daraja</span>
                           <div style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                            {student.startingLevel}
+                            {startLevel}
                           </div>
                         </div>
 
@@ -2524,7 +2566,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         <div className="table-cell" style={{ padding: '0 1.5rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                           <span className="mobile-label">Hozirgi daraja</span>
                           <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '0.2rem' }}>
-                            {student.currentLevel}
+                            {currLevel}
                           </div>
                           {improvement.includes('+') ? (
                             <div style={{ 
@@ -2559,7 +2601,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             }}>
                               <span style={{ fontSize: '0.95rem' }}>☀️</span>
                               {(() => {
-                                const match = (student.currentLevel || '').match(/(\d+)/);
+                                const match = (currLevel || '').match(/(\d+)/);
                                 if (match) {
                                   return `Level ${parseInt(match[1]) + 1}`;
                                 }
@@ -2574,7 +2616,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           <div className="table-cell no-border" style={{ padding: '0 0 0 1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                             <span className="mobile-label">Progress</span>
                             <button 
-                              onClick={() => setSelectedStudent(student)}
+                              onClick={() => setSelectedStudent({
+                                ...student,
+                                startingLevel: startLevel,
+                                currentLevel: currLevel,
+                                grandTests: grantSubject === 'MATH' ? (student.mathGrandTests || []) : (student.grandTests || [])
+                              })}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '0.5rem',
                                 background: 'transparent', color: theme.primary,
@@ -2647,8 +2694,10 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     );
                   })}
                 </div>
-              ));
-            })()}
+              ))}
+            </div>
+          );
+        })() : null}
           </>
         )}
       </div>
