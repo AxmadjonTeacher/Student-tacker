@@ -1490,7 +1490,7 @@ function App() {
         matchesSearch = true;
       } else {
         const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term);
-        const teacherNameMatches = (
+        const teacherNameMatches = !!(
           (s.teacher && s.teacher.toLowerCase().includes(term)) ||
           (s.mathTeacher && s.mathTeacher.toLowerCase().includes(term))
         );
