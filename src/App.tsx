@@ -1297,8 +1297,21 @@ function App() {
   };
 
   const activeStudents = useMemo(() => {
-    return students.filter(s => !s.isDeleted);
-  }, [students]);
+    let active = students.filter(s => !s.isDeleted);
+    // When logged in as a teacher, restrict to only their assigned students
+    if (authRole === 'teacher') {
+      const teacherName = localStorage.getItem('teacher_name') || '';
+      const teacherSubject = localStorage.getItem('teacher_subject') || '';
+      active = active.filter(s => {
+        if (teacherSubject === 'MATH') {
+          return (s.mathTeacher || '').trim() === teacherName.trim();
+        }
+        // ENG or fallback
+        return (s.teacher || '').trim() === teacherName.trim();
+      });
+    }
+    return active;
+  }, [students, authRole]);
 
   const deletedStudents = useMemo(() => {
     return students.filter(s => s.isDeleted);
