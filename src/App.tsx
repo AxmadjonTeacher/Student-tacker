@@ -19,7 +19,7 @@ import TestorCabinet from './components/TestorCabinet';
 import iconLight from './assets/icon-light.png';
 import iconDark from './assets/icon-dark.png';
 
-const INITIAL_CLASSES = ['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'];
+const INITIAL_CLASSES = ['1-Sinf', '2-Sinf', '3-Sinf', '4-Sinf', '5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'];
 
 const INITIAL_MOCK_DATA: Student[] = [
   { 
@@ -67,8 +67,8 @@ export const formatDateLabel = (dateStr: string): string => {
 };
 
 // Import shared ID and passcode generators for local use, and re-export
-import { generateRandomId, generateRandomPasscode, normalizeStudentId } from './utils/idGenerator';
-export { generateRandomId, generateRandomPasscode, normalizeStudentId };
+import { generateRandomId, generateRandomPasscode, normalizeStudentId, isConformingId, getGradeRange } from './utils/idGenerator';
+export { generateRandomId, generateRandomPasscode, normalizeStudentId, isConformingId, getGradeRange };
 
 // Helper to get local date string YYYY-MM-DD
 export const getLocalDateString = (): string => {
@@ -354,53 +354,32 @@ function App() {
   }, []);
 
   const migrateStudentIdsIfNeeded = async (loadedStudents: Student[]) => {
-    const oldStudents = loadedStudents.filter(s => !/^AL\d{3}$/.test(s.id));
+    const oldStudents = loadedStudents.filter(s => !isConformingId(s.id, s.className));
     if (oldStudents.length === 0) return;
 
-    console.log(`Starting migration for ${oldStudents.length} students with old ID formats...`);
+    console.log(`Starting migration for ${oldStudents.length} students with non-conforming ID formats...`);
     
     const usedDigits = new Set<string>();
     loadedStudents.forEach(s => {
-      const match = s.id.match(/^AL(\d{3})$/);
-      if (match) usedDigits.add(match[1]);
-    });
-
-    const generateUnique3DigitId = () => {
-      let num = Math.floor(Math.random() * 900) + 100;
-      while (usedDigits.has(num.toString())) {
-        num = Math.floor(Math.random() * 900) + 100;
+      if (isConformingId(s.id, s.className)) {
+        const match = s.id.match(/^(BR|AL|SE)(\d+)$/);
+        if (match) usedDigits.add(`${match[1]}${match[2]}`);
       }
-      usedDigits.add(num.toString());
-      return `AL${num}`;
-    };
+    });
 
     const updates: { oldId: string, newId: string }[] = [];
     
     for (const student of oldStudents) {
-      let newId = '';
-      const fullName = `${student.name} ${student.surname}`.toLowerCase();
-      
-      if (fullName.includes('muhammadiso') || fullName.includes('iso')) {
-        newId = 'AL557';
-      } else if (fullName.includes('sobitxanov')) {
-        newId = 'AL110';
-      } else if (fullName.includes('omadullayev')) {
-        newId = 'AL120';
-      } else if (fullName.includes('abdurahmonov')) {
-        newId = 'AL105';
-      } else if (fullName.includes('nomonov') || fullName.includes('no\'monov')) {
-        newId = 'AL141';
-      } else if (fullName.includes('ne’matov') || fullName.includes('ne\'matov')) {
-        newId = 'AL125';
-      } else {
-        newId = generateUnique3DigitId();
+      const { min, max, prefix } = getGradeRange(student.className);
+      let newIdNum = Math.floor(Math.random() * (max - min + 1)) + min;
+      let attempts = 0;
+      while (usedDigits.has(`${prefix}${newIdNum}`) && attempts < 1000) {
+        newIdNum = Math.floor(Math.random() * (max - min + 1)) + min;
+        attempts++;
       }
       
-      if (usedDigits.has(newId.replace('AL', ''))) {
-        newId = generateUnique3DigitId();
-      } else {
-        usedDigits.add(newId.replace('AL', ''));
-      }
+      const newId = `${prefix}${newIdNum}`;
+      usedDigits.add(newId);
       
       updates.push({
         oldId: student.id,
@@ -515,7 +494,7 @@ function App() {
 
     // Trigger migration if old format student IDs exist and skipMigration is false
     if (!skipMigration && loadedStudents.length > 0) {
-      const oldStudents = loadedStudents.filter(s => !/^AL\d{3}$/.test(s.id));
+      const oldStudents = loadedStudents.filter(s => !isConformingId(s.id, s.className));
       if (oldStudents.length > 0) {
         await migrateStudentIdsIfNeeded(loadedStudents);
       }

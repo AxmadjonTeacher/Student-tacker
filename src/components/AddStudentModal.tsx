@@ -304,6 +304,10 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                   backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                 }}
               >
+                <option value="1-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>1-Sinf</option>
+                <option value="2-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>2-Sinf</option>
+                <option value="3-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>3-Sinf</option>
+                <option value="4-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>4-Sinf</option>
                 <option value="5-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>5-Sinf</option>
                 <option value="6-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>6-Sinf</option>
                 <option value="7-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>7-Sinf</option>

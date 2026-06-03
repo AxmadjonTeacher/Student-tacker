@@ -187,6 +187,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   }, [isOpen, activeTab]);
 
   const processImportedRows = (rows: any[]) => {
+    const generatedIdsInBatch = new Set<string>();
     const parsedStudents: Student[] = rows
       .map((row: any) => {
         const rawNameStr = (
@@ -347,8 +348,17 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           homework = rawHomework !== '' ? parseInt(rawHomework) || 1 : 1;
         }
 
+        const existingAllIds = [
+          ...students.map(s => s.id),
+          ...Array.from(generatedIdsInBatch)
+        ];
+        const finalId = customId || generateRandomId(className, existingAllIds);
+        if (!customId) {
+          generatedIdsInBatch.add(finalId);
+        }
+
         return {
-          id: customId || generateRandomId(className, students.map(s => s.id)),
+          id: finalId,
           name,
           surname,
           className,

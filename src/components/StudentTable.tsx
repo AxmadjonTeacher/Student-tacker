@@ -2199,7 +2199,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   onChange={(e) => setRegenIds(e.target.checked)}
                   style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
                 />
-                <span>Yangi ID raqamlarini yaratish (AL + 5 ta belgi)</span>
+                <span>Yangi ID raqamlarini yaratish (Sinfga mos)</span>
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
