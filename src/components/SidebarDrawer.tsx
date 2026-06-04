@@ -2191,8 +2191,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
               {deletedStudents.length === 0 ? (
                 <div style={{ 
-                  textAlign: 'center', padding: '2.5rem 1rem', border: `1.5px dashed var(--border-color)`, 
-                  borderRadius: '16px', color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.5 
+                  textAlign: 'center', padding: '2.5rem 1rem', border: '2px dashed var(--border-subtle)', 
+                  borderRadius: '24px', color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.5 
                 }}>
                   Savat bo'sh.<br />O'chirilgan o'quvchilar shu yerda paydo bo'ladi.
                 </div>
@@ -2201,23 +2201,23 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   {Object.entries(groupedDeleted).map(([className, list]) => (
                     <div key={className} style={{
                       background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '16px',
-                      padding: '1rem',
-                      boxShadow: 'var(--glass-shadow)'
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '24px',
+                      padding: '1.25rem',
+                      boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)'
                     }}>
                       <div style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        borderBottom: `1px solid var(--border-color)`,
-                        paddingBottom: '0.5rem',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        paddingBottom: '0.75rem',
                         marginBottom: '0.75rem'
                       }}>
                         <span style={{
                           fontSize: '0.75rem',
                           fontWeight: 800,
-                          color: 'var(--accent-primary)',
+                          color: 'var(--accent-hero)',
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em'
                         }}>
@@ -2230,18 +2230,18 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             style={{
                               background: 'transparent',
                               border: 'none',
-                              color: 'var(--accent-primary)',
+                              color: 'var(--accent-hero)',
                               fontSize: '0.68rem',
                               fontWeight: 800,
                               cursor: 'pointer',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              borderRadius: '9999px',
                               transition: 'opacity 0.2s'
                             }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
                             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                           >
-                            Barchasini tiklash
+                            Tiklash
                           </button>
                           <button
                             type="button"
@@ -2253,14 +2253,14 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                               fontSize: '0.68rem',
                               fontWeight: 800,
                               cursor: 'pointer',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              borderRadius: '9999px',
                               transition: 'opacity 0.2s'
                             }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
                             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                           >
-                            Barchasini o'chirish
+                            O'chirish
                           </button>
                         </div>
                       </div>
@@ -2293,8 +2293,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                   background: isDarkMode ? 'rgba(34, 197, 94, 0.12)' : '#f0fdf4',
                                   color: isDarkMode ? '#4ade80' : '#166534',
                                   border: isDarkMode ? '1px solid rgba(34,197,94,0.25)' : '1px solid #bbf7d0',
-                                  borderRadius: '8px',
-                                  padding: '0.35rem 0.7rem',
+                                  borderRadius: '9999px',
+                                  padding: '0.35rem 0.8rem',
                                   fontSize: '0.7rem',
                                   fontWeight: 800,
                                   cursor: 'pointer',
@@ -2312,8 +2312,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                   background: isDarkMode ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
                                   color: isDarkMode ? '#fc8181' : '#991b1b',
                                   border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid #fecaca',
-                                  borderRadius: '8px',
-                                  padding: '0.35rem 0.7rem',
+                                  borderRadius: '9999px',
+                                  padding: '0.35rem 0.8rem',
                                   fontSize: '0.7rem',
                                   fontWeight: 800,
                                   cursor: 'pointer',
@@ -2353,18 +2353,18 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: 'var(--accent-primary)',
+                        color: 'var(--accent-hero)',
                         fontSize: '0.68rem',
                         fontWeight: 800,
                         cursor: 'pointer',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        borderRadius: '9999px',
                         transition: 'opacity 0.2s'
                       }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
                       onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                     >
-                      Barchasini tiklash
+                      Tiklash
                     </button>
                     <button
                       type="button"
@@ -2376,14 +2376,14 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         fontSize: '0.68rem',
                         fontWeight: 800,
                         cursor: 'pointer',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        borderRadius: '9999px',
                         transition: 'opacity 0.2s'
                       }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
                       onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                     >
-                      Barchasini o'chirish
+                      O'chirish
                     </button>
                   </div>
                 )}
@@ -2391,8 +2391,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
               {deletedWeeks.length === 0 ? (
                 <div style={{ 
-                  textAlign: 'center', padding: '2.5rem 1rem', border: '1.5px dashed #cbd5e1', 
-                  borderRadius: '16px', color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.5 
+                  textAlign: 'center', padding: '2.5rem 1rem', border: '2px dashed var(--border-subtle)', 
+                  borderRadius: '24px', color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.5 
                 }}>
                   Savat bo'sh.<br />O'chirilgan haftalar shu yerda paydo bo'ladi.
                 </div>
@@ -2401,10 +2401,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   {deletedWeeks.map(weekName => (
                     <div key={weekName} style={{
                       background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '16px',
-                      padding: '1rem',
-                      boxShadow: 'var(--glass-shadow)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '24px',
+                      padding: '1.25rem',
+                      boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -2422,8 +2422,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             background: isDarkMode ? 'rgba(34, 197, 94, 0.12)' : '#f0fdf4',
                             color: isDarkMode ? '#4ade80' : '#166534',
                             border: isDarkMode ? '1px solid rgba(34,197,94,0.25)' : '1px solid #bbf7d0',
-                            borderRadius: '8px',
-                            padding: '0.35rem 0.7rem',
+                            borderRadius: '9999px',
+                            padding: '0.35rem 0.8rem',
                             fontSize: '0.7rem',
                             fontWeight: 800,
                             cursor: 'pointer',
@@ -2441,8 +2441,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             background: isDarkMode ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2',
                             color: isDarkMode ? '#fc8181' : '#991b1b',
                             border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid #fee2e2',
-                            borderRadius: '8px',
-                            padding: '0.35rem 0.7rem',
+                            borderRadius: '9999px',
+                            padding: '0.35rem 0.8rem',
                             fontSize: '0.7rem',
                             fontWeight: 800,
                             cursor: 'pointer',
@@ -2451,7 +2451,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.22)' : '#fee2e2'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.12)' : '#fef2f2'; }}
                         >
-                          Butunlay o'chirish
+                          O'chirish
                         </button>
                       </div>
                     </div>
@@ -2466,15 +2466,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
       {/* Upload CSV Modal overlay */}
       {isCsvModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsCsvModalOpen(false)} style={{ zIndex: 1100, background: 'rgba(0,0,0,0.6)' }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px', borderRadius: '24px', padding: '2rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+        <div className="modal-overlay" onClick={() => setIsCsvModalOpen(false)} style={{ zIndex: 1100 }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px' }}>
             <div className="modal-header" style={{ marginBottom: '1.25rem' }}>
               <h2 style={{ fontSize: '1.2rem', fontWeight: 850, color: 'var(--text-primary)' }}>O'quvchilarni guruhli yuklash</h2>
               <button 
                 onClick={() => setIsCsvModalOpen(false)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                className="close-btn"
               >
-                <X size={24} />
+                <X size={18} />
               </button>
             </div>
             
@@ -2483,8 +2483,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
             </p>
 
             <div style={{ 
-              background: 'rgba(13, 148, 136, 0.08)', border: '1px solid var(--accent-primary)', 
-              borderRadius: '12px', padding: '0.8rem 1rem', marginBottom: '1.25rem',
+              background: 'rgba(13, 148, 136, 0.08)', border: '1px solid var(--border-subtle)', 
+              borderRadius: '16px', padding: '0.8rem 1rem', marginBottom: '1.25rem',
               fontSize: '0.8rem', color: 'var(--text-primary)', lineHeight: 1.5
             }}>
               <strong>⚠️ Diqqat:</strong> Yuklanadigan fayl <strong>.XLSX</strong>, <strong>.XLS</strong> yoki <strong>.CSV</strong> formatida bo'lishi shart.<br />
@@ -2495,8 +2495,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               className="admin-btn" 
               style={{
                 marginBottom: '1.5rem', width: '100%', justifyContent: 'center',
-                background: 'var(--bg-card)', color: 'var(--accent-primary)', border: '1.5px solid var(--accent-primary)',
-                borderRadius: '12px', padding: '0.75rem 1.25rem', fontSize: '0.82rem', fontWeight: 800,
+                background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)',
+                borderRadius: '9999px', padding: '0.75rem 1.25rem', fontSize: '0.82rem', fontWeight: 800,
                 display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
@@ -2509,11 +2509,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
             {uploadStatus && (
               <div style={{
-                padding: '0.8rem 1rem', borderRadius: '10px', marginBottom: '1.25rem',
+                padding: '0.8rem 1rem', borderRadius: '9999px', marginBottom: '1.25rem',
                 fontSize: '0.82rem', fontWeight: 600,
-                background: uploadStatus.type === 'success' ? '#f0fdf4' : '#fef2f2',
-                color: uploadStatus.type === 'success' ? '#166534' : '#991b1b',
-                border: `1px solid ${uploadStatus.type === 'success' ? '#bbf7d0' : '#fecaca'}`
+                textAlign: 'center',
+                background: uploadStatus.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                color: uploadStatus.type === 'success' ? '#059669' : '#dc2626',
+                border: `1px solid ${uploadStatus.type === 'success' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
               }}>
                 {uploadStatus.message}
               </div>
@@ -2523,16 +2524,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               className="upload-area"
               onClick={() => fileInputRef.current?.click()}
               style={{
-                border: '2px dashed var(--border-color)',
-                borderRadius: '16px',
+                border: '2px dashed var(--border-subtle)',
+                borderRadius: '24px',
                 padding: '2.5rem 1.5rem',
                 textAlign: 'center',
                 cursor: 'pointer',
                 background: 'var(--bg-card-hover)',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.background = 'var(--border-color)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-hero)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
             >
               <UploadCloud className="icon" size={32} style={{ color: 'var(--text-secondary)', marginBottom: '0.75rem' }} />
               <div>
@@ -2579,57 +2580,21 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       />
 
       {editTeacher !== null && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 23, 42, 0.3)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1.5rem',
-          animation: 'fadeIn 0.25s ease-out'
-        }}>
-          <div style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '24px',
-            padding: '2rem',
-            width: '100%',
-            maxWidth: '440px',
-            boxShadow: 'var(--glass-shadow)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-            position: 'relative'
-          }}>
+        <div className="modal-overlay" onClick={() => setEditTeacher(null)} style={{ zIndex: 9999 }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', position: 'relative' }}>
             <button
               onClick={() => setEditTeacher(null)}
+              className="close-btn"
               style={{
                 position: 'absolute',
                 top: '1.25rem',
-                right: '1.25rem',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                padding: '0.25rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'color 0.2s'
+                right: '1.25rem'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
             >
               <X size={18} />
             </button>
 
-            <div>
+            <div style={{ marginBottom: '1.5rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                 O'qituvchi ma'lumotlarini tahrirlash
               </h3>
@@ -2638,7 +2603,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               </p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
                   Ismi va Familiyasi
@@ -2649,27 +2614,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   placeholder="Ism va familiya..."
                   value={editTeacherName}
                   onChange={(e) => setEditTeacherName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '1.5px solid var(--border-color)',
-                    borderRadius: '12px',
-                    fontSize: '0.85rem',
-                    fontWeight: 650,
-                    outline: 'none',
-                    color: 'var(--text-primary)',
-                    background: 'var(--bg-card-hover)',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = 'var(--accent-primary)';
-                    e.target.style.background = 'var(--bg-card)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = 'var(--border-color)';
-                    e.target.style.background = 'var(--bg-card-hover)';
-                  }}
+                  style={{ width: '100%' }}
                 />
               </div>
 
@@ -2688,48 +2633,28 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     }
                     setEditTeacherPhone(val);
                   }}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '1.5px solid var(--border-color)',
-                    borderRadius: '12px',
-                    fontSize: '0.85rem',
-                    fontWeight: 650,
-                    outline: 'none',
-                    color: 'var(--text-primary)',
-                    background: 'var(--bg-card-hover)',
-                    boxSizing: 'border-box',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = 'var(--accent-primary)';
-                    e.target.style.background = 'var(--bg-card)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = 'var(--border-color)';
-                    e.target.style.background = 'var(--bg-card-hover)';
-                  }}
+                  style={{ width: '100%' }}
                 />
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button
                 onClick={() => setEditTeacher(null)}
                 style={{
                   flex: 1,
                   background: 'none',
-                  border: '1.5px solid var(--border-color)',
-                  borderRadius: '12px',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '9999px',
                   padding: '0.75rem',
                   fontWeight: 750,
                   fontSize: '0.8rem',
                   color: 'var(--text-secondary)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--text-secondary)'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--text-primary)'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
               >
                 Bekor qilish
               </button>
@@ -2740,21 +2665,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     setEditTeacher(null);
                   }
                 }}
+                className="btn-primary"
                 style={{
                   flex: 1,
-                  background: 'var(--accent-primary)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '12px',
                   padding: '0.75rem',
-                  fontWeight: 800,
                   fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                  transition: 'all 0.2s ease'
+                  width: 'auto'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 Saqlash
               </button>

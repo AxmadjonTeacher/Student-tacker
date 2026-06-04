@@ -122,6 +122,12 @@ function App() {
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
 
+  // Hoisted states for ENG_MATH and GRANT subjects
+  const [engMathGradeRange, setEngMathGradeRange] = useState<'5-6' | '7-8' | '9-11'>('5-6');
+  const [engMathSubSubject, setEngMathSubSubject] = useState<'ENG' | 'MATH'>('ENG');
+  const [grantSubject, setGrantSubject] = useState<'ENG' | 'MATH'>('ENG');
+  const [onExportExcel, setOnExportExcel] = useState<(() => void) | null>(null);
+
   // Responsiveness and Sidebar state
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
@@ -141,6 +147,17 @@ function App() {
   useEffect(() => {
     localStorage.setItem('show_summer_plan', JSON.stringify(showSummerPlan));
   }, [showSummerPlan]);
+
+  // Synchronize teacher's subject to the hoisted states
+  useEffect(() => {
+    if (authRole === 'teacher') {
+      const teacherSubject = localStorage.getItem('teacher_subject');
+      if (teacherSubject === 'ENG' || teacherSubject === 'MATH') {
+        setGrantSubject(teacherSubject);
+        setEngMathSubSubject(teacherSubject);
+      }
+    }
+  }, [authRole]);
 
   // Dynamic window theme-color meta tag updates
   useEffect(() => {
@@ -1387,6 +1404,13 @@ function App() {
     return counts;
   }, [activeStudents, availableClasses]);
 
+  // Synchronize activeClass with availableClasses when classes change (e.g. subject tab switches)
+  useEffect(() => {
+    if (availableClasses.length > 0 && !availableClasses.includes(activeClass)) {
+      setActiveClass(availableClasses[0]);
+    }
+  }, [availableClasses, activeClass]);
+
   // Dynamically project activeSubject properties to standard fields and apply selectedWeek time-travel data
   const projectedStudents = useMemo(() => {
     return activeStudents.map(student => {
@@ -2350,6 +2374,17 @@ function App() {
           onOpenDrawer={() => setActiveAdminTab('settings')}
           activeSubject={activeSubject}
           isDarkMode={isDarkMode}
+          authRole={authRole}
+          engMathGradeRange={engMathGradeRange}
+          setEngMathGradeRange={setEngMathGradeRange}
+          engMathSubSubject={engMathSubSubject}
+          setEngMathSubSubject={setEngMathSubSubject}
+          grantSubject={grantSubject}
+          setGrantSubject={setGrantSubject}
+          onExportExcel={onExportExcel}
+          selectedWeek={selectedWeek}
+          onWeekChange={setSelectedWeek}
+          weeksList={weeksList}
         />
 
         <div style={{ display: activeAdminTab === 'settings' ? 'none' : 'block' }}>
@@ -2388,6 +2423,13 @@ function App() {
               weeksList={weeksList}
               onStartNewWeekClick={handleStartNewWeekClick}
               onDeleteWeekClick={handleDeleteWeek}
+              engMathGradeRange={engMathGradeRange}
+              setEngMathGradeRange={setEngMathGradeRange}
+              engMathSubSubject={engMathSubSubject}
+              setEngMathSubSubject={setEngMathSubSubject}
+              grantSubject={grantSubject}
+              setGrantSubject={setGrantSubject}
+              onExportExcelRegister={setOnExportExcel}
             />
           )}
         </div>
@@ -2940,7 +2982,7 @@ function App() {
       <main style={{
         flex: 1,
         padding: activeSubject === 'DASHBOARD' ? (isMobile ? '1rem' : '2.5rem 3.5rem') : '0',
-        overflowY: (activeSubject === 'DASHBOARD' && activeAdminTab === 'home') ? 'hidden' : 'auto',
+        overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
@@ -2962,6 +3004,17 @@ function App() {
                 onOpenDrawer={() => setActiveAdminTab('settings')}
                 activeSubject={activeSubject}
                 isDarkMode={isDarkMode}
+                authRole={authRole}
+                engMathGradeRange={engMathGradeRange}
+                setEngMathGradeRange={setEngMathGradeRange}
+                engMathSubSubject={engMathSubSubject}
+                setEngMathSubSubject={setEngMathSubSubject}
+                grantSubject={grantSubject}
+                setGrantSubject={setGrantSubject}
+                onExportExcel={onExportExcel}
+                selectedWeek={selectedWeek}
+                onWeekChange={setSelectedWeek}
+                weeksList={weeksList}
               />
             )}
             {activeSubject === 'DASHBOARD' ? (
@@ -2999,6 +3052,13 @@ function App() {
                 weeksList={weeksList}
                 onStartNewWeekClick={handleStartNewWeekClick}
                 onDeleteWeekClick={handleDeleteWeek}
+                engMathGradeRange={engMathGradeRange}
+                setEngMathGradeRange={setEngMathGradeRange}
+                engMathSubSubject={engMathSubSubject}
+                setEngMathSubSubject={setEngMathSubSubject}
+                grantSubject={grantSubject}
+                setGrantSubject={setGrantSubject}
+                onExportExcelRegister={setOnExportExcel}
               />
             )}
           </>

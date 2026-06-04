@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings, ChevronDown } from 'lucide-react';
+import { Search, Settings, ChevronDown, Download } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
 import iconDark from '../assets/icon-dark.png';
 import type { ActiveSubject } from '../types';
@@ -18,6 +18,18 @@ interface HeaderProps {
   activeAdminTab?: 'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash';
   isDarkMode?: boolean;
   authRole?: string | null;
+
+  // Hoisted States & Actions for ENG_MATH & GRANT
+  engMathGradeRange?: '5-6' | '7-8' | '9-11';
+  setEngMathGradeRange?: (range: '5-6' | '7-8' | '9-11') => void;
+  engMathSubSubject?: 'ENG' | 'MATH';
+  setEngMathSubSubject?: (subject: 'ENG' | 'MATH') => void;
+  grantSubject?: 'ENG' | 'MATH';
+  setGrantSubject?: (subject: 'ENG' | 'MATH') => void;
+  onExportExcel?: (() => void) | null;
+  selectedWeek?: string;
+  onWeekChange?: (week: string) => void;
+  weeksList?: string[];
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -28,7 +40,17 @@ const Header: React.FC<HeaderProps> = ({
   activeSubject,
   activeAdminTab = 'home',
   isDarkMode = false,
-  authRole
+  authRole,
+  engMathGradeRange,
+  setEngMathGradeRange,
+  engMathSubSubject,
+  setEngMathSubSubject,
+  grantSubject,
+  setGrantSubject,
+  onExportExcel,
+  selectedWeek,
+  onWeekChange,
+  weeksList
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -40,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({
       background: 'var(--bg-header-rgba)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      borderBottom: activeSubject === 'DASHBOARD' ? 'none' : '1px solid var(--border-color)',
+      borderBottom: activeSubject === 'DASHBOARD' ? 'none' : '1px solid var(--border-subtle)',
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
@@ -111,13 +133,12 @@ const Header: React.FC<HeaderProps> = ({
           }
           .class-selector button {
             background: var(--bg-card);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border-subtle);
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
             color: var(--text-secondary);
           }
           .class-selector button.active-pill {
             color: #ffffff !important;
-            /* background, border and box-shadow are now set dynamically inline */
           }
           .admin-header-bottom-row {
             margin-top: 1rem !important;
@@ -269,9 +290,6 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-
-          {/* Settings button removed on desktop - moved to left sidebar */}
-
           {/* Hamburger Menu button */}
           <div className="mobile-header-menu-container" style={{ position: 'relative' }}>
             <button 
@@ -279,7 +297,7 @@ const Header: React.FC<HeaderProps> = ({
               style={{
                 background: 'var(--bg-card)',
                 color: 'var(--text-secondary)',
-                border: '1.5px solid var(--border-color)',
+                border: '1.5px solid var(--border-subtle)',
                 borderRadius: '50%',
                 width: '40px',
                 height: '40px',
@@ -301,9 +319,9 @@ const Header: React.FC<HeaderProps> = ({
                 right: 0,
                 width: '180px',
                 background: 'var(--bg-card)',
-                borderRadius: '12px',
-                border: '1px solid var(--border-color)',
-                boxShadow: 'var(--glass-shadow)',
+                borderRadius: '24px',
+                border: '1px solid var(--border-subtle)',
+                boxShadow: 'var(--glass-shadow-soft)',
                 padding: '0.5rem',
                 display: 'flex',
                 flexDirection: 'column',
@@ -314,7 +332,7 @@ const Header: React.FC<HeaderProps> = ({
                   onClick={() => { setIsMenuOpen(false); onOpenDrawer(); }}
                   style={{
                     background: 'transparent', border: 'none', padding: '0.6rem 0.75rem',
-                    borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', cursor: 'pointer',
+                    borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', cursor: 'pointer',
                     textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%'
                   }}
                 >
@@ -324,7 +342,6 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             )}
           </div>
-
         </div>
       </div>
  
@@ -335,124 +352,276 @@ const Header: React.FC<HeaderProps> = ({
           alignItems: 'center', 
           width: '100%', 
           gap: '1.5rem', 
-          flexWrap: 'nowrap',
+          flexWrap: 'wrap',
           marginTop: '0.5rem',
           marginBottom: '1rem'
         }}>
-          {activeSubject !== 'ENG_MATH' && (
-            <div className="class-selector" style={{ 
-              display: 'flex', 
-              gap: '0.25rem', 
-              background: 'var(--bg-card)', 
-              padding: '0.5rem', 
-              borderRadius: '9999px',
-              boxShadow: 'var(--glass-shadow)',
-              border: '1px solid var(--border-color)',
-              overflowX: 'auto',
-              flex: '1 1 auto',
-              maxWidth: '100%'
-            }}>
-              {classes.map(cls => {
-                const isActive = activeClass === cls;
-                
-                const getSubjectColor = () => {
-                  return 'var(--accent-primary)'; // Dynamic theme-based color
-                };
-                const subjectColor = getSubjectColor();
+          
+          {/* Left Side: Contextual Toggles / Class Selectors */}
+          <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: '1 1 auto' }}>
+            {/* If Subject is ENG_MATH */}
+            {activeSubject === 'ENG_MATH' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {/* Grade Range Selector */}
+                {engMathGradeRange !== undefined && setEngMathGradeRange && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>SINF:</span>
+                    <div style={{ display: 'flex', background: 'var(--border-subtle)', boxShadow: 'var(--inner-inset)', borderRadius: '9999px', padding: '2px' }}>
+                      {(['5-6', '7-8', '9-11'] as const).map(range => {
+                        const active = engMathGradeRange === range;
+                        return (
+                          <button
+                            key={range}
+                            onClick={() => setEngMathGradeRange(range)}
+                            style={{
+                              background: active ? 'var(--bg-card)' : 'transparent',
+                              color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                              border: 'none',
+                              borderRadius: '9999px',
+                              padding: '6px 14px',
+                              fontSize: '0.8rem',
+                              fontWeight: active ? 700 : 500,
+                              cursor: 'pointer',
+                              boxShadow: active ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
+                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {range}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-                return (
-                  <button
-                    key={cls}
-                    onClick={() => onClassSelect(cls)}
-                    className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      background: isActive ? subjectColor : 'var(--bg-card)',
-                      color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                      border: isActive ? `1px solid ${subjectColor}` : '1px solid var(--border-color)',
-                      boxShadow: isActive ? `0 4px 10px ${subjectColor}40` : '0 1px 2px rgba(0,0,0,0.02)',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '9999px',
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      fontSize: '0.9rem',
-                      transition: 'all 0.2s ease',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {cls}
-                    <span style={{
-                      background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-card-hover)',
-                      color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.7rem',
-                      fontWeight: 700
-                    }}>
-                      {classCounts[cls] || 0}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-    
-          <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '0 0 auto' }}>
-            <div className="mobile-sticky-search" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', maxWidth: '420px', position: 'relative' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                <input 
-                  type="text" 
-                  placeholder={
-                    searchFilter === 'student' ? "O'quvchini qidirish..." :
-                    searchFilter === 'teacher' ? "O'qituvchini qidirish..." :
-                    "Qidirish..."
-                  }
-                  value={searchTerm}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem 1rem 0.85rem 2.75rem',
-                    borderRadius: '9999px',
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-card)',
-                    fontSize: '0.95rem',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)',
-                    boxSizing: 'border-box'
-                  }}
-                />
+                {/* Sub-Subject Selector (ENG vs MATH) */}
+                {authRole !== 'teacher' && engMathSubSubject !== undefined && setEngMathSubSubject && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FAN:</span>
+                    <div style={{ display: 'flex', background: 'var(--border-subtle)', boxShadow: 'var(--inner-inset)', borderRadius: '9999px', padding: '2px' }}>
+                      {(['ENG', 'MATH'] as const).map(sub => {
+                        const active = engMathSubSubject === sub;
+                        return (
+                          <button
+                            key={sub}
+                            onClick={() => setEngMathSubSubject(sub)}
+                            style={{
+                              background: active ? 'var(--bg-card)' : 'transparent',
+                              color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                              border: 'none',
+                              borderRadius: '9999px',
+                              padding: '6px 14px',
+                              fontSize: '0.8rem',
+                              fontWeight: active ? 700 : 500,
+                              cursor: 'pointer',
+                              boxShadow: active ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
+                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {sub === 'ENG' ? 'Ingliz tili' : 'Matematika'}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Week Selector Dropdown */}
+                {onWeekChange && weeksList && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>HAFTA:</span>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <select
+                        value={selectedWeek}
+                        onChange={(e) => onWeekChange(e.target.value)}
+                        style={{
+                          appearance: 'none',
+                          background: 'var(--bg-card-hover)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-subtle)',
+                          borderRadius: '9999px',
+                          padding: '0.45rem 2rem 0.45rem 1.0rem',
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          outline: 'none',
+                          cursor: 'pointer',
+                          lineHeight: 1.2,
+                          boxShadow: 'var(--glass-shadow-soft)',
+                          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                        }}
+                      >
+                        {weeksList.length === 0 ? (
+                          <option value="">Hafta yo'q</option>
+                        ) : (
+                          weeksList.map(w => (
+                            <option key={w} value={w}>{w}</option>
+                          ))
+                        )}
+                      </select>
+                      <div style={{
+                        position: 'absolute',
+                        right: '0.75rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        pointerEvents: 'none',
+                        color: 'var(--text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>
+                        <ChevronDown size={14} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              
+            )}
+
+            {/* If Subject is GRANT */}
+            {activeSubject === 'GRANT' && grantSubject !== undefined && setGrantSubject && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FAN:</span>
+                <div style={{ display: 'flex', background: 'var(--border-subtle)', boxShadow: 'var(--inner-inset)', borderRadius: '9999px', padding: '2px' }}>
+                  {(['ENG', 'MATH'] as const).map(sub => {
+                    const active = grantSubject === sub;
+                    return (
+                      <button
+                        key={sub}
+                        onClick={() => setGrantSubject(sub)}
+                        style={{
+                          background: active ? 'var(--bg-card)' : 'transparent',
+                          color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          border: 'none',
+                          borderRadius: '9999px',
+                          padding: '6px 14px',
+                          fontSize: '0.8rem',
+                          fontWeight: active ? 700 : 500,
+                          cursor: 'pointer',
+                          boxShadow: active ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
+                          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {sub === 'ENG' ? 'Ingliz tili' : 'Matematika'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Standard Class Selector for other subjects */}
+            {activeSubject !== 'ENG_MATH' && activeSubject !== 'GRANT' && (
+              <div className="class-selector" style={{ 
+                display: 'flex', 
+                gap: '0.25rem', 
+                background: 'var(--bg-card)', 
+                padding: '0.35rem', 
+                borderRadius: '9999px',
+                boxShadow: 'var(--glass-shadow-soft)',
+                border: '1px solid var(--border-subtle)',
+                overflowX: 'auto',
+                flex: '1 1 auto',
+                maxWidth: '100%'
+              }}>
+                {classes.map(cls => {
+                  const isActive = activeClass === cls;
+                  return (
+                    <button
+                      key={cls}
+                      onClick={() => onClassSelect(cls)}
+                      className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        background: isActive ? 'var(--accent-hero)' : 'transparent',
+                        color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                        border: isActive ? '1px solid var(--accent-hero)' : '1px solid transparent',
+                        boxShadow: isActive ? '0 4px 12px var(--accent-glow)' : 'none',
+                        padding: '0.4rem 1rem',
+                        borderRadius: '9999px',
+                        cursor: 'pointer',
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: '0.85rem',
+                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {cls}
+                      <span style={{
+                        background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--border-subtle)',
+                        color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.65rem',
+                        fontWeight: 700
+                      }}>
+                        {classCounts[cls] || 0}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+    
+          {/* Right Side: Integrated Search Bar & Excel Export Button */}
+          <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
+            <div className="mobile-sticky-search" style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '9999px',
+              padding: '0.25rem 0.5rem',
+              boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
+              width: '100%',
+              maxWidth: '380px',
+              boxSizing: 'border-box'
+            }}>
+              <Search size={18} style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)', flexShrink: 0 }} />
+              <input 
+                type="text" 
+                placeholder={
+                  searchFilter === 'student' ? "O'quvchini qidirish..." :
+                  searchFilter === 'teacher' ? "O'qituvchini qidirish..." :
+                  "Qidirish..."
+                }
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '0.5rem 0.75rem',
+                  fontSize: '0.9rem',
+                  color: 'var(--text-primary)',
+                  width: '100%'
+                }}
+              />
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <select
                   value={searchFilter}
                   onChange={(e) => onSearchFilterChange(e.target.value as any)}
                   style={{
                     appearance: 'none',
-                    background: 'var(--bg-card)',
+                    background: 'transparent',
                     color: 'var(--text-secondary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '9999px',
-                    padding: '0.85rem 2rem 0.85rem 1rem',
-                    fontSize: '0.9rem',
+                    border: 'none',
+                    padding: '0.5rem 1.5rem 0.5rem 0.5rem',
+                    fontSize: '0.85rem',
                     fontWeight: 700,
                     outline: 'none',
                     cursor: 'pointer',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                    transition: 'all 0.2s ease',
-                    boxSizing: 'border-box',
                     whiteSpace: 'nowrap'
                   }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
                 >
                   <option value="both">Barchasi</option>
                   <option value="student">O'quvchilar</option>
@@ -460,7 +629,7 @@ const Header: React.FC<HeaderProps> = ({
                 </select>
                 <div style={{
                   position: 'absolute',
-                  right: '0.85rem',
+                  right: '0.25rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   pointerEvents: 'none',
@@ -472,10 +641,46 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
             </div>
+
+            {onExportExcel && (
+              <button
+                onClick={onExportExcel}
+                className="admin-btn"
+                style={{
+                  height: '42px',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0 1.25rem',
+                  background: 'var(--bg-card)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-subtle)',
+                  boxShadow: 'var(--glass-shadow-soft)',
+                  borderRadius: '9999px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'var(--text-primary)';
+                  e.currentTarget.style.color = 'var(--bg-main)';
+                  e.currentTarget.style.transform = 'scale(1.03) translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'var(--bg-card)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                  e.currentTarget.style.transform = 'none';
+                }}
+              >
+                <Download size={15} />
+                <span className="week-btn-text">Excelga yuklash</span>
+              </button>
+            )}
           </div>
         </div>
       )}
-
     </header>
   );
 };

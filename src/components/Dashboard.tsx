@@ -563,7 +563,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     className={`tab-pill ${leaderClassGroup === grp.id ? 'active' : ''}`}
                     style={{
                       padding: '0.3rem 0.65rem',
-                      borderRadius: '8px',
                       fontSize: '0.68rem',
                       fontWeight: 750,
                       cursor: 'pointer'
@@ -749,7 +748,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   className={`tab-pill ${chartClassGroup === grp.id ? 'active' : ''}`}
                   style={{
                     padding: '0.3rem 0.75rem',
-                    borderRadius: '8px',
                     fontSize: '0.68rem',
                     fontWeight: 750,
                     cursor: 'pointer'
