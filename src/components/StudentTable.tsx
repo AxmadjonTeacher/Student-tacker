@@ -2483,7 +2483,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               {/* Header row */}
                               <div className="table-header-row" style={{
                                 display: 'grid',
-                                gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr',
+                                gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 1fr',
                                 alignItems: 'stretch',
                                 padding: '0 1.5rem',
                                 borderBottom: '1px solid var(--border-color)',
@@ -2498,7 +2498,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>SINF</div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>DAVOMAT</div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>UYGA VAZIFA</div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{engMathSubSubject === 'ENG' ? 'INGLIZ TILI' : 'MATEMATIKA'} BALLI (15)</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>{engMathSubSubject === 'ENG' ? 'INGLIZ TILI' : 'MATEMATIKA'} BALLI (15)</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>CHART</div>
                               </div>
 
                               {/* Rows */}
@@ -2518,7 +2519,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     className="table-row"
                                     style={{
                                       display: 'grid',
-                                      gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr',
+                                      gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 1fr',
                                       padding: '0.65rem 1.5rem',
                                       alignItems: 'center',
                                       borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
@@ -2631,6 +2632,41 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                           {scoreVal !== null && scoreVal !== undefined ? `${scoreVal} / 15` : '—'}
                                         </div>
                                       )}
+                                    </div>
+
+                                    {/* Chart */}
+                                    <div 
+                                      className="table-cell chart-cell"
+                                      onClick={() => setSelectedStudent(student)}
+                                      style={{ 
+                                        padding: '0 1.5rem', 
+                                        height: '100%', 
+                                        display: 'flex', 
+                                        alignItems: 'center',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.15s ease, opacity 0.15s ease',
+                                        justifyContent: 'center'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                        e.currentTarget.style.opacity = '0.85';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                        e.currentTarget.style.opacity = '1';
+                                      }}
+                                      title="Grafikni ko'rish"
+                                    >
+                                      <svg width="74" height="42" style={{ overflow: 'visible' }}>
+                                        <g>
+                                          <rect x="5" y={38 - (attPercent / 100) * 32} width="12" height={(attPercent / 100) * 32} rx="3" fill="var(--accent-primary)">
+                                            <title>Attendance: {attPercent.toFixed(0)}%</title>
+                                          </rect>
+                                          <rect x="25" y={38 - (hwPercent / 100) * 32} width="12" height={(hwPercent / 100) * 32} rx="3" fill="#10b981">
+                                            <title>Homework: {hwPercent.toFixed(0)}%</title>
+                                          </rect>
+                                        </g>
+                                      </svg>
                                     </div>
                                   </div>
                                 );
