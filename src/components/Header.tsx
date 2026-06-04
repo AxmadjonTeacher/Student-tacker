@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings, ChevronDown, Download } from 'lucide-react';
+import { Search, Settings, ChevronDown } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
 import iconDark from '../assets/icon-dark.png';
 import type { ActiveSubject } from '../types';
@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({
   setEngMathSubSubject,
   grantSubject,
   setGrantSubject,
-  onExportExcel,
+  onExportExcel: _onExportExcel,
   selectedWeek,
   onWeekChange,
   weeksList
@@ -814,42 +814,7 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            {onExportExcel && activeSubject === 'DETAILS' && (
-              <button
-                onClick={onExportExcel}
-                className="admin-btn"
-                style={{
-                  height: '42px',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0 1.25rem',
-                  background: 'var(--bg-card)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-subtle)',
-                  boxShadow: 'var(--glass-shadow-soft)',
-                  borderRadius: '9999px',
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'var(--text-primary)';
-                  e.currentTarget.style.color = 'var(--bg-main)';
-                  e.currentTarget.style.transform = 'scale(1.03) translateY(-1px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'var(--bg-card)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.transform = 'none';
-                }}
-              >
-                <Download size={15} />
-                <span className="week-btn-text">Excelga yuklash</span>
-              </button>
-            )}
+
           </div>
         </div>
       )}

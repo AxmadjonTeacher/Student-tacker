@@ -111,7 +111,7 @@ function App() {
   });
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('isDarkMode');
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === 'true' : false;
   });
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash'>('home');
@@ -1682,6 +1682,7 @@ function App() {
         const surname = edits.surname !== undefined ? edits.surname : student.surname;
         const passcode = edits.passcode !== undefined ? edits.passcode : student.passcode;
         const parentPhone = edits.parentPhone !== undefined ? edits.parentPhone : student.parentPhone;
+        const className = edits.className !== undefined ? edits.className : student.className;
 
         if (newId !== oldId) {
           // A: Update student_weeks first to point to the new ID
@@ -1699,19 +1700,21 @@ function App() {
               name,
               surname,
               passcode,
-              parent_phone: parentPhone
+              parent_phone: parentPhone,
+              class_name: className
             })
             .eq('id', oldId);
           if (studentError) throw studentError;
         } else {
-          // ID didn't change, just update name, surname, passcode, parent_phone
+          // ID didn't change, just update name, surname, passcode, parent_phone, class_name
           const { error: studentError } = await supabase
             .from('Students')
             .update({
               name,
               surname,
               passcode,
-              parent_phone: parentPhone
+              parent_phone: parentPhone,
+              class_name: className
             })
             .eq('id', oldId);
           if (studentError) throw studentError;
@@ -1728,7 +1731,8 @@ function App() {
             name: edits.name !== undefined ? edits.name : s.name,
             surname: edits.surname !== undefined ? edits.surname : s.surname,
             passcode: edits.passcode !== undefined ? edits.passcode : s.passcode,
-            parentPhone: edits.parentPhone !== undefined ? edits.parentPhone : s.parentPhone
+            parentPhone: edits.parentPhone !== undefined ? edits.parentPhone : s.parentPhone,
+            className: edits.className !== undefined ? edits.className : s.className
           };
         }
         return s;

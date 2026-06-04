@@ -4,7 +4,7 @@ import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, BarChart, Bar
 } from 'recharts';
-import { Award, Calendar, User, TrendingUp } from 'lucide-react';
+import { Award, Calendar, User, TrendingUp, ArrowUpRight } from 'lucide-react';
 
 const CHART_MARGIN = { top: 10, right: 10, left: -25, bottom: 5 };
 const AXIS_TICK_STYLE = { fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 700 };
@@ -457,6 +457,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {topStudents.grades5_6 ? `Sinf: ${topStudents.grades5_6.className}` : "O'quvchi yo'q"}
               </p>
             </div>
+
+            {/* Diagonal Arrow Button */}
+            <div style={{
+              position: 'absolute',
+              bottom: '1rem',
+              right: '1rem',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'var(--bg-card)',
+              border: '1.5px solid var(--border-subtle)',
+              boxShadow: 'var(--glass-shadow-soft)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              zIndex: 5
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.borderColor = 'var(--accent-hero)';
+              e.currentTarget.style.color = 'var(--accent-hero)';
+              e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.boxShadow = 'var(--glass-shadow-soft)';
+            }}
+            >
+              <ArrowUpRight size={16} />
+            </div>
           </div>
 
           {/* Card 2: 7-8 Grades */}
@@ -479,6 +514,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {topStudents.grades7_8 ? `Sinf: ${topStudents.grades7_8.className}` : "O'quvchi yo'q"}
               </p>
             </div>
+
+            {/* Diagonal Arrow Button */}
+            <div style={{
+              position: 'absolute',
+              bottom: '1rem',
+              right: '1rem',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'var(--bg-card)',
+              border: '1.5px solid var(--border-subtle)',
+              boxShadow: 'var(--glass-shadow-soft)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              zIndex: 5
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.borderColor = 'var(--accent-hero)';
+              e.currentTarget.style.color = 'var(--accent-hero)';
+              e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.boxShadow = 'var(--glass-shadow-soft)';
+            }}
+            >
+              <ArrowUpRight size={16} />
+            </div>
           </div>
 
           {/* Card 3: 9-11 Grades */}
@@ -500,6 +570,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                 {topStudents.grades9_11 ? `Sinf: ${topStudents.grades9_11.className}` : "O'quvchi yo'q"}
               </p>
+            </div>
+
+            {/* Diagonal Arrow Button */}
+            <div style={{
+              position: 'absolute',
+              bottom: '1rem',
+              right: '1rem',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'var(--bg-card)',
+              border: '1.5px solid var(--border-subtle)',
+              boxShadow: 'var(--glass-shadow-soft)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              zIndex: 5
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.borderColor = 'var(--accent-hero)';
+              e.currentTarget.style.color = 'var(--accent-hero)';
+              e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+              e.currentTarget.style.boxShadow = 'var(--glass-shadow-soft)';
+            }}
+            >
+              <ArrowUpRight size={16} />
             </div>
           </div>
         </div>

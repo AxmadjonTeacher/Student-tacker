@@ -96,6 +96,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [editingValue, setEditingValue] = useState<string>('');
   const [unsavedChanges, setUnsavedChanges] = useState<Record<string, Partial<Student>>>({});
 
+  // States for basic student edit modal (Name, Surname, Class)
+  const [studentToEditBasic, setStudentToEditBasic] = useState<Student | null>(null);
+  const [editBasicName, setEditBasicName] = useState('');
+  const [editBasicSurname, setEditBasicSurname] = useState('');
+  const [editBasicClass, setEditBasicClass] = useState('');
+
+  // States for teacher table actions dropdown
+  const [openTeacherDropdown, setOpenTeacherDropdown] = useState<string | null>(null);
+
   // States for inline Eng/Math score editing
   const [editingEngMathScore, setEditingEngMathScore] = useState<{ studentId: string, subject: 'ENG' | 'MATH' } | null>(null);
   const [engMathScoreValue, setEngMathScoreValue] = useState<string>('');
@@ -678,7 +687,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
     };
   }, [activeSubject, students, sortedStudents, filteredEngMathStudents, engMathSubSubject, onExportExcelRegister]);
 
-  const handleCellSave = (studentId: string, field: 'name' | 'id' | 'passcode' | 'parentPhone', value: string) => {
+  const handleCellSave = (studentId: string, field: 'name' | 'id' | 'passcode' | 'parentPhone' | 'className', value: string) => {
     const student = students.find(s => s.id === studentId);
     if (!student) {
       setEditingCell(null);
@@ -706,6 +715,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
         } else {
           updatedEdits.parentPhone = phoneVal;
         }
+      } else if (field === 'className') {
+        updatedEdits.className = value.trim();
       }
 
       // If the field is identical to original, remove from edits
@@ -722,6 +733,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
       if (updatedEdits.parentPhone === (student.parentPhone || '')) {
         delete updatedEdits.parentPhone;
       }
+      if (updatedEdits.className === student.className) {
+        delete updatedEdits.className;
+      }
 
       const newPrev = { ...prev };
       if (Object.keys(updatedEdits).length === 0) {
@@ -731,7 +745,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
       }
       return newPrev;
     });
+
     setEditingCell(null);
+  };
+
+  const handleStartEditBasic = (student: Student) => {
+    const edits = unsavedChanges[student.id] || {};
+    setStudentToEditBasic(student);
+    setEditBasicName(edits.name !== undefined ? edits.name : student.name);
+    setEditBasicSurname(edits.surname !== undefined ? edits.surname : student.surname);
+    setEditBasicClass(edits.className !== undefined ? edits.className : student.className);
   };
 
   const handleExportCredentialsToExcel = (studentsList: Student[]) => {
@@ -2457,12 +2480,94 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             margin: '0.5rem 0 0',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.5rem'
+                            justifyContent: 'space-between',
+                            width: '100%',
+                            boxSizing: 'border-box'
                           }}>
-                            <span>O'qituvchi: {teacherName}</span>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--border-color)', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
-                              {teacherStudents.length} ta o'quvchi
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span>O'qituvchi: {teacherName}</span>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--border-color)', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
+                                {teacherStudents.length} ta o'quvchi
+                              </span>
+                            </div>
+
+                            {/* Three dots dropdown */}
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <button
+                                onClick={() => setOpenTeacherDropdown(openTeacherDropdown === teacherName ? null : teacherName)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: 'var(--text-secondary)',
+                                  padding: '0.25rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  borderRadius: '50%',
+                                  width: '28px',
+                                  height: '28px',
+                                  transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+
+                              {openTeacherDropdown === teacherName && (
+                                <>
+                                  {/* Close overlay */}
+                                  <div 
+                                    onClick={() => setOpenTeacherDropdown(null)}
+                                    style={{
+                                      position: 'fixed',
+                                      top: 0, left: 0, right: 0, bottom: 0,
+                                      zIndex: 998
+                                    }}
+                                  />
+                                  <div style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: '30px',
+                                    background: 'var(--bg-card)',
+                                    border: '1px solid var(--border-subtle)',
+                                    boxShadow: 'var(--glass-shadow-soft)',
+                                    borderRadius: '12px',
+                                    padding: '0.25rem',
+                                    zIndex: 999,
+                                    minWidth: '150px'
+                                  }}>
+                                    <button
+                                      onClick={() => {
+                                        setOpenTeacherDropdown(null);
+                                        handleExportTableToExcel(teacherName, teacherStudents);
+                                      }}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        width: '100%',
+                                        padding: '0.5rem 0.75rem',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700,
+                                        color: 'var(--text-primary)',
+                                        cursor: 'pointer',
+                                        textAlign: 'left'
+                                      }}
+                                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
+                                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                      <Download size={14} />
+                                      <span>Excel yuklash</span>
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </h2>
 
                           {/* Table checklist grouped by teacher */}
@@ -2498,8 +2603,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>SINF</div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>DAVOMAT</div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>UYGA VAZIFA</div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>INGLIZ TILI BALLI (15)</div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>MATEMATIKA BALLI (15)</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>INGLIZ TILI (15)</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>MATEMATIKA (15)</div>
                               </div>
 
                               {/* Rows */}
@@ -2795,6 +2900,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           const idVal = edits.id !== undefined ? edits.id : student.id;
                           const passcodeVal = edits.passcode !== undefined ? edits.passcode : student.passcode;
                           const phoneVal = edits.parentPhone !== undefined ? edits.parentPhone : student.parentPhone;
+                          const classVal = edits.className !== undefined ? edits.className : student.className;
 
                           const fullName = `${nameVal} ${surnameVal}`.trim();
 
@@ -2897,7 +3003,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                         )}
                                       </h3>
                                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', marginTop: '0.1rem' }}>
-                                        Sinf: {student.className.toUpperCase()}
+                                        Sinf: {classVal.toUpperCase()}
                                       </span>
                                     </div>
                                   )}
@@ -3032,22 +3138,40 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     </div>
                                     
                                     {isAdminMode && authRole !== 'admin123' && (
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); onDeleteStudent && onDeleteStudent(student.id); }}
-                                        title="O'quvchini o'chirish"
-                                        style={{
-                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                          background: '#fee2e2', color: '#b91c1c',
-                                          border: '1px solid #fca5a5', borderRadius: '50%',
-                                          width: '32px', height: '32px',
-                                          cursor: 'pointer', transition: 'all 0.15s ease',
-                                          flexShrink: 0
-                                        }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.08)'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
-                                      >
-                                        <Trash2 size={14} />
-                                      </button>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); handleStartEditBasic(student); }}
+                                          title="O'quvchini tahrirlash"
+                                          style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-primary)',
+                                            border: '1px solid rgba(99, 102, 241, 0.25)', borderRadius: '50%',
+                                            width: '32px', height: '32px',
+                                            cursor: 'pointer', transition: 'all 0.15s ease',
+                                            flexShrink: 0
+                                          }}
+                                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(99, 102, 241, 0.25)'; e.currentTarget.style.transform = 'scale(1.08)'; }}
+                                          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(99, 102, 241, 0.12)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                        >
+                                          <Pencil size={13} />
+                                        </button>
+                                        <button 
+                                          onClick={(e) => { e.stopPropagation(); onDeleteStudent && onDeleteStudent(student.id); }}
+                                          title="O'quvchini o'chirish"
+                                          style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            background: '#fee2e2', color: '#b91c1c',
+                                            border: '1px solid #fca5a5', borderRadius: '50%',
+                                            width: '32px', height: '32px',
+                                            cursor: 'pointer', transition: 'all 0.15s ease',
+                                            flexShrink: 0
+                                          }}
+                                          onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.08)'; }}
+                                          onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
+                                      </div>
                                     )}
                                   </div>
                                 )}
@@ -3624,6 +3748,120 @@ const StudentTable: React.FC<StudentTableProps> = ({
             setEditingStudent(null);
           }}
         />
+      )}
+
+      {studentToEditBasic && (
+        <div className="modal-overlay" onClick={() => setStudentToEditBasic(null)} style={{ zIndex: 9999, background: 'var(--backdrop-color)', backdropFilter: 'var(--backdrop-blur-md)', WebkitBackdropFilter: 'var(--backdrop-blur-md)' }}>
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '400px',
+              width: '90%',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
+              boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
+              borderRadius: '24px',
+              padding: '2rem'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>O'quvchi ma'lumotlarini tahrirlash</h3>
+              <button onClick={() => setStudentToEditBasic(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '0.45rem', letterSpacing: '0.04em' }}>ISM</label>
+                <input 
+                  type="text" 
+                  value={editBasicName} 
+                  onChange={e => setEditBasicName(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.65rem 1rem', borderRadius: '12px',
+                    border: '1px solid var(--border-subtle)', fontSize: '0.9rem',
+                    background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
+                    outline: 'none', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '0.45rem', letterSpacing: '0.04em' }}>FAMILIYA</label>
+                <input 
+                  type="text" 
+                  value={editBasicSurname} 
+                  onChange={e => setEditBasicSurname(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.65rem 1rem', borderRadius: '12px',
+                    border: '1px solid var(--border-subtle)', fontSize: '0.9rem',
+                    background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
+                    outline: 'none', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '0.45rem', letterSpacing: '0.04em' }}>SINF / GURUH</label>
+                <input 
+                  type="text" 
+                  value={editBasicClass} 
+                  onChange={e => setEditBasicClass(e.target.value)}
+                  placeholder="Masalan: 5A"
+                  style={{
+                    width: '100%', padding: '0.65rem 1rem', borderRadius: '12px',
+                    border: '1px solid var(--border-subtle)', fontSize: '0.9rem',
+                    background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
+                    outline: 'none', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <button 
+                onClick={() => setStudentToEditBasic(null)}
+                style={{
+                  padding: '0.6rem 1.25rem', borderRadius: '9999px', border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-card)', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Bekor qilish
+              </button>
+              <button 
+                onClick={() => {
+                  setUnsavedChanges(prev => {
+                    const studentEdits = prev[studentToEditBasic.id] || {};
+                    const updatedEdits = {
+                      ...studentEdits,
+                      name: editBasicName.trim(),
+                      surname: editBasicSurname.trim(),
+                      className: editBasicClass.trim()
+                    };
+
+                    // Clean up if identical
+                    if (updatedEdits.name === studentToEditBasic.name) delete (updatedEdits as any).name;
+                    if (updatedEdits.surname === studentToEditBasic.surname) delete (updatedEdits as any).surname;
+                    if (updatedEdits.className === studentToEditBasic.className) delete (updatedEdits as any).className;
+
+                    const newPrev = { ...prev };
+                    if (Object.keys(updatedEdits).length === 0) {
+                      delete newPrev[studentToEditBasic.id];
+                    } else {
+                      newPrev[studentToEditBasic.id] = updatedEdits;
+                    }
+                    return newPrev;
+                  });
+                  setStudentToEditBasic(null);
+                }}
+                style={{
+                  padding: '0.6rem 1.5rem', borderRadius: '9999px', border: 'none',
+                  background: 'var(--accent-primary)', color: '#ffffff', fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Saqlash
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Floating Action Banner for Unsaved Cell Changes */}
