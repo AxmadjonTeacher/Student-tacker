@@ -106,11 +106,11 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
     const testNames = ['1-Chorak', '2-Chorak', '3-Chorak', '4-Chorak'];
 
-    if (tests && tests.length > 0) {
+    if (Array.isArray(tests) && tests.length > 0) {
       return testNames.map((name, index) => {
         const termNum = index + 1;
         const namesToTry = [`grant ${termNum}`, `${termNum}-chorak`, `${termNum} chorak`].map(n => n.toLowerCase());
-        const found = tests.find(t => namesToTry.includes(t.name.toLowerCase()));
+        const found = tests.find(t => t && t.name && namesToTry.includes(t.name.toString().toLowerCase()));
         
         let score: number | null = null;
         if (found && found.score !== null && found.score !== undefined && found.score.toString().trim() !== '-') {
@@ -162,21 +162,21 @@ const GraphModal: React.FC<GraphModalProps> = ({
   let lastMathVal = 50;
 
   combinedData.forEach((d, idx) => {
-    if (d.engVal !== null && d.engVal !== undefined) {
+    if (d.engVal !== null && d.engVal !== undefined && !isNaN(d.engVal)) {
       lastEngIdx = idx;
       lastEngVal = d.engVal;
     }
-    if (d.mathVal !== null && d.mathVal !== undefined) {
+    if (d.mathVal !== null && d.mathVal !== undefined && !isNaN(d.mathVal)) {
       lastMathIdx = idx;
       lastMathVal = d.mathVal;
     }
   });
 
   // Connect the last valid point to the estimate line
-  if (lastEngIdx >= 0) {
+  if (lastEngIdx >= 0 && combinedData[lastEngIdx]) {
     combinedData[lastEngIdx].engEstimate = lastEngVal;
   }
-  if (lastMathIdx >= 0) {
+  if (lastMathIdx >= 0 && combinedData[lastMathIdx]) {
     combinedData[lastMathIdx].mathEstimate = lastMathVal;
   }
 
@@ -194,19 +194,19 @@ const GraphModal: React.FC<GraphModalProps> = ({
   // Decide dynamically which scores are visible to scale Y-axis domain
   const allVisibleScores = (isComparing || activeSubject === 'ALL' || activeSubject === 'PRIMARY')
     ? [
-        ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined),
-        ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined),
-        ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined),
-        ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined)
+        ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
+        ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
+        ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined && !isNaN(v)),
+        ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
       ]
     : (activeSubject === 'MATH' 
         ? [
-            ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined),
-            ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined)
+            ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
+            ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
           ]
         : [
-            ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined),
-            ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined)
+            ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
+            ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
           ]
       );
 
@@ -239,13 +239,25 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
   const activeThemeColor = 'var(--accent-primary)';
 
-  // Calculate percentages for ALL section
-  const engPercent = student.engScore !== null && student.engScore !== undefined ? (student.engScore / 15 * 100) : 0;
-  const mathPercent = student.mathScore !== null && student.mathScore !== undefined ? (student.mathScore / 15 * 100) : 0;
-  const attVal = student.attendance ?? 1;
-  const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
-  const hwVal = student.homework ?? 1;
-  const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+  // Calculate percentages for ALL section safely
+  const rawEngScore = typeof student.engScore === 'string' ? parseFloat(student.engScore) : student.engScore;
+  const rawMathScore = typeof student.mathScore === 'string' ? parseFloat(student.mathScore) : student.mathScore;
+  
+  const cleanEngScore = (rawEngScore !== null && rawEngScore !== undefined && !isNaN(rawEngScore)) ? rawEngScore : null;
+  const cleanMathScore = (rawMathScore !== null && rawMathScore !== undefined && !isNaN(rawMathScore)) ? rawMathScore : null;
+
+  const engPercent = cleanEngScore !== null ? (cleanEngScore / 15 * 100) : 0;
+  const mathPercent = cleanMathScore !== null ? (cleanMathScore / 15 * 100) : 0;
+  
+  const rawAtt = student.attendance ?? 1;
+  const attVal = typeof rawAtt === 'string' ? parseFloat(rawAtt) : rawAtt;
+  const attPercentVal = isNaN(attVal) ? 100 : (attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal));
+  const attPercent = isNaN(attPercentVal) ? 100 : attPercentVal;
+
+  const rawHw = student.homework ?? 1;
+  const hwVal = typeof rawHw === 'string' ? parseFloat(rawHw) : rawHw;
+  const hwPercentVal = isNaN(hwVal) ? 100 : (hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal));
+  const hwPercent = isNaN(hwPercentVal) ? 100 : hwPercentVal;
 
   const barData = [
     {
@@ -272,26 +284,41 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
   // Compile weekly progression data for line chart
   const progressionData = (() => {
-    const historicalWeeks = studentWeeks.filter(sw => sw.student_id === student.id);
+    const historicalWeeks = (studentWeeks || []).filter(sw => sw && sw.student_id === student.id);
     const compiledHistorical = historicalWeeks.map(sw => {
-      const attVal = sw.attendance ?? 1;
-      const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
-      const hwVal = sw.homework ?? 1;
-      const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
-      const eScore = sw.eng_score !== null && sw.eng_score !== undefined ? Math.round((sw.eng_score / 15 * 100) * 100) / 100 : null;
-      const mScore = sw.math_score !== null && sw.math_score !== undefined ? Math.round((sw.math_score / 15 * 100) * 100) / 100 : null;
+      const wRawAtt = sw.attendance ?? 1;
+      const wAttVal = typeof wRawAtt === 'string' ? parseFloat(wRawAtt) : wRawAtt;
+      const wAttPercentVal = isNaN(wAttVal) ? 100 : (wAttVal < 0 ? Math.max(0, 100 + wAttVal * 16.67) : (wAttVal === 1 ? 100 : wAttVal));
+      const wAttPercent = isNaN(wAttPercentVal) ? 100 : wAttPercentVal;
+
+      const wRawHw = sw.homework ?? 1;
+      const wHwVal = typeof wRawHw === 'string' ? parseFloat(wRawHw) : wRawHw;
+      const wHwPercentVal = isNaN(wHwVal) ? 100 : (wHwVal < 0 ? Math.max(0, 100 + wHwVal * 20) : (wHwVal === 1 ? 100 : wHwVal));
+      const wHwPercent = isNaN(wHwPercentVal) ? 100 : wHwPercentVal;
+
+      const wRawEScore = typeof sw.eng_score === 'string' ? parseFloat(sw.eng_score) : sw.eng_score;
+      const wRawMScore = typeof sw.math_score === 'string' ? parseFloat(sw.math_score) : sw.math_score;
+
+      const eScore = (wRawEScore !== null && wRawEScore !== undefined && !isNaN(wRawEScore)) 
+        ? Math.round((wRawEScore / 15 * 100) * 100) / 100 
+        : null;
+      const mScore = (wRawMScore !== null && wRawMScore !== undefined && !isNaN(wRawMScore)) 
+        ? Math.round((wRawMScore / 15 * 100) * 100) / 100 
+        : null;
+
       return {
         week: sw.week,
         engPercent: eScore,
         mathPercent: mScore,
-        attPercent: Math.round(attPercent * 100) / 100,
-        hwPercent: Math.round(hwPercent * 100) / 100
+        attPercent: Math.round(wAttPercent * 100) / 100,
+        hwPercent: Math.round(wHwPercent * 100) / 100
       };
     });
 
     compiledHistorical.sort((a, b) => {
-      const parseWeekVal = (weekStr: string): number => {
-        if (!weekStr) return 0;
+      const parseWeekVal = (weekVal: any): number => {
+        if (weekVal === null || weekVal === undefined) return 0;
+        const weekStr = weekVal.toString();
         if (weekStr.toLowerCase().endsWith('hafta')) {
           const num = parseInt(weekStr, 10);
           return isNaN(num) ? 0 : num;
@@ -315,8 +342,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
       ...compiledHistorical,
       {
         week: "Faol hafta",
-        engPercent: Math.round(((student.engScore || 0) / 15 * 100) * 100) / 100,
-        mathPercent: Math.round(((student.mathScore || 0) / 15 * 100) * 100) / 100,
+        engPercent: Math.round(((cleanEngScore || 0) / 15 * 100) * 100) / 100,
+        mathPercent: Math.round(((cleanMathScore || 0) / 15 * 100) * 100) / 100,
         attPercent: Math.round(attPercent * 100) / 100,
         hwPercent: Math.round(hwPercent * 100) / 100
       }
