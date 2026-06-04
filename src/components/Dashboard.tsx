@@ -6,6 +6,20 @@ import {
 } from 'recharts';
 import { Award, Calendar, User, TrendingUp } from 'lucide-react';
 
+const CHART_MARGIN = { top: 10, right: 10, left: -25, bottom: 5 };
+const AXIS_TICK_STYLE = { fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 700 };
+const TOOLTIP_CONTENT_STYLE = {
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-color)',
+  borderRadius: '8px',
+  fontSize: '0.75rem',
+  color: 'var(--text-primary)'
+};
+const LINE_DOT_STYLE = { r: 4, strokeWidth: 2, fill: '#ffffff' };
+const LINE_ACTIVE_DOT_STYLE = { r: 6 };
+const BAR_CURSOR_STYLE = { fill: 'rgba(255, 255, 255, 0.04)' };
+const BAR_RADIUS: [number, number, number, number] = [6, 6, 0, 0];
+
 interface DashboardProps {
   students: Student[];
   studentWeeks: any[];
@@ -50,6 +64,9 @@ const parseWeekValue = (weekStr: string): number => {
   if (match) return parseInt(match[1], 10);
   return 0;
 };
+
+const DEFAULT_DOMAIN: [number, number] = [0, 100];
+const DEFAULT_TICKS = [0, 30, 60, 90] as const;
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
   students, 
@@ -760,38 +777,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             {/* Recharts Line Chart */}
             <div style={{ height: '160px', width: '100%', marginTop: '0.5rem' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={termMasteryData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <LineChart data={termMasteryData} margin={CHART_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.4} />
                   <XAxis 
                     dataKey="name" 
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 700 }}
+                    tick={AXIS_TICK_STYLE}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis 
-                    domain={[0, 100]}
-                    ticks={[0, 30, 60, 90]}
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 700 }}
+                    domain={DEFAULT_DOMAIN}
+                    ticks={DEFAULT_TICKS}
+                    tick={AXIS_TICK_STYLE}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip
-                    contentStyle={{
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      fontSize: '0.75rem',
-                      color: 'var(--text-primary)'
-                    }}
+                    contentStyle={TOOLTIP_CONTENT_STYLE}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="Natija" 
                     stroke={chartSubject === 'MATH' ? '#f97316' : 'var(--accent-primary)'} 
                     strokeWidth={3}
-                    dot={{ r: 4, strokeWidth: 2, fill: '#ffffff' }}
-                    activeDot={{ r: 6 }}
+                    dot={LINE_DOT_STYLE}
+                    activeDot={LINE_ACTIVE_DOT_STYLE}
                     connectNulls={true}
                   />
                 </LineChart>
@@ -825,36 +836,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             {/* Recharts Attendance Bar Chart */}
             <div style={{ height: '150px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={attendanceHistoryData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <BarChart data={attendanceHistoryData} margin={CHART_MARGIN}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" opacity={0.4} />
                   <XAxis 
                     dataKey="name" 
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 700 }}
+                    tick={AXIS_TICK_STYLE}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis 
-                    domain={[0, 100]}
-                    ticks={[0, 30, 60, 90]}
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 700 }}
+                    domain={DEFAULT_DOMAIN}
+                    ticks={DEFAULT_TICKS}
+                    tick={AXIS_TICK_STYLE}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip
-                    cursor={{ fill: 'rgba(255, 255, 255, 0.04)' }}
-                    contentStyle={{
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      fontSize: '0.75rem',
-                      color: 'var(--text-primary)'
-                    }}
+                    cursor={BAR_CURSOR_STYLE}
+                    contentStyle={TOOLTIP_CONTENT_STYLE}
                   />
                   <Bar 
                     dataKey="Davomat" 
                     fill="#3b82f6"
-                    radius={[6, 6, 0, 0]}
+                    radius={BAR_RADIUS}
                     barSize={24}
                   />
                 </BarChart>

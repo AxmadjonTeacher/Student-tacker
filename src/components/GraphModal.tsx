@@ -6,6 +6,42 @@ import {
 } from 'recharts';
 import type { Student, ActiveSubject } from '../types';
 
+const DEFAULT_DOMAIN: [number, number] = [0, 100];
+const AREA_CHART_MARGIN = { top: 10, right: 30, left: 10, bottom: 20 };
+const AXIS_TICK_STYLE = { fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 };
+const TOOLTIP_CURSOR_STYLE = { stroke: 'var(--border-color)', strokeWidth: 1.5 };
+const BAR_CHART_CURSOR_STYLE = { fill: 'rgba(0,0,0,0.02)' };
+const BAR_RADIUS: [number, number, number, number] = [10, 10, 10, 10];
+
+const AREA_DOT_ENG = { r: 5, fill: '#ffffff', stroke: 'var(--accent-primary)', strokeWidth: 3 };
+const AREA_ACTIVE_DOT_ENG = { r: 7, fill: 'var(--accent-primary)', stroke: '#ffffff', strokeWidth: 3 };
+
+const LINE_DOT_ENG_EST = { r: 7, fill: 'var(--bg-card-hover)', stroke: 'var(--accent-hover)', strokeWidth: 4 };
+const LINE_ACTIVE_DOT_ENG_EST = { r: 9, fill: 'var(--accent-hover)', stroke: '#ffffff', strokeWidth: 3.5 };
+
+const AREA_DOT_MATH = { r: 5, fill: '#ffffff', stroke: '#f97316', strokeWidth: 3 };
+const AREA_ACTIVE_DOT_MATH = { r: 7, fill: '#f97316', stroke: '#ffffff', strokeWidth: 3 };
+
+const LINE_DOT_MATH_EST = { r: 7, fill: '#fff7ed', stroke: '#c2410c', strokeWidth: 4 };
+const LINE_ACTIVE_DOT_MATH_EST = { r: 9, fill: '#c2410c', stroke: '#ffffff', strokeWidth: 3.5 };
+
+const LINE_CHART_MARGIN = { top: 15, right: 15, left: -5, bottom: 10 };
+const BAR_CHART_MARGIN = { top: 25, right: 15, left: -5, bottom: 10 };
+
+const LINE_DOT_ENG = { r: 4, fill: '#ffffff', stroke: 'var(--accent-primary)', strokeWidth: 2 };
+const LINE_ACTIVE_DOT_ENG = { r: 6, fill: 'var(--accent-primary)', stroke: '#ffffff', strokeWidth: 2 };
+
+const LINE_DOT_MATH = { r: 4, fill: '#ffffff', stroke: '#f97316', strokeWidth: 2 };
+const LINE_ACTIVE_DOT_MATH = { r: 6, fill: '#f97316', stroke: '#ffffff', strokeWidth: 2 };
+
+const LINE_DOT_ATT = { r: 4, fill: '#ffffff', stroke: '#3b82f6', strokeWidth: 2 };
+const LINE_ACTIVE_DOT_ATT = { r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 2 };
+
+const LINE_DOT_HW = { r: 4, fill: '#ffffff', stroke: '#10b981', strokeWidth: 2 };
+const LINE_ACTIVE_DOT_HW = { r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 2 };
+
+const formatPercent = (val: any) => `${val}%`;
+
 const formatXAxisWeek = (tick: string) => {
   if (tick === "Faol hafta") return "Faol";
   return tick;
@@ -96,194 +132,219 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
 
   // Helper to extract or generate clean test curves for both subjects
-  const getSubjectData = (subject: 'ENG' | 'MATH') => {
-    const isMath = subject === 'MATH';
-    const startLevel = getLevelValue(isMath ? (student.mathStartingLevel || 'Level 1') : (student.englishStartingLevel || student.startingLevel || 'Level 1'));
-    const endLevel = getLevelValue(isMath ? (student.mathCurrentLevel || 'Level 1') : (student.englishCurrentLevel || student.currentLevel || 'Level 1'));
-    const tests = isMath 
-      ? (student.mathGrandTests || student.grandTests) 
-      : (student.englishGrandTests || student.grandTests);
+  const combinedData = React.useMemo(() => {
+    const getSubjectData = (subject: 'ENG' | 'MATH') => {
+      const isMath = subject === 'MATH';
+      const startLevel = getLevelValue(isMath ? (student.mathStartingLevel || 'Level 1') : (student.englishStartingLevel || student.startingLevel || 'Level 1'));
+      const endLevel = getLevelValue(isMath ? (student.mathCurrentLevel || 'Level 1') : (student.englishCurrentLevel || student.currentLevel || 'Level 1'));
+      const tests = isMath 
+        ? (student.mathGrandTests || student.grandTests) 
+        : (student.englishGrandTests || student.grandTests);
 
-    const testNames = ['1-Chorak', '2-Chorak', '3-Chorak', '4-Chorak'];
+      const testNames = ['1-Chorak', '2-Chorak', '3-Chorak', '4-Chorak'];
 
-    if (Array.isArray(tests) && tests.length > 0) {
-      return testNames.map((name, index) => {
-        const termNum = index + 1;
-        const namesToTry = [`grant ${termNum}`, `${termNum}-chorak`, `${termNum} chorak`].map(n => n.toLowerCase());
-        const found = tests.find(t => t && t.name && namesToTry.includes(t.name.toString().toLowerCase()));
-        
-        let score: number | null = null;
-        if (found && found.score !== null && found.score !== undefined && found.score.toString().trim() !== '-') {
-          const parsed = parseInt(found.score.toString());
-          score = isNaN(parsed) ? null : parsed;
-        }
+      if (Array.isArray(tests) && tests.length > 0) {
+        return testNames.map((name, index) => {
+          const termNum = index + 1;
+          const namesToTry = [`grant ${termNum}`, `${termNum}-chorak`, `${termNum} chorak`].map(n => n.toLowerCase());
+          const found = tests.find(t => t && t.name && namesToTry.includes(t.name.toString().toLowerCase()));
+          
+          let score: number | null = null;
+          if (found && found.score !== null && found.score !== undefined && found.score.toString().trim() !== '-') {
+            const parsed = parseInt(found.score.toString());
+            score = isNaN(parsed) ? null : parsed;
+          }
 
-        return {
-          name,
-          score
-        };
-      });
-    }
+          return {
+            name,
+            score
+          };
+        });
+      }
 
-    // Fallback/Mock generation with high aesthetic variation
-    const mockData = [];
-    for (let i = 0; i < 4; i++) {
-      const progress = i / 3;
-      const baseScore = 45 + (startLevel * 6);
-      const targetScore = 45 + (endLevel * 6) + 12;
-      const variance = isMath ? (i === 1 ? -4 : i === 2 ? 3 : 0) : (i === 1 ? 2 : i === 2 ? -2 : 0);
-      mockData.push({
-        name: testNames[i],
-        score: Math.min(100, Math.max(0, Math.round(baseScore + (targetScore - baseScore) * progress + variance)))
-      });
-    }
-    return mockData;
-  };
-
-  const engData = getSubjectData('ENG');
-  const mathData = getSubjectData('MATH');
-
-  // Combine into single dataset for chart rendering
-  const combinedData: any[] = engData.map((d, index) => {
-    const mathPoint = mathData[index] || { score: null };
-    return {
-      date: d.name,
-      engVal: d.score as number | null,
-      mathVal: mathPoint.score as number | null,
-      engEstimate: null as number | null,
-      mathEstimate: null as number | null
+      // Fallback/Mock generation with high aesthetic variation
+      const mockData = [];
+      for (let i = 0; i < 4; i++) {
+        const progress = i / 3;
+        const baseScore = 45 + (startLevel * 6);
+        const targetScore = 45 + (endLevel * 6) + 12;
+        const variance = isMath ? (i === 1 ? -4 : i === 2 ? 3 : 0) : (i === 1 ? 2 : i === 2 ? -2 : 0);
+        mockData.push({
+          name: testNames[i],
+          score: Math.min(100, Math.max(0, Math.round(baseScore + (targetScore - baseScore) * progress + variance)))
+        });
+      }
+      return mockData;
     };
-  });
 
-  // Find last valid actual indices and values
-  let lastEngIdx = -1;
-  let lastEngVal = 50; // default fallback if none valid
-  let lastMathIdx = -1;
-  let lastMathVal = 50;
+    const engData = getSubjectData('ENG');
+    const mathData = getSubjectData('MATH');
 
-  combinedData.forEach((d, idx) => {
-    if (d.engVal !== null && d.engVal !== undefined && !isNaN(d.engVal)) {
-      lastEngIdx = idx;
-      lastEngVal = d.engVal;
-    }
-    if (d.mathVal !== null && d.mathVal !== undefined && !isNaN(d.mathVal)) {
-      lastMathIdx = idx;
-      lastMathVal = d.mathVal;
-    }
-  });
-
-  // Connect the last valid point to the estimate line
-  if (lastEngIdx >= 0 && combinedData[lastEngIdx]) {
-    combinedData[lastEngIdx].engEstimate = lastEngVal;
-  }
-  if (lastMathIdx >= 0 && combinedData[lastMathIdx]) {
-    combinedData[lastMathIdx].mathEstimate = lastMathVal;
-  }
-
-  // Add 5th point (Yozgi Reja) if we have any valid data points
-  if (showSummerPlan && combinedData.length > 0) {
-    combinedData.push({
-      date: 'Yozgi Reja',
-      engVal: null,
-      mathVal: null,
-      engEstimate: lastEngIdx >= 0 ? Math.min(100, lastEngVal + 5) : null,
-      mathEstimate: lastMathIdx >= 0 ? Math.min(100, lastMathVal + 5) : null
+    // Combine into single dataset for chart rendering
+    const data: any[] = engData.map((d, index) => {
+      const mathPoint = mathData[index] || { score: null };
+      return {
+        date: d.name,
+        engVal: d.score as number | null,
+        mathVal: mathPoint.score as number | null,
+        engEstimate: null as number | null,
+        mathEstimate: null as number | null
+      };
     });
-  }
 
-  // Decide dynamically which scores are visible to scale Y-axis domain
-  const allVisibleScores = (isComparing || activeSubject === 'ALL' || activeSubject === 'PRIMARY')
-    ? [
-        ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
-        ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
-        ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined && !isNaN(v)),
-        ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
-      ]
-    : (activeSubject === 'MATH' 
-        ? [
-            ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
-            ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
-          ]
-        : [
-            ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
-            ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
-          ]
-      );
+    // Find last valid actual indices and values
+    let lastEngIdx = -1;
+    let lastEngVal = 50; // default fallback if none valid
+    let lastMathIdx = -1;
+    let lastMathVal = 50;
 
-  const minVal = allVisibleScores.length > 0 ? Math.min(...allVisibleScores) : 0;
-  const maxVal = allVisibleScores.length > 0 ? Math.max(...allVisibleScores) : 100;
-  const valRange = maxVal - minVal;
-  const padding = valRange < 15 ? 10 : 8; 
-  const domainMin = Math.max(0, Math.floor((minVal - padding) / 5) * 5);
-  const domainMax = Math.min(100, Math.ceil((maxVal + padding) / 5) * 5);
+    data.forEach((d, idx) => {
+      if (d.engVal !== null && d.engVal !== undefined && !isNaN(d.engVal)) {
+        lastEngIdx = idx;
+        lastEngVal = d.engVal;
+      }
+      if (d.mathVal !== null && d.mathVal !== undefined && !isNaN(d.mathVal)) {
+        lastMathIdx = idx;
+        lastMathVal = d.mathVal;
+      }
+    });
 
-  const ticks: number[] = [];
-  const tickStep = Math.max(5, Math.ceil((domainMax - domainMin) / 4 / 5) * 5);
-  for (let val = domainMin; val <= domainMax; val += tickStep) {
-    if (!ticks.includes(val)) {
-      ticks.push(val);
+    // Connect the last valid point to the estimate line
+    if (lastEngIdx >= 0 && data[lastEngIdx]) {
+      data[lastEngIdx].engEstimate = lastEngVal;
     }
-  }
-  if (ticks[ticks.length - 1] < domainMax && domainMax <= 100) {
-    ticks.push(domainMax);
-  }
+    if (lastMathIdx >= 0 && data[lastMathIdx]) {
+      data[lastMathIdx].mathEstimate = lastMathVal;
+    }
+
+    // Add 5th point (Yozgi Reja) if we have any valid data points
+    if (showSummerPlan && data.length > 0) {
+      data.push({
+        date: 'Yozgi Reja',
+        engVal: null,
+        mathVal: null,
+        engEstimate: lastEngIdx >= 0 ? Math.min(100, lastEngVal + 5) : null,
+        mathEstimate: lastMathIdx >= 0 ? Math.min(100, lastMathVal + 5) : null
+      });
+    }
+
+    return data;
+  }, [student, showSummerPlan]);
+
+  // Dynamic Y-axis scale config based on combinedData
+  const yAxisConfig = React.useMemo(() => {
+    const allVisibleScores = (isComparing || activeSubject === 'ALL' || activeSubject === 'PRIMARY')
+      ? [
+          ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
+          ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
+          ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined && !isNaN(v)),
+          ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
+        ]
+      : (activeSubject === 'MATH' 
+          ? [
+              ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
+              ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
+            ]
+          : [
+              ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
+              ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
+            ]
+        );
+
+    const minVal = allVisibleScores.length > 0 ? Math.min(...allVisibleScores) : 0;
+    const maxVal = allVisibleScores.length > 0 ? Math.max(...allVisibleScores) : 100;
+    const valRange = maxVal - minVal;
+    const padding = valRange < 15 ? 10 : 8; 
+    const domainMin = Math.max(0, Math.floor((minVal - padding) / 5) * 5);
+    const domainMax = Math.min(100, Math.ceil((maxVal + padding) / 5) * 5);
+
+    const ticks: number[] = [];
+    const tickStep = Math.max(5, Math.ceil((domainMax - domainMin) / 4 / 5) * 5);
+    for (let val = domainMin; val <= domainMax; val += tickStep) {
+      if (!ticks.includes(val)) {
+        ticks.push(val);
+      }
+    }
+    if (ticks[ticks.length - 1] < domainMax && domainMax <= 100) {
+      ticks.push(domainMax);
+    }
+
+    const domain: [number, number] = [domainMin, domainMax];
+    return { domainMin, domainMax, ticks, domain };
+  }, [combinedData, isComparing, activeSubject]);
+
+  const { domainMin, domainMax, ticks, domain } = yAxisConfig;
 
   // Calculate subject-specific level changes
-  const engStart = getLevelValue(student.englishStartingLevel || student.startingLevel || 'Level 1');
-  const engEnd = getLevelValue(student.englishCurrentLevel || student.currentLevel || 'Level 1');
-  const engImproved = engEnd - engStart;
+  const levelChanges = React.useMemo(() => {
+    const engStart = getLevelValue(student.englishStartingLevel || student.startingLevel || 'Level 1');
+    const engEnd = getLevelValue(student.englishCurrentLevel || student.currentLevel || 'Level 1');
+    const engImproved = engEnd - engStart;
 
-  const mathStart = getLevelValue(student.mathStartingLevel || 'Level 1');
-  const mathEnd = getLevelValue(student.mathCurrentLevel || 'Level 1');
-  const mathImproved = mathEnd - mathStart;
+    const mathStart = getLevelValue(student.mathStartingLevel || 'Level 1');
+    const mathEnd = getLevelValue(student.mathCurrentLevel || 'Level 1');
+    const mathImproved = mathEnd - mathStart;
+
+    return { engStart, engEnd, engImproved, mathStart, mathEnd, mathImproved };
+  }, [student]);
+
+  const { engImproved, mathImproved } = levelChanges;
 
   const activeThemeColor = 'var(--accent-primary)';
 
   // Calculate percentages for ALL section safely
-  const rawEngScore = typeof student.engScore === 'string' ? parseFloat(student.engScore) : student.engScore;
-  const rawMathScore = typeof student.mathScore === 'string' ? parseFloat(student.mathScore) : student.mathScore;
-  
-  const cleanEngScore = (rawEngScore !== null && rawEngScore !== undefined && !isNaN(rawEngScore)) ? rawEngScore : null;
-  const cleanMathScore = (rawMathScore !== null && rawMathScore !== undefined && !isNaN(rawMathScore)) ? rawMathScore : null;
+  const scoresAndPercents = React.useMemo(() => {
+    const rawEngScore = typeof student.engScore === 'string' ? parseFloat(student.engScore) : student.engScore;
+    const rawMathScore = typeof student.mathScore === 'string' ? parseFloat(student.mathScore) : student.mathScore;
+    
+    const cleanEngScore = (rawEngScore !== null && rawEngScore !== undefined && !isNaN(rawEngScore)) ? rawEngScore : null;
+    const cleanMathScore = (rawMathScore !== null && rawMathScore !== undefined && !isNaN(rawMathScore)) ? rawMathScore : null;
 
-  const engPercent = cleanEngScore !== null ? (cleanEngScore / 15 * 100) : 0;
-  const mathPercent = cleanMathScore !== null ? (cleanMathScore / 15 * 100) : 0;
-  
-  const rawAtt = student.attendance ?? 1;
-  const attVal = typeof rawAtt === 'string' ? parseFloat(rawAtt) : rawAtt;
-  const attPercentVal = isNaN(attVal) ? 100 : (attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal));
-  const attPercent = isNaN(attPercentVal) ? 100 : attPercentVal;
+    const engPercent = cleanEngScore !== null ? (cleanEngScore / 15 * 100) : 0;
+    const mathPercent = cleanMathScore !== null ? (cleanMathScore / 15 * 100) : 0;
+    
+    const rawAtt = student.attendance ?? 1;
+    const attVal = typeof rawAtt === 'string' ? parseFloat(rawAtt) : rawAtt;
+    const attPercentVal = isNaN(attVal) ? 100 : (attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal));
+    const attPercent = isNaN(attPercentVal) ? 100 : attPercentVal;
 
-  const rawHw = student.homework ?? 1;
-  const hwVal = typeof rawHw === 'string' ? parseFloat(rawHw) : rawHw;
-  const hwPercentVal = isNaN(hwVal) ? 100 : (hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal));
-  const hwPercent = isNaN(hwPercentVal) ? 100 : hwPercentVal;
+    const rawHw = student.homework ?? 1;
+    const hwVal = typeof rawHw === 'string' ? parseFloat(rawHw) : rawHw;
+    const hwPercentVal = isNaN(hwVal) ? 100 : (hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal));
+    const hwPercent = isNaN(hwPercentVal) ? 100 : hwPercentVal;
 
-  const barData = [
-    {
-      name: 'Ingliz tili',
-      value: Math.round(engPercent * 100) / 100,
-      color: 'var(--accent-primary)'
-    },
-    {
-      name: 'Matematika',
-      value: Math.round(mathPercent * 100) / 100,
-      color: '#f97316'
-    },
-    {
-      name: 'Davomat',
-      value: Math.round(attPercent * 100) / 100,
-      color: '#3b82f6'
-    },
-    {
-      name: 'Vazifalar',
-      value: Math.round(hwPercent * 100) / 100,
-      color: '#10b981'
-    }
-  ];
+    return { cleanEngScore, cleanMathScore, engPercent, mathPercent, attPercent, hwPercent };
+  }, [student.engScore, student.mathScore, student.attendance, student.homework]);
+
+  const { cleanEngScore, cleanMathScore, engPercent, mathPercent, attPercent, hwPercent } = scoresAndPercents;
+
+  const barData = React.useMemo(() => {
+    return [
+      {
+        name: 'Ingliz tili',
+        value: Math.round(engPercent * 100) / 100,
+        color: 'var(--accent-primary)'
+      },
+      {
+        name: 'Matematika',
+        value: Math.round(mathPercent * 100) / 100,
+        color: '#f97316'
+      },
+      {
+        name: 'Davomat',
+        value: Math.round(attPercent * 100) / 100,
+        color: '#3b82f6'
+      },
+      {
+        name: 'Vazifalar',
+        value: Math.round(hwPercent * 100) / 100,
+        color: '#10b981'
+      }
+    ];
+  }, [engPercent, mathPercent, attPercent, hwPercent]);
 
   // Compile weekly progression data for line chart
-  const progressionData = (() => {
+  const progressionData = React.useMemo(() => {
     const historicalWeeks = (studentWeeks || []).filter(sw => sw && sw.student_id?.toString() === student.id?.toString());
     const compiledHistorical = historicalWeeks.map(sw => {
       const wRawAtt = sw.attendance ?? 1;
@@ -349,7 +410,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
       }
     ];
     return allWeeks.slice(-4);
-  })();
+  }, [studentWeeks, student.id, cleanEngScore, cleanMathScore, attPercent, hwPercent]);
 
   const ProgressionTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -493,8 +554,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
   const renderAreaChart = () => (
     <div className="chart-container" style={{ height: '350px', width: '100%' }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={combinedData} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+        <AreaChart data={combinedData} margin={AREA_CHART_MARGIN}>
           <defs>
             <linearGradient id="colorEng" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.2}/>
@@ -512,19 +573,19 @@ const GraphModal: React.FC<GraphModalProps> = ({
             tickLine={false} 
             interval={0}
             tickFormatter={formatXAxisTerm}
-            tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
+            tick={AXIS_TICK_STYLE}
             dy={10}
           />
           <YAxis 
-            domain={[domainMin, domainMax]} 
+            domain={domain} 
             ticks={ticks}
-            tickFormatter={(val) => `${val}%`}
+            tickFormatter={formatPercent}
             axisLine={false}
             tickLine={false}
-            tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
+            tick={AXIS_TICK_STYLE}
             width={35}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--border-color)', strokeWidth: 1.5 }} />
+          <Tooltip content={<CustomTooltip />} cursor={TOOLTIP_CURSOR_STYLE} />
           
           {domainMin <= 50 && domainMax >= 50 && (
             <ReferenceLine y={50} stroke="var(--border-color)" strokeWidth={1.5} strokeDasharray="3 3" />
@@ -539,8 +600,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
               strokeWidth={4.5} 
               fillOpacity={1}
               fill="url(#colorEng)"
-              dot={{ r: 5, fill: '#ffffff', stroke: 'var(--accent-primary)', strokeWidth: 3 }}
-              activeDot={{ r: 7, fill: 'var(--accent-primary)', stroke: '#ffffff', strokeWidth: 3 }}
+              dot={AREA_DOT_ENG}
+              activeDot={AREA_ACTIVE_DOT_ENG}
               isAnimationActive={true}
               animationDuration={1200}
             />
@@ -555,8 +616,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
               strokeWidth={5.5} 
               strokeDasharray="35 3"
               connectNulls={true}
-              dot={{ r: 7, fill: 'var(--bg-card-hover)', stroke: 'var(--accent-hover)', strokeWidth: 4 }}
-              activeDot={{ r: 9, fill: 'var(--accent-hover)', stroke: '#ffffff', strokeWidth: 3.5 }}
+              dot={LINE_DOT_ENG_EST}
+              activeDot={LINE_ACTIVE_DOT_ENG_EST}
               isAnimationActive={true}
               animationDuration={1200}
             />
@@ -571,8 +632,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
               strokeWidth={4.5} 
               fillOpacity={1}
               fill="url(#colorMath)"
-              dot={{ r: 5, fill: '#ffffff', stroke: '#f97316', strokeWidth: 3 }}
-              activeDot={{ r: 7, fill: '#f97316', stroke: '#ffffff', strokeWidth: 3 }}
+              dot={AREA_DOT_MATH}
+              activeDot={AREA_ACTIVE_DOT_MATH}
               isAnimationActive={true}
               animationDuration={1200}
             />
@@ -587,8 +648,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
               strokeWidth={5.5} 
               strokeDasharray="35 3"
               connectNulls={true}
-              dot={{ r: 7, fill: '#fff7ed', stroke: '#c2410c', strokeWidth: 4 }}
-              activeDot={{ r: 9, fill: '#c2410c', stroke: '#ffffff', strokeWidth: 3.5 }}
+              dot={LINE_DOT_MATH_EST}
+              activeDot={LINE_ACTIVE_DOT_MATH_EST}
               isAnimationActive={true}
               animationDuration={1200}
             />
@@ -847,8 +908,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
         {(activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (
           allActiveTab === 'progression' ? (
             <div className="chart-container" style={{ height: '350px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={progressionData} margin={{ top: 15, right: 15, left: -5, bottom: 10 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <LineChart data={progressionData} margin={LINE_CHART_MARGIN}>
                   <CartesianGrid vertical={false} stroke="var(--border-color)" strokeDasharray="3 3" opacity={0.5} />
                   <XAxis 
                     dataKey="week" 
@@ -856,17 +917,17 @@ const GraphModal: React.FC<GraphModalProps> = ({
                     tickLine={false} 
                     interval={0}
                     tickFormatter={formatXAxisWeek}
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
+                    tick={AXIS_TICK_STYLE}
                   />
                   <YAxis 
-                    domain={[0, 100]} 
+                    domain={DEFAULT_DOMAIN} 
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
-                    tickFormatter={(val) => `${val}%`}
+                    tick={AXIS_TICK_STYLE}
+                    tickFormatter={formatPercent}
                     width={35}
                   />
-                  <Tooltip content={<ProgressionTooltip />} cursor={{ stroke: 'var(--border-color)', strokeWidth: 1.5 }} />
+                  <Tooltip content={<ProgressionTooltip />} cursor={TOOLTIP_CURSOR_STYLE} />
                   <Legend content={renderLegend} />
                   <Line 
                     type="monotone" 
@@ -874,8 +935,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
                     name="Ingliz tili" 
                     stroke="var(--accent-primary)" 
                     strokeWidth={3.5} 
-                    dot={{ r: 4, fill: '#ffffff', stroke: 'var(--accent-primary)', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: 'var(--accent-primary)', stroke: '#ffffff', strokeWidth: 2 }}
+                    dot={LINE_DOT_ENG}
+                    activeDot={LINE_ACTIVE_DOT_ENG}
                   />
                   <Line 
                     type="monotone" 
@@ -883,8 +944,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
                     name="Matematika" 
                     stroke="#f97316" 
                     strokeWidth={3.5} 
-                    dot={{ r: 4, fill: '#ffffff', stroke: '#f97316', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#f97316', stroke: '#ffffff', strokeWidth: 2 }}
+                    dot={LINE_DOT_MATH}
+                    activeDot={LINE_ACTIVE_DOT_MATH}
                   />
                   <Line 
                     type="monotone" 
@@ -892,8 +953,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
                     name="Davomat" 
                     stroke="#3b82f6" 
                     strokeWidth={3.5} 
-                    dot={{ r: 4, fill: '#ffffff', stroke: '#3b82f6', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 2 }}
+                    dot={LINE_DOT_ATT}
+                    activeDot={LINE_ACTIVE_DOT_ATT}
                   />
                   <Line 
                     type="monotone" 
@@ -901,34 +962,34 @@ const GraphModal: React.FC<GraphModalProps> = ({
                     name="Vazifalar" 
                     stroke="#10b981" 
                     strokeWidth={3.5} 
-                    dot={{ r: 4, fill: '#ffffff', stroke: '#10b981', strokeWidth: 2 }}
-                    activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 2 }}
+                    dot={LINE_DOT_HW}
+                    activeDot={LINE_ACTIVE_DOT_HW}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           ) : allActiveTab === 'current' ? (
             <div className="chart-container" style={{ height: '350px', width: '100%' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} margin={{ top: 25, right: 15, left: -5, bottom: 10 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <BarChart data={barData} margin={BAR_CHART_MARGIN}>
                   <CartesianGrid vertical={false} stroke="var(--border-color)" strokeDasharray="3 3" opacity={0.5} />
                   <XAxis 
                     dataKey="name" 
                     axisLine={false} 
                     tickLine={false} 
                     interval={0}
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
+                    tick={AXIS_TICK_STYLE}
                   />
                   <YAxis 
-                    domain={[0, 100]} 
+                    domain={DEFAULT_DOMAIN} 
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 }}
-                    tickFormatter={(val) => `${val}%`}
+                    tick={AXIS_TICK_STYLE}
+                    tickFormatter={formatPercent}
                     width={35}
                   />
-                  <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
-                  <Bar dataKey="value" radius={[10, 10, 10, 10]} maxBarSize={50}>
+                  <Tooltip content={<BarTooltip />} cursor={BAR_CHART_CURSOR_STYLE} />
+                  <Bar dataKey="value" radius={BAR_RADIUS} maxBarSize={50}>
                     {barData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
