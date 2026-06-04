@@ -352,81 +352,137 @@ const Header: React.FC<HeaderProps> = ({
           alignItems: 'center', 
           width: '100%', 
           gap: '1.5rem', 
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           marginTop: '0.5rem',
           marginBottom: '1rem'
         }}>
           
           {/* Left Side: Contextual Toggles / Class Selectors */}
-          <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: '1 1 auto' }}>
+          <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: '0 1 auto' }}>
             {/* If Subject is ENG_MATH */}
             {activeSubject === 'ENG_MATH' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 {/* Grade Range Selector */}
-                {engMathGradeRange !== undefined && setEngMathGradeRange && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>SINF:</span>
-                    <div style={{ display: 'flex', background: 'var(--border-subtle)', boxShadow: 'var(--inner-inset)', borderRadius: '9999px', padding: '2px' }}>
-                      {(['5-6', '7-8', '9-11'] as const).map(range => {
-                        const active = engMathGradeRange === range;
-                        return (
-                          <button
-                            key={range}
-                            onClick={() => setEngMathGradeRange(range)}
-                            style={{
-                              background: active ? 'var(--bg-card)' : 'transparent',
-                              color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                              border: 'none',
-                              borderRadius: '9999px',
-                              padding: '6px 14px',
-                              fontSize: '0.8rem',
-                              fontWeight: active ? 700 : 500,
-                              cursor: 'pointer',
-                              boxShadow: active ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
-                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {range}
-                          </button>
-                        );
-                      })}
+                {engMathGradeRange !== undefined && setEngMathGradeRange && (() => {
+                  const rangeIndex = engMathGradeRange === '5-6' ? 0 : engMathGradeRange === '7-8' ? 1 : 2;
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>SINF:</span>
+                      <div style={{ 
+                        display: 'flex', 
+                        background: 'var(--border-subtle)', 
+                        boxShadow: 'var(--inner-inset)', 
+                        borderRadius: '9999px', 
+                        padding: '2px',
+                        position: 'relative',
+                        width: '180px',
+                        height: '32px',
+                        boxSizing: 'border-box'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '2px',
+                          bottom: '2px',
+                          left: `calc(2px + (100% - 4px) / 3 * ${rangeIndex})`,
+                          width: 'calc((100% - 4px) / 3)',
+                          background: 'var(--bg-card)',
+                          borderRadius: '9999px',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                          transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        }} />
+                        {(['5-6', '7-8', '9-11'] as const).map(range => {
+                          const active = engMathGradeRange === range;
+                          return (
+                            <button
+                              key={range}
+                              onClick={() => setEngMathGradeRange(range)}
+                              style={{
+                                flex: 1,
+                                background: 'transparent',
+                                color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                border: 'none',
+                                borderRadius: '9999px',
+                                padding: 0,
+                                fontSize: '0.8rem',
+                                fontWeight: active ? 800 : 500,
+                                cursor: 'pointer',
+                                zIndex: 1,
+                                transition: 'color 0.25s ease',
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              {range}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Sub-Subject Selector (ENG vs MATH) */}
-                {authRole !== 'teacher' && engMathSubSubject !== undefined && setEngMathSubSubject && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FAN:</span>
-                    <div style={{ display: 'flex', background: 'var(--border-subtle)', boxShadow: 'var(--inner-inset)', borderRadius: '9999px', padding: '2px' }}>
-                      {(['ENG', 'MATH'] as const).map(sub => {
-                        const active = engMathSubSubject === sub;
-                        return (
-                          <button
-                            key={sub}
-                            onClick={() => setEngMathSubSubject(sub)}
-                            style={{
-                              background: active ? 'var(--bg-card)' : 'transparent',
-                              color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                              border: 'none',
-                              borderRadius: '9999px',
-                              padding: '6px 14px',
-                              fontSize: '0.8rem',
-                              fontWeight: active ? 700 : 500,
-                              cursor: 'pointer',
-                              boxShadow: active ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
-                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {sub === 'ENG' ? 'Ingliz tili' : 'Matematika'}
-                          </button>
-                        );
-                      })}
+                {authRole !== 'teacher' && engMathSubSubject !== undefined && setEngMathSubSubject && (() => {
+                  const subIndex = engMathSubSubject === 'ENG' ? 0 : 1;
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FAN:</span>
+                      <div style={{ 
+                        display: 'flex', 
+                        background: 'var(--border-subtle)', 
+                        boxShadow: 'var(--inner-inset)', 
+                        borderRadius: '9999px', 
+                        padding: '2px',
+                        position: 'relative',
+                        width: '180px',
+                        height: '32px',
+                        boxSizing: 'border-box'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '2px',
+                          bottom: '2px',
+                          left: `calc(2px + (100% - 4px) / 2 * ${subIndex})`,
+                          width: 'calc((100% - 4px) / 2)',
+                          background: 'var(--bg-card)',
+                          borderRadius: '9999px',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                          transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        }} />
+                        {(['ENG', 'MATH'] as const).map(sub => {
+                          const active = engMathSubSubject === sub;
+                          return (
+                            <button
+                              key={sub}
+                              onClick={() => setEngMathSubSubject(sub)}
+                              style={{
+                                flex: 1,
+                                background: 'transparent',
+                                color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                border: 'none',
+                                borderRadius: '9999px',
+                                padding: 0,
+                                fontSize: '0.8rem',
+                                fontWeight: active ? 800 : 500,
+                                cursor: 'pointer',
+                                zIndex: 1,
+                                transition: 'color 0.25s ease',
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            >
+                              {sub === 'ENG' ? 'Ingliz tili' : 'Matematika'}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Week Selector Dropdown */}
                 {onWeekChange && weeksList && (
@@ -479,40 +535,68 @@ const Header: React.FC<HeaderProps> = ({
             )}
 
             {/* If Subject is GRANT */}
-            {activeSubject === 'GRANT' && grantSubject !== undefined && setGrantSubject && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FAN:</span>
-                <div style={{ display: 'flex', background: 'var(--border-subtle)', boxShadow: 'var(--inner-inset)', borderRadius: '9999px', padding: '2px' }}>
-                  {(['ENG', 'MATH'] as const).map(sub => {
-                    const active = grantSubject === sub;
-                    return (
-                      <button
-                        key={sub}
-                        onClick={() => setGrantSubject(sub)}
-                        style={{
-                          background: active ? 'var(--bg-card)' : 'transparent',
-                          color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                          border: 'none',
-                          borderRadius: '9999px',
-                          padding: '6px 14px',
-                          fontSize: '0.8rem',
-                          fontWeight: active ? 700 : 500,
-                          cursor: 'pointer',
-                          boxShadow: active ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
-                          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        {sub === 'ENG' ? 'Ingliz tili' : 'Matematika'}
-                      </button>
-                    );
-                  })}
+            {activeSubject === 'GRANT' && grantSubject !== undefined && setGrantSubject && (() => {
+              const grantIndex = grantSubject === 'ENG' ? 0 : 1;
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FAN:</span>
+                  <div style={{ 
+                    display: 'flex', 
+                    background: 'var(--border-subtle)', 
+                    boxShadow: 'var(--inner-inset)', 
+                    borderRadius: '9999px', 
+                    padding: '2px',
+                    position: 'relative',
+                    width: '180px',
+                    height: '32px',
+                    boxSizing: 'border-box'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '2px',
+                      bottom: '2px',
+                      left: `calc(2px + (100% - 4px) / 2 * ${grantIndex})`,
+                      width: 'calc((100% - 4px) / 2)',
+                      background: 'var(--bg-card)',
+                      borderRadius: '9999px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                      transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                    }} />
+                    {(['ENG', 'MATH'] as const).map(sub => {
+                      const active = grantSubject === sub;
+                      return (
+                        <button
+                          key={sub}
+                          onClick={() => setGrantSubject(sub)}
+                          style={{
+                            flex: 1,
+                            background: 'transparent',
+                            color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            border: 'none',
+                            borderRadius: '9999px',
+                            padding: 0,
+                            fontSize: '0.8rem',
+                            fontWeight: active ? 800 : 500,
+                            cursor: 'pointer',
+                            zIndex: 1,
+                            transition: 'color 0.25s ease',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {sub === 'ENG' ? 'Ingliz tili' : 'Matematika'}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Standard Class Selector for other subjects */}
-            {activeSubject !== 'ENG_MATH' && activeSubject !== 'GRANT' && (
+            {activeSubject !== 'ENG_MATH' && (
               <div className="class-selector" style={{ 
                 display: 'flex', 
                 gap: '0.25rem', 
@@ -522,7 +606,7 @@ const Header: React.FC<HeaderProps> = ({
                 boxShadow: 'var(--glass-shadow-soft)',
                 border: '1px solid var(--border-subtle)',
                 overflowX: 'auto',
-                flex: '1 1 auto',
+                flex: '0 1 auto',
                 maxWidth: '100%'
               }}>
                 {classes.map(cls => {
@@ -607,38 +691,64 @@ const Header: React.FC<HeaderProps> = ({
                 }}
               />
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <select
-                  value={searchFilter}
-                  onChange={(e) => onSearchFilterChange(e.target.value as any)}
-                  style={{
-                    appearance: 'none',
-                    background: 'transparent',
-                    color: 'var(--text-secondary)',
-                    border: 'none',
-                    padding: '0.5rem 1.5rem 0.5rem 0.5rem',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    outline: 'none',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <option value="both">Barchasi</option>
-                  <option value="student">O'quvchilar</option>
-                  <option value="teacher">O'qituvchilar</option>
-                </select>
-                <div style={{
-                  position: 'absolute',
-                  right: '0.25rem',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none',
-                  color: 'var(--text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
-                  <ChevronDown size={14} />
-                </div>
+                {activeSubject === 'GRANT' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-card-hover)', cursor: 'pointer', position: 'relative' }}>
+                    <ChevronDown size={16} style={{ color: 'var(--text-secondary)' }} />
+                    <select
+                      value={searchFilter}
+                      onChange={(e) => onSearchFilterChange(e.target.value as any)}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        opacity: 0,
+                        cursor: 'pointer',
+                        appearance: 'none'
+                      }}
+                    >
+                      <option value="both">Barchasi</option>
+                      <option value="student">O'quvchilar</option>
+                      <option value="teacher">O'qituvchilar</option>
+                    </select>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      value={searchFilter}
+                      onChange={(e) => onSearchFilterChange(e.target.value as any)}
+                      style={{
+                        appearance: 'none',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: 'none',
+                        padding: '0.5rem 1.5rem 0.5rem 0.5rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        outline: 'none',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <option value="both">Barchasi</option>
+                      <option value="student">O'quvchilar</option>
+                      <option value="teacher">O'qituvchilar</option>
+                    </select>
+                    <div style={{
+                      position: 'absolute',
+                      right: '0.25rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      pointerEvents: 'none',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}>
+                      <ChevronDown size={14} />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

@@ -2429,7 +2429,7 @@ function App() {
               setEngMathSubSubject={setEngMathSubSubject}
               grantSubject={grantSubject}
               setGrantSubject={setGrantSubject}
-              onExportExcelRegister={setOnExportExcel}
+              onExportExcelRegister={(fn) => setOnExportExcel(() => fn)}
             />
           )}
         </div>
@@ -3058,7 +3058,7 @@ function App() {
                 setEngMathSubSubject={setEngMathSubSubject}
                 grantSubject={grantSubject}
                 setGrantSubject={setGrantSubject}
-                onExportExcelRegister={setOnExportExcel}
+                onExportExcelRegister={(fn) => setOnExportExcel(() => fn)}
               />
             )}
           </>

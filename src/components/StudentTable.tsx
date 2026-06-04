@@ -1125,8 +1125,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
             marginBottom: '1.5rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1.5rem',
-            animation: 'fadeIn 0.3s ease-out'
+            gap: '1.5rem'
           }}>
             {/* Panel Title */}
             <div 
@@ -1167,8 +1166,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
               flexDirection: 'column',
               gap: '1.25rem',
               borderTop: '1px solid var(--border-subtle)',
-              paddingTop: '1.5rem',
-              animation: 'slideUp 0.3s ease-out'
+              paddingTop: '1.5rem'
             }}>
                 {/* Controls row */}
                 <div style={{
@@ -2071,7 +2069,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 const sortedClasses = Object.keys(classGroupsMap).sort();
 
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', animation: 'fadeIn 0.2s ease-out' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
                     {/* Professional Cabinet Header */}
                     <div style={{
                       background: 'var(--accent-gradient)',
@@ -2431,7 +2429,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
               });
 
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', animation: 'fadeIn 0.2s ease-out' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
                   {/* Student Cards grouped by Teacher */}
                   {sortedTeachers.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '3rem 1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '24px' }}>
