@@ -155,7 +155,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   const levelOptions = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6'];
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(6px)', background: 'rgba(0, 0, 0, 0.45)', zIndex: 1000 }}>
+    <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'var(--backdrop-blur-md)', WebkitBackdropFilter: 'var(--backdrop-blur-md)', background: 'var(--backdrop-color)', zIndex: 1000 }}>
       <style dangerouslySetInnerHTML={{ __html: `
         .edit-modal-content {
           max-height: 90vh;
@@ -164,7 +164,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
         @media (max-width: 600px) {
           .edit-modal-content {
             padding: 1.5rem 1.25rem !important;
-            border-radius: 16px !important;
+            border-radius: 20px !important;
           }
           .edit-modal-content form {
             gap: 0.85rem !important;
@@ -174,9 +174,9 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             font-size: 0.7rem !important;
           }
           .edit-modal-content input, .edit-modal-content select {
-            padding: 0.6rem 0.85rem !important;
+            padding: 0.6rem 1.25rem !important;
             font-size: 0.85rem !important;
-            border-radius: 10px !important;
+            border-radius: 9999px !important;
           }
         }
       `}} />
@@ -187,10 +187,12 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
           maxWidth: '500px', 
           width: '90%',
           background: 'var(--bg-card)', 
-          border: '1px solid var(--border-color)',
-          borderRadius: '24px',
-          padding: '2rem 2.5rem',
-          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.25), 0 10px 10px -5px rgba(0,0,0,0.12)'
+          backdropFilter: 'var(--backdrop-blur-md)',
+          WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '32px',
+          padding: '2.25rem 2.5rem',
+          boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)'
         }}
       >
         <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
@@ -198,10 +200,10 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             onClick={onClose}
             style={{ 
               position: 'absolute', right: '-15px', top: '-15px', 
-              background: 'var(--bg-card-hover)', border: '1.5px solid var(--border-color)', 
+              background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)', 
               borderRadius: '50%', padding: '4px', cursor: 'pointer',
               color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'scale(1.08)';
@@ -212,7 +214,7 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
               e.currentTarget.style.background = 'var(--bg-card-hover)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
@@ -241,11 +243,22 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 required
                 disabled={authRole === 'teacher'}
                 style={{
-                  width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
-                  borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                  width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
+                  borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
                   color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
                   cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
-                  opacity: authRole === 'teacher' ? 0.7 : 1
+                  opacity: authRole === 'teacher' ? 0.7 : 1,
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                }}
+                onFocus={e => {
+                  if (authRole !== 'teacher') {
+                    e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                    e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                  }
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -260,11 +273,22 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 required
                 disabled={authRole === 'teacher'}
                 style={{
-                  width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
-                  borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                  width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
+                  borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
                   color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
                   cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
-                  opacity: authRole === 'teacher' ? 0.7 : 1
+                  opacity: authRole === 'teacher' ? 0.7 : 1,
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                }}
+                onFocus={e => {
+                  if (authRole !== 'teacher') {
+                    e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                    e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                  }
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -281,11 +305,22 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               required
               disabled={authRole === 'teacher'}
               style={{
-                width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
-                borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
+                borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
                 color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
                 cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
-                opacity: authRole === 'teacher' ? 0.7 : 1
+                opacity: authRole === 'teacher' ? 0.7 : 1,
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+              }}
+              onFocus={e => {
+                if (authRole !== 'teacher') {
+                  e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                }
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             />
           </div>
@@ -301,9 +336,9 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                   value={student.parentPhone && student.parentPhone.trim() !== '' ? student.parentPhone : 'Kiritilmagan'}
                   readOnly
                   style={{
-                    width: '100%', padding: '0.75rem 1rem', borderRadius: '12px',
-                    border: '1.5px solid var(--border-color)', fontSize: '0.95rem',
-                    outline: 'none', transition: 'all 0.2s ease',
+                    width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px',
+                    border: '1px solid var(--border-subtle)', fontSize: '0.95rem',
+                    outline: 'none', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                     backgroundColor: 'var(--bg-card)',
                     color: 'var(--text-secondary)',
                     cursor: 'not-allowed'
@@ -314,10 +349,10 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               {/* Kirish ma'lumotlari (ota-onalar uchun) */}
               <div style={{ 
                 background: 'var(--bg-card-hover)', 
-                borderRadius: '12px', 
-                padding: '1rem', 
+                borderRadius: '20px', 
+                padding: '1.25rem', 
                 marginBottom: '1rem',
-                border: '1.5px dashed var(--border-color)',
+                border: '1px dashed var(--border-subtle)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.75rem'
@@ -402,11 +437,22 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     required
                     disabled={authRole === 'teacher' && teacherSubject !== 'ENG'}
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
-                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
                       color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
                       cursor: authRole === 'teacher' && teacherSubject !== 'ENG' ? 'not-allowed' : 'text',
-                      opacity: authRole === 'teacher' && teacherSubject !== 'ENG' ? 0.7 : 1
+                      opacity: authRole === 'teacher' && teacherSubject !== 'ENG' ? 0.7 : 1,
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    }}
+                    onFocus={e => {
+                      if (!(authRole === 'teacher' && teacherSubject !== 'ENG')) {
+                        e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                        e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                      }
+                    }}
+                    onBlur={e => {
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
                 </div>
@@ -423,11 +469,22 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     required
                     disabled={authRole === 'teacher' && teacherSubject !== 'MATH'}
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
-                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
                       color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
                       cursor: authRole === 'teacher' && teacherSubject !== 'MATH' ? 'not-allowed' : 'text',
-                      opacity: authRole === 'teacher' && teacherSubject !== 'MATH' ? 0.7 : 1
+                      opacity: authRole === 'teacher' && teacherSubject !== 'MATH' ? 0.7 : 1,
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    }}
+                    onFocus={e => {
+                      if (!(authRole === 'teacher' && teacherSubject !== 'MATH')) {
+                        e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                        e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                      }
+                    }}
+                    onBlur={e => {
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
                 </div>
@@ -446,11 +503,22 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     required
                     disabled={authRole === 'teacher'}
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
-                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
                       color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
                       cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
-                      opacity: authRole === 'teacher' ? 0.7 : 1
+                      opacity: authRole === 'teacher' ? 0.7 : 1,
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    }}
+                    onFocus={e => {
+                      if (authRole !== 'teacher') {
+                        e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                        e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                      }
+                    }}
+                    onBlur={e => {
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.3 }}>
@@ -469,11 +537,22 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                     required
                     disabled={authRole === 'teacher'}
                     style={{
-                      width: '100%', padding: '0.75rem 1rem', border: '1.5px solid var(--border-color)',
-                      borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600,
+                      width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
                       color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
                       cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
-                      opacity: authRole === 'teacher' ? 0.7 : 1
+                      opacity: authRole === 'teacher' ? 0.7 : 1,
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    }}
+                    onFocus={e => {
+                      if (authRole !== 'teacher') {
+                        e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                        e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                      }
+                    }}
+                    onBlur={e => {
+                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.3 }}>
@@ -495,16 +574,17 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                   disabled={authRole === 'teacher'}
                   style={{
                     width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '1.5px solid var(--border-color)',
-                    borderRadius: '12px',
+                    padding: '0.75rem 1.25rem',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '9999px',
                     fontSize: '0.9rem',
                     fontWeight: 600,
                     color: 'var(--text-primary)',
                     background: 'var(--bg-card-hover)',
                     outline: 'none',
                     cursor: authRole === 'teacher' ? 'not-allowed' : 'pointer',
-                    opacity: authRole === 'teacher' ? 0.7 : 1
+                    opacity: authRole === 'teacher' ? 0.7 : 1,
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                   }}
                 >
                   {levelOptions.map(opt => (
@@ -524,16 +604,17 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                   disabled={authRole === 'teacher'}
                   style={{
                     width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: '1.5px solid var(--border-color)',
-                    borderRadius: '12px',
+                    padding: '0.75rem 1.25rem',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '9999px',
                     fontSize: '0.9rem',
                     fontWeight: 600,
                     color: 'var(--text-primary)',
                     background: 'var(--bg-card-hover)',
                     outline: 'none',
                     cursor: authRole === 'teacher' ? 'not-allowed' : 'pointer',
-                    opacity: authRole === 'teacher' ? 0.7 : 1
+                    opacity: authRole === 'teacher' ? 0.7 : 1,
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                   }}
                 >
                   {levelOptions.map(opt => (
@@ -551,16 +632,17 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 {(() => {
                   const inputStyle = {
                     width: '100%',
-                    padding: '0.65rem 0.85rem',
-                    border: '1.5px solid var(--border-color)',
-                    borderRadius: '10px',
+                    padding: '0.65rem 1.25rem',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '9999px',
                     fontSize: '0.85rem',
                     fontWeight: 600,
                     outline: 'none',
                     color: 'var(--text-primary)',
                     background: 'var(--bg-card-hover)',
                     cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
-                    opacity: authRole === 'teacher' ? 0.7 : 1
+                    opacity: authRole === 'teacher' ? 0.7 : 1,
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                   };
 
                   return (
@@ -574,6 +656,16 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                           placeholder="-"
                           disabled={authRole === 'teacher'}
                           style={inputStyle}
+                          onFocus={e => {
+                            if (authRole !== 'teacher') {
+                              e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                              e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                            }
+                          }}
+                          onBlur={e => {
+                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                       </div>
 
@@ -586,6 +678,16 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                           placeholder="-"
                           disabled={authRole === 'teacher'}
                           style={inputStyle}
+                          onFocus={e => {
+                            if (authRole !== 'teacher') {
+                              e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                              e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                            }
+                          }}
+                          onBlur={e => {
+                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                       </div>
 
@@ -598,6 +700,16 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                           placeholder="-"
                           disabled={authRole === 'teacher'}
                           style={inputStyle}
+                          onFocus={e => {
+                            if (authRole !== 'teacher') {
+                              e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                              e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                            }
+                          }}
+                          onBlur={e => {
+                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                       </div>
 
@@ -610,6 +722,16 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                           placeholder="-"
                           disabled={authRole === 'teacher'}
                           style={inputStyle}
+                          onFocus={e => {
+                            if (authRole !== 'teacher') {
+                              e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                              e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                            }
+                          }}
+                          onBlur={e => {
+                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                         />
                       </div>
                     </div>
@@ -623,10 +745,10 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
             type="submit"
             style={{
               width: '100%',
-              background: 'var(--accent-gradient)',
+              background: 'var(--accent-hero)',
               color: '#ffffff',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '9999px',
               padding: '0.85rem',
               fontWeight: 800,
               fontSize: '0.9rem',
@@ -635,18 +757,16 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
               justifyContent: 'center',
               gap: '0.5rem',
               cursor: 'pointer',
-              boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.3)',
-              transition: 'all 0.2s ease',
+              boxShadow: '0 8px 16px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
               marginTop: '0.5rem',
               letterSpacing: '0.05em'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 6px 8px -1px rgba(0,0,0,0.1)';
+              e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05)';
+              e.currentTarget.style.transform = 'none';
             }}
           >
             <Save size={16} />

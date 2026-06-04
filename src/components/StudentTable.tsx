@@ -960,7 +960,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           .teacher-group-header > div:first-child {
             font-size: 0.95rem !important;
             font-weight: 850 !important;
-            color: #0f172a !important;
+            color: var(--text-primary) !important;
             letter-spacing: 0.02em !important;
           }
           .teacher-group-header > div:not(:first-child) {
@@ -970,17 +970,19 @@ const StudentTable: React.FC<StudentTableProps> = ({
             display: flex !important;
             flex-direction: column !important;
             align-items: stretch !important;
-            border: 1.5px solid #e5e7eb !important;
-            border-radius: 16px !important;
+            border: 1px solid var(--border-subtle) !important;
+            border-radius: 20px !important;
             margin-bottom: 1.25rem !important;
             padding: 1.25rem 1rem !important;
             gap: 0.75rem !important;
-            background: #ffffff !important;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01) !important;
+            background: var(--bg-card) !important;
+            box-shadow: var(--glass-shadow-soft) !important;
+            backdrop-filter: var(--backdrop-blur) !important;
+            -webkit-backdrop-filter: var(--backdrop-blur) !important;
           }
           .table-cell {
             border-right: none !important;
-            border-bottom: 1px dashed #f1f5f9 !important;
+            border-bottom: 1px dashed var(--border-subtle) !important;
             padding: 0.5rem 0 !important;
             display: flex !important;
             flex-direction: row !important;
@@ -1008,14 +1010,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
           .mobile-label {
             display: inline-block !important;
             font-weight: 700 !important;
-            color: #64748b !important;
+            color: var(--text-secondary) !important;
             font-size: 0.8rem !important;
             text-transform: uppercase;
             letter-spacing: 0.04em;
           }
           .name-block {
             border-right: none !important;
-            border-bottom: 1px solid #e5e7eb !important;
+            border-bottom: 1px solid var(--border-subtle) !important;
             padding-bottom: 0.75rem !important;
             margin-bottom: 0.25rem !important;
             width: 100% !important;
@@ -1042,16 +1044,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
           left: 50%;
           transform: translateX(-50%);
           background: var(--bg-card);
-          border: 1.5px solid var(--border-color);
-          border-radius: 12px;
+          border: 1px solid var(--border-subtle);
+          border-radius: 16px;
           padding: 0.75rem;
-          box-shadow: var(--glass-shadow);
+          box-shadow: var(--glass-shadow-soft);
           z-index: 9999;
           width: max-content;
           min-width: 180px;
           max-width: 250px;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: var(--backdrop-blur);
+          -webkit-backdrop-filter: var(--backdrop-blur);
         }
         .tooltip-trigger:hover .tooltip-content {
           display: block;
@@ -1071,15 +1073,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
         {(activeSubject === 'ENG' || activeSubject === 'MATH') && (
           <div style={{
             background: 'var(--bg-card)',
-            border: '1.5px solid var(--border-color)',
-            borderRadius: '24px',
-            padding: '1.5rem',
-            boxShadow: 'var(--glass-shadow)',
-            marginBottom: '1rem',
+            backdropFilter: 'var(--backdrop-blur-md)',
+            WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '32px',
+            padding: '1.75rem 2rem',
+            boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
+            marginBottom: '1.5rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1.25rem',
-            animation: 'fadeIn 0.2s ease-out'
+            gap: '1.5rem',
+            animation: 'fadeIn 0.3s ease-out'
           }}>
             {/* Panel Title */}
             <div 
@@ -1090,16 +1094,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 userSelect: 'none'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '12px',
-                  background: 'rgba(13, 148, 136, 0.1)',
-                  color: 'var(--accent-primary)',
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: 'rgba(99, 102, 241, 0.1)',
+                  color: 'var(--accent-hero)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  border: '1px solid var(--border-subtle)'
                 }}>
                   <Calendar size={20} />
                 </div>
@@ -1118,9 +1123,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
               display: 'flex',
               flexDirection: 'column',
               gap: '1.25rem',
-              borderTop: '1px solid var(--border-color)',
-              paddingTop: '1.25rem',
-              animation: 'slideUp 0.2s ease-out'
+              borderTop: '1px solid var(--border-subtle)',
+              paddingTop: '1.5rem',
+              animation: 'slideUp 0.3s ease-out'
             }}>
                 {/* Controls row */}
                 <div style={{
@@ -1139,15 +1144,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       value={selectedDailyDate}
                       onChange={(e) => setSelectedDailyDate(e.target.value)}
                       style={{
-                        padding: '0.65rem 1rem',
-                        border: '1.5px solid var(--border-color)',
-                        borderRadius: '12px',
+                        padding: '0.65rem 1.25rem',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '9999px',
                         fontSize: '0.85rem',
                         fontWeight: 600,
                         background: 'var(--bg-card-hover)',
                         color: 'var(--text-primary)',
                         outline: 'none',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                       }}
                     />
                   </div>
@@ -1159,12 +1164,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     </label>
                     <div style={{
                       padding: '0.65rem 1.25rem',
-                      border: '1.5px solid var(--border-color)',
-                      borderRadius: '12px',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px',
                       fontSize: '0.85rem',
                       fontWeight: 700,
-                      background: 'rgba(13, 148, 136, 0.05)',
-                      color: 'var(--accent-primary)',
+                      background: 'var(--accent-glow)',
+                      color: 'var(--accent-hero)',
                       minWidth: '100px',
                       textAlign: 'center'
                     }}>
@@ -1176,22 +1181,22 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   <button 
                     onClick={handleAddNewLesson}
                     style={{
-                      background: 'var(--accent-gradient)',
+                      background: 'var(--accent-hero)',
                       color: '#ffffff',
                       border: 'none',
-                      borderRadius: '12px',
-                      padding: '0.75rem 1.25rem',
+                      borderRadius: '9999px',
+                      padding: '0.75rem 1.75rem',
                       fontWeight: 800,
                       fontSize: '0.85rem',
                       cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(13, 148, 136, 0.15)',
-                      transition: 'all 0.2s ease',
+                      boxShadow: '0 8px 16px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem'
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
                   >
                     <Plus size={16} />
                     Yangi dars qo'shish
@@ -1200,8 +1205,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                 {/* Student list grid */}
                 <div style={{
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '24px',
                   overflow: 'hidden',
                   background: 'var(--bg-card-hover)'
                 }}>
@@ -1209,7 +1214,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     display: 'grid',
                     gridTemplateColumns: '2fr 1fr 1fr',
                     padding: '0.75rem 1.25rem',
-                    background: 'var(--border-color)',
+                    background: 'rgba(0,0,0,0.02)',
                     color: 'var(--text-secondary)',
                     fontSize: '0.7rem',
                     fontWeight: 800,
@@ -1234,16 +1239,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         onClick={handleAddNewLesson}
                         style={{
                           background: 'transparent',
-                          border: '1.5px solid var(--accent-primary)',
-                          color: 'var(--accent-primary)',
-                          borderRadius: '10px',
-                          padding: '0.45rem 1rem',
+                          border: '1px solid var(--accent-hero)',
+                          color: 'var(--accent-hero)',
+                          borderRadius: '9999px',
+                          padding: '0.45rem 1.25rem',
                           fontSize: '0.8rem',
                           fontWeight: 750,
                           cursor: 'pointer',
-                          transition: 'all 0.2s ease'
+                          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(13, 148, 136, 0.05)'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-glow)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                       >
                         Dars boshlash
@@ -1263,7 +1268,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               gridTemplateColumns: '2fr 1fr 1fr',
                               padding: '0.9rem 1.25rem',
                               alignItems: 'center',
-                              borderBottom: sIdx === students.length - 1 ? 'none' : '1px solid var(--border-color)',
+                              borderBottom: sIdx === students.length - 1 ? 'none' : '1px solid var(--border-subtle)',
                               background: 'var(--bg-card)'
                             }}
                           >
@@ -1351,9 +1356,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 className="table-card-container"
                 style={{
                   background: 'var(--bg-card)',
-                  borderRadius: '16px',
-                  border: '1px solid var(--border-color)',
-                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
+                  backdropFilter: 'var(--backdrop-blur-md)',
+                  WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+                  borderRadius: '24px',
+                  border: '1px solid var(--border-subtle)',
+                  boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
                   overflow: 'hidden',
                   marginBottom: '2rem'
                 }}
@@ -1364,7 +1371,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   gridTemplateColumns: isEditable ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
                   alignItems: 'stretch',
                   padding: '0 1.5rem',
-                  borderBottom: '1px solid var(--border-color)',
+                  borderBottom: '1px solid var(--border-subtle)',
                   background: 'var(--bg-card-hover)',
                   color: 'var(--text-secondary)',
                   fontSize: '0.65rem',
@@ -1376,7 +1383,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     color: 'var(--text-primary)', 
                     fontSize: '0.85rem', 
                     letterSpacing: '0.04em', 
-                    borderRight: '1px solid var(--border-color)', 
+                    borderRight: '1px solid var(--border-subtle)', 
                     display: 'flex', 
                     alignItems: 'center', 
                     padding: '0.5rem 0',
@@ -1393,9 +1400,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             style={{
                               background: 'var(--bg-card-hover)',
                               color: 'var(--text-primary)',
-                              border: '1.5px solid var(--border-color)',
-                              borderRadius: '8px',
-                              padding: '0.35rem 1.75rem 0.35rem 0.65rem',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '9999px',
+                              padding: '0.45rem 2rem 0.45rem 1rem',
                               fontSize: '0.75rem',
                               fontWeight: 800,
                               outline: 'none',
@@ -1436,16 +1443,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             onClick={() => setShowAllWeeks(!showAllWeeks)}
                             title={showAllWeeks ? "Faqat oxirgi 6 haftani ko'rsatish" : "Barcha haftalarni ko'rsatish"}
                             style={{
-                              background: showAllWeeks ? 'var(--accent-primary)' : 'var(--bg-card-hover)',
+                              background: showAllWeeks ? 'var(--accent-hero)' : 'var(--bg-card-hover)',
                               color: showAllWeeks ? '#ffffff' : 'var(--text-secondary)',
-                              border: showAllWeeks ? '1.5px solid var(--accent-primary)' : '1.5px solid var(--border-color)',
-                              borderRadius: '8px',
-                              padding: '0.35rem 0.65rem',
+                              border: showAllWeeks ? '1px solid var(--accent-hero)' : '1px solid var(--border-subtle)',
+                              borderRadius: '9999px',
+                              padding: '0.35rem 0.85rem',
                               fontSize: '0.75rem',
                               fontWeight: 800,
                               outline: 'none',
                               cursor: 'pointer',
-                              transition: 'all 0.2s',
+                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '0.25rem'
@@ -1467,16 +1474,16 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             onClick={() => onDeleteWeekClick(selectedWeek)}
                             title="Ushbu haftani savatga o'chirish"
                             style={{
-                              background: '#fee2e2',
-                              color: '#ef4444',
-                              border: '1.5px solid #fca5a5',
-                              borderRadius: '8px',
+                              background: 'rgba(239, 68, 68, 0.12)',
+                              color: '#dc2626',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '50%',
                               padding: '0.35rem',
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              transition: 'all 0.2s ease',
+                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                               height: '26px',
                               width: '26px',
                               boxSizing: 'border-box'
@@ -1486,8 +1493,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               e.currentTarget.style.color = '#ffffff';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.background = '#fee2e2';
-                              e.currentTarget.style.color = '#ef4444';
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
+                              e.currentTarget.style.color = '#dc2626';
                             }}
                           >
                             <Trash2 size={12} />
@@ -1499,30 +1506,30 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             onClick={onStartNewWeekClick}
                             title="Yangi o'quv haftasini boshlash"
                             style={{
-                              background: 'rgba(16, 185, 129, 0.1)',
+                              background: 'rgba(16, 185, 129, 0.12)',
                               color: '#10b981',
-                              border: '1.5px solid rgba(16, 185, 129, 0.3)',
-                              borderRadius: '8px',
-                              padding: '0.35rem 0.5rem',
+                              border: '1px solid var(--border-subtle)',
+                              borderRadius: '9999px',
+                              padding: '0.35rem 0.75rem',
                               cursor: 'pointer',
                               fontSize: '0.7rem',
                               fontWeight: 700,
                               display: 'flex',
                               alignItems: 'center',
                               gap: '0.25rem',
-                              transition: 'all 0.2s ease',
+                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                               height: '26px',
                               boxSizing: 'border-box'
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.background = '#10b981';
                               e.currentTarget.style.color = '#ffffff';
-                              e.currentTarget.style.borderColor = '#10b981';
+                              e.currentTarget.style.borderColor = 'transparent';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
                               e.currentTarget.style.color = '#10b981';
-                              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                              e.currentTarget.style.borderColor = 'var(--border-subtle)';
                             }}
                           >
                             <span>+ Yangi Hafta</span>
@@ -1531,13 +1538,13 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
                     )}
                   </div>
-                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>ENG SCORE</div>
-                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>MATH SCORE</div>
-                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>ATTENDANCE</div>
-                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>HOMEWORK</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center' }}>ENG SCORE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center' }}>MATH SCORE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center' }}>ATTENDANCE</div>
+                  <div style={{ padding: '0.9rem 1.5rem', borderRight: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center' }}>HOMEWORK</div>
                   <div style={{ 
                     padding: '0.9rem 1.5rem', 
-                    borderRight: isAdminMode ? '1px solid var(--border-color)' : 'none',
+                    borderRight: isAdminMode ? '1px solid var(--border-subtle)' : 'none',
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
@@ -2576,9 +2583,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               className="table-card-container"
                               style={{
                                 background: 'var(--bg-card)',
-                                borderRadius: '16px',
-                                border: '1px solid var(--border-color)',
-                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
+                                backdropFilter: 'var(--backdrop-blur-md)',
+                                WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+                                borderRadius: '24px',
+                                border: '1px solid var(--border-subtle)',
+                                boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
                                 overflow: 'hidden',
                                 minWidth: '650px'
                               }}
@@ -2752,9 +2761,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 className="table-card-container"
                 style={{
                   background: 'var(--bg-card)',
-                  borderRadius: '16px',
-                  border: '1px solid var(--border-color)',
-                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
+                  backdropFilter: 'var(--backdrop-blur-md)',
+                  WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+                  borderRadius: '24px',
+                  border: '1px solid var(--border-subtle)',
+                  boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
                   overflow: 'hidden',
                   marginBottom: '2rem'
                 }}
@@ -3164,9 +3175,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   className="table-card-container"
                   style={{
                     background: 'var(--bg-card)',
-                    borderRadius: '16px',
-                    border: '1px solid var(--border-color)',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01)',
+                    backdropFilter: 'var(--backdrop-blur-md)',
+                    WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+                    borderRadius: '24px',
+                    border: '1px solid var(--border-subtle)',
+                    boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
                     overflow: 'hidden',
                     marginBottom: '2rem'
                   }}

@@ -551,9 +551,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.3)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
+            background: 'var(--backdrop-color)',
+            backdropFilter: 'var(--backdrop-blur-md)',
+            WebkitBackdropFilter: 'var(--backdrop-blur-md)',
             zIndex: 999,
             opacity: isOpen ? 1 : 0,
             visibility: isOpen ? 'visible' : 'hidden',
@@ -572,14 +572,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           width: '100%',
           maxWidth: isInline ? 'none' : '410px',
           boxSizing: 'border-box',
-          background: 'var(--bg-main)',
-          boxShadow: isInline ? 'none' : '-10px 0 40px -10px rgba(15, 23, 42, 0.08)',
+          background: 'var(--bg-card)',
+          backdropFilter: isInline ? 'none' : 'var(--backdrop-blur-md)',
+          WebkitBackdropFilter: isInline ? 'none' : 'var(--backdrop-blur-md)',
+          boxShadow: isInline ? 'none' : 'var(--glass-shadow-soft)',
           zIndex: isInline ? 1 : 1000,
           transform: isInline ? 'none' : (isOpen ? 'translateX(0)' : 'translateX(100%)'),
           transition: isInline ? 'none' : 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
           flexDirection: 'column',
-          borderLeft: isInline ? 'none' : '1px solid var(--border-color)',
+          borderLeft: isInline ? 'none' : '1px solid var(--border-subtle)',
           minHeight: isInline ? 'calc(100vh - 120px)' : undefined
         }}
       >
@@ -589,7 +591,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: '1px solid var(--border-color)'
+          borderBottom: '1px solid var(--border-subtle)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Settings size={18} color="var(--accent-primary)" strokeWidth={2.5} />
@@ -610,9 +612,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 justifyContent: 'center',
                 padding: '0.25rem',
                 borderRadius: '50%',
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
             >
               <X size={18} />
@@ -624,27 +626,27 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         {authRole !== 'admin123' && authRole !== 'teacher' && (!isInline || isMobile) && (
           <div style={{
             display: 'flex',
-            background: '#f1f5f9',
-            borderRadius: '12px',
+            background: 'var(--bg-card-hover)',
+            borderRadius: '9999px',
             padding: '0.25rem',
             margin: '0 1.5rem 1rem',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--border-subtle)',
             flexShrink: 0
           }}>
             <button
               onClick={() => setActiveTab('settings')}
               style={{
                 flex: 1,
-                background: activeTab === 'settings' ? '#ffffff' : 'transparent',
-                color: activeTab === 'settings' ? '#0f172a' : '#64748b',
+                background: activeTab === 'settings' ? 'var(--accent-hero)' : 'transparent',
+                color: activeTab === 'settings' ? '#ffffff' : 'var(--text-secondary)',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '9999px',
                 padding: '0.5rem 0.25rem',
                 fontSize: '0.68rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: activeTab === 'settings' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.2s',
+                boxShadow: activeTab === 'settings' ? '0 8px 16px var(--accent-glow)' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
@@ -656,16 +658,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               onClick={() => setActiveTab('news')}
               style={{
                 flex: 1,
-                background: activeTab === 'news' ? '#ffffff' : 'transparent',
-                color: activeTab === 'news' ? '#0f172a' : '#64748b',
+                background: activeTab === 'news' ? 'var(--accent-hero)' : 'transparent',
+                color: activeTab === 'news' ? '#ffffff' : 'var(--text-secondary)',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '9999px',
                 padding: '0.5rem 0.25rem',
                 fontSize: '0.68rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: activeTab === 'news' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.2s',
+                boxShadow: activeTab === 'news' ? '0 8px 16px var(--accent-glow)' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
@@ -677,16 +679,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               onClick={() => setActiveTab('teachers')}
               style={{
                 flex: 1,
-                background: activeTab === 'teachers' ? '#ffffff' : 'transparent',
-                color: activeTab === 'teachers' ? '#0f172a' : '#64748b',
+                background: activeTab === 'teachers' ? 'var(--accent-hero)' : 'transparent',
+                color: activeTab === 'teachers' ? '#ffffff' : 'var(--text-secondary)',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '9999px',
                 padding: '0.5rem 0.25rem',
                 fontSize: '0.68rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: activeTab === 'teachers' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.2s',
+                boxShadow: activeTab === 'teachers' ? '0 8px 16px var(--accent-glow)' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
@@ -699,16 +701,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 onClick={() => setActiveTab('trash')}
                 style={{
                   flex: 1,
-                  background: activeTab === 'trash' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'trash' ? '#0f172a' : '#64748b',
+                  background: activeTab === 'trash' ? 'var(--accent-hero)' : 'transparent',
+                  color: activeTab === 'trash' ? '#ffffff' : 'var(--text-secondary)',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '9999px',
                   padding: '0.5rem 0.25rem',
                   fontSize: '0.68rem',
                   fontWeight: 800,
                   cursor: 'pointer',
-                  boxShadow: activeTab === 'trash' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                  transition: 'all 0.2s',
+                  boxShadow: activeTab === 'trash' ? '0 8px 16px var(--accent-glow)' : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis'
@@ -729,18 +731,18 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               {/* Section 1: Subject Select */}
               {(!isInline || isMobile) && (
                 <div style={{ marginBottom: '2rem', marginTop: '0.5rem' }}>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
                     FAOL FAN KO'RINISHI
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                     {(() => {
                       let subjects = [
-                        { id: 'PRIMARY', title: "Boshlang'ich", desc: "Boshlang'ich sinflar (1-4) uchun progress va tahlillar", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
-                        { id: 'GRANT', title: 'Grant Testlar', desc: 'Sinflarning darajalari va grant test natijalari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
-                        { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
-                        { id: 'ENG_MATH', title: 'Eng/Math', desc: 'Ingliz tili va Matematika progress va ballari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' },
-                        { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.08)' }
+                        { id: 'PRIMARY', title: "Boshlang'ich", desc: "Boshlang'ich sinflar (1-4) uchun progress va tahlillar", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
+                        { id: 'GRANT', title: 'Grant Testlar', desc: 'Sinflarning darajalari va grant test natijalari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
+                        { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
+                        { id: 'ENG_MATH', title: 'Eng/Math', desc: 'Ingliz tili va Matematika progress va ballari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
+                        { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' }
                       ];
                       if (authRole === 'teacher') {
                         const tSubject = localStorage.getItem('teacher_subject');
@@ -759,13 +761,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             gap: '1rem',
                             width: '100%',
                             padding: '0.9rem 1.1rem',
-                            borderRadius: '16px',
+                            borderRadius: '20px',
                             background: isSelected ? subj.bg : 'var(--bg-card)',
-                            border: isSelected ? `2.2px solid ${subj.color}` : '1.5px solid var(--border-color)',
+                            border: isSelected ? `2px solid ${subj.color}` : '1px solid var(--border-subtle)',
                             textAlign: 'left',
                             cursor: 'pointer',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: isSelected ? '0 4px 12px -3px rgba(0,0,0,0.04)' : 'none'
+                            transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            boxShadow: isSelected ? 'var(--glass-shadow-soft)' : 'none'
                           }}
                           onMouseEnter={(e) => {
                             if (!isSelected) {
@@ -775,7 +777,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           }}
                           onMouseLeave={(e) => {
                             if (!isSelected) {
-                              e.currentTarget.style.borderColor = 'var(--border-color)';
+                              e.currentTarget.style.borderColor = 'var(--border-subtle)';
                               e.currentTarget.style.background = 'var(--bg-card)';
                             }
                           }}
@@ -820,8 +822,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         width: '46px',
                         height: '24px',
                         borderRadius: '9999px',
-                        background: isAdminMode ? 'var(--accent-primary)' : '#cbd5e1',
-                        border: 'none',
+                        background: isAdminMode ? 'var(--accent-primary)' : 'var(--bg-card-hover)',
+                        border: '1px solid var(--border-subtle)',
                         cursor: 'pointer',
                         position: 'relative',
                         padding: 0,
@@ -856,7 +858,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   flexDirection: 'column',
                   gap: '1rem'
                 }}>
-                  <div style={{ height: '1px', background: 'var(--border-color)', margin: '0' }} />
+                  <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '0' }} />
                   
                   <div>
                     <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
@@ -865,36 +867,31 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     
                     <div style={{
                       background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '16px',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '20px',
                       padding: '0.9rem 1.1rem',
                       marginBottom: '1rem',
-                      boxShadow: 'var(--glass-shadow)'
+                      boxShadow: 'var(--glass-shadow-soft)'
                     }}>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
                         <span>Faol sinf ({activeClass}):</span>
                         <strong style={{ color: 'var(--text-primary)' }}>{students.filter(s => getClassGroupLocal(s.className) === activeClass).length} ta</strong>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', marginTop: '0.35rem' }}>
-                        <span>Jami o'quvchilar:</span>
-                        <strong style={{ color: 'var(--text-primary)' }}>{students.length} ta</strong>
-                      </div>
                     </div>
-
-                    {/* Class-wise overview */}
+                     {/* Class-wise overview */}
                     <div style={{
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '0.5rem',
                       maxHeight: '240px',
                       overflowY: 'auto',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '16px',
-                      padding: '0.75rem',
-                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '20px',
+                      padding: '0.85rem',
+                      background: 'var(--bg-card-hover)',
                       marginBottom: '1rem'
                     }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.4rem', marginBottom: '0.25rem' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.4rem', marginBottom: '0.25rem' }}>
                         SINFLAR BO'YICHA O'QUVCHILAR
                       </div>
                       {INITIAL_CLASSES.map(cls => {
@@ -906,10 +903,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              padding: '0.4rem 0.6rem',
-                              borderRadius: '8px',
-                              background: 'var(--bg-card-hover)',
-                              border: '1px solid var(--border-color)'
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '12px',
+                              background: 'var(--bg-card)',
+                              border: '1px solid var(--border-subtle)'
                             }}
                           >
                             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{cls}</span>
@@ -925,11 +922,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                     color: '#ef4444',
                                     cursor: 'pointer',
                                     padding: '0.25rem',
-                                    borderRadius: '6px',
+                                    borderRadius: '50%',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    transition: 'background-color 0.2s'
+                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                                   }}
                                   onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
                                   onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -954,23 +951,25 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           gap: '0.5rem',
                           width: '100%',
                           padding: '0.75rem 1.25rem',
-                          borderRadius: '12px',
+                          borderRadius: '9999px',
                           background: 'var(--bg-card)',
-                          color: 'var(--accent-primary)',
-                          border: '1.5px solid var(--accent-primary)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-subtle)',
                           fontSize: '0.8rem',
                           fontWeight: 800,
                           cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          boxShadow: 'var(--glass-shadow)'
+                          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                          boxShadow: 'var(--glass-shadow-soft)'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'var(--accent-primary)';
+                          e.currentTarget.style.background = 'var(--accent-hero)';
                           e.currentTarget.style.color = '#ffffff';
+                          e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = 'var(--bg-card)';
-                          e.currentTarget.style.color = 'var(--accent-primary)';
+                          e.currentTarget.style.color = 'var(--text-primary)';
+                          e.currentTarget.style.transform = 'none';
                         }}
                       >
                         <UserPlus size={15} />
@@ -986,23 +985,21 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           gap: '0.5rem',
                           width: '100%',
                           padding: '0.75rem 1.25rem',
-                          borderRadius: '12px',
-                          background: 'var(--accent-primary)',
+                          borderRadius: '9999px',
+                          background: 'var(--accent-hero)',
                           color: '#ffffff',
                           border: 'none',
                           fontSize: '0.8rem',
                           fontWeight: 800,
                           cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
+                          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                          boxShadow: '0 8px 16px var(--accent-glow)'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.opacity = '0.9';
-                          e.currentTarget.style.transform = 'translateY(-0.5px)';
+                          e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.opacity = '1';
-                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.transform = 'none';
                         }}
                       >
                         <UploadCloud size={15} />
@@ -1031,8 +1028,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         width: '46px',
                         height: '24px',
                         borderRadius: '9999px',
-                        background: isDarkMode ? 'var(--accent-primary)' : '#cbd5e1',
-                        border: 'none',
+                        background: isDarkMode ? 'var(--accent-primary)' : 'var(--bg-card-hover)',
+                        border: '1px solid var(--border-subtle)',
                         cursor: 'pointer',
                         position: 'relative',
                         padding: 0,
@@ -1074,8 +1071,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       width: '46px',
                       height: '24px',
                       borderRadius: '9999px',
-                      background: showSummerPlan ? 'var(--accent-primary)' : '#cbd5e1',
-                      border: 'none',
+                      background: showSummerPlan ? 'var(--accent-primary)' : 'var(--bg-card-hover)',
+                      border: '1px solid var(--border-subtle)',
                       cursor: 'pointer',
                       position: 'relative',
                       padding: 0,
@@ -1102,7 +1099,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               {/* Section 6: Logout/Sign Out Button */}
               {onLogout && (
                 <div style={{ marginTop: '2rem' }}>
-                <div style={{ height: '1px', background: 'var(--border-color)', margin: '1.5rem 0' }} />
+                <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '1.5rem 0' }} />
                   <button
                     onClick={onLogout}
                     style={{
@@ -1112,23 +1109,25 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       gap: '0.6rem',
                       width: '100%',
                       padding: '0.85rem',
-                      borderRadius: '16px',
+                      borderRadius: '9999px',
                       background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
-                      border: `1.5px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#fee2e2'}`,
+                      border: `1px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#fee2e2'}`,
                       color: isDarkMode ? '#fc8181' : '#ef4444',
                       fontWeight: 800,
                       fontSize: '0.82rem',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       boxShadow: isDarkMode ? 'none' : '0 2px 4px rgba(239, 68, 68, 0.02)'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = isDarkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2';
                       e.currentTarget.style.borderColor = isDarkMode ? 'rgba(239, 68, 68, 0.5)' : '#ef4444';
+                      e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2';
                       e.currentTarget.style.borderColor = isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#fee2e2';
+                      e.currentTarget.style.transform = 'none';
                     }}
                   >
                     <LogOut size={16} />
@@ -1151,16 +1150,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   width: '100%',
-                  padding: '0.85rem 1.1rem',
-                  borderRadius: '14px',
-                  background: isFormOpen ? 'var(--accent-primary)' : 'var(--bg-card)',
+                  padding: '0.85rem 1.25rem',
+                  borderRadius: '9999px',
+                  background: isFormOpen ? 'var(--accent-hero)' : 'var(--bg-card)',
                   color: isFormOpen ? '#ffffff' : 'var(--text-primary)',
-                  border: isFormOpen ? '1px solid transparent' : `1.5px solid var(--border-color)`,
+                  border: '1px solid var(--border-subtle)',
                   fontSize: '0.8rem',
                   fontWeight: 800,
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: 'var(--glass-shadow)',
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  boxShadow: 'var(--glass-shadow-soft)',
                   marginBottom: '1rem'
                 }}
               >
@@ -1177,11 +1176,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   onSubmit={handleSubmitNews} 
                   style={{
                     background: 'var(--bg-card)',
-                    border: '1.5px solid var(--border-color)',
-                    borderRadius: '16px',
-                    padding: '1.25rem',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '24px',
+                    padding: '1.5rem 1.25rem',
                     marginBottom: '1.5rem',
-                    boxShadow: 'var(--glass-shadow)',
+                    boxShadow: 'var(--glass-shadow-soft)',
                     animation: 'slideDown 0.2s ease-out',
                     display: 'flex',
                     flexDirection: 'column',
@@ -1216,7 +1215,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                               justifyContent: 'center',
                               gap: '0.3rem',
                               padding: '0.55rem 0.5rem',
-                              borderRadius: '10px',
+                              borderRadius: '9999px',
                               background: isActive
                                 ? (opt.key === 'reminder' ? (isDarkMode ? 'rgba(245,158,11,0.15)' : '#fffbeb') : opt.key === 'event' ? (isDarkMode ? 'rgba(34,197,94,0.15)' : '#f0fdf4') : (isDarkMode ? 'rgba(59,130,246,0.15)' : '#eff6ff'))
                                 : 'var(--bg-card-hover)',
@@ -1224,12 +1223,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                 ? (opt.key === 'reminder' ? (isDarkMode ? '#fbbf24' : '#92400e') : opt.key === 'event' ? (isDarkMode ? '#4ade80' : '#166534') : (isDarkMode ? '#60a5fa' : '#1d4ed8'))
                                 : 'var(--text-secondary)',
                               border: isActive
-                                ? `2px solid ${opt.key === 'reminder' ? '#f59e0b' : opt.key === 'event' ? '#22c55e' : '#3b82f6'}`
-                                : `1.5px solid var(--border-color)`,
+                                ? `1.5px solid ${opt.key === 'reminder' ? '#f59e0b' : opt.key === 'event' ? '#22c55e' : '#3b82f6'}`
+                                : `1px solid var(--border-subtle)`,
                               fontSize: '0.72rem',
                               fontWeight: 800,
                               cursor: 'pointer',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                             }}
                           >
                             <span>{opt.icon}</span>
@@ -1240,7 +1239,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     </div>
                   </div>
 
-                  {/* Category Label Input — hidden for reminders */}
+                   {/* Category Label Input — hidden for reminders */}
                   {newsType !== 'reminder' && (
                   <div>
                     <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.35rem' }}>
@@ -1255,17 +1254,26 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       required
                       style={{
                         width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        borderRadius: '10px',
-                        border: '1.5px solid var(--border-color)',
+                        padding: '0.65rem 1rem',
+                        borderRadius: '9999px',
+                        border: '1px solid var(--border-subtle)',
                         fontSize: '0.82rem',
                         color: 'var(--text-primary)',
                         outline: 'none',
                         background: 'var(--bg-card-hover)',
+                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-primary)';
+                        e.target.style.background = 'var(--bg-card)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-subtle)';
+                        e.target.style.background = 'var(--bg-card-hover)';
                       }}
                     />
                     {/* Quick Labels suggestions */}
-                    <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                       {['E\'lon', 'Tadbir', 'Bayram', 'Imtihon', 'Sport'].map(item => (
                         <button
                           type="button"
@@ -1274,16 +1282,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           style={{
                             background: 'var(--bg-card-hover)',
                             color: 'var(--text-secondary)',
-                            border: `1px solid var(--border-color)`,
-                            borderRadius: '6px',
-                            padding: '0.2rem 0.5rem',
+                            border: `1px solid var(--border-subtle)`,
+                            borderRadius: '9999px',
+                            padding: '0.25rem 0.65rem',
                             fontSize: '0.65rem',
                             fontWeight: 700,
                             cursor: 'pointer',
-                            transition: 'all 0.15s'
+                            transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-main)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.borderColor = 'var(--accent-primary)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                         >
                           {item}
                         </button>
@@ -1305,20 +1313,29 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       required
                       style={{
                         width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        borderRadius: '10px',
-                        border: '1.5px solid var(--border-color)',
+                        padding: '0.65rem 1rem',
+                        borderRadius: '9999px',
+                        border: '1px solid var(--border-subtle)',
                         fontSize: '0.82rem',
                         color: 'var(--text-primary)',
                         outline: 'none',
                         fontFamily: 'inherit',
                         background: 'var(--bg-card-hover)',
+                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-primary)';
+                        e.target.style.background = 'var(--bg-card)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-subtle)';
+                        e.target.style.background = 'var(--bg-card-hover)';
                       }}
                     />
                   </div>
 
                   {/* Scheduled Release Toggle */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: 'var(--bg-card-hover)', padding: '0.75rem', borderRadius: '10px', border: `1px solid var(--border-color)` }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: 'var(--bg-card-hover)', padding: '0.85rem', borderRadius: '20px', border: `1px solid var(--border-subtle)` }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Clock size={12} />
@@ -1331,8 +1348,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           width: '38px',
                           height: '20px',
                           borderRadius: '9999px',
-                          background: isScheduled ? 'var(--accent-primary)' : '#cbd5e1',
-                          border: 'none',
+                          background: isScheduled ? 'var(--accent-primary)' : 'var(--bg-card)',
+                          border: '1px solid var(--border-subtle)',
                           cursor: 'pointer',
                           position: 'relative',
                           padding: 0,
@@ -1355,7 +1372,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
                     {isScheduled && (
                       <div style={{ marginTop: '0.5rem', animation: 'fadeIn 0.2s' }}>
-                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>
+                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
                           ILOVADA NASHR QILISH SANASI:
                         </label>
                         <input 
@@ -1365,14 +1382,21 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           required
                           style={{
                             width: '100%',
-                            padding: '0.5rem 0.75rem',
-                            borderRadius: '8px',
-                            border: '1.5px solid var(--border-color)',
+                            padding: '0.5rem 0.85rem',
+                            borderRadius: '9999px',
+                            border: '1px solid var(--border-subtle)',
                             fontSize: '0.78rem',
                             color: 'var(--text-primary)',
                             outline: 'none',
                             fontFamily: 'inherit',
                             background: 'var(--bg-card)',
+                            transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = 'var(--accent-primary)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = 'var(--border-subtle)';
                           }}
                         />
                       </div>
@@ -1400,14 +1424,14 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             style={{
                               background: isChosen ? colors.bg : 'var(--bg-card-hover)',
                               color: isChosen ? colors.text : 'var(--text-secondary)',
-                              border: isChosen ? `2px solid ${colors.dot}` : `1.5px solid var(--border-color)`,
-                              borderRadius: '8px',
+                              border: isChosen ? `1.5px solid ${colors.dot}` : `1px solid var(--border-subtle)`,
+                              borderRadius: '9999px',
                               padding: '0.45rem 0.25rem',
                               fontSize: '0.7rem',
                               fontWeight: 800,
                               cursor: 'pointer',
                               textTransform: 'uppercase',
-                              transition: 'all 0.2s',
+                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1421,8 +1445,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       })}
                     </div>
                   </div>
-
-                  {/* News Title */}
+                     {/* News Title */}
                   <div>
                     <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', display: 'block', marginBottom: '0.35rem' }}>
                       TITLE (SARLAVHA)
@@ -1435,13 +1458,22 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       required
                       style={{
                         width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        borderRadius: '10px',
-                        border: '1.5px solid var(--border-color)',
+                        padding: '0.65rem 1rem',
+                        borderRadius: '9999px',
+                        border: '1px solid var(--border-subtle)',
                         fontSize: '0.82rem',
                         color: 'var(--text-primary)',
                         outline: 'none',
                         background: 'var(--bg-card-hover)',
+                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-primary)';
+                        e.target.style.background = 'var(--bg-card)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-subtle)';
+                        e.target.style.background = 'var(--bg-card-hover)';
                       }}
                     />
                   </div>
@@ -1459,9 +1491,9 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       rows={4}
                       style={{
                         width: '100%',
-                        padding: '0.65rem 0.85rem',
-                        borderRadius: '10px',
-                        border: '1.5px solid var(--border-color)',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '20px',
+                        border: '1px solid var(--border-subtle)',
                         fontSize: '0.82rem',
                         color: 'var(--text-primary)',
                         outline: 'none',
@@ -1469,6 +1501,15 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         fontFamily: 'inherit',
                         lineHeight: 1.4,
                         background: 'var(--bg-card-hover)',
+                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = 'var(--accent-primary)';
+                        e.target.style.background = 'var(--bg-card)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = 'var(--border-subtle)';
+                        e.target.style.background = 'var(--bg-card-hover)';
                       }}
                     />
                   </div>
@@ -1476,7 +1517,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   {/* Pictures Upload Area — hidden for reminders */}
                   {newsType !== 'reminder' && (
                   <div>
-                    <label style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.35rem' }}>
+                    <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.35rem' }}>
                       <ImageIcon size={12} />
                       RASMLARNI YUKLASH
                     </label>
@@ -1486,10 +1527,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
                         {uploadedPics.map((pic, idx) => (
                           <div 
-                            key={idx} 
+                            key={pic} 
                             style={{ 
                               position: 'relative', width: '56px', height: '56px', 
-                              borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1' 
+                              borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)' 
                             }}
                           >
                             <img src={pic} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1516,12 +1557,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       onClick={() => newsImageInputRef.current?.click()}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                        width: '100%', padding: '0.6rem', border: '2px dashed var(--border-color)', borderRadius: '10px',
+                        width: '100%', padding: '0.75rem', border: '1px dashed var(--border-subtle)', borderRadius: '9999px',
                         background: 'var(--bg-card-hover)', color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 700,
-                        cursor: 'pointer', transition: 'all 0.2s'
+                        cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.background = 'var(--border-color)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
                     >
                       <UploadCloud size={16} />
                       <span>Rasm tanlash (bir nechta mumkin)</span>
@@ -1540,25 +1581,25 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   {/* Reminder Mock Preview */}
                   {newsType === 'reminder' && (newsTitle.trim() || newsMessage.trim()) && (
                     <div style={{
-                      background: '#fffbeb',
-                      border: '1.5px solid #fbbf24',
-                      borderRadius: '14px',
-                      padding: '1rem',
+                      background: 'rgba(245, 158, 11, 0.08)',
+                      border: '1px solid rgba(245, 158, 11, 0.2)',
+                      borderRadius: '24px',
+                      padding: '1.25rem',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.5rem',
+                      gap: '0.75rem',
                       animation: 'fadeIn 0.2s ease-out'
                     }}>
-                      <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#92400e', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <div style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <Eye size={10} />
                         ILOVADAGI KO'RINISHI (PREVIEW)
                       </div>
                       <div style={{
-                        background: '#ffffff',
-                        borderRadius: '12px',
-                        padding: '1rem',
-                        boxShadow: '0 4px 20px -4px rgba(0,0,0,0.12)',
-                        border: '1px solid #e5e7eb',
+                        background: 'var(--bg-card)',
+                        borderRadius: '20px',
+                        padding: '1.25rem',
+                        boxShadow: 'var(--glass-shadow-soft)',
+                        border: '1px solid var(--border-subtle)',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -1572,17 +1613,17 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         }}>
                           <Bell size={18} color="#ffffff" />
                         </div>
-                        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                           {newsTitle.trim() || 'Sarlavha...'}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#475569', lineHeight: 1.4 }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                           {newsMessage.trim() || 'Xabar matni...'}
                         </div>
                         <div style={{
                           background: '#f59e0b',
                           color: '#ffffff',
                           border: 'none',
-                          borderRadius: '8px',
+                          borderRadius: '9999px',
                           padding: '0.4rem 1.5rem',
                           fontSize: '0.75rem',
                           fontWeight: 800,
@@ -1600,12 +1641,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       type="button"
                       onClick={() => setIsFormOpen(false)}
                       style={{
-                        padding: '0.65rem', border: '1.5px solid var(--border-color)', borderRadius: '10px',
+                        padding: '0.65rem', border: '1px solid var(--border-subtle)', borderRadius: '9999px',
                         background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 800,
-                        cursor: 'pointer', transition: 'all 0.2s'
+                        cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; e.currentTarget.style.borderColor = 'var(--accent-primary)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                     >
                       BEKOR QILISH
                     </button>
@@ -1613,11 +1654,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       type="submit"
                       disabled={isSubmittingNews}
                       style={{
-                        padding: '0.65rem', border: 'none', borderRadius: '10px',
-                        background: 'var(--accent-primary)', color: '#ffffff', fontSize: '0.8rem', fontWeight: 800,
-                        cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
+                        padding: '0.65rem', border: 'none', borderRadius: '9999px',
+                        background: 'var(--accent-hero)', color: '#ffffff', fontSize: '0.8rem', fontWeight: 800,
+                        cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
                         opacity: isSubmittingNews ? 0.7 : 1
                       }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
                     >
                       <Send size={14} />
                       <span>{isSubmittingNews ? 'YUKLANMOQDA...' : 'SAQLASH'}</span>
@@ -1628,19 +1671,20 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
               {/* News & Events list */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                   <Eye size={12} />
                   ILOVADAGI YANGILIKLAR ({newsEvents.length} ta)
                 </div>
 
                 {isNewsLoading ? (
-                  <div style={{ textAlign: 'center', padding: '2rem 0', color: '#64748b', fontSize: '0.8rem' }}>
+                  <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                     Yangiliklar yuklanmoqda...
                   </div>
                 ) : newsEvents.length === 0 ? (
                   <div style={{ 
-                    textAlign: 'center', padding: '2.5rem 1rem', border: '1.5px dashed #cbd5e1', 
-                    borderRadius: '16px', color: '#94a3b8', fontSize: '0.8rem', lineHeight: 1.5 
+                    textAlign: 'center', padding: '2.5rem 1rem', border: '1px dashed var(--border-subtle)', 
+                    borderRadius: '24px', color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.5,
+                    background: 'var(--bg-card-hover)'
                   }}>
                     Yangiliklar mavjud emas.<br />Mobil ilovada ko'rsatish uchun birinchi yangilikni yuklang!
                   </div>
@@ -1662,11 +1706,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       <div 
                         key={item.id}
                         style={{
-                          background: isReminder ? '#fffbeb' : '#ffffff',
-                          border: isReminder ? '1px solid #fde68a' : '1px solid #e2e8f0',
-                          borderRadius: '16px',
-                          padding: '1rem',
-                          boxShadow: '0 2px 4px rgba(15, 23, 42, 0.01)',
+                          background: isReminder ? 'rgba(245, 158, 11, 0.06)' : 'var(--bg-card)',
+                          border: isReminder ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid var(--border-subtle)',
+                          borderRadius: '24px',
+                          padding: '1.25rem',
+                          boxShadow: 'var(--glass-shadow-soft)',
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '0.5rem',
@@ -1678,9 +1722,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                             {/* Type Badge */}
                             <span style={{
-                              background: isReminder ? '#fef3c7' : isEvent ? '#dcfce7' : '#f1f5f9',
-                              color: isReminder ? '#92400e' : isEvent ? '#166534' : '#475569',
-                              padding: '0.2rem 0.5rem', borderRadius: '6px',
+                              background: isReminder ? '#fef3c7' : isEvent ? '#dcfce7' : 'var(--bg-card-hover)',
+                              color: isReminder ? '#92400e' : isEvent ? '#166534' : 'var(--text-secondary)',
+                              border: '1px solid var(--border-subtle)',
+                              padding: '0.2rem 0.65rem', borderRadius: '9999px',
                               fontSize: '0.62rem', fontWeight: 800,
                               display: 'flex', alignItems: 'center', gap: '0.2rem'
                             }}>
@@ -1690,7 +1735,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             {/* Urgency Badge */}
                             <span style={{
                               background: colors.bg, color: colors.text,
-                              padding: '0.2rem 0.5rem', borderRadius: '6px',
+                              border: `1px solid ${colors.dot}44`,
+                              padding: '0.2rem 0.65rem', borderRadius: '9999px',
                               fontSize: '0.62rem', fontWeight: 800,
                               display: 'flex', alignItems: 'center', gap: '0.25rem'
                             }}>
@@ -1703,12 +1749,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           <button
                             onClick={() => handleDeleteNews(item.id)}
                             style={{
-                              background: 'transparent', border: 'none', color: '#cbd5e1', cursor: 'pointer',
+                              background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer',
                               padding: '0.25rem', borderRadius: '50%', display: 'flex', alignItems: 'center',
-                              justifyContent: 'center', transition: 'all 0.15s'
+                              justifyContent: 'center', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = '#fef2f2'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = '#cbd5e1'; e.currentTarget.style.background = 'transparent'; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -1716,11 +1762,11 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
                         {/* Title and Date */}
                         <div>
-                          <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             {isReminder && <Bell size={14} color="#f59e0b" />}
                             {item.title}
                           </h3>
-                          <div style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
                             <Calendar size={10} />
                             {formattedDate}
                             {item.scheduled_for && (
@@ -1732,7 +1778,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         </div>
 
                         {/* Description Message */}
-                        <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-primary)', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
                           {item.message}
                         </p>
 
@@ -1747,10 +1793,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           >
                             {item.picture_urls.map((url: string, index: number) => (
                               <div 
-                                key={index} 
+                                key={url} 
                                 style={{ 
-                                  width: '64px', height: '64px', borderRadius: '8px', 
-                                  overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0' 
+                                  width: '64px', height: '64px', borderRadius: '12px', 
+                                  overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border-subtle)' 
                                 }}
                               >
                                 <img src={url} alt={`News pic ${index}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1788,12 +1834,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     setIsAddingTeacher(false);
                   }
                 }}
-                style={{
+                 style={{
                   background: 'var(--bg-card)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  padding: '1.25rem',
-                  boxShadow: 'var(--glass-shadow)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '24px',
+                  padding: '1.5rem 1.25rem',
+                  boxShadow: 'var(--glass-shadow-soft)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '1rem'
@@ -1817,23 +1863,23 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     disabled={isAddingTeacher}
                     style={{
                       width: '100%',
-                      padding: '0.75rem 1rem',
-                      border: '1.5px solid var(--border-color)',
-                      borderRadius: '12px',
+                      padding: '0.75rem 1.25rem',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px',
                       fontSize: '0.85rem',
                       fontWeight: 600,
                       outline: 'none',
                       color: 'var(--text-primary)',
                       background: 'var(--bg-card-hover)',
                       boxSizing: 'border-box',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = 'var(--accent-primary)';
                       e.target.style.background = 'var(--bg-card)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'var(--border-color)';
+                      e.target.style.borderColor = 'var(--border-subtle)';
                       e.target.style.background = 'var(--bg-card-hover)';
                     }}
                   />
@@ -1858,23 +1904,23 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     disabled={isAddingTeacher}
                     style={{
                       width: '100%',
-                      padding: '0.75rem 1rem',
-                      border: '1.5px solid var(--border-color)',
-                      borderRadius: '12px',
+                      padding: '0.75rem 1.25rem',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px',
                       fontSize: '0.85rem',
                       fontWeight: 600,
                       outline: 'none',
                       color: 'var(--text-primary)',
                       background: 'var(--bg-card-hover)',
                       boxSizing: 'border-box',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = 'var(--accent-primary)';
                       e.target.style.background = 'var(--bg-card)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'var(--border-color)';
+                      e.target.style.borderColor = 'var(--border-subtle)';
                       e.target.style.background = 'var(--bg-card-hover)';
                     }}
                   />
@@ -1891,20 +1937,20 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     disabled={isAddingTeacher}
                     style={{
                       width: '100%',
-                      padding: '0.75rem 1rem',
-                      border: '1.5px solid var(--border-color)',
-                      borderRadius: '12px',
+                      padding: '0.75rem 1.25rem',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px',
                       fontSize: '0.85rem',
                       fontWeight: 600,
                       outline: 'none',
                       color: 'var(--text-primary)',
                       background: 'var(--bg-card-hover)',
                       boxSizing: 'border-box',
-                      transition: 'all 0.2s ease',
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       appearance: 'none',
                       backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238f8f98\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'/%3e%3c/svg%3e")',
                       backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 1rem center',
+                      backgroundPosition: 'right 1.25rem center',
                       backgroundSize: '1em'
                     }}
                     onFocus={(e) => {
@@ -1912,7 +1958,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       e.target.style.background = 'var(--bg-card)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'var(--border-color)';
+                      e.target.style.borderColor = 'var(--border-subtle)';
                       e.target.style.background = 'var(--bg-card-hover)';
                     }}
                   >
@@ -1926,28 +1972,26 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   disabled={isAddingTeacher}
                   style={{
                     width: '100%',
-                    background: 'var(--accent-primary)',
+                    background: 'var(--accent-hero)',
                     color: '#ffffff',
                     border: 'none',
-                    borderRadius: '12px',
-                    padding: '0.75rem',
+                    borderRadius: '9999px',
+                    padding: '0.85rem',
                     fontWeight: 800,
                     fontSize: '0.8rem',
                     cursor: isAddingTeacher ? 'not-allowed' : 'pointer',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                    transition: 'all 0.2s ease',
+                    boxShadow: '0 8px 16px var(--accent-glow)',
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                     letterSpacing: '0.05em',
                     marginTop: '0.25rem'
                   }}
                   onMouseEnter={(e) => {
                     if (!isAddingTeacher) {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                      e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                    e.currentTarget.style.transform = 'none';
                   }}
                 >
                   {isAddingTeacher ? "QO'SHILMOQDA..." : "O'QITUVCHINI QO'SHISH"}
@@ -1958,7 +2002,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               {/* Teachers List Grouped by Subject */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 
-                {/* English Teachers */}
+                 {/* English Teachers */}
                 <div>
                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent-primary)', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--accent-primary)' }} />
@@ -1967,7 +2011,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {teachers.filter(t => t.subject === 'ENG').length === 0 ? (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '0.5rem', background: 'var(--bg-card-hover)', borderRadius: '8px', border: `1px solid var(--border-color)` }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '0.75rem 1rem', background: 'var(--bg-card-hover)', borderRadius: '12px', border: `1px solid var(--border-subtle)` }}>
                         Ro'yxat bo'sh
                       </div>
                     ) : (
@@ -1979,10 +2023,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             background: 'var(--bg-card)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '12px',
-                            padding: '0.65rem 0.85rem',
-                            boxShadow: 'var(--glass-shadow)'
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: '20px',
+                            padding: '0.75rem 1rem',
+                            boxShadow: 'var(--glass-shadow-soft)'
                           }}
                         >
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -2000,16 +2044,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                   background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
                                   color: '#3b82f6',
                                   border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
-                                  borderRadius: '8px',
-                                  padding: '0.3rem',
+                                  borderRadius: '50%',
+                                  padding: '0.4rem',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  transition: 'all 0.15s'
+                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; e.currentTarget.style.transform = 'none'; }}
                               >
                                 <Edit3 size={13} />
                               </button>
@@ -2024,16 +2068,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                   background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
                                   color: '#ef4444',
                                   border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
-                                  borderRadius: '8px',
-                                  padding: '0.3rem',
+                                  borderRadius: '50%',
+                                  padding: '0.4rem',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  transition: 'all 0.15s'
+                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; e.currentTarget.style.transform = 'none'; }}
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -2054,7 +2098,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {teachers.filter(t => t.subject === 'MATH').length === 0 ? (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '0.5rem', background: 'var(--bg-card-hover)', borderRadius: '8px', border: `1px solid var(--border-color)` }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '0.75rem 1rem', background: 'var(--bg-card-hover)', borderRadius: '12px', border: `1px solid var(--border-subtle)` }}>
                         Ro'yxat bo'sh
                       </div>
                     ) : (
@@ -2066,10 +2110,10 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             background: 'var(--bg-card)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '12px',
-                            padding: '0.65rem 0.85rem',
-                            boxShadow: 'var(--glass-shadow)'
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: '20px',
+                            padding: '0.75rem 1rem',
+                            boxShadow: 'var(--glass-shadow-soft)'
                           }}
                         >
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -2087,16 +2131,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                   background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
                                   color: '#3b82f6',
                                   border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
-                                  borderRadius: '8px',
-                                  padding: '0.3rem',
+                                  borderRadius: '50%',
+                                  padding: '0.4rem',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  transition: 'all 0.15s'
+                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; e.currentTarget.style.transform = 'none'; }}
                               >
                                 <Edit3 size={13} />
                               </button>
@@ -2111,16 +2155,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                                   background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
                                   color: '#ef4444',
                                   border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
-                                  borderRadius: '8px',
-                                  padding: '0.3rem',
+                                  borderRadius: '50%',
+                                  padding: '0.4rem',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  transition: 'all 0.15s'
+                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; e.currentTarget.style.transform = 'none'; }}
                               >
                                 <Trash2 size={13} />
                               </button>

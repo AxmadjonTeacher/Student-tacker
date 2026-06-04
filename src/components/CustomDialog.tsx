@@ -56,8 +56,9 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       padding: '1.5rem',
-      background: 'rgba(15, 23, 42, 0.4)',
-      backdropFilter: 'blur(8px)',
+      background: 'var(--backdrop-color)',
+      backdropFilter: 'var(--backdrop-blur-md)',
+      WebkitBackdropFilter: 'var(--backdrop-blur-md)',
       animation: 'fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards'
     }}>
       <style>{`
@@ -75,26 +76,28 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
         onSubmit={handleSubmit}
         style={{
           background: 'var(--bg-card)',
+          backdropFilter: 'var(--backdrop-blur-md)',
+          WebkitBackdropFilter: 'var(--backdrop-blur-md)',
           width: '100%',
           maxWidth: '460px',
-          borderRadius: '24px',
-          padding: '2rem',
-          border: '1.5px solid var(--border-color)',
-          boxShadow: 'var(--glass-shadow)',
-          animation: 'scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+          borderRadius: '32px',
+          padding: '2.25rem 2.5rem',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
+          animation: 'scaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.25rem'
+          gap: '1.5rem'
         }}
       >
         {/* Header Block */}
         <div>
           <h2 style={{
             margin: '0 0 0.5rem 0',
-            fontSize: '1.25rem',
-            fontWeight: 750,
+            fontSize: '1.35rem',
+            fontWeight: 800,
             color: 'var(--text-primary)',
-            letterSpacing: '-0.02em'
+            letterSpacing: '-0.03em'
           }}>
             {title}
           </h2>
@@ -120,23 +123,23 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             style={{
               width: '100%',
               background: 'var(--bg-card-hover)',
-              border: '1.5px solid var(--border-color)',
-              borderRadius: '12px',
-              padding: '0.85rem 1rem',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '9999px',
+              padding: '0.85rem 1.5rem',
               fontSize: '0.95rem',
               fontWeight: 600,
               color: 'var(--text-primary)',
               outline: 'none',
-              transition: 'all 0.2s',
+              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
               boxSizing: 'border-box'
             }}
             onFocus={(e) => {
-              e.currentTarget.style.border = '1.5px solid var(--accent-primary)';
+              e.currentTarget.style.border = '1px solid var(--accent-hero)';
               e.currentTarget.style.background = 'var(--bg-card)';
-              e.currentTarget.style.boxShadow = '0 0 0 3px var(--border-color)';
+              e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.border = '1.5px solid var(--border-color)';
+              e.currentTarget.style.border = '1px solid var(--border-subtle)';
               e.currentTarget.style.background = 'var(--bg-card-hover)';
               e.currentTarget.style.boxShadow = 'none';
             }}
@@ -153,24 +156,24 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             style={{
               width: '100%',
               background: 'var(--bg-card-hover)',
-              border: '1.5px solid var(--border-color)',
-              borderRadius: '12px',
-              padding: '0.85rem 1rem',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '9999px',
+              padding: '0.85rem 1.5rem',
               fontSize: '0.95rem',
               fontWeight: 600,
               color: 'var(--text-primary)',
               outline: 'none',
-              transition: 'all 0.2s',
+              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
               boxSizing: 'border-box',
               fontFamily: 'inherit'
             }}
             onFocus={(e) => {
-              e.currentTarget.style.border = '1.5px solid var(--accent-primary)';
+              e.currentTarget.style.border = '1px solid var(--accent-hero)';
               e.currentTarget.style.background = 'var(--bg-card)';
-              e.currentTarget.style.boxShadow = '0 0 0 3px var(--border-color)';
+              e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.border = '1.5px solid var(--border-color)';
+              e.currentTarget.style.border = '1px solid var(--border-subtle)';
               e.currentTarget.style.background = 'var(--bg-card-hover)';
               e.currentTarget.style.boxShadow = 'none';
             }}
@@ -192,22 +195,24 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               onClick={onClose}
               style={{
                 background: 'transparent',
-                border: '1.5px solid var(--border-color)',
+                border: '1px solid var(--border-subtle)',
                 borderRadius: '9999px',
                 padding: '0.65rem 1.5rem',
                 fontSize: '0.9rem',
                 fontWeight: 700,
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'var(--bg-card-hover)';
                 e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.transform = 'scale(1.02)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
                 e.currentTarget.style.color = 'var(--text-secondary)';
+                e.currentTarget.style.transform = 'none';
               }}
             >
               {cancelText}
@@ -218,26 +223,26 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           <button
             type="submit"
             style={{
-              background: danger ? '#ef4444' : 'var(--accent-primary)',
+              background: danger ? '#dc2626' : 'var(--accent-hero)',
               border: 'none',
               borderRadius: '9999px',
-              padding: '0.65rem 1.5rem',
+              padding: '0.65rem 1.75rem',
               fontSize: '0.9rem',
               fontWeight: 700,
               color: '#ffffff',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
               boxShadow: danger 
-                ? '0 4px 6px -1px rgba(239,68,68,0.2)' 
-                : '0 4px 6px -1px rgba(139,92,246,0.15)'
+                ? '0 8px 16px rgba(220,38,38,0.15), inset 0 1px 0 rgba(255,255,255,0.1)' 
+                : '0 8px 16px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.2)'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = danger ? '#dc2626' : 'var(--accent-hover)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.background = danger ? '#b91c1c' : 'var(--accent-hero)';
+              e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = danger ? '#ef4444' : 'var(--accent-primary)';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.background = danger ? '#dc2626' : 'var(--accent-hero)';
+              e.currentTarget.style.transform = 'none';
             }}
           >
             {finalConfirmText}

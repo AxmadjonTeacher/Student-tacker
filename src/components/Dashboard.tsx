@@ -253,8 +253,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
         .profile-badge {
           background: var(--bg-card);
-          border: 1.5px solid var(--border-color);
-          transition: all 0.25s ease;
+          backdrop-filter: var(--backdrop-blur-md);
+          -webkit-backdrop-filter: var(--backdrop-blur-md);
+          border: 1px solid var(--border-subtle);
+          border-radius: 9999px;
+          box-shadow: var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight);
+          transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .profile-badge:hover {
+          background: var(--bg-card-hover);
+          transform: translateY(-1px);
         }
         .profile-container {
           position: relative;
@@ -262,59 +270,68 @@ export const Dashboard: React.FC<DashboardProps> = ({
         .profile-hover-popup {
           display: none;
           position: absolute;
-          top: 105%;
+          top: 110%;
           right: 0;
           z-index: 100;
-          width: 180px;
+          width: 200px;
           background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          box-shadow: var(--glass-shadow);
-          border-radius: 12px;
-          padding: 0.85rem;
-          animation: fadeIn 0.15s ease-out;
+          backdrop-filter: var(--backdrop-blur-md);
+          -webkit-backdrop-filter: var(--backdrop-blur-md);
+          border: 1px solid var(--border-subtle);
+          box-shadow: var(--glass-shadow-soft);
+          border-radius: 20px;
+          padding: 1rem;
+          animation: premiumScaleIn 0.3s forwards cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .profile-container:hover .profile-hover-popup {
           display: block;
         }
         .top3-card {
           background: var(--bg-card);
-          border: 1.5px solid var(--border-color);
-          box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: var(--backdrop-blur-md);
+          -webkit-backdrop-filter: var(--backdrop-blur-md);
+          border: 1px solid var(--border-subtle);
+          box-shadow: var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight);
+          transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .top3-card:hover {
-          transform: translateY(-3px);
-          border-color: var(--accent-primary);
-          box-shadow: 0 10px 20px rgba(139, 92, 246, 0.08);
+          transform: scale(1.02) translateY(-3px);
+          border-color: var(--text-primary);
+          box-shadow: 0 16px 36px var(--accent-glow), inset 0 1px 0 var(--border-highlight);
         }
         .tab-pill {
           background: var(--bg-card);
           color: var(--text-secondary);
-          border: 1px solid var(--border-color);
-          transition: all 0.2s ease;
+          border: 1px solid var(--border-subtle);
+          border-radius: 9999px !important;
+          box-shadow: var(--glass-shadow-soft);
+          transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .tab-pill.active {
-          background: var(--accent-primary);
+          background: var(--accent-hero);
           color: #ffffff;
-          border-color: var(--accent-primary);
+          border-color: var(--accent-hero);
+          box-shadow: 0 4px 12px var(--accent-glow);
         }
         .toggle-btn {
-          background: var(--bg-card);
+          background: transparent;
           color: var(--text-secondary);
-          border: 1.5px solid var(--border-color);
-          transition: all 0.2s;
+          border: 1px solid transparent;
+          border-radius: 9999px !important;
+          transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .toggle-btn.active {
-          background: var(--accent-gradient);
-          color: white;
-          border-color: transparent;
+          background: var(--text-primary);
+          color: var(--bg-main);
+          box-shadow: var(--glass-shadow-soft);
         }
         .leaders-table-row {
-          border-bottom: 1.5px dashed var(--border-color);
-          transition: background 0.2s;
+          border-bottom: 1px solid var(--border-subtle);
+          transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .leaders-table-row:hover {
           background: var(--bg-card-hover);
+          transform: translateX(4px);
         }
         .leaders-table-row:last-child {
           border-bottom: none;
@@ -335,9 +352,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         alignItems: 'center', 
         justifyContent: 'space-between', 
         width: '100%', 
-        paddingBottom: '0.85rem',
-        borderBottom: '1px solid var(--border-color)',
-        marginBottom: '0.65rem' 
+        paddingBottom: '1.25rem',
+        borderBottom: '1px solid var(--border-subtle)',
+        marginBottom: '1rem' 
       }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.03em' }}>
           Bosh Sahifa
@@ -396,74 +413,74 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* ── TOP 3 STUDENTS SECTION ───────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-          <Award size={15} color="var(--accent-primary)" strokeWidth={2.5} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+        <h2 style={{ fontSize: '1.05rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <Award size={16} color="var(--accent-hero)" strokeWidth={2.5} />
           Top 3 O'quvchilar
         </h2>
         
-        <div className="top3-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+        <div className="top3-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
           {/* Card 1: 5-6 Grades */}
-          <div className="top3-card" style={{ borderRadius: '16px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.55rem', right: '0.75rem', fontSize: '0.5rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '0.12rem 0.4rem', borderRadius: '999px', letterSpacing: '0.04em' }}>5-6 SINFLAR</span>
+          <div className="top3-card" style={{ borderRadius: '24px', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
+            <span style={{ position: 'absolute', top: '0.75rem', right: '1rem', fontSize: '0.55rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '0.15rem 0.5rem', borderRadius: '999px', letterSpacing: '0.04em' }}>5-6 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades5_6?.pictureUrl ? (
-                <img src={topStudents.grades5_6.pictureUrl} alt="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+                <img src={topStudents.grades5_6.pictureUrl} alt="avatar" style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-subtle)' }} />
               ) : (
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 850 }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-hero)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 850 }}>
                   {topStudents.grades5_6 ? (topStudents.grades5_6.name[0] + topStudents.grades5_6.surname[0]) : '—'}
                 </div>
               )}
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                 {topStudents.grades5_6 ? `${topStudents.grades5_6.surname} ${topStudents.grades5_6.name}` : "Aniqlanmagan"}
               </h3>
-              <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                 {topStudents.grades5_6 ? `Sinf: ${topStudents.grades5_6.className}` : "O'quvchi yo'q"}
               </p>
             </div>
           </div>
 
           {/* Card 2: 7-8 Grades */}
-          <div className="top3-card" style={{ borderRadius: '16px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.55rem', right: '0.75rem', fontSize: '0.5rem', fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '0.12rem 0.4rem', borderRadius: '999px', letterSpacing: '0.04em' }}>7-8 SINFLAR</span>
+          <div className="top3-card" style={{ borderRadius: '24px', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
+            <span style={{ position: 'absolute', top: '0.75rem', right: '1rem', fontSize: '0.55rem', fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '0.15rem 0.5rem', borderRadius: '999px', letterSpacing: '0.04em' }}>7-8 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades7_8?.pictureUrl ? (
-                <img src={topStudents.grades7_8.pictureUrl} alt="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+                <img src={topStudents.grades7_8.pictureUrl} alt="avatar" style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-subtle)' }} />
               ) : (
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 850 }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-hero)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 850 }}>
                   {topStudents.grades7_8 ? (topStudents.grades7_8.name[0] + topStudents.grades7_8.surname[0]) : '—'}
                 </div>
               )}
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                 {topStudents.grades7_8 ? `${topStudents.grades7_8.surname} ${topStudents.grades7_8.name}` : "Aniqlanmagan"}
               </h3>
-              <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                 {topStudents.grades7_8 ? `Sinf: ${topStudents.grades7_8.className}` : "O'quvchi yo'q"}
               </p>
             </div>
           </div>
 
           {/* Card 3: 9-11 Grades */}
-          <div className="top3-card" style={{ borderRadius: '16px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
-            <span style={{ position: 'absolute', top: '0.55rem', right: '0.75rem', fontSize: '0.5rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '0.12rem 0.4rem', borderRadius: '999px', letterSpacing: '0.04em' }}>9-11 SINFLAR</span>
+          <div className="top3-card" style={{ borderRadius: '24px', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' }}>
+            <span style={{ position: 'absolute', top: '0.75rem', right: '1rem', fontSize: '0.55rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '0.15rem 0.5rem', borderRadius: '999px', letterSpacing: '0.04em' }}>9-11 SINFLAR</span>
             <div style={{ flexShrink: 0 }}>
               {topStudents.grades9_11?.pictureUrl ? (
-                <img src={topStudents.grades9_11.pictureUrl} alt="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+                <img src={topStudents.grades9_11.pictureUrl} alt="avatar" style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-subtle)' }} />
               ) : (
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 850 }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', color: 'var(--accent-hero)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem', fontWeight: 850 }}>
                   {topStudents.grades9_11 ? (topStudents.grades9_11.name[0] + topStudents.grades9_11.surname[0]) : '—'}
                 </div>
               )}
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                 {topStudents.grades9_11 ? `${topStudents.grades9_11.surname} ${topStudents.grades9_11.name}` : "Aniqlanmagan"}
               </h3>
-              <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                 {topStudents.grades9_11 ? `Sinf: ${topStudents.grades9_11.className}` : "O'quvchi yo'q"}
               </p>
             </div>
@@ -472,18 +489,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* ── BOTTOM DOUBLE COLUMN LAYOUT ──────────────────────────────────── */}
-      <div className="dashboard-columns" style={{ display: 'grid', gridTemplateColumns: '4.5fr 5.5fr', gap: '1rem', width: '100%' }}>
+      <div className="dashboard-columns" style={{ display: 'grid', gridTemplateColumns: '4.5fr 5.5fr', gap: '1.25rem', width: '100%' }}>
         
         {/* LEFT COLUMN: Hafta Liderlari */}
         <div style={{
           background: 'var(--bg-card)',
-          border: '1.5px solid var(--border-color)',
-          borderRadius: '24px',
-          padding: '0.85rem 1.15rem',
-          boxShadow: 'var(--glass-shadow)',
+          backdropFilter: 'var(--backdrop-blur-md)',
+          WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '32px',
+          padding: '1.75rem 2rem',
+          boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.75rem',
+          gap: '1.25rem',
           boxSizing: 'border-box'
         }}>
           {/* Header & Tabs */}
@@ -502,10 +521,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   style={{
                     background: 'var(--bg-card-hover)',
                     color: 'var(--text-primary)',
-                    border: '1.5px solid var(--border-color)',
-                    borderRadius: '8px',
-                    padding: '0.35rem 1.75rem 0.35rem 0.65rem',
-                    fontSize: '0.72rem',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '9999px',
+                    padding: '0.45rem 2rem 0.45rem 1rem',
+                    fontSize: '0.75rem',
                     fontWeight: 750,
                     cursor: 'pointer',
                     outline: 'none',
@@ -521,7 +540,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* Custom Chevron indicator */}
                 <div style={{
                   position: 'absolute',
-                  right: '0.65rem',
+                  right: '0.85rem',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   pointerEvents: 'none',
@@ -571,15 +590,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '0.75rem 1rem',
+                    padding: '1rem 1.25rem',
                     background: 'var(--bg-card-hover)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '16px',
-                    boxShadow: 'var(--glass-shadow)',
-                    transition: 'transform 0.2s',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '20px',
+                    boxShadow: 'var(--glass-shadow-soft)',
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                     boxSizing: 'border-box'
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.01) translateY(-1px)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
                 >
                   {/* Left Side: Avatar & Name */}
@@ -654,13 +673,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Chart 1: Average Term Mastery Index */}
           <div style={{
             background: 'var(--bg-card)',
-            border: '1.5px solid var(--border-color)',
-            borderRadius: '24px',
-            padding: '0.85rem 1.15rem',
-            boxShadow: 'var(--glass-shadow)',
+            backdropFilter: 'var(--backdrop-blur-md)',
+            WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '32px',
+            padding: '1.75rem 2rem',
+            boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem',
+            gap: '1.25rem',
             boxSizing: 'border-box'
           }}>
             {/* Header filters */}
@@ -676,15 +697,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               {/* Subject toggle (Eng / Math) */}
-              <div style={{ display: 'flex', background: 'var(--bg-card-hover)', padding: '2px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <div style={{
+                display: 'flex',
+                background: 'var(--bg-card-hover)',
+                padding: '3px',
+                borderRadius: '9999px',
+                border: '1px solid var(--border-subtle)',
+                boxShadow: 'var(--inner-inset)'
+              }}>
                 <button
                   onClick={() => setChartSubject('ENG')}
                   className={`toggle-btn ${chartSubject === 'ENG' ? 'active' : ''}`}
                   style={{
-                    padding: '0.25rem 0.65rem',
+                    padding: '0.35rem 0.85rem',
                     border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.68rem',
                     fontWeight: 800,
                     cursor: 'pointer'
                   }}
@@ -695,10 +723,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onClick={() => setChartSubject('MATH')}
                   className={`toggle-btn ${chartSubject === 'MATH' ? 'active' : ''}`}
                   style={{
-                    padding: '0.25rem 0.65rem',
+                    padding: '0.35rem 0.85rem',
                     border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '0.65rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.68rem',
                     fontWeight: 800,
                     cursor: 'pointer'
                   }}
@@ -776,13 +804,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Chart 2: Attendance History Rate */}
           <div style={{
             background: 'var(--bg-card)',
-            border: '1.5px solid var(--border-color)',
-            borderRadius: '24px',
-            padding: '0.85rem 1.15rem',
-            boxShadow: 'var(--glass-shadow)',
+            backdropFilter: 'var(--backdrop-blur-md)',
+            WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '32px',
+            padding: '1.75rem 2rem',
+            boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem',
+            gap: '1.25rem',
             boxSizing: 'border-box'
           }}>
             <div>

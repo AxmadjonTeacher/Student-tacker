@@ -573,10 +573,12 @@ const GraphModal: React.FC<GraphModalProps> = ({
     maxWidth: isInline ? '100%' : '820px', 
     width: '100%',
     background: 'var(--bg-card)', 
-    borderRadius: isInline ? '20px' : '24px',
+    backdropFilter: isInline ? 'none' : 'var(--backdrop-blur-md)',
+    WebkitBackdropFilter: isInline ? 'none' : 'var(--backdrop-blur-md)',
+    borderRadius: isInline ? '24px' : '32px',
     padding: isInline ? '1.5rem 1rem' : '2.5rem',
-    border: '1px solid var(--border-color)',
-    boxShadow: isInline ? 'none' : 'var(--glass-shadow)',
+    border: '1px solid var(--border-subtle)',
+    boxShadow: isInline ? 'none' : 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
     boxSizing: 'border-box' as const
   };
 
@@ -589,7 +591,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
     @media (max-width: 600px) {
       .modal-content {
         padding: 1.25rem 1rem !important;
-        border-radius: 16px !important;
+        border-radius: 20px !important;
       }
       .modal-title {
         font-size: 1.1rem !important;
@@ -597,7 +599,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
       }
       .modal-tabs {
         flex-direction: column !important;
-        border-radius: 12px !important;
+        border-radius: 20px !important;
         width: 100% !important;
         max-width: none !important;
         gap: 4px !important;
@@ -671,10 +673,10 @@ const GraphModal: React.FC<GraphModalProps> = ({
             <button 
               onClick={onClose}
               style={{ 
-                background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', 
+                background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)', 
                 borderRadius: '50%', padding: '6px', cursor: 'pointer',
                 color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 flexShrink: 0
               }}
               onMouseEnter={(e) => {
@@ -686,7 +688,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'scale(1)';
                 e.currentTarget.style.color = 'var(--text-secondary)';
-                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.borderColor = 'var(--border-subtle)';
                 e.currentTarget.style.background = 'var(--bg-card-hover)';
               }}
             >
@@ -697,7 +699,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
           <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sinf: {student.className}</span>
-          <span style={{ color: 'var(--border-color)' }}>·</span>
+          <span style={{ color: 'var(--border-subtle)' }}>·</span>
           <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sana: {student.dateJoined}</span>
         </div>
 
@@ -706,7 +708,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
             <span className="modal-tag" style={{ 
               display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-              background: '#e0f2fe', color: '#0369a1',
+              background: 'rgba(56, 189, 248, 0.1)', color: '#0284c7', border: '1px solid rgba(56, 189, 248, 0.2)',
               padding: '0.3rem 0.75rem', borderRadius: '999px',
               fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.03em'
             }}>
@@ -718,7 +720,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
             <span className="modal-tag" style={{ 
               display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-              background: '#ffedd5', color: '#c2410c',
+              background: 'rgba(249, 115, 22, 0.1)', color: '#ea580c', border: '1px solid rgba(249, 115, 22, 0.2)',
               padding: '0.3rem 0.75rem', borderRadius: '999px',
               fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.03em'
             }}>
@@ -742,25 +744,25 @@ const GraphModal: React.FC<GraphModalProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              background: isComparing ? 'linear-gradient(135deg, #129f87, #f97316)' : '#ffffff',
-              color: isComparing ? '#ffffff' : '#475569',
-              border: '1.5px solid #e2e8f0',
+              background: isComparing ? 'var(--accent-hero)' : 'var(--bg-card-hover)',
+              color: isComparing ? '#ffffff' : 'var(--text-primary)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: '9999px',
               padding: '0.6rem 1.5rem',
               fontSize: '0.8rem',
               fontWeight: 800,
               cursor: 'pointer',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: 'var(--glass-shadow-soft)',
+              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
               letterSpacing: '0.05em'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1.5px)';
+              e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
               if (!isComparing) e.currentTarget.style.borderColor = activeThemeColor;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              if (!isComparing) e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.transform = 'none';
+              if (!isComparing) e.currentTarget.style.borderColor = 'var(--border-subtle)';
             }}
           >
             {isComparing ? '📊 YAKKA KO\'RINISH' : '🆚 MATEMATIKA VA INGLIZ TILI BILAN TAQQOSLASH'}
@@ -777,7 +779,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           borderRadius: '9999px',
           maxWidth: 'fit-content',
           margin: '0 auto 1.5rem',
-          border: '1px solid var(--border-color)'
+          border: '1px solid var(--border-subtle)'
         }}>
           {[
             { id: 'current', label: '📊 JORIY HAFTA' },
@@ -792,7 +794,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
                 alignItems: 'center',
                 gap: '0.5rem',
                 background: allActiveTab === tab.id 
-                  ? 'var(--accent-gradient)' 
+                  ? 'var(--accent-hero)' 
                   : 'transparent',
                 color: allActiveTab === tab.id ? '#ffffff' : 'var(--text-secondary)',
                 border: 'none',
@@ -801,8 +803,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
                 fontSize: '0.8rem',
                 fontWeight: 800,
                 cursor: 'pointer',
-                boxShadow: allActiveTab === tab.id ? '0 4px 6px -1px rgba(79, 70, 229, 0.2)' : 'none',
-                transition: 'all 0.2s ease',
+                boxShadow: allActiveTab === tab.id ? '0 8px 16px var(--accent-glow)' : 'none',
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 letterSpacing: '0.03em'
               }}
             >
@@ -927,7 +929,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(4px)', background: 'rgba(0, 0, 0, 0.5)' }}>
+    <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'var(--backdrop-blur-md)', WebkitBackdropFilter: 'var(--backdrop-blur-md)', background: 'var(--backdrop-color)', zIndex: 9999 }}>
       <style dangerouslySetInnerHTML={{ __html: styleRules }} />
       {contentJSX}
     </div>

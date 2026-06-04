@@ -2529,7 +2529,9 @@ function App() {
       <aside style={{
         width: isSidebarExpanded ? '240px' : '72px',
         background: 'var(--bg-sidebar)',
-        borderRight: '1px solid var(--border-color)',
+        backdropFilter: 'var(--backdrop-blur-md)',
+        WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+        borderRight: '1px solid var(--border-subtle)',
         display: 'flex',
         flexDirection: 'column',
         padding: isSidebarExpanded ? '1.25rem 0.85rem' : '1.25rem 0.5rem',
@@ -2537,7 +2539,7 @@ function App() {
         top: 0,
         height: '100vh',
         boxSizing: 'border-box',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
         zIndex: 1000
       }}>
         {/* Brand logo & Expand/Collapse Toggle */}
@@ -2546,7 +2548,7 @@ function App() {
           alignItems: 'center', 
           justifyContent: isSidebarExpanded ? 'space-between' : 'center', 
           paddingBottom: '1.25rem',
-          borderBottom: '1px solid var(--border-color)',
+          borderBottom: '1px solid var(--border-subtle)',
           marginBottom: '1.5rem', 
           position: 'relative'
         }}>
@@ -2594,8 +2596,8 @@ function App() {
                 justifyContent: 'center',
                 transition: 'all 0.15s ease'
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
             >
               <PanelLeftClose size={18} />
             </button>
@@ -2699,19 +2701,18 @@ function App() {
                         justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
                         gap: isSidebarExpanded ? '0.75rem' : '0',
                         padding: '0.65rem 0.85rem',
-                        borderRadius: '12px',
+                        borderRadius: '9999px',
                         background: isActive 
-                          ? 'linear-gradient(90deg, var(--bg-card) 75%, rgba(13, 148, 136, 0.12) 100%)' 
+                          ? 'var(--bg-card-hover)' 
                           : 'transparent',
                         color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        border: isActive ? '1.5px solid var(--border-color)' : '1.5px solid transparent',
-                        borderRight: isActive ? '3.5px solid var(--accent-primary)' : '1.5px solid transparent',
-                        boxShadow: isActive ? 'var(--glass-shadow)' : 'none',
+                        border: isActive ? '1px solid var(--border-subtle)' : '1px solid transparent',
+                        boxShadow: isActive ? 'var(--glass-shadow-soft)' : 'none',
                         cursor: 'pointer',
                         fontWeight: isActive ? 800 : 700,
                         fontSize: '0.8rem',
                         width: '100%',
-                        transition: 'all 0.15s ease',
+                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                         boxSizing: 'border-box'
                       }}
                       onMouseEnter={e => {
@@ -2745,13 +2746,13 @@ function App() {
               {authRole !== 'teacher' && (
                 <div style={{
                   background: 'var(--bg-card)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '16px',
                   padding: '0.65rem 0.8rem',
                   width: '100%',
                   boxSizing: 'border-box',
                   marginBottom: '0.5rem',
-                  boxShadow: 'var(--glass-shadow)'
+                  boxShadow: 'var(--glass-shadow-soft)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
@@ -2764,12 +2765,12 @@ function App() {
                         width: '36px',
                         height: '18px',
                         borderRadius: '9999px',
-                        background: isAdminMode ? 'var(--accent-primary)' : '#cbd5e1',
+                        background: isAdminMode ? 'var(--accent-hero)' : 'var(--border-subtle)',
                         border: 'none',
                         cursor: 'pointer',
                         position: 'relative',
                         padding: 0,
-                        transition: 'background-color 0.2s ease',
+                        transition: 'background-color 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                         display: 'flex',
                         alignItems: 'center',
                         flexShrink: 0
@@ -2782,7 +2783,7 @@ function App() {
                         background: '#ffffff',
                         position: 'absolute',
                         left: isAdminMode ? '20px' : '4px',
-                        transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        transition: 'left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                       }} />
                     </button>
@@ -2793,13 +2794,13 @@ function App() {
               {/* Dark Mode Toggle */}
               <div style={{
                 background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '16px',
                 padding: '0.65rem 0.8rem',
                 width: '100%',
                 boxSizing: 'border-box',
                 marginBottom: '0.5rem',
-                boxShadow: 'var(--glass-shadow)'
+                boxShadow: 'var(--glass-shadow-soft)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
@@ -2812,12 +2813,12 @@ function App() {
                       width: '36px',
                       height: '18px',
                       borderRadius: '9999px',
-                      background: isDarkMode ? 'var(--accent-primary)' : '#cbd5e1',
+                      background: isDarkMode ? 'var(--accent-hero)' : 'var(--border-subtle)',
                       border: 'none',
                       cursor: 'pointer',
                       position: 'relative',
                       padding: 0,
-                      transition: 'background-color 0.2s ease',
+                      transition: 'background-color 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       display: 'flex',
                       alignItems: 'center',
                       flexShrink: 0
@@ -2830,7 +2831,7 @@ function App() {
                       background: '#ffffff',
                       position: 'absolute',
                       left: isDarkMode ? '20px' : '4px',
-                      transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transition: 'left 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                     }} />
                   </button>
@@ -2849,13 +2850,13 @@ function App() {
                     justifyContent: 'center',
                     width: '36px',
                     height: '36px',
-                    borderRadius: '10px',
-                    background: isAdminMode ? 'rgba(13, 148, 136, 0.12)' : 'transparent',
-                    color: isAdminMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                    border: isAdminMode ? '1px solid rgba(13, 148, 136, 0.2)' : '1px solid transparent',
+                    borderRadius: '50%',
+                    background: isAdminMode ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
+                    color: isAdminMode ? 'var(--accent-hero)' : 'var(--text-secondary)',
+                    border: isAdminMode ? '1px solid var(--border-subtle)' : '1px solid transparent',
                     cursor: 'pointer',
                     marginBottom: '0.5rem',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                   }}
                   onMouseEnter={e => {
                     if (!isAdminMode) {
@@ -2883,13 +2884,13 @@ function App() {
                   justifyContent: 'center',
                   width: '36px',
                   height: '36px',
-                  borderRadius: '10px',
+                  borderRadius: '50%',
                   background: 'transparent',
                   color: 'var(--text-secondary)',
                   border: '1px solid transparent',
                   cursor: 'pointer',
                   marginBottom: '0.5rem',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.background = 'var(--bg-card-hover)';
@@ -2915,7 +2916,7 @@ function App() {
               justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
               gap: isSidebarExpanded ? '0.75rem' : '0',
               padding: '0.65rem 0.85rem',
-              borderRadius: '12px',
+              borderRadius: '9999px',
               background: 'transparent',
               color: '#ef4444',
               border: 'none',
@@ -2923,10 +2924,10 @@ function App() {
               fontWeight: 800,
               fontSize: '0.8rem',
               width: '100%',
-              transition: 'background 0.15s',
+              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
               boxSizing: 'border-box'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <LogOut size={16} />
@@ -2938,7 +2939,7 @@ function App() {
       {/* Main Content Area */}
       <main style={{
         flex: 1,
-        padding: activeSubject === 'DASHBOARD' ? '1rem 2rem' : '0',
+        padding: activeSubject === 'DASHBOARD' ? (isMobile ? '1rem' : '2.5rem 3.5rem') : '0',
         overflowY: (activeSubject === 'DASHBOARD' && activeAdminTab === 'home') ? 'hidden' : 'auto',
         display: 'flex',
         flexDirection: 'column',
@@ -3051,8 +3052,8 @@ function App() {
               paddingTop: '3rem',
               paddingBottom: '1.5rem',
               textAlign: 'center',
-              borderTop: '1px solid #e2e8f0',
-              color: '#64748b',
+              borderTop: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
               fontSize: '0.8rem',
               fontWeight: 600,
               letterSpacing: '0.05em',
@@ -3064,7 +3065,7 @@ function App() {
               <div style={{ textTransform: 'uppercase' }}>
                 © 2026 Al-Xorazmiy School. Barcha huquqlar himoyalangan.
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                 Created by Axmadjon
               </div>
             </footer>

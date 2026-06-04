@@ -64,7 +64,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 9999 }}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 9999, background: 'var(--backdrop-color)', backdropFilter: 'var(--backdrop-blur-md)', WebkitBackdropFilter: 'var(--backdrop-blur-md)' }}>
       <style dangerouslySetInnerHTML={{ __html: `
         .add-modal-content {
           max-height: 90vh;
@@ -73,7 +73,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
         @media (max-width: 600px) {
           .add-modal-content {
             padding: 1.25rem 1rem !important;
-            border-radius: 16px !important;
+            border-radius: 20px !important;
           }
           .add-modal-content form {
             gap: 0.85rem !important;
@@ -95,21 +95,22 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
           maxWidth: '500px',
           width: '90%',
           background: 'var(--bg-card)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid var(--border-color)',
-          boxShadow: 'var(--glass-shadow)',
-          borderRadius: '24px',
-          padding: '2rem'
+          backdropFilter: 'var(--backdrop-blur-md)',
+          WebkitBackdropFilter: 'var(--backdrop-blur-md)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
+          borderRadius: '32px',
+          padding: '2.25rem 2.5rem'
         }}
       >
-        <div className="modal-header" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+        <div className="modal-header" style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ background: 'var(--accent-hover)', color: '#ffffff', padding: '0.5rem', borderRadius: '10px', opacity: 0.85 }}>
+            <div style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-hero)', padding: '0.5rem', borderRadius: '10px', display: 'flex', alignItems: 'center', border: '1px solid var(--border-subtle)' }}>
               <UserPlus size={20} />
             </div>
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', margin: 0 }}>Yangi o'quvchi qo'shish</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>Yangi o'quvchi qo'shish</h2>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
             <X size={20} />
           </button>
         </div>
@@ -126,13 +127,19 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 placeholder="Masalan: Sardor"
                 required
                 style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '10px',
-                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px',
+                  border: '1px solid var(--border-subtle)', fontSize: '0.95rem',
                   background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
-                  outline: 'none', transition: 'border-color 0.2s ease'
+                  outline: 'none', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                 }}
-                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                onFocus={e => {
+                  e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               />
             </div>
             <div className="form-group">
@@ -144,13 +151,19 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 placeholder="Masalan: Ikromov"
                 required
                 style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '10px',
-                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px',
+                  border: '1px solid var(--border-subtle)', fontSize: '0.95rem',
                   background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
-                  outline: 'none', transition: 'border-color 0.2s ease'
+                  outline: 'none', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                 }}
-                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                onFocus={e => {
+                  e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
@@ -164,8 +177,8 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 value={selectedClass}
                 onChange={e => setSelectedClass(e.target.value)}
                 style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '10px',
-                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px',
+                  border: '1px solid var(--border-subtle)', fontSize: '0.95rem',
                   backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                 }}
               >
@@ -200,13 +213,19 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 }}
                 placeholder="+998 90 123 45 67"
                 style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '10px',
-                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px',
+                  border: '1px solid var(--border-subtle)', fontSize: '0.95rem',
                   background: 'var(--bg-card-hover)', color: 'var(--text-primary)',
-                  outline: 'none', transition: 'border-color 0.2s ease'
+                  outline: 'none', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                 }}
-                onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
-                onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                onFocus={e => {
+                  e.currentTarget.style.borderColor = 'var(--accent-hero)';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
@@ -220,8 +239,8 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 value={englishTeacher}
                 onChange={e => setEnglishTeacher(e.target.value)}
                 style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '10px',
-                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px',
+                  border: '1px solid var(--border-subtle)', fontSize: '0.95rem',
                   backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                 }}
               >
@@ -240,8 +259,8 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                 value={mathTeacher}
                 onChange={e => setMathTeacher(e.target.value)}
                 style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '10px',
-                  border: '1px solid var(--border-color)', fontSize: '0.95rem',
+                  width: '100%', padding: '0.75rem 1.25rem', borderRadius: '9999px',
+                  border: '1px solid var(--border-subtle)', fontSize: '0.95rem',
                   backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                 }}
               >
@@ -258,12 +277,18 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
               type="button" 
               onClick={onClose}
               style={{
-                padding: '0.75rem 1.5rem', borderRadius: '10px', border: '1px solid var(--border-color)',
+                padding: '0.75rem 1.5rem', borderRadius: '9999px', border: '1px solid var(--border-subtle)',
                 background: 'var(--bg-card)', color: 'var(--text-secondary)', fontWeight: 600, cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-card-hover)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-card)'}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'var(--bg-card-hover)';
+                e.currentTarget.style.transform = 'scale(1.02)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'var(--bg-card)';
+                e.currentTarget.style.transform = 'none';
+              }}
             >
               Bekor qilish
             </button>
@@ -271,11 +296,19 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
               type="submit"
               disabled={!name.trim() || !surname.trim()}
               style={{
-                padding: '0.75rem 1.5rem', borderRadius: '10px', border: 'none',
-                background: (!name.trim() || !surname.trim()) ? '#9ca3af' : 'var(--accent-gradient)', 
+                padding: '0.75rem 1.75rem', borderRadius: '9999px', border: 'none',
+                background: (!name.trim() || !surname.trim()) ? '#9ca3af' : 'var(--accent-hero)', 
                 color: '#ffffff', fontWeight: 600, cursor: (!name.trim() || !surname.trim()) ? 'not-allowed' : 'pointer',
-                boxShadow: (!name.trim() || !surname.trim()) ? 'none' : '0 4px 6px -1px rgba(139, 92, 246, 0.3)',
-                transition: 'all 0.2s ease'
+                boxShadow: (!name.trim() || !surname.trim()) ? 'none' : '0 8px 16px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+              }}
+              onMouseEnter={e => {
+                if (!(!name.trim() || !surname.trim())) {
+                  e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'none';
               }}
             >
               Qo'shish
