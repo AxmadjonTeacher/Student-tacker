@@ -1462,7 +1462,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       let homework = student.homework;
 
       if (selectedWeek) {
-        const hist = studentWeeks.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+        const hist = studentWeeks.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek);
         if (hist) {
           startingLevel = hist.starting_level ?? student.startingLevel;
           currentLevel = hist.current_level ?? student.currentLevel;

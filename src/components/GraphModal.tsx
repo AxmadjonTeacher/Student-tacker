@@ -284,7 +284,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
   // Compile weekly progression data for line chart
   const progressionData = (() => {
-    const historicalWeeks = (studentWeeks || []).filter(sw => sw && sw.student_id === student.id);
+    const historicalWeeks = (studentWeeks || []).filter(sw => sw && sw.student_id?.toString() === student.id?.toString());
     const compiledHistorical = historicalWeeks.map(sw => {
       const wRawAtt = sw.attendance ?? 1;
       const wAttVal = typeof wRawAtt === 'string' ? parseFloat(wRawAtt) : wRawAtt;
@@ -958,7 +958,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'var(--backdrop-blur-md)', WebkitBackdropFilter: 'var(--backdrop-blur-md)', background: 'var(--backdrop-color)', zIndex: 9999 }}>
+    <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'var(--backdrop-blur-md)', WebkitBackdropFilter: 'var(--backdrop-blur-md)', background: 'var(--backdrop-color, rgba(0, 0, 0, 0.4))', zIndex: 9999 }}>
       <style dangerouslySetInnerHTML={{ __html: styleRules }} />
       {contentJSX}
     </div>

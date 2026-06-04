@@ -751,7 +751,7 @@ function App() {
               const sFullInv = `${s.surname} ${s.name}`.toLowerCase().trim();
               return nsFull === sFull || nsFull === sFullInv;
             });
-            const existingWeekRecord = studentWeeks.find(sw => sw.student_id === s.id && sw.week === selectedWeek);
+            const existingWeekRecord = studentWeeks.find(sw => sw.student_id?.toString() === s.id?.toString() && sw.week === selectedWeek);
             if (newS) {
               finalUpsertedWeeks.push({
                 student_id: s.id,
@@ -944,7 +944,7 @@ function App() {
           };
 
           setStudentWeeks(prev => {
-            const filtered = prev.filter(sw => !(sw.student_id === dbStudent.id && sw.week === selectedWeek));
+            const filtered = prev.filter(sw => !(sw.student_id?.toString() === dbStudent.id?.toString() && sw.week === selectedWeek));
             return [...filtered, weekPayload];
           });
 
@@ -978,7 +978,7 @@ function App() {
 
     // Update local studentWeeks list
     setStudentWeeks(prev => {
-      const idx = prev.findIndex(sw => sw.student_id === studentId && sw.week === targetWeek && !sw.is_deleted);
+      const idx = prev.findIndex(sw => sw.student_id?.toString() === studentId?.toString() && sw.week === targetWeek && !sw.is_deleted);
       const updated = [...prev];
       if (idx !== -1) {
         updated[idx] = {
@@ -1426,7 +1426,7 @@ function App() {
       let homework = student.homework;
 
       if (selectedWeek) {
-        const hist = studentWeeks.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+        const hist = studentWeeks.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek);
         if (hist) {
           startingLevel = hist.starting_level ?? student.startingLevel;
           currentLevel = hist.current_level ?? student.currentLevel;
@@ -1615,7 +1615,7 @@ function App() {
 
     // 3. Update student_weeks table for weekly scores
     if (selectedWeek) {
-      const existing = studentWeeks.find(sw => sw.student_id === studentId && sw.week === selectedWeek);
+      const existing = studentWeeks.find(sw => sw.student_id?.toString() === studentId?.toString() && sw.week === selectedWeek);
       const baseStudent = students.find(s => s.id === studentId);
 
       const weekPayload = {
@@ -1634,7 +1634,7 @@ function App() {
       };
 
       setStudentWeeks(prev => {
-        const filtered = prev.filter(sw => !(sw.student_id === studentId && sw.week === selectedWeek));
+        const filtered = prev.filter(sw => !(sw.student_id?.toString() === studentId?.toString() && sw.week === selectedWeek));
         return [...filtered, weekPayload];
       });
 

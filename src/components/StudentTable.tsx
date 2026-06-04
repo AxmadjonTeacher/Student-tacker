@@ -273,7 +273,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   };
 
   const handleToggleDailyRecord = async (studentId: string, field: 'attendance' | 'homework') => {
-    const existing = dailyRecords.find(r => r.student_id === studentId);
+    const existing = dailyRecords.find(r => r.student_id?.toString() === studentId?.toString());
     if (!existing) {
       alert("Iltimos, avval dars qo'shing!");
       return;
@@ -1307,7 +1307,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {students.map((student, sIdx) => {
-                        const record = dailyRecords.find(r => r.student_id === student.id);
+                        const record = dailyRecords.find(r => r.student_id?.toString() === student.id?.toString());
                         const isSaving = isSavingDaily === student.id;
                         
                         return (
@@ -1632,7 +1632,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
                   const missedHw = hwVal < 0 ? -hwVal : 0;
 
-                  const weekRecord = studentWeeks?.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+                  const weekRecord = studentWeeks?.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek);
                   const isIdWrong = weekRecord?.id_wrong === true;
 
                   const isLast = idx === sortedStudents.length - 1;
@@ -1822,7 +1822,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                         {/* Tooltip Content */}
                         {(() => {
-                          const studentRecords = weeklyDailyRecords.filter(r => r.student_id === student.id);
+                          const studentRecords = weeklyDailyRecords.filter(r => r.student_id?.toString() === student.id?.toString());
                           const engAtt = studentRecords.filter(r => r.subject === 'ENG');
                           const mathAtt = studentRecords.filter(r => r.subject === 'MATH');
                           return (
@@ -1883,7 +1883,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                         {/* Tooltip Content */}
                         {(() => {
-                          const studentRecords = weeklyDailyRecords.filter(r => r.student_id === student.id);
+                          const studentRecords = weeklyDailyRecords.filter(r => r.student_id?.toString() === student.id?.toString());
                           const engHw = studentRecords.filter(r => r.subject === 'ENG');
                           const mathHw = studentRecords.filter(r => r.subject === 'MATH');
                           return (
@@ -2330,7 +2330,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                             {/* Table content rows */}
                             {classStudents.map((student, sIdx) => {
-                              const record = dailyRecords.find(r => r.student_id === student.id);
+                              const record = dailyRecords.find(r => r.student_id?.toString() === student.id?.toString());
                               const isSaving = isSavingDaily === student.id;
 
                               return (
@@ -2498,8 +2498,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>SINF</div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>DAVOMAT</div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>UYGA VAZIFA</div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>{engMathSubSubject === 'ENG' ? 'INGLIZ TILI' : 'MATEMATIKA'} BALLI (15)</div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>CHART</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid var(--border-color)', fontWeight: 800 }}>INGLIZ TILI BALLI (15)</div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>MATEMATIKA BALLI (15)</div>
                               </div>
 
                               {/* Rows */}
@@ -2509,8 +2509,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 const hwVal = student.homework ?? 1;
                                 const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
 
-                                const scoreVal = engMathSubSubject === 'ENG' ? student.engScore : student.mathScore;
-                                const isEditingScore = editingEngMathScore?.studentId === student.id && editingEngMathScore?.subject === engMathSubSubject;
                                 const isLast = sIdx === teacherStudents.length - 1;
 
                                 return (
@@ -2576,9 +2574,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                       </span>
                                     </div>
 
-                                    {/* Score */}
-                                    <div style={{ textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      {isEditingScore ? (
+                                    {/* English Score Column */}
+                                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      {editingEngMathScore?.studentId === student.id && editingEngMathScore?.subject === 'ENG' ? (
                                         <input
                                           type="text"
                                           value={engMathScoreValue}
@@ -2589,9 +2587,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                               setEngMathScoreValue(val);
                                             }
                                           }}
-                                          onBlur={() => handleEngMathScoreSave(student, engMathSubSubject, engMathScoreValue)}
+                                          onBlur={() => handleEngMathScoreSave(student, 'ENG', engMathScoreValue)}
                                           onKeyDown={(e) => {
-                                            if (e.key === 'Enter') handleEngMathScoreSave(student, engMathSubSubject, engMathScoreValue);
+                                            if (e.key === 'Enter') handleEngMathScoreSave(student, 'ENG', engMathScoreValue);
                                             if (e.key === 'Escape') setEditingEngMathScore(null);
                                           }}
                                           style={{
@@ -2609,7 +2607,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                         />
                                       ) : (
                                         <div
-                                          onDoubleClick={() => handleEngMathScoreDoubleClick(student.id, scoreVal ?? null, engMathSubSubject)}
+                                          onDoubleClick={() => handleEngMathScoreDoubleClick(student.id, student.engScore ?? null, 'ENG')}
                                           title="Tahrirlash uchun ikki marta bosing"
                                           style={{
                                             fontSize: '0.85rem',
@@ -2629,44 +2627,67 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                           onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
                                           onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
                                         >
-                                          {scoreVal !== null && scoreVal !== undefined ? `${scoreVal} / 15` : '—'}
+                                          {student.engScore !== null && student.engScore !== undefined ? `${student.engScore} / 15` : '—'}
                                         </div>
                                       )}
                                     </div>
 
-                                    {/* Chart */}
-                                    <div 
-                                      className="table-cell chart-cell"
-                                      onClick={() => setSelectedStudent(student)}
-                                      style={{ 
-                                        padding: '0 1.5rem', 
-                                        height: '100%', 
-                                        display: 'flex', 
-                                        alignItems: 'center',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.15s ease, opacity 0.15s ease',
-                                        justifyContent: 'center'
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = 'scale(1.05)';
-                                        e.currentTarget.style.opacity = '0.85';
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = 'scale(1)';
-                                        e.currentTarget.style.opacity = '1';
-                                      }}
-                                      title="Grafikni ko'rish"
-                                    >
-                                      <svg width="74" height="42" style={{ overflow: 'visible' }}>
-                                        <g>
-                                          <rect x="5" y={38 - (attPercent / 100) * 32} width="12" height={(attPercent / 100) * 32} rx="3" fill="var(--accent-primary)">
-                                            <title>Attendance: {attPercent.toFixed(0)}%</title>
-                                          </rect>
-                                          <rect x="25" y={38 - (hwPercent / 100) * 32} width="12" height={(hwPercent / 100) * 32} rx="3" fill="#10b981">
-                                            <title>Homework: {hwPercent.toFixed(0)}%</title>
-                                          </rect>
-                                        </g>
-                                      </svg>
+                                    {/* Math Score Column */}
+                                    <div style={{ textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      {editingEngMathScore?.studentId === student.id && editingEngMathScore?.subject === 'MATH' ? (
+                                        <input
+                                          type="text"
+                                          value={engMathScoreValue}
+                                          autoFocus
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
+                                              setEngMathScoreValue(val);
+                                            }
+                                          }}
+                                          onBlur={() => handleEngMathScoreSave(student, 'MATH', engMathScoreValue)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleEngMathScoreSave(student, 'MATH', engMathScoreValue);
+                                            if (e.key === 'Escape') setEditingEngMathScore(null);
+                                          }}
+                                          style={{
+                                            width: '60px',
+                                            padding: '0.2rem 0.4rem',
+                                            borderRadius: '8px',
+                                            border: '2px solid var(--accent-primary)',
+                                            outline: 'none',
+                                            fontWeight: 800,
+                                            fontSize: '0.85rem',
+                                            textAlign: 'center',
+                                            background: 'var(--bg-card)',
+                                            color: 'var(--text-primary)'
+                                          }}
+                                        />
+                                      ) : (
+                                        <div
+                                          onDoubleClick={() => handleEngMathScoreDoubleClick(student.id, student.mathScore ?? null, 'MATH')}
+                                          title="Tahrirlash uchun ikki marta bosing"
+                                          style={{
+                                            fontSize: '0.85rem',
+                                            fontWeight: 850,
+                                            color: 'var(--accent-primary)',
+                                            cursor: 'pointer',
+                                            padding: '0.15rem 0.45rem',
+                                            borderRadius: '8px',
+                                            background: 'var(--bg-card)',
+                                            border: '1.5px solid var(--border-color)',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            minWidth: '40px',
+                                            justifyContent: 'center',
+                                            transition: 'all 0.15s ease'
+                                          }}
+                                          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                                          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                                        >
+                                          {student.mathScore !== null && student.mathScore !== undefined ? `${student.mathScore} / 15` : '—'}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 );
@@ -2766,7 +2787,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           const isLast = idx === classStudents.length - 1;
                           const edits = unsavedChanges[student.id] || {};
                           
-                          const weekRecord = studentWeeks?.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+                          const weekRecord = studentWeeks?.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek);
                           const isIdWrong = weekRecord?.id_wrong === true;
                           
                           const nameVal = edits.name !== undefined ? edits.name : student.name;
@@ -3313,7 +3334,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     const improvement = calculateImprovement(startLevel, currLevel);
                     const isLast = idx === group.students.length - 1;
                     
-                    const weekRecord = studentWeeks?.find(sw => sw.student_id === student.id && sw.week === selectedWeek);
+                    const weekRecord = studentWeeks?.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek);
                     const isIdWrong = weekRecord?.id_wrong === true;
                     
                     const getTheme = () => {
