@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Lock, User, Eye, EyeOff, Loader2, Phone, X } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, Loader2, Phone, X, Moon, Sun } from 'lucide-react';
 import { supabase } from '../supabase';
 import iconLight from '../assets/icon-light.png';
 import iconDark from '../assets/icon-dark.png';
@@ -279,38 +279,88 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           {/* Bottom Spacer */}
           <div style={{ flex: 1 }} />
 
-          {/* Pagination/Theme Indicator Dots */}
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <div 
-              onClick={onToggleDarkMode}
-              className="theme-indicator-dot"
-              style={{
-                background: isDarkMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                opacity: isDarkMode ? 1 : 0.35,
-                transform: isDarkMode ? 'scale(1.2)' : 'scale(1)',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              title="Qorong'u mavzu"
-            />
-            <div 
-              onClick={onToggleDarkMode}
-              className="theme-indicator-dot"
-              style={{
-                background: !isDarkMode ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                opacity: !isDarkMode ? 1 : 0.35,
-                transform: !isDarkMode ? 'scale(1.2)' : 'scale(1)',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              title="Yorug' mavzu"
-            />
+          {/* Theme Toggle */}
+          <div 
+            onClick={onToggleDarkMode}
+            title={isDarkMode ? "Yorug' mavzuga o'tish" : "Qorong'u mavzuga o'tish"}
+            style={{
+              width: '120px',
+              height: '42px',
+              borderRadius: '42px',
+              background: isDarkMode 
+                ? '#1e2024' 
+                : '#e6e9ef',
+              boxShadow: isDarkMode 
+                ? 'inset 4px 4px 8px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.03)'
+                : 'inset 4px 4px 8px rgba(180,190,205,0.6), inset -4px -4px 8px rgba(255,255,255,0.9)',
+              position: 'relative',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              boxSizing: 'border-box',
+              transition: 'all 0.3s ease',
+              margin: '10px 0'
+            }}
+          >
+            {/* Dark Text */}
+            <div style={{
+              position: 'absolute',
+              left: '20px',
+              fontSize: '1rem',
+              fontWeight: 600,
+              color: isDarkMode ? '#8a8d93' : 'transparent',
+              transition: 'color 0.3s ease',
+              pointerEvents: 'none',
+              fontFamily: "'Inter', sans-serif"
+            }}>
+              Dark
+            </div>
+
+            {/* Light Text */}
+            <div style={{
+              position: 'absolute',
+              right: '20px',
+              fontSize: '1rem',
+              fontWeight: 600,
+              color: isDarkMode ? 'transparent' : '#8892b0',
+              transition: 'color 0.3s ease',
+              pointerEvents: 'none',
+              fontFamily: "'Inter', sans-serif"
+            }}>
+              Light
+            </div>
+
+            {/* Oversized Glass Knob */}
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, rgba(40,42,48,0.9) 0%, rgba(20,21,24,0.9) 100%)'
+                : 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(240,242,245,0.9) 100%)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: isDarkMode 
+                ? '0 10px 20px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.1), inset -1px -1px 2px rgba(0,0,0,0.5)'
+                : '0 10px 20px rgba(180,190,205,0.4), inset 0 1px 1px rgba(255,255,255,1), inset -1px -1px 2px rgba(0,0,0,0.05)',
+              position: 'absolute',
+              top: '50%',
+              left: '-2px',
+              transform: isDarkMode 
+                ? 'translate(68px, -50%)' 
+                : 'translate(0px, -50%)',
+              transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2
+            }}>
+              {isDarkMode ? (
+                <Moon size={22} color="#ffffff" strokeWidth={2.5} style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.6))' }} />
+              ) : (
+                <Sun size={22} color="#fbbf24" strokeWidth={2.5} />
+              )}
+            </div>
           </div>
         </div>
 
