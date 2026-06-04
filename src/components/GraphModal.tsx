@@ -100,7 +100,9 @@ const GraphModal: React.FC<GraphModalProps> = ({
     const isMath = subject === 'MATH';
     const startLevel = getLevelValue(isMath ? (student.mathStartingLevel || 'Level 1') : (student.englishStartingLevel || student.startingLevel || 'Level 1'));
     const endLevel = getLevelValue(isMath ? (student.mathCurrentLevel || 'Level 1') : (student.englishCurrentLevel || student.currentLevel || 'Level 1'));
-    const tests = isMath ? student.mathGrandTests : student.englishGrandTests;
+    const tests = isMath 
+      ? (student.mathGrandTests || student.grandTests) 
+      : (student.englishGrandTests || student.grandTests);
 
     const testNames = ['1-Chorak', '2-Chorak', '3-Chorak', '4-Chorak'];
 
@@ -190,7 +192,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
   }
 
   // Decide dynamically which scores are visible to scale Y-axis domain
-  const allVisibleScores = (isComparing || activeSubject === 'ALL')
+  const allVisibleScores = (isComparing || activeSubject === 'ALL' || activeSubject === 'PRIMARY')
     ? [
         ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined),
         ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined),
@@ -502,7 +504,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           )}
           
           {/* English Score Area (Teal) */}
-          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
+          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') && (
             <Area 
               type="monotone" 
               dataKey="engVal" 
@@ -518,7 +520,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           )}
 
           {/* English Summer Estimate Segment (Dark Green Long Dashed Line) */}
-          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
+          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') && (
             <Line 
               type="monotone" 
               dataKey="engEstimate" 
@@ -534,7 +536,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           )}
           
           {/* Math Score Area (Orange) */}
-          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
+          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') && (
             <Area 
               type="monotone" 
               dataKey="mathVal" 
@@ -550,7 +552,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           )}
 
           {/* Math Summer Estimate Segment (Dark Orange Long Dashed Line) */}
-          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
+          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') && (
             <Line 
               type="monotone" 
               dataKey="mathEstimate" 
@@ -660,7 +662,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
             <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} style={{ flexShrink: 0 }} />
             <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
               {student.name} {student.surname} — {
-                activeSubject === 'ALL' 
+                (activeSubject === 'ALL' || activeSubject === 'PRIMARY') 
                   ? "Haftalik ko'rsatkichlar"
                   : isComparing 
                     ? 'Fanlar taqqoslovi' 
@@ -705,7 +707,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
         <div className="modal-tags-container" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
           {/* English Improvement Tag */}
-          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL') && (
+          {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') && (
             <span className="modal-tag" style={{ 
               display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
               background: 'rgba(56, 189, 248, 0.1)', color: '#0284c7', border: '1px solid rgba(56, 189, 248, 0.2)',
@@ -717,7 +719,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           )}
 
           {/* Math Improvement Tag */}
-          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL') && (
+          {(isComparing || activeSubject === 'MATH' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') && (
             <span className="modal-tag" style={{ 
               display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
               background: 'rgba(249, 115, 22, 0.1)', color: '#ea580c', border: '1px solid rgba(249, 115, 22, 0.2)',
@@ -731,7 +733,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
       </div>
 
       {/* Real-time Switcher Buttons */}
-      {activeSubject !== 'ALL' ? (
+      {(activeSubject !== 'ALL' && activeSubject !== 'PRIMARY') ? (
         <div style={{ 
           display: 'flex', 
           justifyContent: 'center',
@@ -815,7 +817,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
       )}
 
       <div style={{ flex: 1 }}>
-        {activeSubject === 'ALL' ? (
+        {(activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? (
           allActiveTab === 'progression' ? (
             <div className="chart-container" style={{ height: '350px', width: '100%' }}>
               <ResponsiveContainer width="100%" height="100%">
