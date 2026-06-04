@@ -981,6 +981,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
         .mobile-label {
           display: none;
         }
+        .table-card-container {
+          overflow-x: auto !important;
+          scrollbar-width: thin;
+        }
+        @media (min-width: 769px) {
+          .table-header-row, .student-row {
+            min-width: 850px;
+          }
+        }
         @media (max-width: 768px) {
           .table-header-row {
             display: none !important;
@@ -2667,13 +2676,13 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           borderRadius: '24px',
                           border: '1px solid var(--border-subtle)',
                           boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
-                          overflow: 'hidden'
+                          overflowX: 'auto'
                         }}
                       >
                         {/* Header row */}
                         <div className="table-header-row" style={{
                           display: 'grid',
-                          gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2fr 1fr',
+                          gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2.5fr',
                           alignItems: 'stretch',
                           padding: '0 1.5rem',
                           borderBottom: '1px solid var(--border-color)',
@@ -2688,32 +2697,31 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           </div>
                           <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>ID RAQAMI</div>
                           <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>PAROL (PASSCODE)</div>
-                          <div style={{ padding: '0.9rem 1rem', borderRight: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>TELEFON RAQAMI</div>
                           <div style={{ 
-                            padding: '0.5rem 1rem', 
+                            padding: '0.9rem 1.0rem', 
                             display: 'flex', 
-                            flexDirection: 'row', 
                             alignItems: 'center', 
                             justifyContent: 'space-between',
-                            gap: '0.35rem',
+                            gap: '0.5rem',
                             position: 'relative'
                           }}>
-                            <button
-                              onClick={() => handleExportCredentialsToExcel(classStudents)}
-                              title="Excel fayl yuklash"
-                              style={{
-                                background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0',
-                                padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700,
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', transition: 'all 0.15s ease',
-                                flex: 1, whiteSpace: 'nowrap'
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
-                            >
-                              <Download size={10} />
-                              <span>Excel</span>
-                            </button>
-                            {renderDetailsSectionMenu()}
+                            <span>TELEFON RAQAMI</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <button
+                                onClick={() => handleExportCredentialsToExcel(classStudents)}
+                                title="Excel fayl yuklash"
+                                style={{
+                                  background: 'transparent', color: '#16a34a', border: '1px solid transparent',
+                                  padding: '0.25rem', borderRadius: '6px',
+                                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#bbf7d0'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
+                              >
+                                <Download size={13} />
+                              </button>
+                              {renderDetailsSectionMenu()}
+                            </div>
                           </div>
                         </div>
 
@@ -2749,7 +2757,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               className="student-row"
                               style={{
                                 display: 'grid',
-                                gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2fr 1fr',
+                                gridTemplateColumns: '2.5fr 1.5fr 1.5fr 2.5fr',
                                 alignItems: 'center',
                                 padding: '1.1rem 1.5rem',
                                 borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
@@ -2917,7 +2925,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               {/* Parent Phone Number Cell */}
                               <div 
                                 className="table-cell" 
-                                style={{ padding: '0 1rem', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                                style={{ 
+                                  padding: '0 1rem', 
+                                  height: '100%', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'space-between',
+                                  cursor: 'pointer',
+                                  gap: '0.5rem'
+                                }}
                                 onClick={() => { if(!isEditing('parentPhone') && phoneVal) handleCopyText(phoneVal, student.id, 'parentPhone'); }}
                                 onDoubleClick={() => handleDoubleClick('parentPhone', phoneVal || '+998')}
                                 title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
@@ -2946,37 +2962,37 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     }}
                                   />
                                 ) : (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                                    {copiedId?.id === student.id && copiedId?.field === 'parentPhone' ? (
-                                      <span style={{ color: '#16a34a', fontWeight: 800 }}>Nusxalandi! ✓</span>
-                                    ) : (
-                                      <>
-                                        <Phone size={13} style={{ color: '#94a3b8' }} />
-                                        <span>{phoneVal || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Kiritilmagan</span>}</span>
-                                      </>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)', width: '100%', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                      {copiedId?.id === student.id && copiedId?.field === 'parentPhone' ? (
+                                        <span style={{ color: '#16a34a', fontWeight: 800 }}>Nusxalandi! ✓</span>
+                                      ) : (
+                                        <>
+                                          <Phone size={13} style={{ color: '#94a3b8' }} />
+                                          <span>{phoneVal || <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>Kiritilmagan</span>}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                    
+                                    {isAdminMode && authRole !== 'admin123' && (
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); onDeleteStudent && onDeleteStudent(student.id); }}
+                                        title="O'quvchini o'chirish"
+                                        style={{
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          background: '#fee2e2', color: '#b91c1c',
+                                          border: '1px solid #fca5a5', borderRadius: '50%',
+                                          width: '32px', height: '32px',
+                                          cursor: 'pointer', transition: 'all 0.15s ease',
+                                          flexShrink: 0
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.08)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
                                     )}
                                   </div>
-                                )}
-                              </div>
-
-                              {/* Delete Action Cell */}
-                              <div className="table-cell no-border" style={{ padding: '0 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                {isAdminMode && authRole !== 'admin123' && (
-                                  <button 
-                                    onClick={() => onDeleteStudent && onDeleteStudent(student.id)}
-                                    title="O'quvchini o'chirish"
-                                    style={{
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      background: '#fee2e2', color: '#b91c1c',
-                                      border: '1px solid #fca5a5', borderRadius: '50%',
-                                      width: '32px', height: '32px',
-                                      cursor: 'pointer', transition: 'all 0.15s ease'
-                                    }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#fecaca'; e.currentTarget.style.transform = 'scale(1.08)'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.transform = 'scale(1)'; }}
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
                                 )}
                               </div>
                             </div>
@@ -3034,7 +3050,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     borderRadius: '24px',
                     border: '1px solid var(--border-subtle)',
                     boxShadow: 'var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight)',
-                    overflow: 'hidden',
+                    overflowX: 'auto',
                     marginBottom: '2rem'
                   }}
                 >

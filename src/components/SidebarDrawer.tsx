@@ -723,7 +723,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         )}
 
         {/* Drawer Scrollable Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 1.5rem 1.5rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem 1.5rem' }}>
           
           {/* TAB 1: System Settings */}
           {activeTab === 'settings' && authRole !== 'teacher' && (
@@ -1012,7 +1012,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
               {/* Section 4: Dark Mode Toggle */}
               {onToggleDarkMode && (
-                <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ marginBottom: '1.5rem', marginTop: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)', letterSpacing: '0.01em' }}>

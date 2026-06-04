@@ -53,6 +53,44 @@ const Header: React.FC<HeaderProps> = ({
   weeksList
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [sliderStyle, setSliderStyle] = React.useState({
+    left: 0,
+    width: 0,
+    height: 0,
+    top: 0,
+    opacity: 0
+  });
+
+  React.useLayoutEffect(() => {
+    if (!containerRef.current) return;
+    const updateSlider = () => {
+      const activeEl = containerRef.current?.querySelector('.active-pill') as HTMLElement | null;
+      if (activeEl) {
+        setSliderStyle({
+          left: activeEl.offsetLeft,
+          width: activeEl.offsetWidth,
+          height: activeEl.offsetHeight,
+          top: activeEl.offsetTop,
+          opacity: 1
+        });
+      } else {
+        setSliderStyle(prev => ({ ...prev, opacity: 0 }));
+      }
+    };
+    
+    // Initial run
+    updateSlider();
+
+    // Re-run after a small delay to handle parent layout shifts
+    const timer = setTimeout(updateSlider, 50);
+
+    window.addEventListener('resize', updateSlider);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSlider);
+    };
+  }, [activeClass, classes, activeSubject]);
 
   return (
     <header className="sticky-header-container" style={{
@@ -75,6 +113,12 @@ const Header: React.FC<HeaderProps> = ({
       <style dangerouslySetInnerHTML={{ __html: `
         .sticky-header-container {
           box-sizing: border-box;
+        }
+        .class-selector {
+          scrollbar-width: none !important;
+        }
+        .class-selector::-webkit-scrollbar {
+          display: none !important;
         }
         .mobile-header-menu-container {
           display: none;
@@ -358,7 +402,7 @@ const Header: React.FC<HeaderProps> = ({
         }}>
           
           {/* Left Side: Contextual Toggles / Class Selectors */}
-          <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: '0 1 auto' }}>
+          <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'nowrap', flex: '0 1 auto' }}>
             {/* If Subject is ENG_MATH */}
             {activeSubject === 'ENG_MATH' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -597,7 +641,7 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* Standard Class Selector for other subjects */}
             {activeSubject !== 'ENG_MATH' && (
-              <div className="class-selector" style={{ 
+              <div className="class-selector" ref={containerRef} style={{ 
                 display: 'flex', 
                 gap: '0.25rem', 
                 background: 'var(--bg-card)', 
@@ -607,8 +651,25 @@ const Header: React.FC<HeaderProps> = ({
                 border: '1px solid var(--border-subtle)',
                 overflowX: 'auto',
                 flex: '0 1 auto',
-                maxWidth: '100%'
+                maxWidth: '100%',
+                position: 'relative'
               }}>
+                {/* Sliding indicator bubble */}
+                <div style={{
+                  position: 'absolute',
+                  left: sliderStyle.left,
+                  width: sliderStyle.width,
+                  height: sliderStyle.height,
+                  top: sliderStyle.top,
+                  opacity: sliderStyle.opacity,
+                  background: 'var(--accent-hero)',
+                  borderRadius: '9999px',
+                  boxShadow: '0 4px 12px var(--accent-glow)',
+                  transition: 'all 0.35s cubic-bezier(0.25, 1, 0.4, 1)',
+                  pointerEvents: 'none',
+                  zIndex: 0
+                }} />
+
                 {classes.map(cls => {
                   const isActive = activeClass === cls;
                   return (
@@ -620,17 +681,18 @@ const Header: React.FC<HeaderProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        background: isActive ? 'var(--accent-hero)' : 'transparent',
+                        background: 'transparent',
                         color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                        border: isActive ? '1px solid var(--accent-hero)' : '1px solid transparent',
-                        boxShadow: isActive ? '0 4px 12px var(--accent-glow)' : 'none',
+                        border: '1px solid transparent',
+                        boxShadow: 'none',
                         padding: '0.4rem 1rem',
                         borderRadius: '9999px',
                         cursor: 'pointer',
                         fontWeight: isActive ? 700 : 500,
                         fontSize: '0.85rem',
-                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                        whiteSpace: 'nowrap'
+                        transition: 'color 0.35s ease',
+                        whiteSpace: 'nowrap',
+                        zIndex: 1
                       }}
                     >
                       {cls}
@@ -752,7 +814,7 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            {onExportExcel && (
+            {onExportExcel && activeSubject === 'DETAILS' && (
               <button
                 onClick={onExportExcel}
                 className="admin-btn"
