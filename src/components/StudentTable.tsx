@@ -109,7 +109,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [editingEngMathScore, setEditingEngMathScore] = useState<{ studentId: string, subject: 'ENG' | 'MATH' } | null>(null);
   const [engMathScoreValue, setEngMathScoreValue] = useState<string>('');
 
-  const isEditable = isAdminMode || authRole === 'teacher';
+  const isEditable = isAdminMode;
 
   const [teacherSelectedClass, setTeacherSelectedClass] = useState<string>('Barchasi');
 

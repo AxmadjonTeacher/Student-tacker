@@ -579,7 +579,7 @@ const Header: React.FC<HeaderProps> = ({
             )}
 
             {/* If Subject is GRANT */}
-            {activeSubject === 'GRANT' && grantSubject !== undefined && setGrantSubject && (() => {
+            {activeSubject === 'GRANT' && authRole !== 'teacher' && grantSubject !== undefined && setGrantSubject && (() => {
               const grantIndex = grantSubject === 'ENG' ? 0 : 1;
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -752,66 +752,68 @@ const Header: React.FC<HeaderProps> = ({
                   width: '100%'
                 }}
               />
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                {activeSubject === 'GRANT' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-card-hover)', cursor: 'pointer', position: 'relative' }}>
-                    <ChevronDown size={16} style={{ color: 'var(--text-secondary)' }} />
-                    <select
-                      value={searchFilter}
-                      onChange={(e) => onSearchFilterChange(e.target.value as any)}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        opacity: 0,
-                        cursor: 'pointer',
-                        appearance: 'none'
-                      }}
-                    >
-                      <option value="both">Barchasi</option>
-                      <option value="student">O'quvchilar</option>
-                      <option value="teacher">O'qituvchilar</option>
-                    </select>
-                  </div>
-                ) : (
-                  <>
-                    <select
-                      value={searchFilter}
-                      onChange={(e) => onSearchFilterChange(e.target.value as any)}
-                      style={{
-                        appearance: 'none',
-                        background: 'transparent',
-                        color: 'var(--text-secondary)',
-                        border: 'none',
-                        padding: '0.5rem 1.5rem 0.5rem 0.5rem',
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        outline: 'none',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      <option value="both">Barchasi</option>
-                      <option value="student">O'quvchilar</option>
-                      <option value="teacher">O'qituvchilar</option>
-                    </select>
-                    <div style={{
-                      position: 'absolute',
-                      right: '0.25rem',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      pointerEvents: 'none',
-                      color: 'var(--text-secondary)',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}>
-                      <ChevronDown size={14} />
+              {authRole !== 'teacher' && (
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  {activeSubject === 'GRANT' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-card-hover)', cursor: 'pointer', position: 'relative' }}>
+                      <ChevronDown size={16} style={{ color: 'var(--text-secondary)' }} />
+                      <select
+                        value={searchFilter}
+                        onChange={(e) => onSearchFilterChange(e.target.value as any)}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          opacity: 0,
+                          cursor: 'pointer',
+                          appearance: 'none'
+                        }}
+                      >
+                        <option value="both">Barchasi</option>
+                        <option value="student">O'quvchilar</option>
+                        <option value="teacher">O'qituvchilar</option>
+                      </select>
                     </div>
-                  </>
-                )}
-              </div>
+                  ) : (
+                    <>
+                      <select
+                        value={searchFilter}
+                        onChange={(e) => onSearchFilterChange(e.target.value as any)}
+                        style={{
+                          appearance: 'none',
+                          background: 'transparent',
+                          color: 'var(--text-secondary)',
+                          border: 'none',
+                          padding: '0.5rem 1.5rem 0.5rem 0.5rem',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          outline: 'none',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        <option value="both">Barchasi</option>
+                        <option value="student">O'quvchilar</option>
+                        <option value="teacher">O'qituvchilar</option>
+                      </select>
+                      <div style={{
+                        position: 'absolute',
+                        right: '0.25rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        pointerEvents: 'none',
+                        color: 'var(--text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>
+                        <ChevronDown size={14} />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
 

@@ -107,6 +107,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       case 'parent': return 'Parent';
       case 'publish': return 'Publisher';
       case 'testor': return 'Testor';
+      case 'teacher': return "O'qituvchi";
       default: return 'Mehmon';
     }
   }, [authRole]);
@@ -118,6 +119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (authRole === 'parent') return 'PT';
     if (authRole === 'publish') return 'PB';
     if (authRole === 'testor') return 'TS';
+    if (authRole === 'teacher') return 'O';
     return 'G';
   }, [authRole]);
 
