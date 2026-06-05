@@ -404,7 +404,7 @@ const Header: React.FC<HeaderProps> = ({
           {/* Left Side: Contextual Toggles / Class Selectors */}
           <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'nowrap', flex: '0 1 auto' }}>
             {/* If Subject is ENG_MATH */}
-            {activeSubject === 'ENG_MATH' && (
+            {activeSubject === 'ENG_MATH' && authRole !== 'teacher' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 {/* Grade Range Selector */}
                 {engMathGradeRange !== undefined && setEngMathGradeRange && (() => {

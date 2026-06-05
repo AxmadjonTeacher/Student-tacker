@@ -2676,7 +2676,15 @@ function App() {
                   { id: 'subj_primary', label: 'Boshlang\'ich', icon: GraduationCap, isActive: activeAdminTab === 'home' && activeSubject === 'PRIMARY', action: () => { setActiveAdminTab('home'); setActiveSubject('PRIMARY'); } },
                   { id: 'subj_grant', label: 'Grant testlar', icon: Award, isActive: activeAdminTab === 'home' && activeSubject === 'GRANT', action: () => { setActiveAdminTab('home'); setActiveSubject('GRANT'); } },
                   { id: 'subj_all', label: 'Haftalik tahlil', icon: Activity, isActive: activeAdminTab === 'home' && activeSubject === 'ALL', action: () => { setActiveAdminTab('home'); setActiveSubject('ALL'); } },
-                  { id: 'subj_eng_math', label: 'Eng/Math', icon: BookOpen, isActive: activeAdminTab === 'home' && activeSubject === 'ENG_MATH', action: () => { setActiveAdminTab('home'); setActiveSubject('ENG_MATH'); } },
+                  { 
+                    id: 'subj_eng_math', 
+                    label: authRole === 'teacher' 
+                      ? ((localStorage.getItem('teacher_subject') || 'ENG') === 'MATH' ? 'Math' : 'English')
+                      : 'Eng/Math', 
+                    icon: BookOpen, 
+                    isActive: activeAdminTab === 'home' && activeSubject === 'ENG_MATH', 
+                    action: () => { setActiveAdminTab('home'); setActiveSubject('ENG_MATH'); } 
+                  },
                 ]
               },
               {

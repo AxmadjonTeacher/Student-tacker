@@ -747,7 +747,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         { id: 'PRIMARY', title: "Boshlang'ich", desc: "Boshlang'ich sinflar (1-4) uchun progress va tahlillar", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
                         { id: 'GRANT', title: 'Grant Testlar', desc: 'Sinflarning darajalari va grant test natijalari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
                         { id: 'ALL', title: 'Haftalik Tahlil', desc: 'Foizlarda natijalar, davomat va vazifalar', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
-                        { id: 'ENG_MATH', title: 'Eng/Math', desc: 'Ingliz tili va Matematika progress va ballari', color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
+                        { 
+                          id: 'ENG_MATH', 
+                          title: authRole === 'teacher' ? (localStorage.getItem('teacher_subject') === 'MATH' ? 'Math' : 'English') : 'Eng/Math', 
+                          desc: 'Ingliz tili va Matematika progress va ballari', 
+                          color: 'var(--accent-primary)', 
+                          bg: 'rgba(13, 148, 136, 0.12)' 
+                        },
                         { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' }
                       ];
                       if (authRole === 'teacher') {

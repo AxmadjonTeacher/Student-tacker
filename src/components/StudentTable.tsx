@@ -76,6 +76,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onStartNewWeekClick,
   onDeleteWeekClick,
   engMathGradeRange = '5-6',
+  setEngMathGradeRange,
   engMathSubSubject = 'ENG',
   setEngMathSubSubject,
   grantSubject = 'ENG',
@@ -111,7 +112,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
   const isEditable = isAdminMode;
 
-  const [teacherSelectedClass, setTeacherSelectedClass] = useState<string>('Barchasi');
 
   useEffect(() => {
     if (authRole === 'teacher') {
@@ -2085,13 +2085,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
                 const cabinetTitle = teacherSubject === 'MATH' ? `Matematika kabineti: ${teacherName}` : `Ingliz tili kabineti: ${teacherName}`;
 
-                const teacherClasses = Array.from(new Set(students.map(s => s.className))).filter(Boolean).sort();
-                const classTabs = ['Barchasi', ...teacherClasses];
-
-                const filteredTeacherStudents = students.filter(student => teacherSelectedClass === 'Barchasi' || student.className === teacherSelectedClass);
+                // Filter students by selected grade range (using the engMathGradeRange prop)
+                const gradeFilteredStudents = students.filter(student => matchesGradeRange(student.className, engMathGradeRange));
 
                 const classGroupsMap: { [cls: string]: Student[] } = {};
-                filteredTeacherStudents.forEach(student => {
+                gradeFilteredStudents.forEach(student => {
                   const cls = student.className || 'Sinf kiritilmagan';
                   if (!classGroupsMap[cls]) {
                     classGroupsMap[cls] = [];
@@ -2099,6 +2097,59 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   classGroupsMap[cls].push(student);
                 });
                 const sortedClasses = Object.keys(classGroupsMap).sort();
+
+                const handleAddNewLessonForClass = async (classStudents: Student[]) => {
+                  if (classStudents.length === 0) {
+                    alert("Sinfda o'quvchilar mavjud emas!");
+                    return;
+                  }
+                  
+                  const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
+                  
+                  const newRecords = classStudents.map(student => ({
+                    student_id: student.id,
+                    date: selectedDailyDate,
+                    week: selectedDailyWeek,
+                    subject: teacherSubject as 'ENG' | 'MATH',
+                    attendance: true,
+                    homework: true,
+                    teacher_name: teacherName
+                  }));
+
+                  try {
+                    const { error } = await supabase
+                      .from('daily_records')
+                      .insert(newRecords);
+                      
+                    if (error) throw error;
+                    
+                    await fetchDailyRecords();
+                    
+                    // Trigger weekly metrics recalculation for all students in this class
+                    for (const student of classStudents) {
+                      await recalculateWeeklyMetrics(student.id, selectedDailyWeek, teacherSubject as 'ENG' | 'MATH');
+                    }
+                    
+                    // Refetch weekly daily records to keep tooltip cache in sync
+                    const classStudentIds = classStudents.map(s => s.id);
+                    const { data: updatedWeekly } = await supabase
+                      .from('daily_records')
+                      .select('*')
+                      .in('student_id', classStudentIds)
+                      .eq('week', selectedDailyWeek);
+                    if (updatedWeekly) {
+                      setWeeklyDailyRecords(prev => {
+                        const filtered = prev.filter(r => !classStudentIds.includes(r.student_id));
+                        return [...filtered, ...updatedWeekly];
+                      });
+                    }
+                    
+                    alert("Yangi dars muvaffaqiyatli qo'shildi!");
+                  } catch (err) {
+                    console.error("Error adding new lesson:", err);
+                    alert("Dars qo'shishda xatolik yuz berdi.");
+                  }
+                };
 
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
@@ -2116,183 +2167,68 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       gap: '1rem'
                     }}>
                       <div>
-                        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{cabinetTitle}</h1>
+                        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.02em', color: '#ffffff' }}>{cabinetTitle}</h1>
                         <p style={{ margin: '0.35rem 0 0', opacity: 0.9, fontSize: '0.85rem', fontWeight: 650 }}>Kundalik dars davomati va uyga vazifalarni tekshirish paneli</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.15)', padding: '0.5rem 1rem', borderRadius: '12px', backdropFilter: 'blur(4px)' }}>
                         <Users size={18} />
-                        <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{students.length} nafar o'quvchi</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{gradeFilteredStudents.length} nafar o'quvchi</span>
                       </div>
                     </div>
 
-                    {/* Class Slider Tabs */}
-                    <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.25rem', scrollbarWidth: 'none' }}>
-                      {classTabs.map(cls => {
-                        const active = teacherSelectedClass === cls;
-                        return (
-                          <button
-                            key={cls}
-                            onClick={() => setTeacherSelectedClass(cls)}
-                            style={{
-                              padding: '0.6rem 1.2rem',
-                              borderRadius: '9999px',
-                              border: '1.5px solid var(--border-color)',
-                              background: active ? 'var(--accent-gradient)' : 'var(--bg-card)',
-                              color: active ? '#ffffff' : 'var(--text-secondary)',
-                              fontWeight: 800,
-                              fontSize: '0.82rem',
-                              cursor: 'pointer',
-                              whiteSpace: 'nowrap',
-                              transition: 'all 0.2s ease',
-                              boxShadow: active ? '0 4px 10px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.02)'
-                            }}
-                          >
-                            {cls}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Inner controls */}
-                    <div style={{
-                      background: 'var(--bg-card)',
-                      border: '1.5px solid var(--border-color)',
-                      borderRadius: '24px',
-                      padding: '1.25rem 1.5rem',
-                      boxShadow: 'var(--glass-shadow)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: '1rem'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                        {/* Date Picker */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sana</span>
-                          <input
-                            type="date"
-                            value={selectedDailyDate}
-                            onChange={(e) => setSelectedDailyDate(e.target.value)}
-                            style={{
-                              background: 'var(--bg-card-hover)',
-                              color: 'var(--text-primary)',
-                              border: '1.5px solid var(--border-color)',
-                              borderRadius: '12px',
-                              padding: '0.45rem 0.75rem',
-                              fontSize: '0.8rem',
-                              fontWeight: 750,
-                              outline: 'none',
-                              cursor: 'pointer'
-                            }}
-                          />
-                        </div>
-
-                        {/* Week selection */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
-                          <div style={{ position: 'relative' }}>
-                            <select
-                              value={selectedDailyWeek}
-                              onChange={(e) => setSelectedDailyWeek(e.target.value)}
+                    {/* Grade Range Selector replacing Class Slider Tabs */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>SINF:</span>
+                      <div style={{ 
+                        display: 'flex', 
+                        background: 'var(--border-subtle)', 
+                        boxShadow: 'var(--inner-inset)', 
+                        borderRadius: '9999px', 
+                        padding: '2px',
+                        position: 'relative',
+                        width: '180px',
+                        height: '32px',
+                        boxSizing: 'border-box'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '2px',
+                          bottom: '2px',
+                          left: `calc(2px + (100% - 4px) / 3 * ${engMathGradeRange === '5-6' ? 0 : engMathGradeRange === '7-8' ? 1 : 2})`,
+                          width: 'calc((100% - 4px) / 3)',
+                          background: 'var(--bg-card)',
+                          borderRadius: '9999px',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                          transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        }} />
+                        {(['5-6', '7-8', '9-11'] as const).map(range => {
+                          const active = engMathGradeRange === range;
+                          return (
+                            <button
+                              key={range}
+                              onClick={() => setEngMathGradeRange && setEngMathGradeRange(range)}
                               style={{
-                                background: 'var(--bg-card-hover)',
-                                color: 'var(--text-primary)',
-                                border: '1.5px solid var(--border-color)',
-                                borderRadius: '12px',
-                                padding: '0.45rem 2rem 0.45rem 0.75rem',
+                                flex: 1,
+                                background: 'transparent',
+                                color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                border: 'none',
+                                borderRadius: '9999px',
+                                padding: 0,
                                 fontSize: '0.8rem',
-                                fontWeight: 800,
-                                outline: 'none',
+                                fontWeight: active ? 800 : 500,
                                 cursor: 'pointer',
-                                appearance: 'none',
-                                lineHeight: 1.2
+                                zIndex: 1,
+                                transition: 'color 0.25s ease',
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                               }}
                             >
-                              {weeksList.length === 0 ? (
-                                <option value="">Hafta yo'q</option>
-                              ) : (
-                                weeksList.map(w => (
-                                  <option key={w} value={w}>{w}</option>
-                                ))
-                              )}
-                            </select>
-                            <div style={{
-                              position: 'absolute',
-                              right: '0.75rem',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              pointerEvents: 'none',
-                              color: '#64748b',
-                              display: 'flex',
-                              alignItems: 'center'
-                            }}>
-                              <ChevronDown size={14} />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Plus button to add a new lesson */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', justifyContent: 'flex-end', height: '100%' }}>
-                          <span style={{ fontSize: '0.65rem', opacity: 0, pointerEvents: 'none' }}>Label</span>
-                          <button
-                            onClick={handleAddNewLesson}
-                            title="Yangi dars qo'shish"
-                            style={{
-                              background: 'var(--accent-primary)',
-                              color: '#ffffff',
-                              border: 'none',
-                              borderRadius: '12px',
-                              padding: '0.45rem 1rem',
-                              fontSize: '0.8rem',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              transition: 'transform 0.15s ease'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                          >
-                            <Plus size={16} />
-                            <span>Dars qo'shish</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Excel export for teacher */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <button
-                          onClick={() => handleExportEngMathToExcel(filteredTeacherStudents, teacherSubject as 'ENG' | 'MATH')}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            background: 'rgba(16, 185, 129, 0.1)',
-                            color: '#10b981',
-                            border: '1.5px solid rgba(16, 185, 129, 0.3)',
-                            borderRadius: '12px',
-                            padding: '0.5rem 1rem',
-                            fontSize: '0.8rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#10b981';
-                            e.currentTarget.style.color = '#ffffff';
-                            e.currentTarget.style.borderColor = '#10b981';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-                            e.currentTarget.style.color = '#10b981';
-                            e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-                          }}
-                        >
-                          <FileSpreadsheet size={16} />
-                          <span>Excel yuklash</span>
-                        </button>
+                              {range}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -2316,21 +2252,151 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               overflow: 'hidden'
                             }}
                           >
-                            {/* Class Header row */}
+                            {/* Class Header row with embedded Date, Week, Add Lesson and Export controls */}
                             <div style={{
                               background: 'var(--bg-card-hover)',
                               padding: '1rem 1.5rem',
                               borderBottom: '1px solid var(--border-color)',
                               display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'space-between'
+                              justifyContent: 'space-between',
+                              flexWrap: 'wrap',
+                              gap: '1rem'
                             }}>
-                              <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
-                                {clsName.toUpperCase()} SINF
-                              </span>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--border-color)', padding: '0.2rem 0.5rem', borderRadius: '8px' }}>
-                                {classStudents.length} o'quvchi
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
+                                  {clsName.toUpperCase()} SINF
+                                </span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--border-color)', padding: '0.2rem 0.5rem', borderRadius: '8px' }}>
+                                  {classStudents.length} o'quvchi
+                                </span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                {/* Date Picker */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                  <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sana</span>
+                                  <input
+                                    type="date"
+                                    value={selectedDailyDate}
+                                    onChange={(e) => setSelectedDailyDate(e.target.value)}
+                                    style={{
+                                      background: 'var(--bg-card-hover)',
+                                      color: 'var(--text-primary)',
+                                      border: '1.5px solid var(--border-color)',
+                                      borderRadius: '10px',
+                                      padding: '0.35rem 0.5rem',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 750,
+                                      outline: 'none',
+                                      cursor: 'pointer'
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Week selection */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                  <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
+                                  <div style={{ position: 'relative' }}>
+                                    <select
+                                      value={selectedDailyWeek}
+                                      onChange={(e) => setSelectedDailyWeek(e.target.value)}
+                                      style={{
+                                        background: 'var(--bg-card-hover)',
+                                        color: 'var(--text-primary)',
+                                        border: '1.5px solid var(--border-color)',
+                                        borderRadius: '10px',
+                                        padding: '0.35rem 1.5rem 0.35rem 0.5rem',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 800,
+                                        outline: 'none',
+                                        cursor: 'pointer',
+                                        appearance: 'none',
+                                        lineHeight: 1.2
+                                      }}
+                                    >
+                                      {weeksList.length === 0 ? (
+                                        <option value="">Hafta yo'q</option>
+                                      ) : (
+                                        weeksList.map(w => (
+                                          <option key={w} value={w}>{w}</option>
+                                        ))
+                                      )}
+                                    </select>
+                                    <div style={{
+                                      position: 'absolute',
+                                      right: '0.4rem',
+                                      top: '50%',
+                                      transform: 'translateY(-50%)',
+                                      pointerEvents: 'none',
+                                      color: '#64748b',
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}>
+                                      <ChevronDown size={12} />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Plus button */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', justifyContent: 'flex-end', height: '100%' }}>
+                                  <span style={{ fontSize: '0.55rem', opacity: 0, pointerEvents: 'none' }}>Label</span>
+                                  <button
+                                    onClick={() => handleAddNewLessonForClass(classStudents)}
+                                    title="Yangi dars qo'shish"
+                                    style={{
+                                      background: 'var(--accent-primary)',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      borderRadius: '10px',
+                                      padding: '0.35rem 0.75rem',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.25rem',
+                                      transition: 'transform 0.15s ease'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                  >
+                                    <Plus size={14} />
+                                    <span>Dars qo'shish</span>
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Download Icon (Excel export) */}
+                              <button
+                                onClick={() => handleExportEngMathToExcel(classStudents, teacherSubject as 'ENG' | 'MATH')}
+                                title="Excel yuklash"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: 'rgba(16, 185, 129, 0.1)',
+                                  color: '#10b981',
+                                  border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                                  borderRadius: '50%',
+                                  width: '32px',
+                                  height: '32px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#10b981';
+                                  e.currentTarget.style.color = '#ffffff';
+                                  e.currentTarget.style.borderColor = '#10b981';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                                  e.currentTarget.style.color = '#10b981';
+                                  e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                                }}
+                              >
+                                <FileSpreadsheet size={16} />
+                              </button>
                             </div>
 
                             {/* Table content header */}
