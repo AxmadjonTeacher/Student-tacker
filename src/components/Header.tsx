@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings, ChevronDown } from 'lucide-react';
+import { Search, Settings, ChevronDown, Users } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
 import iconDark from '../assets/icon-dark.png';
 import type { ActiveSubject } from '../types';
@@ -30,6 +30,7 @@ interface HeaderProps {
   selectedWeek?: string;
   onWeekChange?: (week: string) => void;
   weeksList?: string[];
+  studentCount?: number;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -50,7 +51,8 @@ const Header: React.FC<HeaderProps> = ({
   onExportExcel: _onExportExcel,
   selectedWeek,
   onWeekChange,
-  weeksList
+  weeksList,
+  studentCount
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -403,6 +405,31 @@ const Header: React.FC<HeaderProps> = ({
           
           {/* Left Side: Contextual Toggles / Class Selectors */}
           <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'nowrap', flex: '0 1 auto' }}>
+            {/* If Subject is ENG_MATH and teacher */}
+            {activeSubject === 'ENG_MATH' && authRole === 'teacher' && (() => {
+              const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
+              const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
+              const cabinetTitle = teacherSubject === 'MATH' ? `Matematika kabineti: ${teacherName}` : `Ingliz tili kabineti: ${teacherName}`;
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, letterSpacing: '-0.02em', color: 'var(--text-primary)', lineHeight: '1.2' }}>
+                      {cabinetTitle}
+                    </h2>
+                    <p style={{ margin: '0.2rem 0 0', opacity: 0.8, fontSize: '0.75rem', fontWeight: 650, color: 'var(--text-secondary)' }}>
+                      Kundalik dars davomati va uyga vazifalarni tekshirish paneli
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--border-subtle)', padding: '0.4rem 0.8rem', borderRadius: '10px' }}>
+                    <Users size={15} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={{ fontWeight: 800, fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                      {studentCount ?? 0} nafar o'quvchi
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* If Subject is ENG_MATH */}
             {activeSubject === 'ENG_MATH' && authRole !== 'teacher' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>

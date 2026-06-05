@@ -2362,6 +2362,19 @@ function App() {
   }  const adminTabIndices = { home: 0, search: 1, stats: 2, settings: 3, news: 3, teachers: 3, trash: 3 };
   const activeAdminIndex = adminTabIndices[activeAdminTab] || 0;
 
+  // Helper to filter students by grade range for teacher header
+  const matchesGradeRangeForCount = (className: string | undefined, range: '5-6' | '7-8' | '9-11') => {
+    if (!className) return false;
+    const match = className.match(/^(\d+)/);
+    if (!match) return false;
+    const gradeNum = parseInt(match[1], 10);
+    if (range === '5-6') return gradeNum === 5 || gradeNum === 6;
+    if (range === '7-8') return gradeNum === 7 || gradeNum === 8;
+    if (range === '9-11') return gradeNum >= 9 && gradeNum <= 11;
+    return false;
+  };
+  const teacherStudentCount = students.filter(student => matchesGradeRangeForCount(student.className, engMathGradeRange || '5-6')).length;
+
   if (isMobile) {
     return (
       <div className="app-container" style={{ paddingBottom: '80px', boxSizing: 'border-box' }}>
@@ -2389,6 +2402,7 @@ function App() {
           selectedWeek={selectedWeek}
           onWeekChange={setSelectedWeek}
           weeksList={weeksList}
+          studentCount={teacherStudentCount}
         />
 
         <div style={{ display: activeAdminTab === 'settings' ? 'none' : 'block' }}>
@@ -3027,6 +3041,7 @@ function App() {
                 selectedWeek={selectedWeek}
                 onWeekChange={setSelectedWeek}
                 weeksList={weeksList}
+                studentCount={teacherStudentCount}
               />
             )}
             {activeSubject === 'DASHBOARD' ? (

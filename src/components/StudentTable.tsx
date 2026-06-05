@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Student, ActiveSubject, Teacher } from '../types';
-import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, Key, Phone, Save, RotateCw, Download, X, Calendar, Plus, FileSpreadsheet } from 'lucide-react';
+import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Key, Phone, Save, RotateCw, Download, X, Calendar, Plus } from 'lucide-react';
 import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
 import * as XLSX from 'xlsx';
@@ -129,6 +129,86 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [dailyRecords, setDailyRecords] = useState<any[]>([]);
   const [isSavingDaily, setIsSavingDaily] = useState<string | null>(null);
   const [weeklyDailyRecords, setWeeklyDailyRecords] = useState<any[]>([]);
+  const [markedDates, setMarkedDates] = useState<string[]>([]);
+
+  // Fetch unique marked dates for teacher's subject to support date navigation
+  useEffect(() => {
+    if (authRole === 'teacher') {
+      const fetchMarkedDates = async () => {
+        try {
+          const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
+          const { data, error } = await supabase
+            .from('daily_records')
+            .select('date')
+            .eq('subject', teacherSubject);
+          if (error) throw error;
+          if (data) {
+            const dates = Array.from(new Set(data.map(r => r.date))).sort();
+            setMarkedDates(dates);
+          }
+        } catch (err) {
+          console.error("Error fetching marked dates:", err);
+        }
+      };
+      fetchMarkedDates();
+    }
+  }, [authRole, dailyRecords.length]);
+
+  const handleGoToPrevDate = () => {
+    if (markedDates.length === 0) {
+      const d = new Date(selectedDailyDate);
+      d.setDate(d.getDate() - 1);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      setSelectedDailyDate(`${yyyy}-${mm}-${dd}`);
+      return;
+    }
+    const currentIndex = markedDates.indexOf(selectedDailyDate);
+    if (currentIndex > 0) {
+      setSelectedDailyDate(markedDates[currentIndex - 1]);
+    } else {
+      const prevDates = markedDates.filter(d => d < selectedDailyDate);
+      if (prevDates.length > 0) {
+        setSelectedDailyDate(prevDates[prevDates.length - 1]);
+      } else {
+        const d = new Date(selectedDailyDate);
+        d.setDate(d.getDate() - 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        setSelectedDailyDate(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+  };
+
+  const handleGoToNextDate = () => {
+    if (markedDates.length === 0) {
+      const d = new Date(selectedDailyDate);
+      d.setDate(d.getDate() + 1);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      setSelectedDailyDate(`${yyyy}-${mm}-${dd}`);
+      return;
+    }
+    const currentIndex = markedDates.indexOf(selectedDailyDate);
+    if (currentIndex !== -1 && currentIndex < markedDates.length - 1) {
+      setSelectedDailyDate(markedDates[currentIndex + 1]);
+    } else {
+      const nextDates = markedDates.filter(d => d > selectedDailyDate);
+      if (nextDates.length > 0) {
+        setSelectedDailyDate(nextDates[0]);
+      } else {
+        const d = new Date(selectedDailyDate);
+        d.setDate(d.getDate() + 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        setSelectedDailyDate(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+  };
 
   const classStudentIds = useMemo(() => students.map(s => s.id), [students]);
 
@@ -283,14 +363,47 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
   const handleToggleDailyRecord = async (studentId: string, field: 'attendance' | 'homework') => {
     const existing = dailyRecords.find(r => r.student_id?.toString() === studentId?.toString());
-    if (!existing) {
-      alert("Iltimos, avval dars qo'shing!");
-      return;
-    }
+    const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
+    const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
+    const activeSub = activeSubject === 'ENG_MATH' ? (teacherSubject as 'ENG' | 'MATH') : (activeSubject as 'ENG' | 'MATH');
     
     setIsSavingDaily(studentId);
     
-    const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
+    if (!existing) {
+      // Create a new record with toggled field set to true, other field set to false/unmarked
+      const newRecord = {
+        student_id: studentId,
+        date: selectedDailyDate,
+        week: selectedDailyWeek,
+        subject: activeSub,
+        attendance: field === 'attendance' ? true : false,
+        homework: field === 'homework' ? true : false,
+        teacher_name: teacherName
+      };
+
+      try {
+        const { data, error } = await supabase
+          .from('daily_records')
+          .insert([newRecord])
+          .select();
+          
+        if (error) throw error;
+        
+        const inserted = data?.[0];
+        if (inserted) {
+          setDailyRecords(prev => [...prev, inserted]);
+          setWeeklyDailyRecords(prev => [...prev, inserted]);
+        }
+        
+        await recalculateWeeklyMetrics(studentId, selectedDailyWeek, activeSub);
+      } catch (err) {
+        console.error("Error creating daily record on toggle:", err);
+      } finally {
+        setIsSavingDaily(null);
+      }
+      return;
+    }
+    
     const updatedValue = !existing[field];
     
     try {
@@ -309,7 +422,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
       setWeeklyDailyRecords(prev => prev.map(r => r.id === existing.id ? { ...r, [field]: updatedValue, teacher_name: teacherName } : r));
       
       // Recalculate weekly metrics for this student
-      await recalculateWeeklyMetrics(studentId, selectedDailyWeek, activeSubject as 'ENG' | 'MATH');
+      await recalculateWeeklyMetrics(studentId, selectedDailyWeek, activeSub);
     } catch (err) {
       console.error("Error updating daily record:", err);
     } finally {
@@ -2081,32 +2194,26 @@ const StudentTable: React.FC<StudentTableProps> = ({
               (() => {
               if (authRole === 'teacher') {
                 // Teacher view
-                const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
                 const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
-                const cabinetTitle = teacherSubject === 'MATH' ? `Matematika kabineti: ${teacherName}` : `Ingliz tili kabineti: ${teacherName}`;
 
                 // Filter students by selected grade range (using the engMathGradeRange prop)
                 const gradeFilteredStudents = students.filter(student => matchesGradeRange(student.className, engMathGradeRange));
 
-                const classGroupsMap: { [cls: string]: Student[] } = {};
-                gradeFilteredStudents.forEach(student => {
-                  const cls = student.className || 'Sinf kiritilmagan';
-                  if (!classGroupsMap[cls]) {
-                    classGroupsMap[cls] = [];
-                  }
-                  classGroupsMap[cls].push(student);
+                const sortedStudentsForTable = [...gradeFilteredStudents].sort((a, b) => {
+                  const classComp = (a.className || '').localeCompare(b.className || '');
+                  if (classComp !== 0) return classComp;
+                  return (a.surname || '').localeCompare(b.surname || '');
                 });
-                const sortedClasses = Object.keys(classGroupsMap).sort();
 
-                const handleAddNewLessonForClass = async (classStudents: Student[]) => {
-                  if (classStudents.length === 0) {
-                    alert("Sinfda o'quvchilar mavjud emas!");
+                const handleAddNewLessonForGradeRange = async (rangeStudents: Student[]) => {
+                  if (rangeStudents.length === 0) {
+                    alert("O'quvchilar mavjud emas!");
                     return;
                   }
                   
                   const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
                   
-                  const newRecords = classStudents.map(student => ({
+                  const newRecords = rangeStudents.map(student => ({
                     student_id: student.id,
                     date: selectedDailyDate,
                     week: selectedDailyWeek,
@@ -2125,21 +2232,21 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     
                     await fetchDailyRecords();
                     
-                    // Trigger weekly metrics recalculation for all students in this class
-                    for (const student of classStudents) {
+                    // Trigger weekly metrics recalculation for all students in this range
+                    for (const student of rangeStudents) {
                       await recalculateWeeklyMetrics(student.id, selectedDailyWeek, teacherSubject as 'ENG' | 'MATH');
                     }
                     
                     // Refetch weekly daily records to keep tooltip cache in sync
-                    const classStudentIds = classStudents.map(s => s.id);
+                    const studentIds = rangeStudents.map(s => s.id);
                     const { data: updatedWeekly } = await supabase
                       .from('daily_records')
                       .select('*')
-                      .in('student_id', classStudentIds)
+                      .in('student_id', studentIds)
                       .eq('week', selectedDailyWeek);
                     if (updatedWeekly) {
                       setWeeklyDailyRecords(prev => {
-                        const filtered = prev.filter(r => !classStudentIds.includes(r.student_id));
+                        const filtered = prev.filter(r => !studentIds.includes(r.student_id));
                         return [...filtered, ...updatedWeekly];
                       });
                     }
@@ -2153,29 +2260,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
-                    {/* Professional Cabinet Header */}
-                    <div style={{
-                      background: 'var(--accent-gradient)',
-                      color: '#ffffff',
-                      borderRadius: '24px',
-                      padding: '1.75rem 2rem',
-                      boxShadow: 'var(--glass-shadow)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: '1rem'
-                    }}>
-                      <div>
-                        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 900, letterSpacing: '-0.02em', color: '#ffffff' }}>{cabinetTitle}</h1>
-                        <p style={{ margin: '0.35rem 0 0', opacity: 0.9, fontSize: '0.85rem', fontWeight: 650 }}>Kundalik dars davomati va uyga vazifalarni tekshirish paneli</p>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.15)', padding: '0.5rem 1rem', borderRadius: '12px', backdropFilter: 'blur(4px)' }}>
-                        <Users size={18} />
-                        <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{gradeFilteredStudents.length} nafar o'quvchi</span>
-                      </div>
-                    </div>
-
                     {/* Grade Range Selector replacing Class Slider Tabs */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>SINF:</span>
@@ -2232,277 +2316,328 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       </div>
                     </div>
 
-                    {/* Table checklist grouped by classes */}
-                    {sortedClasses.length === 0 ? (
+                    {/* Consolidated Table checklist for Grade Range */}
+                    {gradeFilteredStudents.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '3rem 1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '24px' }}>
                         <Inbox size={48} style={{ color: 'var(--text-secondary)', opacity: 0.6 }} />
-                        <p style={{ margin: '0.5rem 0 0', fontWeight: 650, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Ushbu sinfda sizning o'quvchilaringiz topilmadi.</p>
+                        <p style={{ margin: '0.5rem 0 0', fontWeight: 650, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Ushbu guruhda sizning o'quvchilaringiz topilmadi.</p>
                       </div>
                     ) : (
-                      sortedClasses.map(clsName => {
-                        const classStudents = classGroupsMap[clsName];
-                        return (
-                          <div 
-                            key={clsName} 
-                            style={{
-                              background: 'var(--bg-card)',
-                              border: '1px solid var(--border-color)',
-                              borderRadius: '24px',
-                              boxShadow: 'var(--glass-shadow)',
-                              overflow: 'hidden'
-                            }}
-                          >
-                            {/* Class Header row with embedded Date, Week, Add Lesson and Export controls */}
-                            <div style={{
-                              background: 'var(--bg-card-hover)',
-                              padding: '1rem 1.5rem',
-                              borderBottom: '1px solid var(--border-color)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              flexWrap: 'wrap',
-                              gap: '1rem'
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
-                                  {clsName.toUpperCase()} SINF
-                                </span>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--border-color)', padding: '0.2rem 0.5rem', borderRadius: '8px' }}>
-                                  {classStudents.length} o'quvchi
-                                </span>
+                      <div 
+                        style={{
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '24px',
+                          boxShadow: 'var(--glass-shadow)',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {/* Grade Range Table Header row with embedded Date, Week, Add Lesson and Export controls */}
+                        <div style={{
+                          background: 'var(--bg-card-hover)',
+                          padding: '1rem 1.5rem',
+                          borderBottom: '1px solid var(--border-color)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '1rem'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
+                              {engMathGradeRange} SINFLAR
+                            </span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--border-color)', padding: '0.2rem 0.5rem', borderRadius: '8px' }}>
+                              {gradeFilteredStudents.length} o'quvchi
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            {/* Date Picker & Navigation */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sana</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <button
+                                  onClick={handleGoToPrevDate}
+                                  title="Oldingi dars kuni"
+                                  style={{
+                                    background: 'var(--bg-card)',
+                                    color: 'var(--text-primary)',
+                                    border: '1.5px solid var(--border-color)',
+                                    borderRadius: '10px',
+                                    width: '32px',
+                                    height: '32px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
+                                >
+                                  <ChevronLeft size={16} />
+                                </button>
+                                
+                                <input
+                                  type="date"
+                                  value={selectedDailyDate}
+                                  onChange={(e) => setSelectedDailyDate(e.target.value)}
+                                  style={{
+                                    background: 'var(--bg-card-hover)',
+                                    color: 'var(--text-primary)',
+                                    border: '1.5px solid var(--border-color)',
+                                    borderRadius: '10px',
+                                    padding: '0.35rem 0.5rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 750,
+                                    outline: 'none',
+                                    cursor: 'pointer'
+                                  }}
+                                />
+
+                                <button
+                                  onClick={handleGoToNextDate}
+                                  title="Keyingi dars kuni"
+                                  style={{
+                                    background: 'var(--bg-card)',
+                                    color: 'var(--text-primary)',
+                                    border: '1.5px solid var(--border-color)',
+                                    borderRadius: '10px',
+                                    width: '32px',
+                                    height: '32px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
+                                >
+                                  <ChevronRight size={16} />
+                                </button>
                               </div>
+                            </div>
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                {/* Date Picker */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                                  <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sana</span>
-                                  <input
-                                    type="date"
-                                    value={selectedDailyDate}
-                                    onChange={(e) => setSelectedDailyDate(e.target.value)}
-                                    style={{
-                                      background: 'var(--bg-card-hover)',
-                                      color: 'var(--text-primary)',
-                                      border: '1.5px solid var(--border-color)',
-                                      borderRadius: '10px',
-                                      padding: '0.35rem 0.5rem',
-                                      fontSize: '0.75rem',
-                                      fontWeight: 750,
-                                      outline: 'none',
-                                      cursor: 'pointer'
-                                    }}
-                                  />
-                                </div>
-
-                                {/* Week selection */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                                  <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
-                                  <div style={{ position: 'relative' }}>
-                                    <select
-                                      value={selectedDailyWeek}
-                                      onChange={(e) => setSelectedDailyWeek(e.target.value)}
-                                      style={{
-                                        background: 'var(--bg-card-hover)',
-                                        color: 'var(--text-primary)',
-                                        border: '1.5px solid var(--border-color)',
-                                        borderRadius: '10px',
-                                        padding: '0.35rem 1.5rem 0.35rem 0.5rem',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 800,
-                                        outline: 'none',
-                                        cursor: 'pointer',
-                                        appearance: 'none',
-                                        lineHeight: 1.2
-                                      }}
-                                    >
-                                      {weeksList.length === 0 ? (
-                                        <option value="">Hafta yo'q</option>
-                                      ) : (
-                                        weeksList.map(w => (
-                                          <option key={w} value={w}>{w}</option>
-                                        ))
-                                      )}
-                                    </select>
-                                    <div style={{
-                                      position: 'absolute',
-                                      right: '0.4rem',
-                                      top: '50%',
-                                      transform: 'translateY(-50%)',
-                                      pointerEvents: 'none',
-                                      color: '#64748b',
-                                      display: 'flex',
-                                      alignItems: 'center'
-                                    }}>
-                                      <ChevronDown size={12} />
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Plus button */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', justifyContent: 'flex-end', height: '100%' }}>
-                                  <span style={{ fontSize: '0.55rem', opacity: 0, pointerEvents: 'none' }}>Label</span>
-                                  <button
-                                    onClick={() => handleAddNewLessonForClass(classStudents)}
-                                    title="Yangi dars qo'shish"
-                                    style={{
-                                      background: 'var(--accent-primary)',
-                                      color: '#ffffff',
-                                      border: 'none',
-                                      borderRadius: '10px',
-                                      padding: '0.35rem 0.75rem',
-                                      fontSize: '0.75rem',
-                                      fontWeight: 800,
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '0.25rem',
-                                      transition: 'transform 0.15s ease'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                  >
-                                    <Plus size={14} />
-                                    <span>Dars qo'shish</span>
-                                  </button>
+                            {/* Week selection */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
+                              <div style={{ position: 'relative' }}>
+                                <select
+                                  value={selectedDailyWeek}
+                                  onChange={(e) => setSelectedDailyWeek(e.target.value)}
+                                  style={{
+                                    background: 'var(--bg-card-hover)',
+                                    color: 'var(--text-primary)',
+                                    border: '1.5px solid var(--border-color)',
+                                    borderRadius: '10px',
+                                    padding: '0.35rem 1.5rem 0.35rem 0.5rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    outline: 'none',
+                                    cursor: 'pointer',
+                                    appearance: 'none',
+                                    lineHeight: 1.2
+                                  }}
+                                >
+                                  {weeksList.length === 0 ? (
+                                    <option value="">Hafta yo'q</option>
+                                  ) : (
+                                    weeksList.map(w => (
+                                      <option key={w} value={w}>{w}</option>
+                                    ))
+                                  )}
+                                </select>
+                                <div style={{
+                                  position: 'absolute',
+                                  right: '0.4rem',
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  pointerEvents: 'none',
+                                  color: '#64748b',
+                                  display: 'flex',
+                                  alignItems: 'center'
+                                }}>
+                                  <ChevronDown size={12} />
                                 </div>
                               </div>
+                            </div>
 
-                              {/* Download Icon (Excel export) */}
+                            {/* Plus button */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', justifyContent: 'flex-end', height: '100%' }}>
+                              <span style={{ fontSize: '0.55rem', opacity: 0, pointerEvents: 'none' }}>Label</span>
                               <button
-                                onClick={() => handleExportEngMathToExcel(classStudents, teacherSubject as 'ENG' | 'MATH')}
-                                title="Excel yuklash"
+                                onClick={() => handleAddNewLessonForGradeRange(gradeFilteredStudents)}
+                                title="Yangi dars qo'shish"
                                 style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  background: 'rgba(16, 185, 129, 0.1)',
-                                  color: '#10b981',
-                                  border: '1.5px solid rgba(16, 185, 129, 0.3)',
-                                  borderRadius: '50%',
-                                  width: '32px',
-                                  height: '32px',
+                                  background: 'var(--accent-primary)',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '10px',
+                                  padding: '0.35rem 0.75rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 800,
                                   cursor: 'pointer',
-                                  transition: 'all 0.2s ease'
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  transition: 'transform 0.15s ease'
                                 }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#10b981';
-                                  e.currentTarget.style.color = '#ffffff';
-                                  e.currentTarget.style.borderColor = '#10b981';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
-                                  e.currentTarget.style.color = '#10b981';
-                                  e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                               >
-                                <FileSpreadsheet size={16} />
+                                <Plus size={14} />
+                                <span>Dars qo'shish</span>
                               </button>
                             </div>
-
-                            {/* Table content header */}
-                            <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: '2fr 1fr 1fr',
-                              padding: '0.75rem 1.5rem',
-                              borderBottom: '1px solid var(--border-color)',
-                              background: 'var(--bg-card-hover)',
-                              fontSize: '0.65rem',
-                              fontWeight: 800,
-                              color: 'var(--text-secondary)',
-                              letterSpacing: '0.08em',
-                              textTransform: 'uppercase'
-                            }}>
-                              <div>O'quvchining ismi va familiyasi</div>
-                              <div style={{ textAlign: 'center' }}>Davomat</div>
-                              <div style={{ textAlign: 'center' }}>Uyga vazifa</div>
-                            </div>
-
-                            {/* Table content rows */}
-                            {classStudents.map((student, sIdx) => {
-                              const record = dailyRecords.find(r => r.student_id?.toString() === student.id?.toString());
-                              const isSaving = isSavingDaily === student.id;
-
-                              return (
-                                <div
-                                  key={student.id}
-                                  style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: '2fr 1fr 1fr',
-                                    padding: '0.9rem 1.5rem',
-                                    alignItems: 'center',
-                                    borderBottom: sIdx === classStudents.length - 1 ? 'none' : '1px solid var(--border-color)',
-                                    background: 'var(--bg-card)',
-                                    transition: 'background 0.2s ease'
-                                  }}
-                                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
-                                >
-                                  {/* Student Name */}
-                                  <span style={{ fontWeight: 750, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                                    {student.name} {student.surname}
-                                  </span>
-
-                                  {/* Attendance Toggle */}
-                                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                    {record ? (
-                                      <button
-                                        disabled={isSaving}
-                                        onClick={() => handleToggleDailyRecord(student.id, 'attendance')}
-                                        style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: '0.35rem',
-                                          padding: '0.4rem 0.85rem',
-                                          borderRadius: '9999px',
-                                          border: 'none',
-                                          cursor: isSaving ? 'not-allowed' : 'pointer',
-                                          fontWeight: 750,
-                                          fontSize: '0.75rem',
-                                          transition: 'all 0.2s ease',
-                                          background: record.attendance ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                          color: record.attendance ? '#16a34a' : '#ef4444',
-                                        }}
-                                      >
-                                        <span>{record.attendance ? '✅ Keldi' : '❌ Kelmadi'}</span>
-                                      </button>
-                                    ) : (
-                                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Dars yo'q</span>
-                                    )}
-                                  </div>
-
-                                  {/* Homework Toggle */}
-                                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                    {record ? (
-                                      <button
-                                        disabled={isSaving}
-                                        onClick={() => handleToggleDailyRecord(student.id, 'homework')}
-                                        style={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: '0.35rem',
-                                          padding: '0.4rem 0.85rem',
-                                          borderRadius: '9999px',
-                                          border: 'none',
-                                          cursor: isSaving ? 'not-allowed' : 'pointer',
-                                          fontWeight: 750,
-                                          fontSize: '0.75rem',
-                                          transition: 'all 0.2s ease',
-                                          background: record.homework ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                          color: record.homework ? '#16a34a' : '#ef4444',
-                                        }}
-                                      >
-                                        <span>{record.homework ? '✅ Bajarilgan' : '❌ Bajarilmagan'}</span>
-                                      </button>
-                                    ) : (
-                                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Dars yo'q</span>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
                           </div>
-                        );
-                      })
+
+                          {/* Download Icon (Excel export) */}
+                          <button
+                            onClick={() => handleExportEngMathToExcel(gradeFilteredStudents, teacherSubject as 'ENG' | 'MATH')}
+                            title="Excel yuklash"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              color: '#10b981',
+                              border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                              borderRadius: '50%',
+                              width: '32px',
+                              height: '32px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#10b981';
+                              e.currentTarget.style.color = '#ffffff';
+                              e.currentTarget.style.borderColor = '#10b981';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                              e.currentTarget.style.color = '#10b981';
+                              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                            }}
+                          >
+                            <Download size={16} />
+                          </button>
+                        </div>
+
+                        {/* Table content header */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '2fr 1fr 1fr',
+                          padding: '0.75rem 1.5rem',
+                          borderBottom: '1px solid var(--border-color)',
+                          background: 'var(--bg-card-hover)',
+                          fontSize: '0.65rem',
+                          fontWeight: 800,
+                          color: 'var(--text-secondary)',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase'
+                        }}>
+                          <div>O'quvchining ismi va familiyasi</div>
+                          <div style={{ textAlign: 'center' }}>Davomat</div>
+                          <div style={{ textAlign: 'center' }}>Uyga vazifa</div>
+                        </div>
+
+                        {/* Table content rows */}
+                        {sortedStudentsForTable.map((student, sIdx) => {
+                          const record = dailyRecords.find(r => r.student_id?.toString() === student.id?.toString());
+                          const isSaving = isSavingDaily === student.id;
+
+                          const hasRecord = !!record;
+                          const isAttended = record ? record.attendance : false;
+                          const isHomeworkDone = record ? record.homework : false;
+
+                          return (
+                            <div
+                              key={student.id}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '2fr 1fr 1fr',
+                                padding: '0.9rem 1.5rem',
+                                alignItems: 'center',
+                                borderBottom: sIdx === sortedStudentsForTable.length - 1 ? 'none' : '1px solid var(--border-color)',
+                                background: 'var(--bg-card)',
+                                transition: 'background 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
+                            >
+                              {/* Student Name & Class Badge */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontWeight: 750, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                                  {student.name} {student.surname}
+                                </span>
+                                <span style={{
+                                  fontSize: '0.7rem',
+                                  color: 'var(--text-secondary)',
+                                  background: 'var(--border-subtle)',
+                                  padding: '0.1rem 0.4rem',
+                                  borderRadius: '6px',
+                                  fontWeight: 800,
+                                  letterSpacing: '0.02em'
+                                }}>
+                                  {student.className}
+                                </span>
+                              </div>
+
+                              {/* Attendance Toggle */}
+                              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <button
+                                  disabled={isSaving}
+                                  onClick={() => handleToggleDailyRecord(student.id, 'attendance')}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    padding: '0.4rem 0.85rem',
+                                    borderRadius: '9999px',
+                                    border: hasRecord ? 'none' : '1.5px dashed rgba(239, 68, 68, 0.5)',
+                                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                                    fontWeight: 750,
+                                    fontSize: '0.75rem',
+                                    transition: 'all 0.2s ease',
+                                    background: isAttended ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                    color: isAttended ? '#16a34a' : '#ef4444',
+                                    opacity: hasRecord ? 1 : 0.85
+                                  }}
+                                >
+                                  <span>{isAttended ? '✅ Keldi' : '❌ Kelmadi'}</span>
+                                </button>
+                              </div>
+
+                              {/* Homework Toggle */}
+                              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <button
+                                  disabled={isSaving}
+                                  onClick={() => handleToggleDailyRecord(student.id, 'homework')}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    padding: '0.4rem 0.85rem',
+                                    borderRadius: '9999px',
+                                    border: hasRecord ? 'none' : '1.5px dashed rgba(239, 68, 68, 0.5)',
+                                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                                    fontWeight: 750,
+                                    fontSize: '0.75rem',
+                                    transition: 'all 0.2s ease',
+                                    background: isHomeworkDone ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                    color: isHomeworkDone ? '#16a34a' : '#ef4444',
+                                    opacity: hasRecord ? 1 : 0.85
+                                  }}
+                                >
+                                  <span>{isHomeworkDone ? '✅ Bajarilgan' : '❌ Bajarilmagan'}</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 );
