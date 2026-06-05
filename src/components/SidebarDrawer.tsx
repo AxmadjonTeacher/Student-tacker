@@ -35,7 +35,7 @@ interface SidebarDrawerProps {
   teachers: Teacher[];
   onAddTeacher: (name: string, subject: 'ENG' | 'MATH', phone?: string) => Promise<void>;
   onDeleteTeacher: (id: number) => Promise<void>;
-  onEditTeacher: (id: number, newName: string, phone?: string) => Promise<void>;
+  onEditTeacher: (id: number, newName: string, phone?: string, loginId?: string, passcode?: string) => Promise<void>;
   authRole?: string | null;
   activeTab?: 'settings' | 'news' | 'teachers' | 'trash';
   onTabChange?: (tab: 'settings' | 'news' | 'teachers' | 'trash') => void;
@@ -111,14 +111,20 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
   const [editTeacherName, setEditTeacherName] = useState('');
   const [editTeacherPhone, setEditTeacherPhone] = useState('');
+  const [editTeacherLoginId, setEditTeacherLoginId] = useState('');
+  const [editTeacherPasscode, setEditTeacherPasscode] = useState('');
 
   useEffect(() => {
     if (editTeacher) {
       setEditTeacherName(editTeacher.name || '');
       setEditTeacherPhone(editTeacher.phone || '');
+      setEditTeacherLoginId(editTeacher.login_id || '');
+      setEditTeacherPasscode(editTeacher.passcode || '');
     } else {
       setEditTeacherName('');
       setEditTeacherPhone('');
+      setEditTeacherLoginId('');
+      setEditTeacherPasscode('');
     }
   }, [editTeacher]);
 
@@ -2035,6 +2041,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                               <Phone size={10} />
                               {teacher.phone || <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Telefon kiritilmagan</span>}
                             </span>
+                            {(teacher.login_id || teacher.passcode) && (
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                                <span style={{ opacity: 0.75 }}>ID:</span> <strong style={{ color: 'var(--text-primary)' }}>{teacher.login_id || '-'}</strong>
+                                <span style={{ margin: '0 0.15rem', opacity: 0.3 }}>|</span>
+                                <span style={{ opacity: 0.75 }}>Parol:</span> <strong style={{ color: 'var(--text-primary)' }}>{teacher.passcode || '-'}</strong>
+                              </span>
+                            )}
                           </div>
                           {isAdminMode && (
                             <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
@@ -2122,6 +2135,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                               <Phone size={10} />
                               {teacher.phone || <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Telefon kiritilmagan</span>}
                             </span>
+                            {(teacher.login_id || teacher.passcode) && (
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                                <span style={{ opacity: 0.75 }}>ID:</span> <strong style={{ color: 'var(--text-primary)' }}>{teacher.login_id || '-'}</strong>
+                                <span style={{ margin: '0 0.15rem', opacity: 0.3 }}>|</span>
+                                <span style={{ opacity: 0.75 }}>Parol:</span> <strong style={{ color: 'var(--text-primary)' }}>{teacher.passcode || '-'}</strong>
+                              </span>
+                            )}
                           </div>
                           {isAdminMode && (
                             <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
@@ -2599,7 +2619,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 O'qituvchi ma'lumotlarini tahrirlash
               </h3>
               <p style={{ margin: '0.35rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Ism va telefon raqamni tahrirlang
+                Ism, telefon, ID va parolni tahrirlang
               </p>
             </div>
 
@@ -2636,6 +2656,32 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   style={{ width: '100%' }}
                 />
               </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                  ID (Login ID)
+                </label>
+                <input
+                  type="text"
+                  placeholder="login id..."
+                  value={editTeacherLoginId}
+                  onChange={(e) => setEditTeacherLoginId(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                  Parol (Passcode)
+                </label>
+                <input
+                  type="text"
+                  placeholder="parol..."
+                  value={editTeacherPasscode}
+                  onChange={(e) => setEditTeacherPasscode(e.target.value)}
+                  style={{ width: '100%' }}
+                />
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -2661,7 +2707,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               <button
                 onClick={async () => {
                   if (editTeacher !== null && editTeacherName.trim() !== '') {
-                    await onEditTeacher(editTeacher.id, editTeacherName.trim(), editTeacherPhone.trim());
+                    await onEditTeacher(
+                      editTeacher.id,
+                      editTeacherName.trim(),
+                      editTeacherPhone.trim(),
+                      editTeacherLoginId.trim(),
+                      editTeacherPasscode.trim()
+                    );
                     setEditTeacher(null);
                   }
                 }}

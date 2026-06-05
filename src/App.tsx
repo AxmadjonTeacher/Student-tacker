@@ -1085,14 +1085,14 @@ function App() {
     );
   };
 
-  const handleEditTeacher = async (id: number, newName: string, phone?: string) => {
+  const handleEditTeacher = async (id: number, newName: string, phone?: string, loginId?: string, passcode?: string) => {
     try {
       const { error } = await supabase
         .from('teachers')
-        .update({ name: newName, phone })
+        .update({ name: newName, phone, login_id: loginId, passcode })
         .eq('id', id);
       if (error) throw error;
-      setTeachers(prev => prev.map(t => t.id === id ? { ...t, name: newName, phone } : t));
+      setTeachers(prev => prev.map(t => t.id === id ? { ...t, name: newName, phone, login_id: loginId, passcode } : t));
       showAlert("Muvaffaqiyatli", "O'qituvchi muvaffaqiyatli tahrirlandi!");
     } catch (err: any) {
       console.error('Failed to update teacher:', err);
