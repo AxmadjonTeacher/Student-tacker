@@ -2373,7 +2373,15 @@ function App() {
     if (range === '9-11') return gradeNum >= 9 && gradeNum <= 11;
     return false;
   };
-  const teacherStudentCount = students.filter(student => matchesGradeRangeForCount(student.className, engMathGradeRange || '5-6')).length;
+  const teacherNameForCount = localStorage.getItem('teacher_name') || '';
+  const teacherSubjectForCount = localStorage.getItem('teacher_subject') || 'ENG';
+  const teacherStudentCount = students.filter(student => {
+    if (student.isDeleted) return false;
+    const matchesRange = matchesGradeRangeForCount(student.className, engMathGradeRange || '5-6');
+    if (!matchesRange) return false;
+    const assignedTeacher = teacherSubjectForCount === 'MATH' ? student.mathTeacher : student.teacher;
+    return assignedTeacher?.trim() === teacherNameForCount.trim();
+  }).length;
 
   if (isMobile) {
     return (

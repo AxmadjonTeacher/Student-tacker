@@ -131,16 +131,18 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const [weeklyDailyRecords, setWeeklyDailyRecords] = useState<any[]>([]);
   const [markedDates, setMarkedDates] = useState<string[]>([]);
 
-  // Fetch unique marked dates for teacher's subject to support date navigation
+  // Fetch unique marked dates for teacher's subject and name to support date navigation
   useEffect(() => {
     if (authRole === 'teacher') {
       const fetchMarkedDates = async () => {
         try {
           const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
+          const teacherName = localStorage.getItem('teacher_name') || '';
           const { data, error } = await supabase
             .from('daily_records')
             .select('date')
-            .eq('subject', teacherSubject);
+            .eq('subject', teacherSubject)
+            .eq('teacher_name', teacherName);
           if (error) throw error;
           if (data) {
             const dates = Array.from(new Set(data.map(r => r.date))).sort();
@@ -154,61 +156,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
     }
   }, [authRole, dailyRecords.length]);
 
-  const handleGoToPrevDate = () => {
-    if (markedDates.length === 0) {
-      const d = new Date(selectedDailyDate);
-      d.setDate(d.getDate() - 1);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      setSelectedDailyDate(`${yyyy}-${mm}-${dd}`);
-      return;
-    }
-    const currentIndex = markedDates.indexOf(selectedDailyDate);
-    if (currentIndex > 0) {
-      setSelectedDailyDate(markedDates[currentIndex - 1]);
-    } else {
-      const prevDates = markedDates.filter(d => d < selectedDailyDate);
-      if (prevDates.length > 0) {
-        setSelectedDailyDate(prevDates[prevDates.length - 1]);
-      } else {
-        const d = new Date(selectedDailyDate);
-        d.setDate(d.getDate() - 1);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        setSelectedDailyDate(`${yyyy}-${mm}-${dd}`);
-      }
-    }
-  };
-
-  const handleGoToNextDate = () => {
-    if (markedDates.length === 0) {
-      const d = new Date(selectedDailyDate);
-      d.setDate(d.getDate() + 1);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      setSelectedDailyDate(`${yyyy}-${mm}-${dd}`);
-      return;
-    }
-    const currentIndex = markedDates.indexOf(selectedDailyDate);
-    if (currentIndex !== -1 && currentIndex < markedDates.length - 1) {
-      setSelectedDailyDate(markedDates[currentIndex + 1]);
-    } else {
-      const nextDates = markedDates.filter(d => d > selectedDailyDate);
-      if (nextDates.length > 0) {
-        setSelectedDailyDate(nextDates[0]);
-      } else {
-        const d = new Date(selectedDailyDate);
-        d.setDate(d.getDate() + 1);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        setSelectedDailyDate(`${yyyy}-${mm}-${dd}`);
-      }
-    }
-  };
 
   const classStudentIds = useMemo(() => students.map(s => s.id), [students]);
 
@@ -370,14 +317,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
     setIsSavingDaily(studentId);
     
     if (!existing) {
-      // Create a new record with toggled field set to true, other field set to false/unmarked
+      // Since default unmarked state is true for both, clicking toggles that field to false
       const newRecord = {
         student_id: studentId,
         date: selectedDailyDate,
         week: selectedDailyWeek,
         subject: activeSub,
-        attendance: field === 'attendance' ? true : false,
-        homework: field === 'homework' ? true : false,
+        attendance: field === 'attendance' ? false : true,
+        homework: field === 'homework' ? false : true,
         teacher_name: teacherName
       };
 
@@ -2195,15 +2142,51 @@ const StudentTable: React.FC<StudentTableProps> = ({
               if (authRole === 'teacher') {
                 // Teacher view
                 const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
+                const teacherName = localStorage.getItem('teacher_name') || '';
 
-                // Filter students by selected grade range (using the engMathGradeRange prop)
-                const gradeFilteredStudents = students.filter(student => matchesGradeRange(student.className, engMathGradeRange));
+                // Filter students by selected grade range AND assigned teacher name
+                const gradeFilteredStudents = students.filter(student => {
+                  const matchesRange = matchesGradeRange(student.className, engMathGradeRange);
+                  if (!matchesRange) return false;
+                  const assignedTeacher = teacherSubject === 'MATH' ? student.mathTeacher : student.teacher;
+                  return assignedTeacher?.trim() === teacherName.trim();
+                });
 
                 const sortedStudentsForTable = [...gradeFilteredStudents].sort((a, b) => {
                   const classComp = (a.className || '').localeCompare(b.className || '');
                   if (classComp !== 0) return classComp;
                   return (a.surname || '').localeCompare(b.surname || '');
                 });
+
+                const prevDate = (() => {
+                  if (markedDates.length === 0) return null;
+                  const currentIndex = markedDates.indexOf(selectedDailyDate);
+                  if (currentIndex > 0) {
+                    return markedDates[currentIndex - 1];
+                  }
+                  if (currentIndex === -1) {
+                    const prevDates = markedDates.filter(d => d < selectedDailyDate);
+                    if (prevDates.length > 0) {
+                      return prevDates[prevDates.length - 1];
+                    }
+                  }
+                  return null;
+                })();
+
+                const nextDate = (() => {
+                  if (markedDates.length === 0) return null;
+                  const currentIndex = markedDates.indexOf(selectedDailyDate);
+                  if (currentIndex !== -1 && currentIndex < markedDates.length - 1) {
+                    return markedDates[currentIndex + 1];
+                  }
+                  if (currentIndex === -1) {
+                    const nextDates = markedDates.filter(d => d > selectedDailyDate);
+                    if (nextDates.length > 0) {
+                      return nextDates[0];
+                    }
+                  }
+                  return null;
+                })();
 
                 const handleAddNewLessonForGradeRange = async (rangeStudents: Student[]) => {
                   if (rangeStudents.length === 0) {
@@ -2358,8 +2341,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Sana</span>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                 <button
-                                  onClick={handleGoToPrevDate}
-                                  title="Oldingi dars kuni"
+                                  disabled={!prevDate}
+                                  onClick={() => prevDate && setSelectedDailyDate(prevDate)}
+                                  title="Oldingi belgilangan dars kuni"
                                   style={{
                                     background: 'var(--bg-card)',
                                     color: 'var(--text-primary)',
@@ -2370,11 +2354,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    cursor: 'pointer',
+                                    cursor: prevDate ? 'pointer' : 'not-allowed',
+                                    opacity: prevDate ? 1 : 0.4,
                                     transition: 'all 0.15s ease'
                                   }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
+                                  onMouseEnter={(e) => { if (prevDate) e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                                  onMouseLeave={(e) => { if (prevDate) e.currentTarget.style.background = 'var(--bg-card)'; }}
                                 >
                                   <ChevronLeft size={16} />
                                 </button>
@@ -2397,8 +2382,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 />
 
                                 <button
-                                  onClick={handleGoToNextDate}
-                                  title="Keyingi dars kuni"
+                                  disabled={!nextDate}
+                                  onClick={() => nextDate && setSelectedDailyDate(nextDate)}
+                                  title="Keyingi belgilangan dars kuni"
                                   style={{
                                     background: 'var(--bg-card)',
                                     color: 'var(--text-primary)',
@@ -2409,11 +2395,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    cursor: 'pointer',
+                                    cursor: nextDate ? 'pointer' : 'not-allowed',
+                                    opacity: nextDate ? 1 : 0.4,
                                     transition: 'all 0.15s ease'
                                   }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; }}
+                                  onMouseEnter={(e) => { if (nextDate) e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                                  onMouseLeave={(e) => { if (nextDate) e.currentTarget.style.background = 'var(--bg-card)'; }}
                                 >
                                   <ChevronRight size={16} />
                                 </button>
@@ -2549,8 +2536,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           const isSaving = isSavingDaily === student.id;
 
                           const hasRecord = !!record;
-                          const isAttended = record ? record.attendance : false;
-                          const isHomeworkDone = record ? record.homework : false;
+                          const isAttended = record ? record.attendance : true;
+                          const isHomeworkDone = record ? record.homework : true;
 
                           return (
                             <div
@@ -2596,7 +2583,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     gap: '0.35rem',
                                     padding: '0.4rem 0.85rem',
                                     borderRadius: '9999px',
-                                    border: hasRecord ? 'none' : '1.5px dashed rgba(239, 68, 68, 0.5)',
+                                    border: hasRecord ? 'none' : '1.5px dashed rgba(22, 163, 74, 0.5)',
                                     cursor: isSaving ? 'not-allowed' : 'pointer',
                                     fontWeight: 750,
                                     fontSize: '0.75rem',
@@ -2621,7 +2608,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     gap: '0.35rem',
                                     padding: '0.4rem 0.85rem',
                                     borderRadius: '9999px',
-                                    border: hasRecord ? 'none' : '1.5px dashed rgba(239, 68, 68, 0.5)',
+                                    border: hasRecord ? 'none' : '1.5px dashed rgba(22, 163, 74, 0.5)',
                                     cursor: isSaving ? 'not-allowed' : 'pointer',
                                     fontWeight: 750,
                                     fontSize: '0.75rem',
