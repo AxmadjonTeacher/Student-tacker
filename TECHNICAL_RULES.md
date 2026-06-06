@@ -13,14 +13,15 @@ Conforming student IDs must start with the correct alphabetical prefix and fall 
 
 | Grades | ID Prefix | Numeric Range | Grade Name Example |
 | :--- | :---: | :---: | :--- |
-| **1 - 4** | `BR` | `100` - `299` | 1-Sinf, 2-Sinf, 3-Sinf, 4-Sinf |
-| **5 - 8** | `AL` | `300` - `499` | 5-Sinf, 6-Sinf, 7-Sinf, 8-Sinf |
-| **9 - 11** | `SE` | `500` - `600` | 9-Sinf, 10-Sinf, 11-Sinf |
+| **1 - 4** | `BR` | `100` - `199` | 1-Sinf, 2-Sinf, 3-Sinf, 4-Sinf |
+| **5 - 6** | `AL` | `200` - `399` | 5-Sinf, 6-Sinf |
+| **7 - 8** | `AL` | `400` - `599` | 7-Sinf, 8-Sinf |
+| **9 - 11** | `AL` | `600` - `799` | 9-Sinf, 10-Sinf, 11-Sinf |
 
 ### 1.2 ID Generation & Validation Logic
 - **Manual / CSV Uploads**: If a student row has a blank ID field, a new conforming ID is automatically generated based on their `class_name` range. If the ID is filled, the system updates the student record associated with that ID.
 - **Client-Side Validation**:
-  - `normalizeStudentId(id)`: Standardizes any string to uppercase without spaces (e.g., `al 305` becomes `AL305`). It also auto-detects and attaches prefixes to raw numbers based on their values (100–299 $\rightarrow$ `BR`, 300-499 $\rightarrow$ `AL`, 500-600 $\rightarrow$ `SE`).
+  - `normalizeStudentId(id)`: Standardizes any string to uppercase without spaces (e.g., `al 305` becomes `AL305`). It also auto-detects and attaches prefixes to raw numbers based on their values (100–199 $\rightarrow$ `BR`, 200–799 $\rightarrow$ `AL`).
   - `isConformingId(id, className)`: Compares the ID's prefix and numeric value against the grade range defined for the student's class.
 - **Database Trigger Integration**:
   - A database trigger `trg_students_before_insert` runs before every student insert in Supabase. It calls the function `students_before_insert()`.
@@ -84,16 +85,14 @@ The OMR Scanner in `TestorCabinet.tsx` processes physical ZipGrade-style respons
 - The parsed ID code is returned as a 3-digit string (e.g., `"557"`).
 
 ### 4.3 Student Matching
-Currently, the matching code is hardcoded to look for the `AL` prefix in the UI state:
+The matching code looks for both `BR` and `AL` prefixes in the UI state:
 ```typescript
 const matchingStudent = students.find(s => {
-  const matchNum = s.id.match(/^AL(\d{3})$/);
-  return matchNum && matchNum[1] === parsed.studentIdCode;
+  const matchNum = s.id.match(/^(BR|AL)(\d{3})$/);
+  return matchNum && matchNum[2] === parsed.studentIdCode;
 });
 ```
-
-> [!WARNING]
-> Because matching is hardcoded to look for the `AL` prefix, students with primary grade IDs (`BR###`) or senior grade IDs (`SE###`) will fail to auto-match during real-time OMR scanning. If you expand the OMR grading to other grades, refactor this block to match across all conforming prefixes (`BR`, `AL`, `SE`) by checking the grade-level prefix boundaries.
+This ensures that students with both primary grade IDs (`BR###`) and middle/upper grade IDs (`AL###`) will auto-match during OMR scanning.
 
 ---
 

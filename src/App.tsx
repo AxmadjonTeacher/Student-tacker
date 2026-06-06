@@ -694,7 +694,11 @@ function App() {
         localUpdatedList[matchIndex] = merged;
         existingUpserts.push(merged);
       } else {
-        const tempId = generateRandomId(newS.className, localUpdatedList.map(s => s.id));
+        const isNewIdConforming = isConformingId(newS.id, newS.className);
+        const isNewIdDuplicate = localUpdatedList.some(s => normalizeStudentId(s.id) === normalizeStudentId(newS.id));
+        const tempId = (isNewIdConforming && !isNewIdDuplicate)
+          ? normalizeStudentId(newS.id)
+          : generateRandomId(newS.className, localUpdatedList.map(s => s.id));
         let inheritedEngOrder = 0;
         if (newS.teacher) {
           const engStudent = localUpdatedList.find(s => 

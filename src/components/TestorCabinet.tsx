@@ -122,8 +122,8 @@ const OMRSheetMockup: React.FC<OMRSheetMockupProps> = ({ studentIdCode, answers,
   
   // Find mapped student name
   const student = students.find(s => {
-    const match = s.id.match(/^AL(\d{3})$/);
-    return match && match[1] === studentIdCode;
+    const match = s.id.match(/^(BR|AL)(\d{3})$/);
+    return match && match[2] === studentIdCode;
   });
   const studentName = student ? `${student.name} ${student.surname}` : 'Noma’lum talaba';
 
@@ -1099,8 +1099,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     // 7. Auto-map student in class list: AL + 3 digit code (e.g. AL557)
     const matchingStudent = students.find(s => {
-      const matchNum = s.id.match(/^AL(\d{3})$/);
-      return matchNum && matchNum[1] === parsed.studentIdCode;
+      const matchNum = s.id.match(/^(BR|AL)(\d{3})$/);
+      return matchNum && matchNum[2] === parsed.studentIdCode;
     });
 
     if (matchingStudent) {
@@ -1262,8 +1262,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
       // Auto-map student in class list
       const matchingStudent = students.find(s => {
-        const matchNum = s.id.match(/^AL(\d{3})$/);
-        return matchNum && matchNum[1] === parsed.studentIdCode;
+        const matchNum = s.id.match(/^(BR|AL)(\d{3})$/);
+        return matchNum && matchNum[2] === parsed.studentIdCode;
       });
 
       if (matchingStudent) {

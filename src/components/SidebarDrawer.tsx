@@ -223,6 +223,36 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   };
 
   const processImportedRows = (rows: any[]) => {
+    if (rows.length > 0) {
+      const firstRow = rows[0];
+      const hasNameColumn = [
+        "O'quvchining ismi va familiyasi",
+        "Ism va familiya",
+        "Students name surname",
+        "Name",
+        "name",
+        "Student name",
+        "FIO",
+        "F.I.O.",
+        "Ism familiya",
+        "fullname",
+        "Full Name"
+      ].some(key => {
+        const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return Object.keys(firstRow).some(rKey => {
+          return rKey.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanKey;
+        });
+      });
+
+      if (!hasNameColumn) {
+        setUploadStatus({ 
+          type: 'error', 
+          message: `❌ Fayl formati noto'g'ri! "O'quvchining ismi va familiyasi" yoki "Ism va familiya" ustuni topilmadi. Namunaviy shablonni yuklab olib, tekshiring.` 
+        });
+        return;
+      }
+    }
+
     const generatedIdsInBatch = new Set<string>();
     const parsedStudents: Student[] = rows
       .map((row: any) => {
@@ -298,7 +328,12 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         ]);
         let processedRawId = rawId.toString().trim();
         if (/^\d{3}$/.test(processedRawId)) {
-          processedRawId = "AL" + processedRawId;
+          const num = parseInt(processedRawId);
+          if (num >= 100 && num <= 199) {
+            processedRawId = "BR" + processedRawId;
+          } else if (num >= 200 && num <= 799) {
+            processedRawId = "AL" + processedRawId;
+          }
         }
         const customId = normalizeStudentId(processedRawId);
 

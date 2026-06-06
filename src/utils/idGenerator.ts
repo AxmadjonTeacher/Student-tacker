@@ -1,15 +1,15 @@
-// Helper to normalize any student ID to standard BR###, AL###, or SE### format
+// Helper to normalize any student ID to standard BR### or AL### format
 export const normalizeStudentId = (id: string | null | undefined): string => {
   if (!id) return '';
   const cleaned = id.toString().replace(/\s+/g, '').toUpperCase();
-  const match = cleaned.match(/^(BR|AL|SE)?(\d+)$/i);
+  const match = cleaned.match(/^(BR|AL)?(\d+)$/i);
   if (match) {
     const prefix = match[1] ? match[1].toUpperCase() : '';
     if (prefix) {
       return `${prefix}${match[2]}`;
     }
     const num = parseInt(match[2]);
-    const detectedPrefix = num >= 100 && num <= 299 ? 'BR' : num >= 500 && num <= 600 ? 'SE' : 'AL';
+    const detectedPrefix = num >= 100 && num <= 199 ? 'BR' : 'AL';
     return `${detectedPrefix}${match[2]}`;
   }
   return cleaned;
@@ -17,8 +17,8 @@ export const normalizeStudentId = (id: string | null | undefined): string => {
 
 // Helper to get range boundaries for student grades
 export const getGradeRange = (className?: string): { min: number; max: number; prefix: string } => {
-  let min = 300;
-  let max = 499;
+  let min = 200;
+  let max = 399;
   let prefix = 'AL';
 
   if (className) {
@@ -27,16 +27,20 @@ export const getGradeRange = (className?: string): { min: number; max: number; p
       const grade = parseInt(match[1]);
       if (grade >= 1 && grade <= 4) {
         min = 100;
-        max = 299;
+        max = 199;
         prefix = 'BR';
-      } else if (grade >= 5 && grade <= 8) {
-        min = 300;
-        max = 499;
+      } else if (grade >= 5 && grade <= 6) {
+        min = 200;
+        max = 399;
+        prefix = 'AL';
+      } else if (grade >= 7 && grade <= 8) {
+        min = 400;
+        max = 599;
         prefix = 'AL';
       } else if (grade >= 9 && grade <= 11) {
-        min = 500;
-        max = 600;
-        prefix = 'SE';
+        min = 600;
+        max = 799;
+        prefix = 'AL';
       }
     }
   }
@@ -47,7 +51,7 @@ export const getGradeRange = (className?: string): { min: number; max: number; p
 export const isConformingId = (id: string | null | undefined, className?: string): boolean => {
   if (!id) return false;
   const normalized = normalizeStudentId(id);
-  const match = normalized.match(/^(BR|AL|SE)(\d+)$/);
+  const match = normalized.match(/^(BR|AL)(\d+)$/);
   if (!match) return false;
   const prefix = match[1];
   const num = parseInt(match[2]);
@@ -56,9 +60,10 @@ export const isConformingId = (id: string | null | undefined, className?: string
 };
 
 // Helper to generate a random ID matching grade ranges:
-// 1-4 Grades: BR100-BR299
-// 5-8 Grades: AL300-AL499
-// 9-11 Grades: SE500-SE600
+// 1-4 Grades: BR100-BR199
+// 5-6 Grades: AL200-AL399
+// 7-8 Grades: AL400-AL599
+// 9-11 Grades: AL600-AL799
 export const generateRandomId = (className?: string, existingIds: string[] = []): string => {
   const { min, max, prefix } = getGradeRange(className);
   const existingSet = new Set(existingIds.map(id => normalizeStudentId(id)));
