@@ -1517,18 +1517,31 @@ function App() {
       if (!term) {
         matchesSearch = true;
       } else {
-        const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term);
-        const teacherNameMatches = !!(
-          (s.teacher && s.teacher.toLowerCase().includes(term)) ||
-          (s.mathTeacher && s.mathTeacher.toLowerCase().includes(term))
-        );
-        
-        if (searchFilter === 'student') {
-          matchesSearch = studentNameMatches;
-        } else if (searchFilter === 'teacher') {
-          matchesSearch = teacherNameMatches;
+        if (activeSubject === 'DETAILS') {
+          const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term);
+          const studentIdMatches = s.id.toLowerCase().includes(term);
+          
+          if (searchFilter === 'student') {
+            matchesSearch = studentNameMatches;
+          } else if (searchFilter === 'teacher') {
+            matchesSearch = studentIdMatches;
+          } else {
+            matchesSearch = studentNameMatches || studentIdMatches;
+          }
         } else {
-          matchesSearch = studentNameMatches || teacherNameMatches;
+          const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term);
+          const teacherNameMatches = !!(
+            (s.teacher && s.teacher.toLowerCase().includes(term)) ||
+            (s.mathTeacher && s.mathTeacher.toLowerCase().includes(term))
+          );
+          
+          if (searchFilter === 'student') {
+            matchesSearch = studentNameMatches;
+          } else if (searchFilter === 'teacher') {
+            matchesSearch = teacherNameMatches;
+          } else {
+            matchesSearch = studentNameMatches || teacherNameMatches;
+          }
         }
       }
       return matchesClass && matchesSearch;
@@ -3206,7 +3219,6 @@ function App() {
           <filter id="liquid-gooey-filter">
             <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
             <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
-            <feComposite in="SourceGraphic" in2="goo" operator="atop" />
           </filter>
         </defs>
       </svg>

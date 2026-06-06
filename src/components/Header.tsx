@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Settings, ChevronDown, Users } from 'lucide-react';
+import { Search, Settings, ChevronDown, Users, User, Filter } from 'lucide-react';
 import iconLight from '../assets/icon-light.png';
 import iconDark from '../assets/icon-dark.png';
 import type { ActiveSubject } from '../types';
@@ -58,23 +58,31 @@ const Header: React.FC<HeaderProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [sliderStyle, setSliderStyle] = React.useState({
     left: 0,
-    width: 0,
+    right: 0,
     height: 0,
     top: 0,
-    opacity: 0
+    opacity: 0,
+    prevLeft: 0
   });
 
   React.useLayoutEffect(() => {
     if (!containerRef.current) return;
     const updateSlider = () => {
       const activeEl = containerRef.current?.querySelector('.active-pill') as HTMLElement | null;
-      if (activeEl) {
-        setSliderStyle({
-          left: activeEl.offsetLeft,
-          width: activeEl.offsetWidth,
-          height: activeEl.offsetHeight,
-          top: activeEl.offsetTop,
-          opacity: 1
+      if (activeEl && containerRef.current) {
+        const containerWidth = containerRef.current.scrollWidth;
+        const newLeft = activeEl.offsetLeft;
+        const newRight = containerWidth - (activeEl.offsetLeft + activeEl.offsetWidth);
+        
+        setSliderStyle(prev => {
+          return {
+            left: newLeft,
+            right: newRight,
+            height: activeEl.offsetHeight,
+            top: activeEl.offsetTop,
+            opacity: 1,
+            prevLeft: prev.left
+          };
         });
       } else {
         setSliderStyle(prev => ({ ...prev, opacity: 0 }));
@@ -398,13 +406,13 @@ const Header: React.FC<HeaderProps> = ({
           alignItems: 'center', 
           width: '100%', 
           gap: '1.5rem', 
-          flexWrap: 'nowrap',
+          flexWrap: 'wrap',
           marginTop: '0.5rem',
           marginBottom: '1rem'
         }}>
           
           {/* Left Side: Contextual Toggles / Class Selectors */}
-          <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'nowrap', flex: '0 1 auto' }}>
+          <div className="header-context-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: '0 1 auto' }}>
             {/* If Subject is ENG_MATH and teacher */}
             {activeSubject === 'ENG_MATH' && authRole === 'teacher' && (() => {
               const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
@@ -722,14 +730,18 @@ const Header: React.FC<HeaderProps> = ({
                   <div style={{
                     position: 'absolute',
                     left: sliderStyle.left,
-                    width: sliderStyle.width,
+                    right: sliderStyle.right,
                     height: sliderStyle.height,
                     top: sliderStyle.top,
                     opacity: sliderStyle.opacity,
-                    background: 'var(--accent-hero)',
+                    background: isDarkMode ? 'var(--accent-hero)' : '#4f46e5',
                     borderRadius: '9999px',
-                    boxShadow: '0 4px 12px var(--accent-glow)',
-                    transition: 'all 0.38s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    boxShadow: isDarkMode ? '0 4px 12px var(--accent-glow)' : '0 4px 12px rgba(79, 70, 229, 0.25)',
+                    transition: sliderStyle.left > sliderStyle.prevLeft 
+                      ? 'left 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, right 0.28s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.3s ease'
+                      : sliderStyle.left < sliderStyle.prevLeft
+                        ? 'left 0.28s cubic-bezier(0.2, 1, 0.3, 1), right 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, opacity 0.3s ease'
+                        : 'left 0.35s ease, right 0.35s ease, opacity 0.3s ease',
                     pointerEvents: 'none'
                   }} />
                 </div>
@@ -800,9 +812,15 @@ const Header: React.FC<HeaderProps> = ({
               <input 
                 type="text" 
                 placeholder={
-                  searchFilter === 'student' ? "O'quvchini qidirish..." :
-                  searchFilter === 'teacher' ? "O'qituvchini qidirish..." :
-                  "Qidirish..."
+                  activeSubject === 'DETAILS' ? (
+                    searchFilter === 'student' ? "Ism bo'yicha qidirish..." :
+                    searchFilter === 'teacher' ? "ID bo'yicha qidirish..." :
+                    "Ism yoki ID bo'yicha qidirish..."
+                  ) : (
+                    searchFilter === 'student' ? "O'quvchini qidirish..." :
+                    searchFilter === 'teacher' ? "O'qituvchini qidirish..." :
+                    "Qidirish..."
+                  )
                 }
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
@@ -819,9 +837,30 @@ const Header: React.FC<HeaderProps> = ({
               />
               {authRole !== 'teacher' && (
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  {activeSubject === 'GRANT' ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-card-hover)', cursor: 'pointer', position: 'relative' }}>
-                      <ChevronDown size={16} style={{ color: 'var(--text-secondary)' }} />
+                  {activeSubject === 'GRANT' || activeSubject === 'DETAILS' ? (
+                    <div 
+                      title={activeSubject === 'DETAILS' ? "ID yoki Ism bo'yicha qidiruv filtri" : "Qidiruv filtri"}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        width: '32px', 
+                        height: '32px', 
+                        borderRadius: '50%', 
+                        background: 'var(--bg-card-hover)', 
+                        border: '1px solid var(--border-subtle)',
+                        cursor: 'pointer', 
+                        position: 'relative',
+                        flexShrink: 0
+                      }}
+                    >
+                      {activeSubject === 'DETAILS' ? (
+                        searchFilter === 'student' ? <User size={15} style={{ color: 'var(--text-secondary)' }} /> :
+                        searchFilter === 'teacher' ? <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)' }}>ID</span> :
+                        <Filter size={15} style={{ color: 'var(--text-secondary)' }} />
+                      ) : (
+                        <ChevronDown size={16} style={{ color: 'var(--text-secondary)' }} />
+                      )}
                       <select
                         value={searchFilter}
                         onChange={(e) => onSearchFilterChange(e.target.value as any)}
@@ -837,8 +876,12 @@ const Header: React.FC<HeaderProps> = ({
                         }}
                       >
                         <option value="both">Barchasi</option>
-                        <option value="student">O'quvchilar</option>
-                        <option value="teacher">O'qituvchilar</option>
+                        <option value="student">
+                          {activeSubject === 'DETAILS' ? "Ism va familiya" : "O'quvchilar"}
+                        </option>
+                        <option value="teacher">
+                          {activeSubject === 'DETAILS' ? "ID" : "O'qituvchilar"}
+                        </option>
                       </select>
                     </div>
                   ) : (

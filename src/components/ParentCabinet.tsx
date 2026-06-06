@@ -28,9 +28,17 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
   const [newsLoading, setNewsLoading] = useState(true);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
+  const [prevIndex, setPrevIndex] = useState(0);
   
   const tabIndices = { home: 0, search: 1, stats: 2, settings: 3 };
   const activeIndex = tabIndices[activeTab] || 0;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPrevIndex(activeIndex);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [activeIndex]);
   
   // Add child states
   const [addChildId, setAddChildId] = useState('');
@@ -1118,18 +1126,22 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
             />
           ))}
 
-          {/* Active sliding tab capsule */}
+           {/* Active sliding tab capsule */}
           <div className="tab-capsule" style={{ 
             position: 'absolute',
             top: '8px',
             height: '48px',
-            width: 'calc(25% - 16px)',
             left: `calc(${activeIndex} * 25% + 8px)`,
+            right: `calc(100% - (${activeIndex} + 1) * 25% + 8px)`,
             background: '#0d9488',
             border: 'none',
             borderRadius: '16px',
             boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)',
-            transition: 'left 0.38s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            transition: activeIndex > prevIndex
+              ? 'left 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, right 0.28s cubic-bezier(0.2, 1, 0.3, 1)'
+              : activeIndex < prevIndex
+                ? 'left 0.28s cubic-bezier(0.2, 1, 0.3, 1), right 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s'
+                : 'left 0.35s ease, right 0.35s ease',
             backdropFilter: 'none',
             boxSizing: 'border-box'
           }} />

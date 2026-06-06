@@ -1438,23 +1438,31 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const classSelectorRef = React.useRef<HTMLDivElement>(null);
   const [classSliderStyle, setClassSliderStyle] = React.useState({
     left: 0,
-    width: 0,
+    right: 0,
     height: 0,
     top: 0,
-    opacity: 0
+    opacity: 0,
+    prevLeft: 0
   });
 
   React.useLayoutEffect(() => {
     if (!classSelectorRef.current) return;
     const updateSlider = () => {
       const activeEl = classSelectorRef.current?.querySelector('.active-pill') as HTMLElement | null;
-      if (activeEl) {
-        setClassSliderStyle({
-          left: activeEl.offsetLeft,
-          width: activeEl.offsetWidth,
-          height: activeEl.offsetHeight,
-          top: activeEl.offsetTop,
-          opacity: 1
+      if (activeEl && classSelectorRef.current) {
+        const containerWidth = classSelectorRef.current.scrollWidth;
+        const newLeft = activeEl.offsetLeft;
+        const newRight = containerWidth - (activeEl.offsetLeft + activeEl.offsetWidth);
+
+        setClassSliderStyle(prev => {
+          return {
+            left: newLeft,
+            right: newRight,
+            height: activeEl.offsetHeight,
+            top: activeEl.offsetTop,
+            opacity: 1,
+            prevLeft: prev.left
+          };
         });
       } else {
         setClassSliderStyle(prev => ({ ...prev, opacity: 0 }));
@@ -2324,14 +2332,18 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               <div style={{
                 position: 'absolute',
                 left: classSliderStyle.left,
-                width: classSliderStyle.width,
+                right: classSliderStyle.right,
                 height: classSliderStyle.height,
                 top: classSliderStyle.top,
                 opacity: classSliderStyle.opacity,
                 background: colors.primary,
                 borderRadius: '9999px',
                 boxShadow: `0 4px 12px ${colors.hover}`,
-                transition: 'all 0.38s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                transition: classSliderStyle.left > classSliderStyle.prevLeft 
+                  ? 'left 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, right 0.28s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.3s ease'
+                  : classSliderStyle.left < classSliderStyle.prevLeft
+                    ? 'left 0.28s cubic-bezier(0.2, 1, 0.3, 1), right 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, opacity 0.3s ease'
+                    : 'left 0.35s ease, right 0.35s ease, opacity 0.3s ease',
                 pointerEvents: 'none'
               }} />
             </div>
