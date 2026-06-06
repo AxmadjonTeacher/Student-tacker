@@ -79,6 +79,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
   const renderLegend = (props: any) => {
     const { payload } = props;
+    if (!payload) return null;
     return (
       <ul style={{ 
         display: 'flex', 

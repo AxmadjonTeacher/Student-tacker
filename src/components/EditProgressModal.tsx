@@ -46,8 +46,8 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
   // ALL subject fields
   const [engScore, setEngScore] = useState(student.engScore?.toString() || '0');
   const [mathScore, setMathScore] = useState(student.mathScore?.toString() || '0');
-  const [attendance, setAttendance] = useState(student.attendance?.toString() || '1');
-  const [homework, setHomework] = useState(student.homework?.toString() || '1');
+  const attendance = student.attendance?.toString() || '1';
+  const homework = student.homework?.toString() || '1';
 
   // Get initial values from student based on selected subject
   const initialStartingLevel = isMath 
@@ -490,76 +490,6 @@ const EditProgressModal: React.FC<EditProgressModalProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-                    ATTENDANCE (1, -1, -2...) *
-                  </label>
-                  <input 
-                    type="number" 
-                    max="1"
-                    value={attendance}
-                    onChange={e => setAttendance(e.target.value)}
-                    required
-                    disabled={authRole === 'teacher'}
-                    style={{
-                      width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
-                      borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
-                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
-                      cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
-                      opacity: authRole === 'teacher' ? 0.7 : 1,
-                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                    }}
-                    onFocus={e => {
-                      if (authRole !== 'teacher') {
-                        e.currentTarget.style.borderColor = 'var(--accent-hero)';
-                        e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
-                      }
-                    }}
-                    onBlur={e => {
-                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  />
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.3 }}>
-                    1 = 100% · -1 = 83.3% · -2 = 66.7%
-                  </div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-                    HOMEWORK (1, -1, -2...) *
-                  </label>
-                  <input 
-                    type="number" 
-                    max="1"
-                    value={homework}
-                    onChange={e => setHomework(e.target.value)}
-                    required
-                    disabled={authRole === 'teacher'}
-                    style={{
-                      width: '100%', padding: '0.75rem 1.25rem', border: '1px solid var(--border-subtle)',
-                      borderRadius: '9999px', fontSize: '0.9rem', fontWeight: 600,
-                      color: 'var(--text-primary)', background: 'var(--bg-card-hover)', outline: 'none',
-                      cursor: authRole === 'teacher' ? 'not-allowed' : 'text',
-                      opacity: authRole === 'teacher' ? 0.7 : 1,
-                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                    }}
-                    onFocus={e => {
-                      if (authRole !== 'teacher') {
-                        e.currentTarget.style.borderColor = 'var(--accent-hero)';
-                        e.currentTarget.style.boxShadow = '0 0 0 4px var(--accent-glow)';
-                      }
-                    }}
-                    onBlur={e => {
-                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  />
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.3 }}>
-                    1 = 100% · -1 = 80.0% · -2 = 60.0%
-                  </div>
-                </div>
-              </div>
             </>
           ) : (
             <>

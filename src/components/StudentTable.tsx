@@ -1708,12 +1708,33 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   const mathPercent = student.mathScore !== null && student.mathScore !== undefined ? (student.mathScore / 15 * 100) : null;
                   const engPercentVal = engPercent !== null ? engPercent : 0;
                   const mathPercentVal = mathPercent !== null ? mathPercent : 0;
-                  const attVal = student.attendance ?? 1;
-                  const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
-                  const absences = attVal < 0 ? -attVal : 0;
-                  const hwVal = student.homework ?? 1;
-                  const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
-                  const missedHw = hwVal < 0 ? -hwVal : 0;
+                  const studentRecords = (weeklyDailyRecords || []).filter(r => r.student_id?.toString() === student.id?.toString());
+                  
+                  let attVal = student.attendance ?? 1;
+                  let attPercent = 100;
+                  let absences = 0;
+                  if (studentRecords.length > 0) {
+                    const presentCount = studentRecords.filter(r => r.attendance === true).length;
+                    attPercent = Math.round((presentCount / studentRecords.length) * 100);
+                    absences = studentRecords.length - presentCount;
+                    attVal = attPercent;
+                  } else {
+                    attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
+                    absences = attVal < 0 ? -attVal : 0;
+                  }
+
+                  let hwVal = student.homework ?? 1;
+                  let hwPercent = 100;
+                  let missedHw = 0;
+                  if (studentRecords.length > 0) {
+                    const doneHwCount = studentRecords.filter(r => r.homework === true).length;
+                    hwPercent = Math.round((doneHwCount / studentRecords.length) * 100);
+                    missedHw = studentRecords.length - doneHwCount;
+                    hwVal = hwPercent;
+                  } else {
+                    hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+                    missedHw = hwVal < 0 ? -hwVal : 0;
+                  }
 
                   const weekRecord = studentWeeks?.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek);
                   const isIdWrong = weekRecord?.id_wrong === true;

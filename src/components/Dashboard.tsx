@@ -34,35 +34,27 @@ const getGradeNumber = (className: string): number => {
   return match ? parseInt(match[1], 10) : 0;
 };
 
-// Evaluate overall performance index for a student (0 - 100)
-// Calculates the average of latest term scores and weekly tests for both math and english.
-const getStudentPerformance = (s: Student): number => {
-  const weeklyEngPct = s.engScore != null ? (s.engScore / 15) * 100 : 0;
-  const weeklyMathPct = s.mathScore != null ? (s.mathScore / 15) * 100 : 0;
 
-  // Latest English Term Score
-  const engTests = s.englishGrandTests || s.grandTests || [];
-  const validEngTests = engTests.filter(t => t.score !== null && t.score !== undefined);
-  const latestEngTermPct = validEngTests.length > 0
-    ? parseFloat(validEngTests[validEngTests.length - 1].score as any)
-    : weeklyEngPct;
 
-  // Latest Math Term Score
-  const mathTests = s.mathGrandTests || [];
-  const validMathTests = mathTests.filter(t => t.score !== null && t.score !== undefined);
-  const latestMathTermPct = validMathTests.length > 0
-    ? parseFloat(validMathTests[validMathTests.length - 1].score as any)
-    : weeklyMathPct;
-
-  return (latestEngTermPct + latestMathTermPct + weeklyEngPct + weeklyMathPct) / 4;
-};
-
-// Helper to parse week sorting index
-const parseWeekValue = (weekStr: string): number => {
-  if (!weekStr) return 0;
-  const match = weekStr.match(/^(\d+)/);
-  if (match) return parseInt(match[1], 10);
-  return 0;
+// Helper to parse week sorting index supporting both X-Hafta and DD-Month formats
+const parseWeekValue = (weekVal: any): number => {
+  if (weekVal === null || weekVal === undefined) return 0;
+  const weekStr = weekVal.toString();
+  if (weekStr.toLowerCase().endsWith('hafta')) {
+    const num = parseInt(weekStr, 10);
+    return isNaN(num) ? 0 : num;
+  }
+  const parts = weekStr.split('-');
+  if (parts.length !== 2) return 9999;
+  const day = parseInt(parts[0], 10);
+  if (isNaN(day)) return 9999;
+  const monthStr = parts[1].toLowerCase();
+  
+  const academicMonths = ['sen', 'okt', 'noy', 'dek', 'yan', 'fev', 'mar', 'apr', 'may', 'iyun', 'iyul', 'avg'];
+  const monthIdx = academicMonths.indexOf(monthStr);
+  if (monthIdx === -1) return 1000 + day;
+  
+  return 1000 + monthIdx * 100 + day;
 };
 
 const DEFAULT_DOMAIN: [number, number] = [0, 100];
@@ -123,19 +115,57 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return 'G';
   }, [authRole]);
 
-  // Compute Top 3 Students
+  // Compute Top 3 Students based on latest populated grant test scores
   const topStudents = useMemo(() => {
+    // 1. Find the latest populated grant test number (4 down to 1)
+    let lastTestNum = 1;
+    for (let t = 4; t >= 1; t--) {
+      const names = [`grant ${t}`, `${t}-chorak`, `${t} chorak`];
+      const hasAny = activeStudents.some(s => {
+        const engTests = s.englishGrandTests || s.grandTests || [];
+        const mathTests = s.mathGrandTests || [];
+        const hasEng = engTests.some(test => names.includes(test.name.toLowerCase()) && test.score !== null && test.score !== undefined && test.score.toString().trim() !== '-');
+        const hasMath = mathTests.some(test => names.includes(test.name.toLowerCase()) && test.score !== null && test.score !== undefined && test.score.toString().trim() !== '-');
+        return hasEng || hasMath;
+      });
+      if (hasAny) {
+        lastTestNum = t;
+        break;
+      }
+    }
+
+    // 2. Helper to get combined score on the last grant test
+    const getStudentLastGrantScore = (s: Student) => {
+      const names = [`grant ${lastTestNum}`, `${lastTestNum}-chorak`, `${lastTestNum} chorak`];
+      const engTests = s.englishGrandTests || s.grandTests || [];
+      const mathTests = s.mathGrandTests || [];
+      
+      const engTest = engTests.find(test => names.includes(test.name.toLowerCase()));
+      const mathTest = mathTests.find(test => names.includes(test.name.toLowerCase()));
+      
+      const engScore = (engTest && engTest.score !== null && engTest.score !== undefined && engTest.score.toString().trim() !== '-') ? parseFloat(engTest.score as any) : null;
+      const mathScore = (mathTest && mathTest.score !== null && mathTest.score !== undefined && mathTest.score.toString().trim() !== '-') ? parseFloat(mathTest.score as any) : null;
+      
+      if (engScore === null && mathScore === null) return -1;
+      return (engScore ?? 0) + (mathScore ?? 0);
+    };
+
     const getTopInRange = (min: number, max: number) => {
       const candidates = activeStudents.filter(s => {
         const grade = getGradeNumber(s.className);
         return grade >= min && grade <= max;
       });
       if (candidates.length === 0) return null;
-      return candidates.reduce((best, s) => {
-        const score = getStudentPerformance(s);
-        const bestScore = getStudentPerformance(best);
+      
+      // Filter candidates who actually have scores, falling back to candidates[0] if none do
+      const scoredCandidates = candidates.filter(s => getStudentLastGrantScore(s) >= 0);
+      const searchPool = scoredCandidates.length > 0 ? scoredCandidates : candidates;
+
+      return searchPool.reduce((best, s) => {
+        const score = getStudentLastGrantScore(s);
+        const bestScore = getStudentLastGrantScore(best);
         return score > bestScore ? s : best;
-      }, candidates[0]);
+      }, searchPool[0]);
     };
 
     return {
@@ -231,7 +261,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         name: term,
         Natija: average
       };
-    });
+    }).filter(t => t.Natija !== null);
   }, [activeStudents, chartSubject, chartClassGroup]);
 
   // Compute Average Attendance History Bar Chart (last 4 weeks) across all classes
