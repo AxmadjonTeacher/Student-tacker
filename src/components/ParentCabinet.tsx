@@ -1084,11 +1084,62 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
       </main>
 
       {/* Sticky Bottom Tab Bar for Mobile viewports */}
-      <div className="mobile-tab-bar">
-        <div className="tab-capsule" style={{ left: `calc(${activeIndex} * 25% + 8px)` }} />
+      <div className="mobile-tab-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '64px', zIndex: 998 }}>
+        {/* Gooey Background Container */}
+        <div className="mobile-tab-bar-gooey-bg" style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          filter: 'url(#liquid-gooey-filter)',
+          pointerEvents: 'none',
+          zIndex: 0,
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          padding: '0 8px',
+          boxSizing: 'border-box'
+        }}>
+          {/* Static gray pills under each tab slot */}
+          {[0, 1, 2, 3].map(idx => (
+            <div
+              key={idx}
+              style={{
+                position: 'absolute',
+                top: '8px',
+                height: '48px',
+                width: 'calc(25% - 16px)',
+                left: `calc(${idx} * 25% + 8px)`,
+                background: '#e2e8f0',
+                borderRadius: '16px',
+                boxSizing: 'border-box'
+              }}
+            />
+          ))}
+
+          {/* Active sliding tab capsule */}
+          <div className="tab-capsule" style={{ 
+            position: 'absolute',
+            top: '8px',
+            height: '48px',
+            width: 'calc(25% - 16px)',
+            left: `calc(${activeIndex} * 25% + 8px)`,
+            background: '#0d9488',
+            border: 'none',
+            borderRadius: '16px',
+            boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)',
+            transition: 'left 0.38s cubic-bezier(0.2, 0.8, 0.2, 1)',
+            backdropFilter: 'none',
+            boxSizing: 'border-box'
+          }} />
+        </div>
+
+        {/* Foreground buttons */}
         <button 
           onClick={() => setActiveTab('home')}
           className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
+          style={{ zIndex: 1 }}
         >
           <Home size={20} />
           <span>Bosh sahifa</span>
@@ -1097,6 +1148,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
         <button 
           onClick={() => setActiveTab('search')}
           className={`tab-item ${activeTab === 'search' ? 'active' : ''}`}
+          style={{ zIndex: 1 }}
         >
           <Bell size={20} />
           <span>Yangiliklar</span>
@@ -1107,6 +1159,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
             setActiveTab('stats');
           }}
           className={`tab-item ${activeTab === 'stats' ? 'active' : ''}`}
+          style={{ zIndex: 1 }}
         >
           <BarChart2 size={20} />
           <span>Statistika</span>
@@ -1115,6 +1168,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
         <button 
           onClick={() => setActiveTab('settings')}
           className={`tab-item ${activeTab === 'settings' ? 'active' : ''}`}
+          style={{ zIndex: 1 }}
         >
           <Settings size={20} />
           <span>Sozlamalar</span>

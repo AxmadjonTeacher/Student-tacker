@@ -629,3 +629,12 @@ select option {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+/* Hide scrollbar for horizontal class selectors */
+.class-selector {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.class-selector::-webkit-scrollbar {
+  display: none !important;
+}

@@ -681,22 +681,60 @@ const Header: React.FC<HeaderProps> = ({
                 maxWidth: '100%',
                 position: 'relative'
               }}>
-                {/* Sliding indicator bubble */}
-                <div style={{
+                {/* 1. Gooey Background Layer */}
+                <div className="class-selector-gooey-bg" style={{
                   position: 'absolute',
-                  left: sliderStyle.left,
-                  width: sliderStyle.width,
-                  height: sliderStyle.height,
-                  top: sliderStyle.top,
-                  opacity: sliderStyle.opacity,
-                  background: 'var(--accent-hero)',
-                  borderRadius: '9999px',
-                  boxShadow: '0 4px 12px var(--accent-glow)',
-                  transition: 'all 0.35s cubic-bezier(0.25, 1, 0.4, 1)',
+                  top: 0,
+                  left: 0,
+                  bottom: 0,
+                  minWidth: 'max-content',
+                  width: '100%',
+                  filter: 'url(#liquid-gooey-filter)',
                   pointerEvents: 'none',
-                  zIndex: 0
-                }} />
+                  zIndex: 0,
+                  display: 'flex',
+                  gap: '0.25rem',
+                  padding: '0.35rem',
+                  boxSizing: 'border-box'
+                }}>
+                  {classes.map(cls => (
+                    <div
+                      key={`bg-${cls}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        background: 'var(--bg-card-hover)',
+                        padding: '0.4rem 1rem',
+                        borderRadius: '9999px',
+                        color: 'transparent',
+                        pointerEvents: 'none',
+                        whiteSpace: 'nowrap',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <span style={{ opacity: 0, userSelect: 'none' }}>{cls}</span>
+                      <span style={{ opacity: 0, width: '18px', height: '18px', userSelect: 'none' }}>0</span>
+                    </div>
+                  ))}
 
+                  {/* Sliding active pill indicator */}
+                  <div style={{
+                    position: 'absolute',
+                    left: sliderStyle.left,
+                    width: sliderStyle.width,
+                    height: sliderStyle.height,
+                    top: sliderStyle.top,
+                    opacity: sliderStyle.opacity,
+                    background: 'var(--accent-hero)',
+                    borderRadius: '9999px',
+                    boxShadow: '0 4px 12px var(--accent-glow)',
+                    transition: 'all 0.38s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    pointerEvents: 'none'
+                  }} />
+                </div>
+
+                {/* 2. Foreground Crisp Text Buttons */}
                 {classes.map(cls => {
                   const isActive = activeClass === cls;
                   return (

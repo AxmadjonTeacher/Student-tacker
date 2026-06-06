@@ -1434,6 +1434,42 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     });
   }, [activeStudents]);
 
+  // Liquid slider refs & states for class selector
+  const classSelectorRef = React.useRef<HTMLDivElement>(null);
+  const [classSliderStyle, setClassSliderStyle] = React.useState({
+    left: 0,
+    width: 0,
+    height: 0,
+    top: 0,
+    opacity: 0
+  });
+
+  React.useLayoutEffect(() => {
+    if (!classSelectorRef.current) return;
+    const updateSlider = () => {
+      const activeEl = classSelectorRef.current?.querySelector('.active-pill') as HTMLElement | null;
+      if (activeEl) {
+        setClassSliderStyle({
+          left: activeEl.offsetLeft,
+          width: activeEl.offsetWidth,
+          height: activeEl.offsetHeight,
+          top: activeEl.offsetTop,
+          opacity: 1
+        });
+      } else {
+        setClassSliderStyle(prev => ({ ...prev, opacity: 0 }));
+      }
+    };
+    
+    updateSlider();
+    const timer = setTimeout(updateSlider, 50);
+    window.addEventListener('resize', updateSlider);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSlider);
+    };
+  }, [activeClass, availableClasses, activeTab]);
+
   // Set default class selector
   useEffect(() => {
     if (availableClasses.length > 0 && !availableClasses.includes(activeClass)) {
@@ -2234,25 +2270,103 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
         {/* Dropdowns */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <select
-            value={activeClass}
-            onChange={(e) => setActiveClass(e.target.value)}
-            style={{
-              padding: '0.55rem 0.85rem',
-              borderRadius: '10px',
-              border: '1.5px solid #e2e8f0',
-              fontSize: '0.78rem',
-              fontWeight: 800,
-              color: '#334155',
-              background: '#ffffff',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
-          >
-            {availableClasses.map(cls => (
-              <option key={cls} value={cls}>{cls}</option>
-            ))}
-          </select>
+          <div className="class-selector" ref={classSelectorRef} style={{ 
+            display: 'flex', 
+            gap: '0.25rem', 
+            background: '#f1f5f9',
+            padding: '0.35rem', 
+            borderRadius: '9999px',
+            border: '1px solid #e2e8f0',
+            overflowX: 'auto',
+            flex: '1 1 auto',
+            maxWidth: '450px',
+            position: 'relative',
+            boxSizing: 'border-box',
+            scrollbarWidth: 'none'
+          }}>
+            {/* 1. Gooey Background Layer */}
+            <div className="class-selector-gooey-bg" style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              minWidth: 'max-content',
+              width: '100%',
+              filter: 'url(#liquid-gooey-filter)',
+              pointerEvents: 'none',
+              zIndex: 0,
+              display: 'flex',
+              gap: '0.25rem',
+              padding: '0.35rem',
+              boxSizing: 'border-box'
+            }}>
+              {availableClasses.map(cls => (
+                <div
+                  key={`bg-${cls}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: '#e2e8f0',
+                    padding: '0.4rem 1rem',
+                    borderRadius: '9999px',
+                    color: 'transparent',
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap',
+                    boxSizing: 'border-box',
+                    height: '28px'
+                  }}
+                >
+                  <span style={{ opacity: 0, userSelect: 'none', fontSize: '0.75rem' }}>{cls}</span>
+                </div>
+              ))}
+
+              {/* Sliding active pill indicator */}
+              <div style={{
+                position: 'absolute',
+                left: classSliderStyle.left,
+                width: classSliderStyle.width,
+                height: classSliderStyle.height,
+                top: classSliderStyle.top,
+                opacity: classSliderStyle.opacity,
+                background: colors.primary,
+                borderRadius: '9999px',
+                boxShadow: `0 4px 12px ${colors.hover}`,
+                transition: 'all 0.38s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                pointerEvents: 'none'
+              }} />
+            </div>
+
+            {/* 2. Foreground Crisp Text Buttons */}
+            {availableClasses.map(cls => {
+              const isActive = activeClass === cls;
+              return (
+                <button
+                  key={cls}
+                  onClick={() => setActiveClass(cls)}
+                  className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: 'transparent',
+                    color: isActive ? '#ffffff' : '#475569',
+                    border: '1px solid transparent',
+                    boxShadow: 'none',
+                    padding: '0.4rem 1rem',
+                    borderRadius: '9999px',
+                    cursor: 'pointer',
+                    fontWeight: isActive ? 800 : 600,
+                    fontSize: '0.75rem',
+                    transition: 'color 0.35s ease',
+                    whiteSpace: 'nowrap',
+                    zIndex: 1,
+                    height: '28px'
+                  }}
+                >
+                  {cls}
+                </button>
+              );
+            })}
+          </div>
 
           <select
             value={selectedWeek}
