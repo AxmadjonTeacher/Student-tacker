@@ -192,7 +192,7 @@ const Header: React.FC<HeaderProps> = ({
             color: var(--text-secondary);
           }
           .class-selector button.active-pill {
-            color: #ffffff !important;
+            color: var(--text-primary) !important;
           }
           .admin-header-bottom-row {
             margin-top: 1rem !important;
@@ -679,7 +679,7 @@ const Header: React.FC<HeaderProps> = ({
               <div className="class-selector" ref={containerRef} style={{ 
                 display: 'flex', 
                 gap: '0.25rem', 
-                background: 'var(--bg-card)', 
+                background: 'var(--bg-card-hover)', 
                 padding: '0.35rem', 
                 borderRadius: '9999px',
                 boxShadow: 'var(--glass-shadow-soft)',
@@ -712,17 +712,30 @@ const Header: React.FC<HeaderProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        background: 'var(--bg-card-hover)',
+                        background: 'transparent',
                         padding: '0.4rem 1rem',
                         borderRadius: '9999px',
                         color: 'transparent',
                         pointerEvents: 'none',
                         whiteSpace: 'nowrap',
-                        boxSizing: 'border-box'
+                        boxSizing: 'border-box',
+                        position: 'relative'
                       }}
                     >
                       <span style={{ opacity: 0, userSelect: 'none' }}>{cls}</span>
                       <span style={{ opacity: 0, width: '18px', height: '18px', userSelect: 'none' }}>0</span>
+                      {/* Small liquid dot centered inside the slot */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: 'var(--accent-hero)',
+                        opacity: 0.25
+                      }} />
                     </div>
                   ))}
 
@@ -734,9 +747,9 @@ const Header: React.FC<HeaderProps> = ({
                     height: sliderStyle.height,
                     top: sliderStyle.top,
                     opacity: sliderStyle.opacity,
-                    background: isDarkMode ? 'var(--accent-hero)' : '#4f46e5',
+                    background: 'var(--accent-hero)',
                     borderRadius: '9999px',
-                    boxShadow: isDarkMode ? '0 4px 12px var(--accent-glow)' : '0 4px 12px rgba(79, 70, 229, 0.25)',
+                    boxShadow: '0 4px 12px var(--accent-glow)',
                     transition: sliderStyle.left > sliderStyle.prevLeft 
                       ? 'left 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, right 0.28s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.3s ease'
                       : sliderStyle.left < sliderStyle.prevLeft

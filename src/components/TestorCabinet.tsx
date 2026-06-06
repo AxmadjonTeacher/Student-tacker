@@ -2281,10 +2281,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           <div className="class-selector" ref={classSelectorRef} style={{ 
             display: 'flex', 
             gap: '0.25rem', 
-            background: '#f1f5f9',
+            background: colors.bg,
             padding: '0.35rem', 
             borderRadius: '9999px',
-            border: '1px solid #e2e8f0',
+            border: `1px solid ${colors.border}`,
             overflowX: 'auto',
             flex: '1 1 auto',
             maxWidth: '450px',
@@ -2314,17 +2314,30 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    background: '#e2e8f0',
+                    background: 'transparent',
                     padding: '0.4rem 1rem',
                     borderRadius: '9999px',
                     color: 'transparent',
                     pointerEvents: 'none',
                     whiteSpace: 'nowrap',
                     boxSizing: 'border-box',
-                    height: '28px'
+                    height: '28px',
+                    position: 'relative'
                   }}
                 >
                   <span style={{ opacity: 0, userSelect: 'none', fontSize: '0.75rem' }}>{cls}</span>
+                  {/* Small liquid dot centered inside the slot */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    opacity: 0.35
+                  }} />
                 </div>
               ))}
 
@@ -2336,7 +2349,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 height: classSliderStyle.height,
                 top: classSliderStyle.top,
                 opacity: classSliderStyle.opacity,
-                background: colors.primary,
+                background: '#ffffff',
                 borderRadius: '9999px',
                 boxShadow: `0 4px 12px ${colors.hover}`,
                 transition: classSliderStyle.left > classSliderStyle.prevLeft 
@@ -2360,7 +2373,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     background: 'transparent',
-                    color: isActive ? '#ffffff' : '#475569',
+                    color: isActive ? colors.primary : '#475569',
                     border: '1px solid transparent',
                     boxShadow: 'none',
                     padding: '0.4rem 1rem',

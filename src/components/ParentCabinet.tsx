@@ -1092,99 +1092,130 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
       </main>
 
       {/* Sticky Bottom Tab Bar for Mobile viewports */}
-      <div className="mobile-tab-bar" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '64px', zIndex: 998 }}>
-        {/* Gooey Background Container */}
-        <div className="mobile-tab-bar-gooey-bg" style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          filter: 'url(#liquid-gooey-filter)',
-          pointerEvents: 'none',
-          zIndex: 0,
-          display: 'flex',
-          justifyContent: 'space-around',
+      <div className="mobile-tab-bar" style={{ 
+        position: 'fixed', 
+        bottom: 0, 
+        left: 0, 
+        right: 0, 
+        height: '64px', 
+        zIndex: 998, 
+        background: 'var(--bg-main)', 
+        borderTop: '1px solid var(--border-subtle)', 
+        padding: '6px 12px', 
+        boxSizing: 'border-box',
+        display: 'flex'
+      }}>
+        {/* Curved Selector Track */}
+        <div style={{ 
+          position: 'relative', 
+          width: '100%', 
+          height: '100%', 
+          background: 'var(--bg-card-hover)', 
+          borderRadius: '14px', 
+          display: 'flex', 
           alignItems: 'center',
-          padding: '0 8px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box', 
+          overflow: 'hidden' 
         }}>
-          {/* Static gray pills under each tab slot */}
-          {[0, 1, 2, 3].map(idx => (
-            <div
-              key={idx}
-              style={{
-                position: 'absolute',
-                top: '8px',
-                height: '48px',
-                width: 'calc(25% - 16px)',
-                left: `calc(${idx} * 25% + 8px)`,
-                background: '#e2e8f0',
-                borderRadius: '16px',
-                boxSizing: 'border-box'
-              }}
-            />
-          ))}
-
-           {/* Active sliding tab capsule */}
-          <div className="tab-capsule" style={{ 
+          {/* Gooey Background Container */}
+          <div className="mobile-tab-bar-gooey-bg" style={{
             position: 'absolute',
-            top: '8px',
-            height: '48px',
-            left: `calc(${activeIndex} * 25% + 8px)`,
-            right: `calc(100% - (${activeIndex} + 1) * 25% + 8px)`,
-            background: '#0d9488',
-            border: 'none',
-            borderRadius: '16px',
-            boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)',
-            transition: activeIndex > prevIndex
-              ? 'left 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, right 0.28s cubic-bezier(0.2, 1, 0.3, 1)'
-              : activeIndex < prevIndex
-                ? 'left 0.28s cubic-bezier(0.2, 1, 0.3, 1), right 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s'
-                : 'left 0.35s ease, right 0.35s ease',
-            backdropFilter: 'none',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            filter: 'url(#liquid-gooey-filter)',
+            pointerEvents: 'none',
+            zIndex: 0,
+            display: 'flex',
             boxSizing: 'border-box'
-          }} />
-        </div>
+          }}>
+            {/* Static white gooey dots under each tab slot */}
+            {[0, 1, 2, 3].map(idx => (
+              <div
+                key={idx}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  height: '100%',
+                  width: '25%',
+                  left: `calc(${idx} * 25%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  opacity: 0.35
+                }} />
+              </div>
+            ))}
 
-        {/* Foreground buttons */}
-        <button 
-          onClick={() => setActiveTab('home')}
-          className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
-          style={{ zIndex: 1 }}
-        >
-          <Home size={20} />
-          <span>Bosh sahifa</span>
-        </button>
-        
-        <button 
-          onClick={() => setActiveTab('search')}
-          className={`tab-item ${activeTab === 'search' ? 'active' : ''}`}
-          style={{ zIndex: 1 }}
-        >
-          <Bell size={20} />
-          <span>Yangiliklar</span>
-        </button>
-        
-        <button 
-          onClick={() => {
-            setActiveTab('stats');
-          }}
-          className={`tab-item ${activeTab === 'stats' ? 'active' : ''}`}
-          style={{ zIndex: 1 }}
-        >
-          <BarChart2 size={20} />
-          <span>Statistika</span>
-        </button>
-        
-        <button 
-          onClick={() => setActiveTab('settings')}
-          className={`tab-item ${activeTab === 'settings' ? 'active' : ''}`}
-          style={{ zIndex: 1 }}
-        >
-          <Settings size={20} />
-          <span>Sozlamalar</span>
-        </button>
+            {/* Active sliding tab capsule (no class name to avoid transition overrides) */}
+            <div style={{ 
+              position: 'absolute',
+              top: '4px',
+              bottom: '4px',
+              left: `calc(${activeIndex} * 25% + 4px)`,
+              right: `calc(100% - (${activeIndex} + 1) * 25% + 4px)`,
+              background: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+              transition: activeIndex > prevIndex
+                ? 'left 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, right 0.28s cubic-bezier(0.2, 1, 0.3, 1)'
+                : activeIndex < prevIndex
+                  ? 'left 0.28s cubic-bezier(0.2, 1, 0.3, 1), right 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s'
+                  : 'left 0.35s ease, right 0.35s ease',
+              backdropFilter: 'none',
+              boxSizing: 'border-box'
+            }} />
+          </div>
+
+          {/* Foreground buttons */}
+          <button 
+            onClick={() => setActiveTab('home')}
+            className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
+            style={{ zIndex: 1 }}
+          >
+            <Home size={20} />
+            <span>Bosh sahifa</span>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('search')}
+            className={`tab-item ${activeTab === 'search' ? 'active' : ''}`}
+            style={{ zIndex: 1 }}
+          >
+            <Bell size={20} />
+            <span>Yangiliklar</span>
+          </button>
+          
+          <button 
+            onClick={() => {
+              setActiveTab('stats');
+            }}
+            className={`tab-item ${activeTab === 'stats' ? 'active' : ''}`}
+            style={{ zIndex: 1 }}
+          >
+            <BarChart2 size={20} />
+            <span>Statistika</span>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`tab-item ${activeTab === 'settings' ? 'active' : ''}`}
+            style={{ zIndex: 1 }}
+          >
+            <Settings size={20} />
+            <span>Sozlamalar</span>
+          </button>
+        </div>
       </div>
 
       {/* Desktop/Mobile Modal Dialog for Adding Child */}
