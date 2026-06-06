@@ -34,7 +34,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange,
+  classes, activeClass, onClassSelect, classCounts: _classCounts, searchTerm, onSearchChange,
   searchFilter = 'both',
   onSearchFilterChange = () => {},
   onOpenDrawer,
@@ -711,9 +711,8 @@ const Header: React.FC<HeaderProps> = ({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
                         background: 'transparent',
-                        padding: '0.4rem 1rem',
+                        padding: '0.4rem 1.25rem',
                         borderRadius: '9999px',
                         color: 'transparent',
                         pointerEvents: 'none',
@@ -723,7 +722,6 @@ const Header: React.FC<HeaderProps> = ({
                       }}
                     >
                       <span style={{ opacity: 0, userSelect: 'none' }}>{cls}</span>
-                      <span style={{ opacity: 0, width: '18px', height: '18px', userSelect: 'none' }}>0</span>
                       {/* Small liquid dot centered inside the slot */}
                       <div style={{
                         position: 'absolute',
@@ -733,7 +731,7 @@ const Header: React.FC<HeaderProps> = ({
                         width: '8px',
                         height: '8px',
                         borderRadius: '50%',
-                        background: 'var(--accent-hero)',
+                        background: 'var(--bg-card)',
                         opacity: 0.25
                       }} />
                     </div>
@@ -747,7 +745,7 @@ const Header: React.FC<HeaderProps> = ({
                     height: sliderStyle.height,
                     top: sliderStyle.top,
                     opacity: sliderStyle.opacity,
-                    background: 'var(--accent-hero)',
+                    background: 'var(--bg-card)',
                     borderRadius: '9999px',
                     boxShadow: '0 4px 12px var(--accent-glow)',
                     transition: sliderStyle.left > sliderStyle.prevLeft 
@@ -770,12 +768,11 @@ const Header: React.FC<HeaderProps> = ({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
                         background: 'transparent',
-                        color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                         border: '1px solid transparent',
                         boxShadow: 'none',
-                        padding: '0.4rem 1rem',
+                        padding: '0.4rem 1.25rem',
                         borderRadius: '9999px',
                         cursor: 'pointer',
                         fontWeight: isActive ? 700 : 500,
@@ -786,20 +783,6 @@ const Header: React.FC<HeaderProps> = ({
                       }}
                     >
                       {cls}
-                      <span style={{
-                        background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--border-subtle)',
-                        color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.65rem',
-                        fontWeight: 700
-                      }}>
-                        {classCounts[cls] || 0}
-                      </span>
                     </button>
                   );
                 })}
