@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   UploadCloud, X, Download, Trash2, UserPlus, Settings,
   Calendar, AlertCircle, Tag, Image as ImageIcon, Plus, 
-  ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut, Edit3, Phone
+  ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut, Edit3,
+  ArrowUpRight, CheckCircle2
 } from 'lucide-react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -35,7 +36,7 @@ interface SidebarDrawerProps {
   teachers: Teacher[];
   onAddTeacher: (name: string, subject: 'ENG' | 'MATH', phone?: string) => Promise<void>;
   onDeleteTeacher: (id: number) => Promise<void>;
-  onEditTeacher: (id: number, newName: string, phone?: string, loginId?: string, passcode?: string) => Promise<void>;
+  onEditTeacher: (id: number, newName: string, phone?: string, loginId?: string, passcode?: string, pictureUrl?: string) => Promise<void>;
   authRole?: string | null;
   activeTab?: 'settings' | 'news' | 'teachers' | 'trash';
   onTabChange?: (tab: 'settings' | 'news' | 'teachers' | 'trash') => void;
@@ -113,6 +114,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [editTeacherPhone, setEditTeacherPhone] = useState('');
   const [editTeacherLoginId, setEditTeacherLoginId] = useState('');
   const [editTeacherPasscode, setEditTeacherPasscode] = useState('');
+  const [editTeacherPictureUrl, setEditTeacherPictureUrl] = useState('');
+  const [activeCredentialsTeacher, setActiveCredentialsTeacher] = useState<Teacher | null>(null);
 
   useEffect(() => {
     if (editTeacher) {
@@ -120,11 +123,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       setEditTeacherPhone(editTeacher.phone || '');
       setEditTeacherLoginId(editTeacher.login_id || '');
       setEditTeacherPasscode(editTeacher.passcode || '');
+      setEditTeacherPictureUrl(editTeacher.picture_url || '');
     } else {
       setEditTeacherName('');
       setEditTeacherPhone('');
       setEditTeacherLoginId('');
       setEditTeacherPasscode('');
+      setEditTeacherPictureUrl('');
     }
   }, [editTeacher]);
 
@@ -137,6 +142,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const newsImageInputRef = useRef<HTMLInputElement>(null);
+  const editPhotoInputRef = useRef<HTMLInputElement>(null);
 
   // News and Events states
   const [newsEvents, setNewsEvents] = useState<any[]>([]);
@@ -499,6 +505,45 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
     });
 
     if (newsImageInputRef.current) newsImageInputRef.current.value = '';
+  };
+
+  // Edit Teacher Photo Upload and Compression
+  const handleEditTeacherPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 250;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setEditTeacherPictureUrl(dataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   // Remove photo from draft
@@ -2078,65 +2123,81 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         >
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
-                              <Phone size={10} />
-                              {teacher.phone || <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Telefon kiritilmagan</span>}
-                            </span>
-                            {(teacher.login_id || teacher.passcode) && (
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
-                                <span style={{ opacity: 0.75 }}>ID:</span> <strong style={{ color: 'var(--text-primary)' }}>{teacher.login_id || '-'}</strong>
-                                <span style={{ margin: '0 0.15rem', opacity: 0.3 }}>|</span>
-                                <span style={{ opacity: 0.75 }}>Parol:</span> <strong style={{ color: 'var(--text-primary)' }}>{teacher.passcode || '-'}</strong>
-                              </span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                            {/* Glassy Credentials Button */}
+                            <button
+                              onClick={() => setActiveCredentialsTeacher(teacher)}
+                              style={{
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-subtle)',
+                                borderRadius: '50%',
+                                padding: '0.45rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                              }}
+                              title="Ma'lumotlarni ko'rish"
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-hero)'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.transform = 'none'; }}
+                            >
+                              <ArrowUpRight size={13} strokeWidth={2.5} />
+                            </button>
+
+                            {isAdminMode && (
+                              <>
+                                <button
+                                  onClick={() => setEditTeacher(teacher)}
+                                  style={{
+                                    background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
+                                    color: '#3b82f6',
+                                    border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
+                                    borderRadius: '50%',
+                                    padding: '0.45rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                  }}
+                                  title="Tahrirlash"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; e.currentTarget.style.transform = 'none'; }}
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                      onDeleteTeacher(teacher.id);
+                                    }
+                                  }}
+                                  style={{
+                                    background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                                    color: '#ef4444',
+                                    border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
+                                    borderRadius: '50%',
+                                    padding: '0.45rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                  }}
+                                  title="O'chirish"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; e.currentTarget.style.transform = 'none'; }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
                             )}
                           </div>
-                          {isAdminMode && (
-                            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                              <button
-                                onClick={() => setEditTeacher(teacher)}
-                                style={{
-                                  background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
-                                  color: '#3b82f6',
-                                  border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
-                                  borderRadius: '50%',
-                                  padding: '0.4rem',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; e.currentTarget.style.transform = 'none'; }}
-                              >
-                                <Edit3 size={13} />
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
-                                    onDeleteTeacher(teacher.id);
-                                  }
-                                }}
-                                style={{
-                                  background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
-                                  color: '#ef4444',
-                                  border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
-                                  borderRadius: '50%',
-                                  padding: '0.4rem',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; e.currentTarget.style.transform = 'none'; }}
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          )}
                         </div>
                       ))
                     )}
@@ -2172,65 +2233,81 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                         >
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
-                              <Phone size={10} />
-                              {teacher.phone || <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Telefon kiritilmagan</span>}
-                            </span>
-                            {(teacher.login_id || teacher.passcode) && (
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
-                                <span style={{ opacity: 0.75 }}>ID:</span> <strong style={{ color: 'var(--text-primary)' }}>{teacher.login_id || '-'}</strong>
-                                <span style={{ margin: '0 0.15rem', opacity: 0.3 }}>|</span>
-                                <span style={{ opacity: 0.75 }}>Parol:</span> <strong style={{ color: 'var(--text-primary)' }}>{teacher.passcode || '-'}</strong>
-                              </span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                            {/* Glassy Credentials Button */}
+                            <button
+                              onClick={() => setActiveCredentialsTeacher(teacher)}
+                              style={{
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-subtle)',
+                                borderRadius: '50%',
+                                padding: '0.45rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                              }}
+                              title="Ma'lumotlarni ko'rish"
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-hero)'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.transform = 'none'; }}
+                            >
+                              <ArrowUpRight size={13} strokeWidth={2.5} />
+                            </button>
+
+                            {isAdminMode && (
+                              <>
+                                <button
+                                  onClick={() => setEditTeacher(teacher)}
+                                  style={{
+                                    background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
+                                    color: '#3b82f6',
+                                    border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
+                                    borderRadius: '50%',
+                                    padding: '0.45rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                  }}
+                                  title="Tahrirlash"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; e.currentTarget.style.transform = 'none'; }}
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                      onDeleteTeacher(teacher.id);
+                                    }
+                                  }}
+                                  style={{
+                                    background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                                    color: '#ef4444',
+                                    border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
+                                    borderRadius: '50%',
+                                    padding: '0.45rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                  }}
+                                  title="O'chirish"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; e.currentTarget.style.transform = 'none'; }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
                             )}
                           </div>
-                          {isAdminMode && (
-                            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                              <button
-                                onClick={() => setEditTeacher(teacher)}
-                                style={{
-                                  background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
-                                  color: '#3b82f6',
-                                  border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
-                                  borderRadius: '50%',
-                                  padding: '0.4rem',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; e.currentTarget.style.transform = 'none'; }}
-                              >
-                                <Edit3 size={13} />
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
-                                    onDeleteTeacher(teacher.id);
-                                  }
-                                }}
-                                style={{
-                                  background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
-                                  color: '#ef4444',
-                                  border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
-                                  borderRadius: '50%',
-                                  padding: '0.4rem',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; e.currentTarget.style.transform = 'none'; }}
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          )}
                         </div>
                       ))
                     )}
@@ -2660,11 +2737,86 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 O'qituvchi ma'lumotlarini tahrirlash
               </h3>
               <p style={{ margin: '0.35rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Ism, telefon, ID va parolni tahrirlang
+                Rasm, ism, telefon, ID va parolni tahrirlang
               </p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              {/* Profile Image Upload */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  Profil rasmi
+                </label>
+                <div 
+                  onClick={() => editPhotoInputRef.current?.click()}
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '24px',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-card-hover)',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
+                >
+                  {editTeacherPictureUrl ? (
+                    <>
+                      <img src={editTeacherPictureUrl} alt="Teacher preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'rgba(0, 0, 0, 0.6)',
+                        color: '#ffffff',
+                        fontSize: '0.55rem',
+                        fontWeight: 700,
+                        textAlign: 'center',
+                        padding: '0.2rem 0'
+                      }}>
+                        ALASHTIRISH
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--text-secondary)', gap: '0.25rem' }}>
+                      <ImageIcon size={20} />
+                      <span style={{ fontSize: '0.6rem', fontWeight: 700 }}>RASM YUKLASH</span>
+                    </div>
+                  )}
+                </div>
+                <input 
+                  type="file"
+                  ref={editPhotoInputRef}
+                  accept="image/*"
+                  onChange={handleEditTeacherPhotoUpload}
+                  style={{ display: 'none' }}
+                />
+                {editTeacherPictureUrl && (
+                  <button 
+                    onClick={() => setEditTeacherPictureUrl('')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#ef4444',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}
+                  >
+                    Rasmni o'chirish
+                  </button>
+                )}
+              </div>
+
               <div>
                 <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
                   Ismi va Familiyasi
@@ -2753,7 +2905,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       editTeacherName.trim(),
                       editTeacherPhone.trim(),
                       editTeacherLoginId.trim(),
-                      editTeacherPasscode.trim()
+                      editTeacherPasscode.trim(),
+                      editTeacherPictureUrl.trim()
                     );
                     setEditTeacher(null);
                   }
@@ -2768,6 +2921,171 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               >
                 Saqlash
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Glassy Credentials Popup Modal */}
+      {activeCredentialsTeacher !== null && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setActiveCredentialsTeacher(null)} 
+          style={{ 
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(12px)',
+            animation: 'fadeIn 0.25s ease-out'
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              maxWidth: '380px', 
+              width: '90%',
+              position: 'relative',
+              padding: 0,
+              background: isDarkMode ? 'rgba(24, 24, 27, 0.75)' : 'rgba(255, 255, 255, 0.75)',
+              backdropFilter: 'blur(30px)',
+              border: '1px solid var(--border-subtle)',
+              boxShadow: '0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+              borderRadius: '32px',
+              overflow: 'hidden',
+              animation: 'premiumScaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setActiveCredentialsTeacher(null)}
+              style={{
+                position: 'absolute',
+                top: '1.25rem',
+                right: '1.25rem',
+                background: 'rgba(0, 0, 0, 0.3)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+                backdropFilter: 'blur(4px)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)'}
+            >
+              <X size={16} />
+            </button>
+
+            {/* Teacher Image / Upper Photo Slot */}
+            <div style={{ width: '100%', height: '240px', position: 'relative', background: 'linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%)' }}>
+              {activeCredentialsTeacher.picture_url ? (
+                <img 
+                  src={activeCredentialsTeacher.picture_url} 
+                  alt={activeCredentialsTeacher.name} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', flexDirection: 'column', color: '#ffffff', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '3rem', fontWeight: 800, opacity: 0.9, letterSpacing: '0.05em' }}>
+                    {activeCredentialsTeacher.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                </div>
+              )}
+              {/* Bottom fading translucent glass overlay */}
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '60px',
+                background: isDarkMode ? 'linear-gradient(to bottom, transparent, rgba(24, 24, 27, 0.75))' : 'linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.75))',
+                pointerEvents: 'none'
+              }} />
+            </div>
+
+            {/* Information area */}
+            <div style={{ padding: '1.75rem 1.5rem 2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.25rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', textAlign: 'center', letterSpacing: '-0.02em' }}>
+                  {activeCredentialsTeacher.name}
+                </h3>
+                <CheckCircle2 size={17} fill="#10b981" color="#ffffff" style={{ flexShrink: 0 }} />
+              </div>
+
+              <div style={{ 
+                fontSize: '0.75rem', 
+                fontWeight: 750, 
+                color: activeCredentialsTeacher.subject === 'ENG' ? 'var(--accent-primary)' : '#f97316', 
+                textTransform: 'uppercase', 
+                textAlign: 'center', 
+                letterSpacing: '0.08em',
+                marginBottom: '1.75rem' 
+              }}>
+                {activeCredentialsTeacher.subject === 'ENG' ? "Ingliz Tili O'qituvchisi" : "Matematika O'qituvchisi"}
+              </div>
+
+              {/* Grid with Details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div style={{ 
+                  background: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '16px',
+                  padding: '0.75rem 1rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Telefon
+                  </span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {activeCredentialsTeacher.phone || "Kiritilmagan"}
+                  </span>
+                </div>
+
+                <div style={{ 
+                  background: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '16px',
+                  padding: '0.75rem 1rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Login ID
+                  </span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'monospace', background: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
+                    {activeCredentialsTeacher.login_id || "-"}
+                  </span>
+                </div>
+
+                <div style={{ 
+                  background: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '16px',
+                  padding: '0.75rem 1rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Parol
+                  </span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'monospace', background: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
+                    {activeCredentialsTeacher.passcode || "-"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

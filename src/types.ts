@@ -59,6 +59,7 @@ export interface Teacher {
   login_id?: string;
   passcode?: string;
   phone?: string;
+  picture_url?: string;
 }
 
 export interface DailyRecord {

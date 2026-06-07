@@ -76,7 +76,9 @@ export const mapDbToTeacher = (db: any): Teacher => ({
   subject: db.subject || 'ENG',
   created_at: db.created_at,
   login_id: db.login_id || '',
-  passcode: db.passcode || ''
+  passcode: db.passcode || '',
+  phone: db.phone || '',
+  picture_url: db.picture_url || ''
 });
 
 export const mapTeacherToDb = (teacher: Teacher) => ({
@@ -84,7 +86,9 @@ export const mapTeacherToDb = (teacher: Teacher) => ({
   name: teacher.name,
   subject: teacher.subject,
   login_id: teacher.login_id || null,
-  passcode: teacher.passcode || null
+  passcode: teacher.passcode || null,
+  phone: teacher.phone || null,
+  picture_url: teacher.picture_url || null
 });
 
 export const mapDbToDailyRecord = (db: any): DailyRecord => ({
