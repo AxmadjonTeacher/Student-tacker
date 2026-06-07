@@ -1557,7 +1557,7 @@ function App() {
         matchesSearch = true;
       } else {
         if (activeSubject === 'DETAILS') {
-          const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term);
+          const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term) || `${s.surname} ${s.name}`.toLowerCase().includes(term);
           const studentIdMatches = s.id.toLowerCase().includes(term);
           
           if (searchFilter === 'student') {
@@ -1568,7 +1568,7 @@ function App() {
             matchesSearch = studentNameMatches || studentIdMatches;
           }
         } else {
-          const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term);
+          const studentNameMatches = `${s.name} ${s.surname}`.toLowerCase().includes(term) || `${s.surname} ${s.name}`.toLowerCase().includes(term);
           const teacherNameMatches = !!(
             (s.teacher && s.teacher.toLowerCase().includes(term)) ||
             (s.mathTeacher && s.mathTeacher.toLowerCase().includes(term))
@@ -2484,7 +2484,7 @@ function App() {
                 setActiveAdminTab('home');
                 setActiveSubject('GRANT');
                 setActiveClass(getClassGroup(student.className.toUpperCase()));
-                setSearchTerm(`${student.surname} ${student.name}`);
+                setSearchTerm(`${student.name} ${student.surname}`);
                 setSearchFilter('student');
               }}
             />
@@ -2839,13 +2839,13 @@ function App() {
                         alignItems: 'center',
                         justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
                         gap: isSidebarExpanded ? '0.75rem' : '0',
-                        padding: '0.65rem 0.85rem',
+                        padding: '0.45rem 0.75rem',
                         borderRadius: '9999px',
                         background: isActive 
-                          ? 'var(--bg-card-hover)' 
+                          ? (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)')
                           : 'transparent',
                         color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        border: isActive ? '1px solid var(--border-subtle)' : '1px solid transparent',
+                        border: isActive ? '1.5px solid var(--accent-primary)' : '1.5px solid transparent',
                         boxShadow: isActive ? 'var(--glass-shadow-soft)' : 'none',
                         cursor: 'pointer',
                         fontWeight: isActive ? 800 : 700,
@@ -2857,12 +2857,14 @@ function App() {
                       onMouseEnter={e => {
                         if (!isActive) {
                           e.currentTarget.style.background = 'var(--bg-card-hover)';
+                          e.currentTarget.style.borderColor = 'var(--border-subtle)';
                           e.currentTarget.style.color = 'var(--text-primary)';
                         }
                       }}
                       onMouseLeave={e => {
                         if (!isActive) {
                           e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.borderColor = 'transparent';
                           e.currentTarget.style.color = 'var(--text-secondary)';
                         }
                       }}
@@ -3129,7 +3131,7 @@ function App() {
                   setActiveAdminTab('home');
                   setActiveSubject('GRANT');
                   setActiveClass(getClassGroup(student.className.toUpperCase()));
-                  setSearchTerm(`${student.surname} ${student.name}`);
+                  setSearchTerm(`${student.name} ${student.surname}`);
                   setSearchFilter('student');
                 }}
               />

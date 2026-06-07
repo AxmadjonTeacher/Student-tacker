@@ -106,16 +106,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [authRole]);
 
-  // Role initials placeholder
-  const avatarInitials = useMemo(() => {
-    if (authRole === 'admin') return 'AP';
-    if (authRole === 'admin123') return 'AD';
-    if (authRole === 'parent') return 'PT';
-    if (authRole === 'publish') return 'PB';
-    if (authRole === 'testor') return 'TS';
-    if (authRole === 'teacher') return 'O';
-    return 'G';
-  }, [authRole]);
+
 
   // Compute Top 3 Students based on latest populated grant test scores
   const topStudents = useMemo(() => {
@@ -416,27 +407,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="profile-badge" style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.6rem',
-            padding: '0.45rem 1rem',
-            borderRadius: '9999px',
-            cursor: 'pointer'
+            justifyContent: 'center',
+            cursor: 'pointer',
+            padding: 0,
+            borderRadius: '50%'
           }}>
-            {/* Avatar circular badge */}
+            {/* Circular avatar profile image */}
             <div style={{
-              width: '28px',
-              height: '28px',
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
-              background: 'var(--accent-gradient)',
-              color: '#ffffff',
+              border: '1.5px solid var(--border-subtle)',
+              overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '0.75rem',
-              fontWeight: 900
+              background: 'var(--bg-card-hover)',
+              boxShadow: 'var(--glass-shadow-soft)',
+              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--text-primary)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.transform = 'none';
             }}>
-              {avatarInitials}
+              <img 
+                src="/default_avatar.jpg" 
+                alt="Profile Avatar" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
             </div>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>{roleDisplay}</span>
           </div>
           
           {/* Hover popup */}

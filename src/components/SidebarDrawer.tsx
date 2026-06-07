@@ -2128,7 +2128,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                             {/* Glassy Credentials Button */}
                             <button
-                              onClick={() => setActiveCredentialsTeacher(teacher)}
+                              onClick={(e) => { e.stopPropagation(); setActiveCredentialsTeacher(teacher); }}
                               style={{
                                 background: 'rgba(255, 255, 255, 0.08)',
                                 color: 'var(--text-primary)',
@@ -2151,7 +2151,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             {isAdminMode && (
                               <>
                                 <button
-                                  onClick={() => setEditTeacher(teacher)}
+                                  onClick={(e) => { e.stopPropagation(); setEditTeacher(teacher); }}
                                   style={{
                                     background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
                                     color: '#3b82f6',
@@ -2238,7 +2238,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                             {/* Glassy Credentials Button */}
                             <button
-                              onClick={() => setActiveCredentialsTeacher(teacher)}
+                              onClick={(e) => { e.stopPropagation(); setActiveCredentialsTeacher(teacher); }}
                               style={{
                                 background: 'rgba(255, 255, 255, 0.08)',
                                 color: 'var(--text-primary)',
@@ -2261,7 +2261,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             {isAdminMode && (
                               <>
                                 <button
-                                  onClick={() => setEditTeacher(teacher)}
+                                  onClick={(e) => { e.stopPropagation(); setEditTeacher(teacher); }}
                                   style={{
                                     background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
                                     color: '#3b82f6',
