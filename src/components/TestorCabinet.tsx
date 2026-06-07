@@ -1434,6 +1434,18 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     });
   }, [activeStudents]);
 
+  const classCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    availableClasses.forEach(cls => counts[cls] = 0);
+    activeStudents.forEach(s => {
+      const group = getClassGroup(s.className.toUpperCase());
+      if (counts[group] !== undefined) {
+        counts[group]++;
+      }
+    });
+    return counts;
+  }, [activeStudents, availableClasses]);
+
   // Liquid slider refs & states for class selector
   const classSelectorRef = React.useRef<HTMLDivElement>(null);
   const [classSliderStyle, setClassSliderStyle] = React.useState({
@@ -2325,7 +2337,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'relative'
                   }}
                 >
-                  <span style={{ opacity: 0, userSelect: 'none', fontSize: '0.75rem' }}>{cls}</span>
+                  <span style={{ opacity: 0, userSelect: 'none', fontSize: '0.75rem' }}>{cls} ({classCounts[cls] ?? 0})</span>
                   {/* Small liquid dot centered inside the slot */}
                   <div style={{
                     position: 'absolute',
@@ -2387,7 +2399,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     height: '28px'
                   }}
                 >
-                  {cls}
+                  {cls} ({classCounts[cls] ?? 0})
                 </button>
               );
             })}

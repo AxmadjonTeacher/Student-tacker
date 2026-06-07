@@ -34,7 +34,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  classes, activeClass, onClassSelect, classCounts: _classCounts, searchTerm, onSearchChange,
+  classes, activeClass, onClassSelect, classCounts, searchTerm, onSearchChange,
   searchFilter = 'both',
   onSearchFilterChange = () => {},
   onOpenDrawer,
@@ -406,7 +406,7 @@ const Header: React.FC<HeaderProps> = ({
           alignItems: 'center', 
           width: '100%', 
           gap: '1.5rem', 
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           marginTop: '0.5rem',
           marginBottom: '1rem'
         }}>
@@ -721,7 +721,7 @@ const Header: React.FC<HeaderProps> = ({
                         position: 'relative'
                       }}
                     >
-                      <span style={{ opacity: 0, userSelect: 'none' }}>{cls}</span>
+                      <span style={{ opacity: 0, userSelect: 'none' }}>{cls} ({classCounts[cls] ?? 0})</span>
                       {/* Small liquid dot centered inside the slot */}
                       <div style={{
                         position: 'absolute',
@@ -782,7 +782,7 @@ const Header: React.FC<HeaderProps> = ({
                         zIndex: 1
                       }}
                     >
-                      {cls}
+                      {cls} ({classCounts[cls] ?? 0})
                     </button>
                   );
                 })}
@@ -791,7 +791,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
     
           {/* Right Side: Integrated Search Bar & Excel Export Button */}
-          <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '0 0 auto' }}>
+          <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '1 1 auto', justifyContent: 'flex-end', minWidth: 0 }}>
             <div className="mobile-sticky-search" style={{
               display: 'flex',
               alignItems: 'center',

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Home, Search, BarChart2, Settings, LogOut,
   BookOpen, Activity, ShieldAlert, Bell, Users, Trash2, GraduationCap,
@@ -127,6 +127,10 @@ function App() {
   const [engMathSubSubject, setEngMathSubSubject] = useState<'ENG' | 'MATH'>('ENG');
   const [grantSubject, setGrantSubject] = useState<'ENG' | 'MATH'>('ENG');
   const [onExportExcel, setOnExportExcel] = useState<(() => void) | null>(null);
+
+  const handleRegisterExportExcel = useCallback((fn: (() => void) | null) => {
+    setOnExportExcel(() => fn);
+  }, []);
 
   // Responsiveness and Sidebar state
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -409,7 +413,30 @@ function App() {
 
     for (const update of updates) {
       try {
-        // 1. Update student_weeks table
+        // 1. Get the student's current database row
+        const { data: studentRows, error: findError } = await supabase
+          .from('Students')
+          .select('*')
+          .eq('id', update.oldId);
+        
+        if (findError || !studentRows || studentRows.length === 0) {
+          console.error(`Could not find student ${update.oldId} for migration`);
+          continue;
+        }
+        
+        const oldStudentData = studentRows[0];
+        
+        // 2. Insert new student row with new ID
+        const { error: insertError } = await supabase
+          .from('Students')
+          .insert([{ ...oldStudentData, id: update.newId }]);
+          
+        if (insertError) {
+          console.error(`Insert migration error for ${update.oldId}:`, insertError);
+          continue;
+        }
+
+        // 3. Update student_weeks table
         const { error: weeksError } = await supabase
           .from('student_weeks')
           .update({ student_id: update.newId })
@@ -417,17 +444,29 @@ function App() {
         
         if (weeksError) {
           console.error(`Weeks migration error for ${update.oldId}:`, weeksError);
+          // clean up inserted new student row if update failed
+          await supabase.from('Students').delete().eq('id', update.newId);
           continue;
         }
 
-        // 2. Update Students table
-        const { error: studentError } = await supabase
-          .from('Students')
-          .update({ id: update.newId })
-          .eq('id', update.oldId);
+        // 4. Update daily_records table
+        const { error: dailyError } = await supabase
+          .from('daily_records')
+          .update({ student_id: update.newId })
+          .eq('student_id', update.oldId);
+        
+        if (dailyError) {
+          console.warn(`Daily records migration warning for ${update.oldId}:`, dailyError);
+        }
 
-        if (studentError) {
-          console.error(`Student migration error for ${update.oldId}:`, studentError);
+        // 5. Delete old student row
+        const { error: deleteError } = await supabase
+          .from('Students')
+          .delete()
+          .eq('id', update.oldId);
+          
+        if (deleteError) {
+          console.error(`Delete migration error for ${update.oldId}:`, deleteError);
           continue;
         }
 
@@ -2441,6 +2480,13 @@ function App() {
                 setActiveClass(cls);
                 setActiveSubject('ENG');
               }}
+              onSelectStudentGrant={(student: Student) => {
+                setActiveAdminTab('home');
+                setActiveSubject('GRANT');
+                setActiveClass(getClassGroup(student.className.toUpperCase()));
+                setSearchTerm(`${student.surname} ${student.name}`);
+                setSearchFilter('student');
+              }}
             />
           ) : (
             <StudentTable
@@ -2472,7 +2518,7 @@ function App() {
               setEngMathSubSubject={setEngMathSubSubject}
               grantSubject={grantSubject}
               setGrantSubject={setGrantSubject}
-              onExportExcelRegister={(fn) => setOnExportExcel(() => fn)}
+              onExportExcelRegister={handleRegisterExportExcel}
             />
           )}
         </div>
@@ -3079,6 +3125,13 @@ function App() {
                   setActiveClass(cls);
                   setActiveSubject('ENG');
                 }}
+                onSelectStudentGrant={(student: Student) => {
+                  setActiveAdminTab('home');
+                  setActiveSubject('GRANT');
+                  setActiveClass(getClassGroup(student.className.toUpperCase()));
+                  setSearchTerm(`${student.surname} ${student.name}`);
+                  setSearchFilter('student');
+                }}
               />
             ) : (
               <StudentTable
@@ -3110,7 +3163,7 @@ function App() {
                 setEngMathSubSubject={setEngMathSubSubject}
                 grantSubject={grantSubject}
                 setGrantSubject={setGrantSubject}
-                onExportExcelRegister={(fn) => setOnExportExcel(() => fn)}
+                onExportExcelRegister={handleRegisterExportExcel}
               />
             )}
           </>

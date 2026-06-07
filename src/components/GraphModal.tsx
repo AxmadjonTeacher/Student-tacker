@@ -346,7 +346,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
   // Compile weekly progression data for line chart
   const progressionData = React.useMemo(() => {
-    const historicalWeeks = (studentWeeks || []).filter(sw => sw && sw.student_id?.toString() === student.id?.toString());
+    const historicalWeeks = (studentWeeks || []).filter(sw => sw && sw.student_id?.toString().trim().toUpperCase() === student.id?.toString().trim().toUpperCase());
     const compiledHistorical = historicalWeeks.map(sw => {
       const wRawAtt = sw.attendance ?? 1;
       const wAttVal = typeof wRawAtt === 'string' ? parseFloat(wRawAtt) : wRawAtt;

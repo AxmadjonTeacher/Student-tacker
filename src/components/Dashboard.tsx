@@ -26,6 +26,7 @@ interface DashboardProps {
   availableClasses: string[];
   onSelectClass: (cls: string) => void;
   authRole?: string | null;
+  onSelectStudentGrant?: (student: Student) => void;
 }
 
 // Helper to extract numeric grade from class name (e.g., "5A" -> 5)
@@ -63,7 +64,8 @@ const DEFAULT_TICKS = [0, 30, 60, 90] as const;
 export const Dashboard: React.FC<DashboardProps> = ({ 
   students, 
   studentWeeks, 
-  authRole = null
+  authRole = null,
+  onSelectStudentGrant
 }) => {
   // Active/non-deleted students
   const activeStudents = useMemo(() => students.filter(s => !s.isDeleted), [students]);
@@ -521,6 +523,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               e.currentTarget.style.color = 'var(--text-secondary)';
               e.currentTarget.style.boxShadow = 'var(--glass-shadow-soft)';
             }}
+            onClick={() => {
+              if (onSelectStudentGrant && topStudents.grades5_6) {
+                onSelectStudentGrant(topStudents.grades5_6);
+              }
+            }}
             >
               <ArrowUpRight size={16} />
             </div>
@@ -578,6 +585,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               e.currentTarget.style.color = 'var(--text-secondary)';
               e.currentTarget.style.boxShadow = 'var(--glass-shadow-soft)';
             }}
+            onClick={() => {
+              if (onSelectStudentGrant && topStudents.grades7_8) {
+                onSelectStudentGrant(topStudents.grades7_8);
+              }
+            }}
             >
               <ArrowUpRight size={16} />
             </div>
@@ -634,6 +646,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               e.currentTarget.style.borderColor = 'var(--border-subtle)';
               e.currentTarget.style.color = 'var(--text-secondary)';
               e.currentTarget.style.boxShadow = 'var(--glass-shadow-soft)';
+            }}
+            onClick={() => {
+              if (onSelectStudentGrant && topStudents.grades9_11) {
+                onSelectStudentGrant(topStudents.grades9_11);
+              }
             }}
             >
               <ArrowUpRight size={16} />
