@@ -6,14 +6,11 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function main() {
-  const { data: newsData, error: newsError } = await supabase.from('news').select('*').limit(1);
-  console.log('news table query result:', { newsData, newsError });
-  
-  const { data: eventsData, error: eventsError } = await supabase.from('events').select('*').limit(1);
-  console.log('events table query result:', { eventsData, eventsError });
-
-  const { data: studentsData, error: studentsError } = await supabase.from('Students').select('*').limit(1);
-  console.log('Students table query result:', { studentsData, studentsError });
+  const { data, error } = await supabase.from('teachers').select('*').limit(1);
+  console.log('teachers table query result:', { data, error });
+  if (data && data.length > 0) {
+    console.log('Teachers columns:', Object.keys(data[0]));
+  }
 }
 
 main();

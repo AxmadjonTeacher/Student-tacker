@@ -1,8 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Lock, User, Eye, EyeOff, Loader2, Phone, X, Moon, Sun } from 'lucide-react';
 import { supabase } from '../supabase';
 import iconLight from '../assets/icon-light.png';
 import iconDark from '../assets/icon-dark.png';
+import {
+  isBiometricAvailable,
+  isBiometricEnrolled,
+  authenticateWithBiometric,
+  saveBiometricCredentials,
+  clearBiometricCredentials,
+} from '../utils/biometric';
+import { haptics } from '../utils/haptics';
 
 interface LoginScreenProps {
   onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher', studentData?: any) => void;
@@ -21,8 +29,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
-  
+  const [showBiometricBtn, setShowBiometricBtn] = useState(false);
+  const [biometricOffer, setBiometricOffer] = useState(false);
+
   const submitButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    isBiometricAvailable().then((available) => {
+      setShowBiometricBtn(available && isBiometricEnrolled());
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +60,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         if (trimmedPasscode === 'Azz21adminall') {
           localStorage.setItem('auth_role', 'admin');
           localStorage.setItem('admin_passcode', trimmedPasscode);
+          offerBiometricEnrollment(trimmedId, trimmedPasscode);
           onLoginSuccess('admin');
         } else {
           setError("Noto'g'ri admin paroli.");
@@ -57,6 +74,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         if (trimmedPasscode === 'Azz21admin') {
           localStorage.setItem('auth_role', 'admin123');
           localStorage.setItem('admin_passcode', trimmedPasscode);
+          offerBiometricEnrollment(trimmedId, trimmedPasscode);
           onLoginSuccess('admin123');
         } else {
           setError("Noto'g'ri admin paroli.");
@@ -106,6 +124,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         localStorage.setItem('teacher_id', teacherData.id.toString());
         localStorage.setItem('teacher_name', teacherData.name);
         localStorage.setItem('teacher_subject', teacherData.subject);
+        offerBiometricEnrollment(trimmedId, trimmedPasscode);
         onLoginSuccess('teacher');
         setIsLoading(false);
         return;
@@ -140,6 +159,46 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
   const handleSupportClick = () => {
     setShowSupport(true);
+  };
+
+  const offerBiometricEnrollment = async (id: string, pc: string) => {
+    const available = await isBiometricAvailable();
+    if (!available || isBiometricEnrolled()) return;
+    setBiometricOffer(true);
+    // Store temporarily so the confirm handler can save
+    (window as any).__pendingBioId = id;
+    (window as any).__pendingBioPc = pc;
+  };
+
+  const handleBiometricConfirm = async () => {
+    const id = (window as any).__pendingBioId as string | undefined;
+    const pc = (window as any).__pendingBioPc as string | undefined;
+    if (id && pc) {
+      await saveBiometricCredentials(id, pc);
+      setShowBiometricBtn(true);
+    }
+    setBiometricOffer(false);
+  };
+
+  const handleBiometricLogin = async () => {
+    haptics.medium();
+    const result = await authenticateWithBiometric();
+    if (result.success && result.username && result.password) {
+      setStudentId(result.username);
+      setPasscode(result.password);
+      // Re-use the form submit path by triggering submit manually
+      setIsLoading(true);
+      setStudentId(result.username);
+      setPasscode(result.password);
+      // Allow state to settle, then submit
+      setTimeout(() => submitButtonRef.current?.click(), 80);
+    } else if (result.error === 'not_enrolled') {
+      clearBiometricCredentials();
+      setShowBiometricBtn(false);
+    } else if (result.error !== 'cancelled') {
+      haptics.error();
+      setError('Biometrik tekshirish muvaffaqiyatsiz tugadi. Parol bilan kiring.');
+    }
   };
 
   return (
@@ -596,6 +655,35 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 )}
               </button>
             </form>
+
+            {/* Face ID / Touch ID button — shown only if enrolled */}
+            {showBiometricBtn && (
+              <button
+                onClick={handleBiometricLogin}
+                style={{
+                  width: '100%',
+                  background: 'transparent',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '12px',
+                  padding: '0.75rem',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  marginTop: '0.75rem',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              >
+                <span style={{ fontSize: '1.2rem' }}>󠁧</span>
+                Face ID bilan kirish
+              </button>
+            )}
           </div>
 
           {/* Footer links */}
@@ -677,6 +765,53 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
                 TELEFON: <strong style={{ color: 'var(--text-primary)', fontSize: '0.85rem', fontFamily: 'monospace' }}>+998 90 123 45 67</strong>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Face ID enrollment offer */}
+      {biometricOffer && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9000,
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--glass-thick-bg, rgba(255,255,255,0.88))',
+            backdropFilter: 'blur(40px)',
+            WebkitBackdropFilter: 'blur(40px)',
+            border: '1px solid rgba(255,255,255,0.20)',
+            borderRadius: 28,
+            padding: '2rem',
+            width: '88%',
+            maxWidth: 360,
+            boxShadow: '0 32px 64px rgba(0,0,0,0.20)',
+            textAlign: 'center',
+            color: 'var(--text-primary)',
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔐</div>
+            <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+              Face ID yoqilsinmi?
+            </div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Keyingi safar Face ID bilan bir zumda kirishingiz mumkin.
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => setBiometricOffer(false)}
+                style={{ flex: 1, padding: '0.75rem', borderRadius: 12, border: '1px solid var(--border-subtle)', background: 'transparent', cursor: 'pointer', fontWeight: 600, color: 'var(--text-secondary)' }}
+              >
+                Yo'q
+              </button>
+              <button
+                onClick={handleBiometricConfirm}
+                style={{ flex: 1, padding: '0.75rem', borderRadius: 12, border: 'none', background: 'var(--accent-gradient, #000)', color: '#fff', cursor: 'pointer', fontWeight: 700 }}
+              >
+                Yoqish
+              </button>
             </div>
           </div>
         </div>

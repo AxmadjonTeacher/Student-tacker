@@ -10,6 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor-community/camera-preview": "^8.0.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/camera": "^8.2.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/push-notifications": "^8.1.1",
+    "@capgo/capacitor-native-biometric": "^8.4.5",
     "@supabase/supabase-js": "^2.105.4",
     "lucide-react": "^1.16.0",
     "papaparse": "^5.5.3",
@@ -19,6 +26,9 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
     "@types/papaparse": "^5.5.2",

@@ -1036,6 +1036,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       <button
                         onClick={() => setIsAddStudentOpen(true)}
+                        className="drawer-action-btn"
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1070,6 +1071,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
                       <button
                         onClick={() => { setUploadStatus(null); setIsCsvModalOpen(true); }}
+                        className="drawer-action-btn"
                         style={{
                           display: 'flex',
                           alignItems: 'center',

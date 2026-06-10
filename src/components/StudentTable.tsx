@@ -1343,7 +1343,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   overflow: 'hidden',
                   background: 'var(--bg-card-hover)'
                 }}>
-                  <div style={{
+                  <div className="daily-header-row" style={{
                     display: 'grid',
                     gridTemplateColumns: '2fr 1fr 1fr',
                     padding: '0.75rem 1.25rem',
@@ -1396,6 +1396,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         return (
                           <div 
                             key={student.id}
+                            className="daily-row"
                             style={{
                               display: 'grid',
                               gridTemplateColumns: '2fr 1fr 1fr',
@@ -1406,66 +1407,68 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             }}
                           >
                             {/* Name */}
-                            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                            <span className="daily-row-name" style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                               {student.name} {student.surname}
                             </span>
 
-                            {/* Attendance Toggle */}
-                            <div style={{ display: 'flex', justifyContent: 'center' }}>
-                              {record ? (
-                                <button
-                                  disabled={isSaving}
-                                  onClick={() => handleToggleDailyRecord(student.id, 'attendance')}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    padding: '0.4rem 0.85rem',
-                                    borderRadius: '9999px',
-                                    border: 'none',
-                                    cursor: isSaving ? 'not-allowed' : 'pointer',
-                                    fontWeight: 750,
-                                    fontSize: '0.75rem',
-                                    transition: 'all 0.2s ease',
-                                    background: record.attendance ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                    color: record.attendance ? '#16a34a' : '#ef4444',
-                                    boxShadow: record.attendance ? '0 2px 6px rgba(22, 163, 74, 0.05)' : 'none'
-                                  }}
-                                >
-                                  <span>{record.attendance ? '✅ Keldi' : '❌ Kelmadi'}</span>
-                                </button>
-                              ) : (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>-</span>
-                              )}
-                            </div>
+                            <div className="daily-row-controls" style={{ display: 'contents' }}>
+                              {/* Attendance Toggle */}
+                              <div className="daily-control-item" style={{ display: 'flex', justifyContent: 'center' }}>
+                                {record ? (
+                                  <button
+                                    disabled={isSaving}
+                                    onClick={() => handleToggleDailyRecord(student.id, 'attendance')}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.4rem',
+                                      padding: '0.4rem 0.85rem',
+                                      borderRadius: '9999px',
+                                      border: 'none',
+                                      cursor: isSaving ? 'not-allowed' : 'pointer',
+                                      fontWeight: 750,
+                                      fontSize: '0.75rem',
+                                      transition: 'all 0.2s ease',
+                                      background: record.attendance ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                      color: record.attendance ? '#16a34a' : '#ef4444',
+                                      boxShadow: record.attendance ? '0 2px 6px rgba(22, 163, 74, 0.05)' : 'none'
+                                    }}
+                                  >
+                                    <span>{record.attendance ? '✅ Keldi' : '❌ Kelmadi'}</span>
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>-</span>
+                                )}
+                              </div>
 
-                            {/* Homework Toggle */}
-                            <div style={{ display: 'flex', justifyContent: 'center' }}>
-                              {record ? (
-                                <button
-                                  disabled={isSaving}
-                                  onClick={() => handleToggleDailyRecord(student.id, 'homework')}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    padding: '0.4rem 0.85rem',
-                                    borderRadius: '9999px',
-                                    border: 'none',
-                                    cursor: isSaving ? 'not-allowed' : 'pointer',
-                                    fontWeight: 750,
-                                    fontSize: '0.75rem',
-                                    transition: 'all 0.2s ease',
-                                    background: record.homework ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                    color: record.homework ? '#16a34a' : '#ef4444',
-                                    boxShadow: record.homework ? '0 2px 6px rgba(22, 163, 74, 0.05)' : 'none'
-                                  }}
-                                >
-                                  <span>{record.homework ? '✅ Bajarilgan' : '❌ Bajarilmagan'}</span>
-                                </button>
-                              ) : (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>-</span>
-                              )}
+                              {/* Homework Toggle */}
+                              <div className="daily-control-item" style={{ display: 'flex', justifyContent: 'center' }}>
+                                {record ? (
+                                  <button
+                                    disabled={isSaving}
+                                    onClick={() => handleToggleDailyRecord(student.id, 'homework')}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.4rem',
+                                      padding: '0.4rem 0.85rem',
+                                      borderRadius: '9999px',
+                                      border: 'none',
+                                      cursor: isSaving ? 'not-allowed' : 'pointer',
+                                      fontWeight: 750,
+                                      fontSize: '0.75rem',
+                                      transition: 'all 0.2s ease',
+                                      background: record.homework ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                      color: record.homework ? '#16a34a' : '#ef4444',
+                                      boxShadow: record.homework ? '0 2px 6px rgba(22, 163, 74, 0.05)' : 'none'
+                                    }}
+                                  >
+                                    <span>{record.homework ? '✅ Bajarilgan' : '❌ Bajarilmagan'}</span>
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>-</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
@@ -3227,6 +3230,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 onDoubleClick={() => handleDoubleClick('id', idVal)}
                                 title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                               >
+                                <span className="mobile-label">ID Raqami</span>
                                 {isEditing('id') ? (
                                   <input
                                     type="text"
@@ -3263,6 +3267,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 onDoubleClick={() => handleDoubleClick('passcode', passcodeVal || '')}
                                 title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                               >
+                                <span className="mobile-label">Parol</span>
                                 {isEditing('passcode') ? (
                                   <input
                                     type="text"
@@ -3310,6 +3315,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 onDoubleClick={() => handleDoubleClick('parentPhone', phoneVal || '+998')}
                                 title="Nusxa olish uchun bir marta, tahrirlash uchun ikki marta bosing"
                               >
+                                <span className="mobile-label">Telefon</span>
                                 {isEditing('parentPhone') ? (
                                   <input
                                     type="text"

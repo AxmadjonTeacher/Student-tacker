@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  Home, Search, BarChart2, Settings, LogOut,
+  Home, BarChart2, Settings, LogOut,
   BookOpen, Activity, ShieldAlert, Bell, Users, Trash2, GraduationCap,
   PanelLeftClose, Shield, Sun, Moon, Award
 } from 'lucide-react';
@@ -18,6 +18,11 @@ import ParentCabinet from './components/ParentCabinet';
 import TestorCabinet from './components/TestorCabinet';
 import iconLight from './assets/icon-light.png';
 import iconDark from './assets/icon-dark.png';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
+import { initPushNotifications, removePushListeners } from './utils/pushNotifications';
+import { haptics } from './utils/haptics';
+
 
 const INITIAL_CLASSES = ['1-Sinf', '2-Sinf', '3-Sinf', '4-Sinf', '5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'];
 
@@ -192,6 +197,32 @@ function App() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
+
+  // Capacitor Android Back Button handling for State Navigation
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const backButtonListener = CapApp.addListener('backButton', () => {
+        if (authRole === 'parent') {
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            CapApp.exitApp();
+          }
+        } else {
+          // Admin / Teacher flow
+          if (activeSubject !== 'DASHBOARD' || activeAdminTab !== 'home') {
+            setActiveSubject('DASHBOARD');
+            setActiveAdminTab('home');
+          } else {
+            CapApp.exitApp();
+          }
+        }
+      });
+      return () => {
+        backButtonListener.then(l => l.remove());
+      };
+    }
+  }, [activeSubject, activeAdminTab, authRole]);
 
   const loggedInStudent = useMemo(() => {
     return parentStudents.find(s => s.id === activeParentStudentId) || null;
@@ -661,6 +692,30 @@ function App() {
       localStorage.setItem('students_data_v2', JSON.stringify(students));
     }
   }, [students, loading, authRole]);
+
+  // ── OMR Realtime: receive score broadcasts from other teacher sessions ──
+  useEffect(() => {
+    if (!authRole || authRole === 'parent') return;
+
+    const channel = supabase
+      .channel('omr-scores')
+      .on('broadcast', { event: 'score_update' }, ({ payload }: { payload: { studentId: string; subject: string; score: number; week: string } }) => {
+        setStudents(prev =>
+          prev.map(s => {
+            if (s.id !== payload.studentId) return s;
+            return {
+              ...s,
+              ...(payload.subject === 'ENG'
+                ? { engScore: payload.score }
+                : { mathScore: payload.score }),
+            };
+          })
+        );
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [authRole]);
 
   // Reset activeClass to '5-Sinf' if activeClass is 'Barchasi' and subject is switched from DETAILS
   useEffect(() => {
@@ -1201,6 +1256,11 @@ function App() {
     setAuthRole(role);
     setActiveSubject('DASHBOARD');
     setActiveAdminTab('home');
+    haptics.success();
+    // Register push notifications for staff roles
+    if (role === 'admin' || role === 'admin123' || role === 'teacher' || role === 'testor') {
+      initPushNotifications(role).catch(console.error);
+    }
     if (role === 'admin' || role === 'admin123' || role === 'publish' || role === 'testor' || role === 'teacher') {
       setIsAdminMode(false);
       await fetchAllData();
@@ -1253,7 +1313,8 @@ function App() {
     localStorage.removeItem('teacher_id');
     localStorage.removeItem('teacher_name');
     localStorage.removeItem('teacher_subject');
-    
+    removePushListeners().catch(console.error);
+
     setAuthRole(null);
     setParentStudents([]);
     setActiveParentStudentId(null);
@@ -2415,8 +2476,17 @@ function App() {
         />
       </>
     );
-  }  const adminTabIndices = { home: 0, search: 1, stats: 2, settings: 3, news: 3, teachers: 3, trash: 3 };
-  const activeAdminIndex = adminTabIndices[activeAdminTab] || 0;
+  }
+  let activeAdminIndex = 0;
+  if (activeAdminTab === 'settings' || activeAdminTab === 'news' || activeAdminTab === 'teachers' || activeAdminTab === 'trash') {
+    activeAdminIndex = 3;
+  } else if (activeSubject === 'DETAILS') {
+    activeAdminIndex = 1;
+  } else if (activeSubject === 'ALL' || activeSubject === 'PRIMARY') {
+    activeAdminIndex = 2;
+  } else {
+    activeAdminIndex = 0;
+  }
 
   // Helper to filter students by grade range for teacher header
   const matchesGradeRangeForCount = (className: string | undefined, range: '5-6' | '7-8' | '9-11') => {
@@ -2529,7 +2599,10 @@ function App() {
             onClose={() => setActiveAdminTab('home')}
             isInline={true}
             activeSubject={activeSubject}
-            onSubjectChange={setActiveSubject}
+            onSubjectChange={(subj) => {
+              setActiveSubject(subj);
+              setActiveAdminTab('home');
+            }}
             isAdminMode={isAdminMode}
             onToggleAdmin={handleToggleAdmin}
             isDarkMode={isDarkMode}
@@ -2565,11 +2638,13 @@ function App() {
           <button 
             onClick={() => {
               setActiveAdminTab('home');
-              setActiveSubject('DASHBOARD');
+              if (activeSubject === 'DETAILS' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') {
+                setActiveSubject('DASHBOARD');
+              }
               setSearchTerm('');
               window.scrollTo(0, 0);
             }}
-            className={`tab-item ${activeAdminTab === 'home' ? 'active' : ''}`}
+            className={`tab-item ${activeAdminTab === 'home' && activeSubject !== 'DETAILS' && activeSubject !== 'ALL' && activeSubject !== 'PRIMARY' ? 'active' : ''}`}
           >
             <Home size={20} />
             <span>Bosh sahifa</span>
@@ -2577,41 +2652,40 @@ function App() {
           
           <button 
             onClick={() => {
-              setActiveAdminTab('search');
-              if (activeSubject === 'ALL' || activeSubject === 'DASHBOARD') {
-                setActiveSubject('ENG');
-              }
-              setTimeout(() => {
-                const input = document.querySelector('.mobile-sticky-search input') as HTMLInputElement;
-                if (input) {
-                  input.focus();
-                  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }, 100);
+              setActiveAdminTab('home');
+              setActiveSubject('DETAILS');
+              setSearchTerm('');
+              window.scrollTo(0, 0);
             }}
-            className={`tab-item ${activeAdminTab === 'search' ? 'active' : ''}`}
+            className={`tab-item ${activeAdminTab === 'home' && activeSubject === 'DETAILS' ? 'active' : ''}`}
           >
-            <Search size={20} />
-            <span>Qidiruv</span>
+            <Users size={20} />
+            <span>ID bo'limi</span>
           </button>
           
           <button 
             onClick={() => {
-              setActiveAdminTab('stats');
-              setActiveSubject('ALL');
+              setActiveAdminTab('home');
+              const grade = parseInt(activeClass);
+              if (!isNaN(grade) && grade >= 1 && grade <= 4) {
+                setActiveSubject('PRIMARY');
+              } else {
+                setActiveSubject('ALL');
+              }
+              setSearchTerm('');
               window.scrollTo(0, 0);
             }}
-            className={`tab-item ${activeAdminTab === 'stats' ? 'active' : ''}`}
+            className={`tab-item ${activeAdminTab === 'home' && (activeSubject === 'ALL' || activeSubject === 'PRIMARY') ? 'active' : ''}`}
           >
             <BarChart2 size={20} />
-            <span>Statistika</span>
+            <span>Haftalik tahlil</span>
           </button>
           
           <button 
             onClick={() => {
               setActiveAdminTab('settings');
             }}
-            className={`tab-item ${activeAdminTab === 'settings' ? 'active' : ''}`}
+            className={`tab-item ${activeAdminTab === 'settings' || activeAdminTab === 'news' || activeAdminTab === 'teachers' || activeAdminTab === 'trash' ? 'active' : ''}`}
           >
             <Settings size={20} />
             <span>Sozlamalar</span>

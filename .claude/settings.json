@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"/Users/ahmetyadgarov/Desktop/Students progress\" && npm run build && npx cap sync",
+            "timeout": 120,
+            "statusMessage": "Building and syncing to Capacitor..."
+          }
+        ]
+      }
+    ]
+  }
+}
