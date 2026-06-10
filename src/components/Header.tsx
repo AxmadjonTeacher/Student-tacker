@@ -103,7 +103,7 @@ const Header: React.FC<HeaderProps> = ({
   }, [activeClass, classes, activeSubject]);
 
   return (
-    <header className="sticky-header-container" style={{
+    <header className={`sticky-header-container${activeSubject === 'DASHBOARD' ? ' sticky-header-dashboard' : ''}`} style={{
       position: 'sticky',
       top: 0,
       zIndex: 999,

@@ -389,14 +389,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       `}} />
 
       {/* ── HEADER ROW ────────────────────────────────────────────────────── */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        width: '100%', 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
         paddingBottom: '1.25rem',
         borderBottom: '1px solid var(--border-subtle)',
-        marginBottom: '1rem' 
+        marginBottom: '1rem'
       }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.03em' }}>
           Bosh Sahifa
@@ -775,10 +776,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
                 >
                   {/* Left Side: Avatar & Name */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flex: 1, minWidth: 0, overflow: 'hidden' }}>
                     <div style={{
-                      width: '28px',
-                      height: '28px',
+                      width: '26px',
+                      height: '26px',
                       borderRadius: '50%',
                       background: 'var(--bg-card)',
                       border: '1.5px solid var(--border-color)',
@@ -786,22 +787,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.8rem',
-                      fontWeight: 900
+                      fontSize: '0.75rem',
+                      fontWeight: 900,
+                      flexShrink: 0
                     }}>
                       {idx + 1}
                     </div>
 
                     {lead.pictureUrl ? (
-                      <img 
-                        src={lead.pictureUrl} 
-                        alt="avatar" 
-                        style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--border-color)' }} 
+                      <img
+                        src={lead.pictureUrl}
+                        alt="avatar"
+                        style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--border-color)', flexShrink: 0 }}
                       />
                     ) : (
                       <div style={{
-                        width: '44px',
-                        height: '44px',
+                        width: '40px',
+                        height: '40px',
                         borderRadius: '50%',
                         background: 'var(--bg-card)',
                         color: 'var(--text-secondary)',
@@ -809,29 +811,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '0.9rem',
-                        fontWeight: 800
+                        fontSize: '0.85rem',
+                        fontWeight: 800,
+                        flexShrink: 0
                       }}>
                         {lead.name[0]}{lead.surname[0]}
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                         {lead.surname} {lead.name}
                       </span>
                     </div>
                   </div>
 
                   {/* Right Side: Score Metrics */}
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '42px' }}>
-                      <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>ENG</span>
-                      <span style={{ fontSize: '0.92rem', fontWeight: 900, color: 'var(--accent-primary)' }}>{lead.eng}%</span>
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexShrink: 0, marginLeft: '0.5rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '38px' }}>
+                      <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>ENG</span>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 900, color: 'var(--accent-primary)' }}>{lead.eng}%</span>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '42px' }}>
-                      <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>MATH</span>
-                      <span style={{ fontSize: '0.92rem', fontWeight: 900, color: '#f97316' }}>{lead.math}%</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '38px' }}>
+                      <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>MATH</span>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 900, color: '#f97316' }}>{lead.math}%</span>
                     </div>
                   </div>
                 </div>

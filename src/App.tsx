@@ -2511,7 +2511,7 @@ function App() {
 
   if (isMobile) {
     return (
-      <div className="app-container" style={{ paddingBottom: '80px', boxSizing: 'border-box' }}>
+      <div className="app-container" style={{ paddingBottom: 'calc(104px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
         <Header
           activeAdminTab={activeAdminTab}
           classes={availableClasses}
@@ -2634,7 +2634,7 @@ function App() {
         </div>
 
         <div className="mobile-tab-bar" style={{ display: 'flex' }}>
-          <div className="tab-capsule" style={{ left: `calc(${activeAdminIndex} * 25% + 8px)` }} />
+          <div className="tab-capsule" style={{ left: `calc(${activeAdminIndex} * 25% + 6px)` }} />
           <button 
             onClick={() => {
               setActiveAdminTab('home');
