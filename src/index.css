@@ -202,11 +202,13 @@ body {
   display: flex;
   flex-direction: column;
   letter-spacing: var(--tracking-normal);
-  /* Disable font synthesis — prevents faux-bold/italic artifacts on system font */
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Prevent horizontal overflow / scroll on mobile */
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -961,6 +963,12 @@ select option {
 
   .mobile-tab-bar .tab-item.active svg {
     transform: scale(1.12) translateY(-1px);
+  }
+
+  /* Tighter horizontal padding on mobile to prevent card overflow */
+  .app-container {
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
   }
 
   /* Scale-down inputs, selects & buttons on mobile */

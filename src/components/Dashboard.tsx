@@ -385,6 +385,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           .dashboard-columns {
             grid-template-columns: 1fr !important;
           }
+          .dashboard-card-inner {
+            padding: 1.25rem !important;
+          }
+          .leader-filter-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.5rem !important;
+          }
         }
       `}} />
 
@@ -394,7 +402,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        paddingTop: '0.75rem',
         paddingBottom: '1.25rem',
         borderBottom: '1px solid var(--border-subtle)',
         marginBottom: '1rem'
@@ -667,7 +675,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="dashboard-columns" style={{ display: 'grid', gridTemplateColumns: '4.5fr 5.5fr', gap: '1.25rem', width: '100%' }}>
         
         {/* LEFT COLUMN: Hafta Liderlari */}
-        <div style={{
+        <div className="dashboard-card-inner" style={{
           background: 'var(--bg-card)',
           backdropFilter: 'var(--backdrop-blur-md)',
           WebkitBackdropFilter: 'var(--backdrop-blur-md)',
@@ -687,7 +695,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </h2>
             
             {/* Week Dropdown & Grade Filter Toggles */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.65rem' }}>
+            <div className="leader-filter-row" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.65rem' }}>
               {/* Week Dropdown */}
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <select
