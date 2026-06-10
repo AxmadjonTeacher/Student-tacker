@@ -311,7 +311,7 @@ const Header: React.FC<HeaderProps> = ({
           .sticky-header-container {
             padding-left: 0.75rem !important;
             padding-right: 0.75rem !important;
-            padding-top: 0.5rem !important;
+            padding-top: calc(0.5rem + env(safe-area-inset-top, 0px)) !important;
             padding-bottom: 0.5rem !important;
           }
         }

@@ -388,10 +388,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
           .dashboard-card-inner {
             padding: 1.25rem !important;
           }
+          .dashboard-card-chart {
+            padding: 1.25rem !important;
+          }
           .leader-filter-row {
             flex-direction: column !important;
             align-items: flex-start !important;
             gap: 0.5rem !important;
+          }
+          .chart-grade-toggle {
+            flex-wrap: wrap !important;
+            gap: 0.3rem !important;
+          }
+          .chart-grade-toggle button {
+            font-size: 0.62rem !important;
+            padding: 0.25rem 0.55rem !important;
           }
         }
       `}} />
@@ -855,7 +866,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
           {/* Chart 1: Average Term Mastery Index */}
-          <div style={{
+          <div className="dashboard-card-chart" style={{
             background: 'var(--bg-card)',
             backdropFilter: 'var(--backdrop-blur-md)',
             WebkitBackdropFilter: 'var(--backdrop-blur-md)',
@@ -921,7 +932,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Class range toggle (5-6, 7-8, 9-11) */}
-            <div style={{ display: 'flex', gap: '0.35rem' }}>
+            <div className="chart-grade-toggle" style={{ display: 'flex', gap: '0.35rem' }}>
               {[
                 { id: '5-6', label: '5-6 Sinflar' },
                 { id: '7-8', label: '7-8 Sinflar' },
@@ -979,7 +990,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Chart 2: Attendance History Rate */}
-          <div style={{
+          <div className="dashboard-card-chart" style={{
             background: 'var(--bg-card)',
             backdropFilter: 'var(--backdrop-blur-md)',
             WebkitBackdropFilter: 'var(--backdrop-blur-md)',

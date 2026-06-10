@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { 
-  UploadCloud, X, Download, Trash2, UserPlus, Settings,
-  Calendar, AlertCircle, Tag, Image as ImageIcon, Plus, 
+import {
+  UploadCloud, X, Download, Trash2, UserPlus, Settings, Users,
+  Calendar, AlertCircle, Tag, Image as ImageIcon, Plus,
   ChevronDown, ChevronUp, Clock, Eye, Send, Bell, LogOut, Edit3,
   ArrowUpRight, CheckCircle2
 } from 'lucide-react';
@@ -717,94 +717,48 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
             padding: '0.25rem',
             margin: '0 1.5rem 1rem',
             border: '1px solid var(--border-subtle)',
-            flexShrink: 0
+            flexShrink: 0,
+            gap: '0.1rem'
           }}>
-            <button
-              onClick={() => setActiveTab('settings')}
-              style={{
-                flex: 1,
-                background: activeTab === 'settings' ? 'var(--accent-hero)' : 'transparent',
-                color: activeTab === 'settings' ? '#ffffff' : 'var(--text-secondary)',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '0.5rem 0.25rem',
-                fontSize: '0.68rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: activeTab === 'settings' ? '0 8px 16px var(--accent-glow)' : 'none',
-                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              SOZLAMALAR
-            </button>
-            <button
-              onClick={() => setActiveTab('news')}
-              style={{
-                flex: 1,
-                background: activeTab === 'news' ? 'var(--accent-hero)' : 'transparent',
-                color: activeTab === 'news' ? '#ffffff' : 'var(--text-secondary)',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '0.5rem 0.25rem',
-                fontSize: '0.68rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: activeTab === 'news' ? '0 8px 16px var(--accent-glow)' : 'none',
-                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              YANGILIKLAR
-            </button>
-            <button
-              onClick={() => setActiveTab('teachers')}
-              style={{
-                flex: 1,
-                background: activeTab === 'teachers' ? 'var(--accent-hero)' : 'transparent',
-                color: activeTab === 'teachers' ? '#ffffff' : 'var(--text-secondary)',
-                border: 'none',
-                borderRadius: '9999px',
-                padding: '0.5rem 0.25rem',
-                fontSize: '0.68rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: activeTab === 'teachers' ? '0 8px 16px var(--accent-glow)' : 'none',
-                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              O'QITUVCHILAR
-            </button>
-            {isAdminMode && (
-              <button
-                onClick={() => setActiveTab('trash')}
-                style={{
-                  flex: 1,
-                  background: activeTab === 'trash' ? 'var(--accent-hero)' : 'transparent',
-                  color: activeTab === 'trash' ? '#ffffff' : 'var(--text-secondary)',
-                  border: 'none',
-                  borderRadius: '9999px',
-                  padding: '0.5rem 0.25rem',
-                  fontSize: '0.68rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  boxShadow: activeTab === 'trash' ? '0 8px 16px var(--accent-glow)' : 'none',
-                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}
-              >
-                SAVAT ({deletedStudents.length + deletedWeeks.length})
-              </button>
-            )}
+            {([
+              { id: 'settings', icon: Settings, label: 'Sozlama' },
+              { id: 'news',     icon: Bell,     label: 'Yangilik' },
+              { id: 'teachers', icon: Users,     label: "O'qituv." },
+              ...(isAdminMode ? [{ id: 'trash', icon: Trash2, label: `Savat (${deletedStudents.length + deletedWeeks.length})` }] : [])
+            ] as { id: string; icon: React.ElementType; label: string }[]).map(({ id, icon: Icon, label }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id as any)}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.2rem',
+                    background: isActive ? 'var(--accent-hero)' : 'transparent',
+                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                    border: 'none',
+                    borderRadius: '9999px',
+                    padding: '0.45rem 0.2rem',
+                    fontSize: '0.58rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: isActive ? '0 8px 16px var(--accent-glow)' : 'none',
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    minWidth: 0
+                  }}
+                >
+                  <Icon size={13} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', display: 'block' }}>{label}</span>
+                </button>
+              );
+            })}
           </div>
         )}
 
