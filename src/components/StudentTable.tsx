@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Student, ActiveSubject, Teacher } from '../types';
+import type { Student, ActiveSubject, Teacher, SubjectScore } from '../types';
 import { Inbox, LineChart, ArrowRight, Trash2, Pencil, Users, MoreVertical, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Key, Phone, Save, RotateCw, Download, X, Calendar, Plus } from 'lucide-react';
 import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
@@ -33,6 +33,7 @@ interface StudentTableProps {
   onDeleteTeacherTable?: (teacherName: string) => void;
   onMoveTeacherTable?: (teacherName: string, direction: 'up' | 'down') => void;
   studentWeeks?: any[];
+  subjectScores?: SubjectScore[];
   onSaveCredentials?: (changes: Record<string, Partial<Student>>) => Promise<boolean>;
   onBatchRegenerateCredentials?: (regenerateIds: boolean, regeneratePasscodes: boolean, targetClass: string | null) => Promise<boolean>;
   teachers?: Teacher[];
@@ -65,6 +66,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onDeleteTeacherTable,
   onMoveTeacherTable,
   studentWeeks = [],
+  subjectScores = [],
   onSaveCredentials,
   onBatchRegenerateCredentials,
   teachers = [],
@@ -3914,11 +3916,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
       />
 
       {selectedStudent && (
-        <GraphModal 
-          student={selectedStudent} 
-          onClose={() => setSelectedStudent(null)} 
+        <GraphModal
+          student={selectedStudent}
+          onClose={() => setSelectedStudent(null)}
           activeSubject={activeSubject === 'GRANT' ? grantSubject : (activeSubject === 'ENG_MATH' ? (authRole === 'teacher' ? (localStorage.getItem('teacher_subject') as ActiveSubject || 'ENG') : engMathSubSubject) : activeSubject)}
           studentWeeks={studentWeeks}
+          subjectScores={subjectScores}
           showSummerPlan={showSummerPlan}
         />
       )}

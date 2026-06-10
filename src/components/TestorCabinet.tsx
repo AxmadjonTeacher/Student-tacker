@@ -21,7 +21,7 @@ import {
   Trash2,
   Download
 } from 'lucide-react';
-import type { Student, Teacher } from '../types';
+import type { Student, Teacher, SubjectScore } from '../types';
 import StudentTable from './StudentTable';
 import iconLight from '../assets/icon-light.png';
 import { supabaseTestor } from '../supabase_testor';
@@ -38,7 +38,9 @@ import {
   STUDENT_ID_X,
   STUDENT_ID_Y_START,
   STUDENT_ID_Y_STEP,
-  BUBBLE_RADIUS
+  BUBBLE_RADIUS,
+  SUPPORTED_SCAN_COUNTS,
+  SELECTABLE_QUESTION_COUNTS
 } from '../utils/omrScanner';
 import type { Point } from '../utils/omrScanner';
 
@@ -68,6 +70,9 @@ const parseWeekToSortValue = (weekStr: string): number => {
   
   return 1000 + monthIdx * 100 + day;
 };
+
+// Sentinel group for tests that have no week assigned in the testor DB
+const UNASSIGNED_WEEK = '__unassigned__';
 
 // Fallback tests in case database has no data yet - REMOVED
 
@@ -429,6 +434,7 @@ const OMRSheetMockup: React.FC<OMRSheetMockupProps> = ({ studentIdCode, answers,
 interface TestorCabinetProps {
   students: Student[];
   studentWeeks: any[];
+  subjectScores?: SubjectScore[];
   teachers: Teacher[];
   onLogout: (force?: boolean) => void;
   onUpdateStudentScore?: (studentId: string, subject: string, score: number, week: string) => Promise<void>;
@@ -437,6 +443,7 @@ interface TestorCabinetProps {
 const TestorCabinet: React.FC<TestorCabinetProps> = ({
   students,
   studentWeeks,
+  subjectScores = [],
   teachers,
   onLogout,
   onUpdateStudentScore
@@ -462,20 +469,47 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const [dbTests, setDbTests] = useState<any[]>([]);
   const [dbLoading, setDbLoading] = useState(true);
 
+  // Available weeks from the main DB (used by the add-test modal, scan-save
+  // defaulting, and the Tahlil week dropdown) — declared early on purpose
+  const weeksList = useMemo(() => {
+    const weeksSet = new Set<string>();
+    studentWeeks.forEach(sw => {
+      if (sw.week && !sw.is_deleted) weeksSet.add(sw.week);
+    });
+    return Array.from(weeksSet).sort((a, b) => {
+      return parseWeekToSortValue(a) - parseWeekToSortValue(b);
+    });
+  }, [studentWeeks]);
+
   // States for adding a new test
+  // newTestSubject holds 'Matematika' | 'Ingliz Tili' | an existing custom subject
+  // name | 'CUSTOM' (sentinel for the "new subject" text input).
   const [showAddTestModal, setShowAddTestModal] = useState(false);
   const [newTestName, setNewTestName] = useState('');
-  const [newTestSubject, setNewTestSubject] = useState<'Matematika' | 'Ingliz Tili'>('Matematika');
+  const [newTestSubject, setNewTestSubject] = useState<string>('Matematika');
+  const [newCustomSubjectName, setNewCustomSubjectName] = useState('');
   const [newTestTeacher, setNewTestTeacher] = useState('');
   const [newTestLevel, setNewTestLevel] = useState('5-Sinf');
   const [newTestQuestionsCount, setNewTestQuestionsCount] = useState(15);
+  const [newTestWeek, setNewTestWeek] = useState('');
   const [isCreatingTest, setIsCreatingTest] = useState(false);
 
-  // Filter teachers list based on active subject selection in the modal
+  // Filter teachers list based on active subject selection in the modal.
+  // Custom subjects can be taught by anyone, so the full list is shown.
   const filteredTeachersForNewTest = useMemo(() => {
-    const filterSubject = newTestSubject === 'Matematika' ? 'MATH' : 'ENG';
-    return teachers.filter(t => t.subject === filterSubject);
+    if (newTestSubject === 'Matematika') return teachers.filter(t => t.subject === 'MATH');
+    if (newTestSubject === 'Ingliz Tili') return teachers.filter(t => t.subject === 'ENG');
+    return teachers;
   }, [newTestSubject, teachers]);
+
+  // Custom subjects already present among tests (offered for reuse in the modal)
+  const existingCustomSubjects = useMemo(() => {
+    return Array.from(new Set(
+      dbTests
+        .map(t => t.subject)
+        .filter(s => s && s !== 'Matematika' && s !== 'Ingliz Tili' && s !== 'Boshqa')
+    )).sort() as string[];
+  }, [dbTests]);
 
   // Set default teacher when filtered list changes or when modal is opened
   useEffect(() => {
@@ -491,26 +525,38 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const openAddTestModal = () => {
     setNewTestName('');
     setNewTestSubject('Matematika');
+    setNewCustomSubjectName('');
     const mathTeachers = teachers.filter(t => t.subject === 'MATH');
     setNewTestTeacher(mathTeachers.length > 0 ? mathTeachers[0].name : '');
     setNewTestLevel('5-Sinf');
     setNewTestQuestionsCount(15);
+    setNewTestWeek('');
     setShowAddTestModal(true);
   };
 
   // States for folder tree expansion in "Papkalar" section
+  // Hierarchy: Week → Subject → Teacher → Tests; child keys are week-prefixed
+  const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   const [expandedTeachers, setExpandedTeachers] = useState<Record<string, boolean>>({});
 
-  const toggleSubject = (subj: string) => {
-    setExpandedSubjects(prev => ({
+  const toggleWeek = (week: string) => {
+    setExpandedWeeks(prev => ({
       ...prev,
-      [subj]: !prev[subj]
+      [week]: !prev[week]
     }));
   };
 
-  const toggleTeacher = (subj: string, teacher: string) => {
-    const key = `${subj}_${teacher}`;
+  const toggleSubject = (week: string, subj: string) => {
+    const key = `${week}__${subj}`;
+    setExpandedSubjects(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const toggleTeacher = (week: string, subj: string, teacher: string) => {
+    const key = `${week}__${subj}__${teacher}`;
     setExpandedTeachers(prev => ({
       ...prev,
       [key]: !prev[key]
@@ -519,8 +565,13 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
   const handleCreateTest = async (e: React.FormEvent) => {
     e.preventDefault();
+    const effectiveSubject = newTestSubject === 'CUSTOM' ? newCustomSubjectName.trim() : newTestSubject;
     if (!newTestName.trim()) {
       alert("Iltimos, test nomini kiriting!");
+      return;
+    }
+    if (!effectiveSubject) {
+      alert("Iltimos, yangi fan nomini kiriting!");
       return;
     }
     if (!newTestTeacher) {
@@ -537,19 +588,34 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     const newTestData = {
       name: newTestName.trim(),
-      subject: newTestSubject,
+      subject: effectiveSubject,
       teacher_name: newTestTeacher,
       level: newTestLevel,
       questions_json: questionsArray,
       student_count: 0
     };
 
+    // week/question_count columns may not exist yet in the testor DB
+    // (TEST_GENERATOR_INTEGRATION.md SQL not run) — sent separately so the
+    // insert can be retried without them on a 42703 undefined-column error.
+    const newColumnsData = {
+      week: newTestWeek || null,
+      question_count: newTestQuestionsCount
+    };
+
     try {
-      // 1. Try to insert to database
-      const { data, error } = await supabaseTestor
+      // 1. Try to insert to database (with new columns, retry without on 42703)
+      let { data, error } = await supabaseTestor
         .from('public_tests')
-        .insert([newTestData])
+        .insert([{ ...newTestData, ...newColumnsData }])
         .select();
+
+      if (error && (error.code === '42703' || (error.message || '').includes('column'))) {
+        ({ data, error } = await supabaseTestor
+          .from('public_tests')
+          .insert([newTestData])
+          .select());
+      }
 
       if (error) {
         throw error;
@@ -564,10 +630,11 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           created_at: data[0].created_at || new Date().toISOString(),
           teacher_name: data[0].teacher_name || newTestData.teacher_name,
           level: data[0].level || newTestData.level,
-          questions_json: Array.isArray(data[0].questions_json) 
-            ? data[0].questions_json 
+          questions_json: Array.isArray(data[0].questions_json)
+            ? data[0].questions_json
             : newTestData.questions_json,
-          student_count: data[0].student_count || 0
+          student_count: data[0].student_count || 0,
+          week: data[0].week || newTestWeek || null
         };
         setDbTests(prev => [created, ...prev]);
         alert("Yangi test muvaffaqiyatli yaratildi va ma'lumotlar bazasiga saqlandi!");
@@ -577,6 +644,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         const localCreated = {
           id: localId,
           ...newTestData,
+          ...newColumnsData,
           created_at: new Date().toISOString()
         };
         setDbTests(prev => [localCreated, ...prev]);
@@ -589,6 +657,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       const localCreated = {
         id: localId,
         ...newTestData,
+        ...newColumnsData,
         created_at: new Date().toISOString()
       };
       setDbTests(prev => [localCreated, ...prev]);
@@ -633,6 +702,13 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             questions = Array(15).fill("A");
           }
 
+          // question_count column (when present) is authoritative over key array length
+          if (typeof t.question_count === 'number' && t.question_count > 0 && questions.length !== t.question_count) {
+            questions = questions.length > t.question_count
+              ? questions.slice(0, t.question_count)
+              : [...questions, ...Array(t.question_count - questions.length).fill("A")];
+          }
+
           return {
             id: t.id.toString(),
             name: t.name || 'Nomsiz test',
@@ -641,7 +717,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             teacher_name: t.teacher_name || "O'qituvchi",
             level: t.level || '5-Sinf',
             questions_json: questions,
-            student_count: t.student_count || 0
+            student_count: t.student_count || 0,
+            week: t.week || null
           };
         });
         setDbTests(formatted);
@@ -724,27 +801,41 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const testsClassFilter = 'ALL';
   const [selectedTest, setSelectedTest] = useState<any | null>(null);
 
-  // Dynamic grouping computed values
-  const subjects = useMemo(() => {
+  // Dynamic grouping computed values.
+  // Tree hierarchy: Week → Subject → Teacher → Tests. Tests without a week
+  // are grouped under the UNASSIGNED_WEEK sentinel, rendered last.
+  const testWeekOf = (t: { week?: string | null }) => t.week || UNASSIGNED_WEEK;
+
+  const testWeeks = useMemo(() => {
     const set = new Set<string>();
-    dbTests.forEach(t => {
-      if (t.subject) set.add(t.subject);
+    dbTests.forEach(t => set.add(testWeekOf(t)));
+    return Array.from(set).sort((a, b) => {
+      if (a === UNASSIGNED_WEEK) return 1;
+      if (b === UNASSIGNED_WEEK) return -1;
+      return parseWeekToSortValue(a) - parseWeekToSortValue(b);
     });
-    return Array.from(set).sort();
   }, [dbTests]);
 
-  const getTeachersForSubject = (subj: string) => {
+  const getSubjectsForWeek = (week: string) => {
     const set = new Set<string>();
     dbTests.forEach(t => {
-      if (t.subject === subj && t.teacher_name) {
+      if (testWeekOf(t) === week && t.subject) set.add(t.subject);
+    });
+    return Array.from(set).sort();
+  };
+
+  const getTeachersForSubject = (week: string, subj: string) => {
+    const set = new Set<string>();
+    dbTests.forEach(t => {
+      if (testWeekOf(t) === week && t.subject === subj && t.teacher_name) {
         set.add(t.teacher_name);
       }
     });
     return Array.from(set).sort();
   };
 
-  const getTestsForTeacher = (subj: string, teacher: string) => {
-    return dbTests.filter(t => t.subject === subj && t.teacher_name === teacher);
+  const getTestsForTeacher = (week: string, subj: string, teacher: string) => {
+    return dbTests.filter(t => testWeekOf(t) === week && t.subject === subj && t.teacher_name === teacher);
   };
 
   // Options views & Camera scanning states
@@ -808,6 +899,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         setCurrentTestScans(JSON.parse(saved));
       } else {
         setCurrentTestScans([]);
+      }
+      // Tests linked to a week pre-select that week for scan saving
+      // (the review dropdown still allows manual override)
+      if (selectedTest.week && selectedTest.week !== UNASSIGNED_WEEK && weeksList.includes(selectedTest.week)) {
+        setSelectedWeek(selectedTest.week);
+        setSelectedWeekForSaving(selectedTest.week);
       }
     } else {
       setCurrentTestScans([]);
@@ -1056,15 +1153,15 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     // 2. Warp the frame to the destination canvas
     warpQuadrilateral(ctx, corners, warpCanvas);
     
-    // 3. Parse the bubbled answers & ID
-    const parsed = parseOMRSheet(warpCanvas);
-    
-    // 4. Grade against the selected test key
+    // 3. Grade against the selected test key
     const rawKeys = selectedTest.questions_json || Array(15).fill("A");
-    const testKeys = rawKeys.map((q: any) => 
+    const testKeys = rawKeys.map((q: any) =>
       typeof q === 'object' && q !== null ? q.correct_answer : q
     );
     const numQuestions = testKeys.length;
+
+    // 4. Parse the bubbled answers & ID using the layout for this question count
+    const parsed = parseOMRSheet(warpCanvas, numQuestions);
     
     let studentAnswers = [...parsed.answers];
     if (studentAnswers.length < numQuestions) {
@@ -1411,16 +1508,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     return students.filter(s => !s.isDeleted);
   }, [students]);
 
-  const weeksList = useMemo(() => {
-    const weeksSet = new Set<string>();
-    studentWeeks.forEach(sw => {
-      if (sw.week && !sw.is_deleted) weeksSet.add(sw.week);
-    });
-    return Array.from(weeksSet).sort((a, b) => {
-      return parseWeekToSortValue(a) - parseWeekToSortValue(b);
-    });
-  }, [studentWeeks]);
-
   const availableClasses = useMemo(() => {
     const groups = new Set([
       '5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf',
@@ -1445,6 +1532,29 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     });
     return counts;
   }, [activeStudents, availableClasses]);
+
+  // Custom-subject (non Eng/Math) averages for the Tahlil strip:
+  // per-subject avg % and student count for the selected week + active class
+  const customSubjectStats = useMemo(() => {
+    if (!subjectScores || subjectScores.length === 0 || !selectedWeek) return [];
+    const classStudentIds = new Set(
+      activeStudents
+        .filter(s => getClassGroup(s.className.toUpperCase()) === activeClass)
+        .map(s => s.id?.toString())
+    );
+    const map: Record<string, { sum: number; count: number }> = {};
+    subjectScores.forEach(ss => {
+      if (ss.week !== selectedWeek) return;
+      if (!classStudentIds.has(ss.student_id?.toString())) return;
+      if (typeof ss.score !== 'number') return;
+      if (!map[ss.subject]) map[ss.subject] = { sum: 0, count: 0 };
+      map[ss.subject].sum += ss.score;
+      map[ss.subject].count++;
+    });
+    return Object.entries(map)
+      .map(([subject, v]) => ({ subject, avg: Math.round(v.sum / v.count), count: v.count }))
+      .sort((a, b) => a.subject.localeCompare(b.subject));
+  }, [subjectScores, activeStudents, activeClass, selectedWeek]);
 
   // Set default class selector
   useEffect(() => {
@@ -1642,31 +1752,58 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               Javoblarni tahrirlash
             </button>
 
-            <button
-              onClick={() => setShowScanModal(true)}
-              style={{
-                background: colors.primary,
-                border: `2.5px solid ${colors.primary}`,
-                color: '#ffffff',
-                borderRadius: '14px',
-                padding: '0.75rem',
-                fontSize: '1rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                textAlign: 'center',
-                letterSpacing: '0.02em',
-                boxShadow: `0 4px 12px ${colors.primary}20`,
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = `${colors.primary}dd`;
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = colors.primary;
-              }}
-            >
-              Varaqni skanerlash
-            </button>
+            {SUPPORTED_SCAN_COUNTS.includes(numQuestions) ? (
+              <button
+                onClick={() => setShowScanModal(true)}
+                style={{
+                  background: colors.primary,
+                  border: `2.5px solid ${colors.primary}`,
+                  color: '#ffffff',
+                  borderRadius: '14px',
+                  padding: '0.75rem',
+                  fontSize: '1rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  letterSpacing: '0.02em',
+                  boxShadow: `0 4px 12px ${colors.primary}20`,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = `${colors.primary}dd`;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = colors.primary;
+                }}
+              >
+                Varaqni skanerlash
+              </button>
+            ) : (
+              <div>
+                <button
+                  disabled
+                  title={`${numQuestions} savollik varaqlar uchun skaner tez orada qo'shiladi`}
+                  style={{
+                    width: '100%',
+                    background: '#e2e8f0',
+                    border: '2.5px solid #e2e8f0',
+                    color: '#94a3b8',
+                    borderRadius: '14px',
+                    padding: '0.75rem',
+                    fontSize: '1rem',
+                    fontWeight: 800,
+                    cursor: 'not-allowed',
+                    textAlign: 'center',
+                    letterSpacing: '0.02em'
+                  }}
+                >
+                  Varaqni skanerlash
+                </button>
+                <div style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 700, textAlign: 'center', marginTop: '0.4rem' }}>
+                  {numQuestions} savollik varaqlar uchun skaner tez orada qo'shiladi
+                </div>
+              </div>
+            )}
 
             <button
               onClick={() => setShowReviewModal(true)}
@@ -1964,7 +2101,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               <RefreshCw size={20} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
               <span style={{ fontWeight: 800 }}>Mundarija yangilanmoqda...</span>
             </div>
-          ) : subjects.length === 0 ? (
+          ) : dbTests.length === 0 ? (
             <div style={{
               padding: '4rem 2rem',
               textAlign: 'center',
@@ -1986,17 +2123,97 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               </div>
             </div>
           ) : (
-            /* Tree View Hierarchy */
+            /* Tree View Hierarchy: Week → Subject → Teacher → Tests */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {subjects.map((subj, sIdx) => {
-                const isSubjExpanded = !!expandedSubjects[subj];
-                const subjectTeachers = getTeachersForSubject(subj);
-                
+              {testWeeks.map((week, wIdx) => {
+                const isWeekExpanded = !!expandedWeeks[week];
+                const weekSubjects = getSubjectsForWeek(week);
+                const weekLabel = week === UNASSIGNED_WEEK ? 'Haftaga biriktirilmagan' : week;
+
                 return (
-                  <div key={sIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div key={wIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {/* Week Folder Row */}
+                    <div
+                      onClick={() => toggleWeek(week)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0.8rem 1rem',
+                        borderRadius: '14px',
+                        border: isWeekExpanded ? `1.5px solid ${colors.primary}` : '1.5px solid #e2e8f0',
+                        background: isWeekExpanded ? colors.bg : '#f8fafc',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
+                      }}
+                      onMouseEnter={e => {
+                        if (!isWeekExpanded) {
+                          e.currentTarget.style.borderColor = colors.border;
+                          e.currentTarget.style.background = colors.bg;
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isWeekExpanded) {
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                          e.currentTarget.style.background = '#f8fafc';
+                        }
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+                        <div style={{
+                          color: colors.primary,
+                          transform: isWeekExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexShrink: 0
+                        }}>
+                          <ChevronRight size={16} style={{ strokeWidth: 2.5 }} />
+                        </div>
+                        <Calendar size={18} color={colors.primary} style={{ flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.88rem', fontWeight: 850, color: isWeekExpanded ? colors.text : '#0f172a', letterSpacing: '0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {weekLabel}
+                        </span>
+                      </div>
+
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '0.5rem' }}>
+                        {weekSubjects.length} ta fan
+                      </span>
+                    </div>
+
+                    {/* Week Children (Subjects) */}
+                    {isWeekExpanded && (
+                      <div style={{
+                        borderLeft: '2px solid #cbd5e1',
+                        marginLeft: isMobile ? '0.6rem' : '1.25rem',
+                        paddingLeft: isMobile ? '0.85rem' : '1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                        position: 'relative',
+                        paddingTop: '0.25rem',
+                        paddingBottom: '0.25rem'
+                      }}>
+              {weekSubjects.map((subj, sIdx) => {
+                const isSubjExpanded = !!expandedSubjects[`${week}__${subj}`];
+                const subjectTeachers = getTeachersForSubject(week, subj);
+
+                return (
+                  <div key={sIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
+                    {/* Horizontal connector branch line to this subject folder */}
+                    <div style={{
+                      position: 'absolute',
+                      left: isMobile ? '-0.85rem' : '-1.5rem',
+                      top: '1.25rem',
+                      width: isMobile ? '0.6rem' : '1.25rem',
+                      height: '2px',
+                      background: '#cbd5e1'
+                    }} />
+
                     {/* Subject Folder Row */}
                     <div
-                      onClick={() => toggleSubject(subj)}
+                      onClick={() => toggleSubject(week, subj)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -2073,9 +2290,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                           </div>
                         ) : (
                           subjectTeachers.map((teacher, tIdx) => {
-                            const teacherKey = `${subj}_${teacher}`;
+                            const teacherKey = `${week}__${subj}__${teacher}`;
                             const isTeacherExpanded = !!expandedTeachers[teacherKey];
-                            const teacherTests = getTestsForTeacher(subj, teacher);
+                            const teacherTests = getTestsForTeacher(week, subj, teacher);
 
                             return (
                               <div key={tIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
@@ -2091,7 +2308,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
                                 {/* Teacher Folder Row */}
                                 <div
-                                  onClick={() => toggleTeacher(subj, teacher)}
+                                  onClick={() => toggleTeacher(week, subj, teacher)}
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -2229,6 +2446,11 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   </div>
                 );
               })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -2359,6 +2581,49 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           />
         </div>
       </div>
+
+      {/* Custom-subject results strip (hidden when there are none for this week/class) */}
+      {customSubjectStats.length > 0 && (
+        <div style={{
+          display: 'flex',
+          gap: '0.75rem',
+          overflowX: 'auto',
+          marginBottom: '1rem',
+          paddingBottom: '0.25rem',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none'
+        }}>
+          {customSubjectStats.map(stat => (
+            <div
+              key={stat.subject}
+              style={{
+                background: '#ffffff',
+                border: '1.5px solid #e2e8f0',
+                borderRadius: '18px',
+                padding: '0.85rem 1.1rem',
+                minWidth: '150px',
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.3rem'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <BookOpen size={14} color={colors.primary} style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {stat.subject}
+                </span>
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 850, color: colors.primary }}>
+                {stat.avg}%
+              </div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>
+                {stat.count} ta o'quvchi · {selectedWeek}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Render view-only StudentTable */}
       <div className="tab-admin-settings-hide">
@@ -4045,7 +4310,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Fan yo'nalishi:</label>
               <select
                 value={newTestSubject}
-                onChange={(e) => setNewTestSubject(e.target.value as 'Matematika' | 'Ingliz Tili')}
+                onChange={(e) => setNewTestSubject(e.target.value)}
                 style={{
                   padding: '0.65rem 0.85rem',
                   borderRadius: '10px',
@@ -4060,7 +4325,34 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               >
                 <option value="Matematika">Matematika</option>
                 <option value="Ingliz Tili">Ingliz Tili</option>
+                {existingCustomSubjects.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+                <option value="CUSTOM">+ Yangi fan...</option>
               </select>
+              {newTestSubject === 'CUSTOM' && (
+                <input
+                  type="text"
+                  placeholder="Yangi fan nomi (masalan: Fizika)"
+                  value={newCustomSubjectName}
+                  onChange={(e) => setNewCustomSubjectName(e.target.value)}
+                  required
+                  autoFocus
+                  style={{
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: `1.5px solid ${colors.border}`,
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    background: colors.bg,
+                    marginTop: '0.35rem'
+                  }}
+                  onFocus={e => e.target.style.borderColor = colors.primary}
+                  onBlur={e => e.target.style.borderColor = colors.border}
+                />
+              )}
             </div>
 
             {/* Teacher */}
@@ -4117,29 +4409,65 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               </select>
             </div>
 
-            {/* Questions count */}
+            {/* Week */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Savollar soni:</label>
-              <input
-                type="number"
-                min="1"
-                max="100"
-                value={newTestQuestionsCount}
-                onChange={(e) => setNewTestQuestionsCount(parseInt(e.target.value, 10) || 15)}
-                required
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Hafta:</label>
+              <select
+                value={newTestWeek}
+                onChange={(e) => setNewTestWeek(e.target.value)}
                 style={{
                   padding: '0.65rem 0.85rem',
                   borderRadius: '10px',
                   border: '1.5px solid #e2e8f0',
                   fontSize: '0.82rem',
-                  fontWeight: 600,
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                  background: '#f8fafc'
+                  fontWeight: 800,
+                  color: '#334155',
+                  background: '#ffffff',
+                  cursor: 'pointer',
+                  outline: 'none'
                 }}
-                onFocus={e => e.target.style.borderColor = colors.primary}
-                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-              />
+              >
+                <option value="">Hafta tanlanmagan</option>
+                {weeksList.map(w => (
+                  <option key={w} value={w}>{w}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Questions count */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Savollar soni:</label>
+              <div style={{ display: 'flex', gap: '0.45rem' }}>
+                {SELECTABLE_QUESTION_COUNTS.map(cnt => {
+                  const isActive = newTestQuestionsCount === cnt;
+                  return (
+                    <button
+                      type="button"
+                      key={cnt}
+                      onClick={() => setNewTestQuestionsCount(cnt)}
+                      style={{
+                        flex: 1,
+                        padding: '0.6rem 0',
+                        borderRadius: '9999px',
+                        border: isActive ? `1.5px solid ${colors.primary}` : '1.5px solid #e2e8f0',
+                        background: isActive ? colors.primary : '#f8fafc',
+                        color: isActive ? '#ffffff' : '#475569',
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {cnt}
+                    </button>
+                  );
+                })}
+              </div>
+              {!SUPPORTED_SCAN_COUNTS.includes(newTestQuestionsCount) && (
+                <div style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 700 }}>
+                  {newTestQuestionsCount} savollik varaqlar uchun skaner tez orada qo'shiladi — kalitlarni hozir kiritish mumkin.
+                </div>
+              )}
             </div>
 
             {/* Form Actions */}

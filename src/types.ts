@@ -62,6 +62,17 @@ export interface Teacher {
   picture_url?: string;
 }
 
+// Row of the main-DB subject_scores table: weekly results for custom
+// (non Eng/Math) subjects scanned in the Testor cabinet. score is 0-100.
+export interface SubjectScore {
+  id?: string;
+  student_id: string;
+  week: string;
+  subject: string;
+  score: number;
+  created_at?: string;
+}
+
 export interface DailyRecord {
   id?: string;
   student_id: string;

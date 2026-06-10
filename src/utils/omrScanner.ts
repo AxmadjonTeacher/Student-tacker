@@ -408,136 +408,122 @@ function getGrayscalePixelsInCircle(
   return pixels;
 }
 
+// ── Question layouts ─────────────────────────────────────────────────────────
+// Bubble coordinates per question live in omr_coordinates.json (`questions`),
+// and `layouts` maps a question count to the indices of that array to grade.
+// Adding 20/30-question sheet support = adding their coordinate entries +
+// a "20"/"30" layout key to the JSON. No code changes needed.
+
+interface OMRQuestionEntry {
+  q: number;
+  column: string;
+  options: Record<string, number[]>;
+}
+
+const QUESTION_ENTRIES = omrCoordinates.questions as OMRQuestionEntry[];
+const LAYOUTS = (omrCoordinates as unknown as { layouts: Record<string, { questionIndices: number[] }> }).layouts;
+
+/** Question counts the scanner can physically grade (layout data exists). */
+export const SUPPORTED_SCAN_COUNTS: number[] = Object.keys(LAYOUTS || {}).map(Number);
+
+/** Question counts selectable when creating a test (20/30 scan when layouts arrive). */
+export const SELECTABLE_QUESTION_COUNTS: number[] = [10, 15, 20, 30];
+
+/** Resolves the bubble-coordinate entries for a question count, or null if unsupported. */
+export function getOMRLayout(questionCount: number): OMRQuestionEntry[] | null {
+  const layout = LAYOUTS?.[questionCount.toString()];
+  if (!layout) return null;
+  const entries = layout.questionIndices
+    .map(i => QUESTION_ENTRIES[i])
+    .filter((e): e is OMRQuestionEntry => Boolean(e));
+  return entries.length === layout.questionIndices.length ? entries : null;
+}
+
+/**
+ * Detects which of the A-D bubbles in one question row is filled, using a
+ * row-level adaptive threshold and inner-circle density counting.
+ * Returns the option letter or '' when no confident mark exists.
+ */
+function detectMarkedOption(
+  ctx: CanvasRenderingContext2D,
+  centers: Array<[number, number]>,
+  outerRadius: number,
+  innerRadius: number
+): string {
+  const options = ['A', 'B', 'C', 'D'];
+  const rowPixels: number[] = [];
+
+  // Collect pixels around all bubbles in this row to build an adaptive local threshold
+  for (const [cx, cy] of centers) {
+    rowPixels.push(...getGrayscalePixelsInCircle(ctx, cx, cy, outerRadius));
+  }
+
+  let minVal = 255;
+  let maxVal = 0;
+  for (const val of rowPixels) {
+    if (val < minVal) minVal = val;
+    if (val > maxVal) maxVal = val;
+  }
+
+  const contrast = maxVal - minVal;
+  const localThreshold = minVal + 0.45 * contrast;
+  const bubbleDensities: number[] = [];
+
+  // Calculate binary filled density inside a tighter inner radius to avoid borders
+  for (const [cx, cy] of centers) {
+    const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, innerRadius);
+
+    let blackCount = 0;
+    for (const val of innerPixels) {
+      if (val < localThreshold) {
+        blackCount++;
+      }
+    }
+    const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
+    bubbleDensities.push(density);
+  }
+
+  let maxIdx = 0;
+  let maxDensity = -1;
+  for (let col = 0; col < bubbleDensities.length; col++) {
+    if (bubbleDensities[col] > maxDensity) {
+      maxDensity = bubbleDensities[col];
+      maxIdx = col;
+    }
+  }
+
+  const sumOthers = bubbleDensities.reduce((a, b) => a + b, 0) - maxDensity;
+  const avgOthers = sumOthers / Math.max(1, bubbleDensities.length - 1);
+  const margin = maxDensity - avgOthers;
+
+  if (contrast > 25 && maxDensity > 0.30 && margin > 0.15) {
+    return options[maxIdx];
+  }
+  return '';
+}
+
 /**
  * Analyzes the standardized 646 x 903 warped OMR canvas to extract answers and Student ID digits.
  * Uses local, row/column-level adaptive binarization and density counting for industrial-grade robustness.
  */
-export function parseOMRSheet(canvas: HTMLCanvasElement): OMRParsedResult {
+export function parseOMRSheet(canvas: HTMLCanvasElement, questionCount: number = 15): OMRParsedResult {
   const ctx = canvas.getContext('2d')!;
-  const options = ['A', 'B', 'C', 'D'];
-  const answers: string[] = Array(15).fill('');
-  
+
   const outerRadius = omrCoordinates.template.sampling.outerWindowRadius;
   const innerQRadius = omrCoordinates.template.sampling.innerQuestionRadius;
   const innerIdRadius = omrCoordinates.template.sampling.innerIdRadius;
 
-  // 1. Parse Questions 1-13 (Left Column)
-  for (let row = 0; row < 13; row++) {
-    const cy = QUESTIONS_LEFT_Y_START + row * QUESTIONS_LEFT_Y_STEP;
-    const rowPixels: number[] = [];
-    const colPixelsList: number[][] = [];
+  // 1. Parse questions via the coordinate layout for this question count
+  const layout = getOMRLayout(questionCount) || getOMRLayout(15)!;
+  const answers: string[] = Array(layout.length).fill('');
 
-    // Collect pixels around all 4 bubbles in this row to build an adaptive local threshold
-    for (let col = 0; col < 4; col++) {
-      const cx = QUESTIONS_LEFT_X[col];
-      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, outerRadius); // sample wider area
-      colPixelsList.push(pixels);
-      rowPixels.push(...pixels);
-    }
-
-    let minVal = 255;
-    let maxVal = 0;
-    for (const val of rowPixels) {
-      if (val < minVal) minVal = val;
-      if (val > maxVal) maxVal = val;
-    }
-
-    const contrast = maxVal - minVal;
-    const localThreshold = minVal + 0.45 * contrast;
-    const bubbleDensities: number[] = [];
-
-    // Calculate binary filled density inside a tighter inner radius to avoid borders
-    for (let col = 0; col < 4; col++) {
-      const cx = QUESTIONS_LEFT_X[col];
-      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, innerQRadius);
-      
-      let blackCount = 0;
-      for (const val of innerPixels) {
-        if (val < localThreshold) {
-          blackCount++;
-        }
-      }
-      const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
-      bubbleDensities.push(density);
-    }
-
-    let maxIdx = 0;
-    let maxDensity = -1;
-    for (let col = 0; col < 4; col++) {
-      if (bubbleDensities[col] > maxDensity) {
-        maxDensity = bubbleDensities[col];
-        maxIdx = col;
-      }
-    }
-
-    const sumOthers = bubbleDensities.reduce((a, b) => a + b, 0) - maxDensity;
-    const avgOthers = sumOthers / 3;
-    const margin = maxDensity - avgOthers;
-
-    if (contrast > 25 && maxDensity > 0.30 && margin > 0.15) {
-      answers[row] = options[maxIdx];
-    } else {
-      answers[row] = '';
-    }
-  }
-
-  // 2. Parse Questions 14-15 (Right Column)
-  for (let row = 0; row < 2; row++) {
-    const cy = QUESTIONS_RIGHT_Y_START + row * QUESTIONS_RIGHT_Y_STEP;
-    const rowPixels: number[] = [];
-    const colPixelsList: number[][] = [];
-
-    for (let col = 0; col < 4; col++) {
-      const cx = QUESTIONS_RIGHT_X[col];
-      const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, outerRadius);
-      colPixelsList.push(pixels);
-      rowPixels.push(...pixels);
-    }
-
-    let minVal = 255;
-    let maxVal = 0;
-    for (const val of rowPixels) {
-      if (val < minVal) minVal = val;
-      if (val > maxVal) maxVal = val;
-    }
-
-    const contrast = maxVal - minVal;
-    const localThreshold = minVal + 0.45 * contrast;
-    const bubbleDensities: number[] = [];
-
-    for (let col = 0; col < 4; col++) {
-      const cx = QUESTIONS_RIGHT_X[col];
-      const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, innerQRadius);
-      
-      let blackCount = 0;
-      for (const val of innerPixels) {
-        if (val < localThreshold) {
-          blackCount++;
-        }
-      }
-      const density = innerPixels.length > 0 ? blackCount / innerPixels.length : 0;
-      bubbleDensities.push(density);
-    }
-
-    let maxIdx = 0;
-    let maxDensity = -1;
-    for (let col = 0; col < 4; col++) {
-      if (bubbleDensities[col] > maxDensity) {
-        maxDensity = bubbleDensities[col];
-        maxIdx = col;
-      }
-    }
-
-    const sumOthers = bubbleDensities.reduce((a, b) => a + b, 0) - maxDensity;
-    const avgOthers = sumOthers / 3;
-    const margin = maxDensity - avgOthers;
-
-    if (contrast > 25 && maxDensity > 0.30 && margin > 0.15) {
-      answers[13 + row] = options[maxIdx];
-    } else {
-      answers[13 + row] = '';
-    }
-  }
+  layout.forEach((entry, idx) => {
+    const centers: Array<[number, number]> = ['A', 'B', 'C', 'D'].map(opt => {
+      const [cx, cy] = entry.options[opt];
+      return [cx, cy] as [number, number];
+    });
+    answers[idx] = detectMarkedOption(ctx, centers, outerRadius, innerQRadius);
+  });
 
   // 3. Parse Student ID (3 columns of digits 0 to 9)
   let studentIdCode = '';

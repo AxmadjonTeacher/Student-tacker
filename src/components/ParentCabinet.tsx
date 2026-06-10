@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LogOut, TrendingUp, Bell, Home, BarChart2, Settings, Plus, Trash2 } from 'lucide-react';
-import type { Student, NewsEvent } from '../types';
+import type { Student, NewsEvent, SubjectScore } from '../types';
 import { supabase, mapDbToStudent } from '../supabase';
 import GraphModal from './GraphModal';
+import { getSubjectColor } from '../utils/subjectColors';
 import iconLight from '../assets/icon-light.png';
 
 interface ParentCabinetProps {
   student: Student;
   studentWeeks: any[];
+  subjectScores?: SubjectScore[];
   parentStudents: Student[];
   onSwitchChild: (childId: string) => void;
   onAddChild: (newStudent: Student) => void;
@@ -15,12 +17,13 @@ interface ParentCabinetProps {
   onRemoveChild: (childId: string) => void;
 }
 
-const ParentCabinet: React.FC<ParentCabinetProps> = ({ 
-  student, 
-  studentWeeks, 
-  parentStudents, 
-  onSwitchChild, 
-  onAddChild, 
+const ParentCabinet: React.FC<ParentCabinetProps> = ({
+  student,
+  studentWeeks,
+  subjectScores = [],
+  parentStudents,
+  onSwitchChild,
+  onAddChild,
   onLogout,
   onRemoveChild
 }) => {
@@ -182,6 +185,41 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
   const hwVal = student.homework ?? 1;
   const hwPercentage = hwVal < 0 ? Math.max(0, Math.round((100 + hwVal * 20) * 10) / 10) : (hwVal === 1 ? 100 : hwVal);
   const missedHw = hwVal < 0 ? -hwVal : 0;
+
+  // Latest custom-subject (non Eng/Math) score per subject for this child.
+  // Scores in subject_scores are 0-100 percentages already.
+  const customSubjectLatest = useMemo(() => {
+    const parseWeekVal = (weekStr: string): number => {
+      if (!weekStr) return 0;
+      if (weekStr.toLowerCase().endsWith('hafta')) {
+        const num = parseInt(weekStr, 10);
+        return isNaN(num) ? 0 : num;
+      }
+      const parts = weekStr.split('-');
+      if (parts.length !== 2) return 9999;
+      const day = parseInt(parts[0], 10);
+      if (isNaN(day)) return 9999;
+      const monthStr = parts[1].toLowerCase();
+      const academicMonths = ['sen', 'okt', 'noy', 'dek', 'yan', 'fev', 'mar', 'apr', 'may', 'iyun', 'iyul', 'avg'];
+      const monthIdx = academicMonths.indexOf(monthStr);
+      if (monthIdx === -1) return 1000 + day;
+      return 1000 + monthIdx * 100 + day;
+    };
+
+    const sid = student.id?.toString().trim().toUpperCase();
+    const map: Record<string, { score: number; week: string; sortVal: number }> = {};
+    (subjectScores || []).forEach(ss => {
+      if (!ss || !ss.subject || typeof ss.score !== 'number') return;
+      if (ss.student_id?.toString().trim().toUpperCase() !== sid) return;
+      const sortVal = parseWeekVal(ss.week || '');
+      if (!map[ss.subject] || sortVal >= map[ss.subject].sortVal) {
+        map[ss.subject] = { score: ss.score, week: ss.week, sortVal };
+      }
+    });
+    return Object.entries(map)
+      .map(([subject, v]) => ({ subject, score: v.score, week: v.week }))
+      .sort((a, b) => a.subject.localeCompare(b.subject));
+  }, [subjectScores, student.id]);
 
   const getUrgencyColor = (val: string) => {
     switch (val) {
@@ -678,6 +716,34 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Custom subjects (Boshqa fanlar) — hidden when there are none */}
+              {customSubjectLatest.length > 0 && (
+                <div style={{ marginTop: '1.25rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
+                    BOSHQA FANLAR
+                  </div>
+                  <div className="metric-grid">
+                    {customSubjectLatest.map(item => {
+                      const color = getSubjectColor(item.subject);
+                      return (
+                        <div key={item.subject} style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', position: 'relative', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{item.subject}</span>
+                            <span style={{ fontSize: '1rem', fontWeight: 900, color }}>{item.score}%</span>
+                          </div>
+                          <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ width: `${Math.min(100, Math.max(0, item.score))}%`, height: '100%', background: color, borderRadius: '4px' }} />
+                          </div>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginTop: '0.5rem', textAlign: 'right' }}>
+                            {item.week || '—'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -804,6 +870,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
               student={student}
               activeSubject="ALL"
               studentWeeks={studentWeeks}
+              subjectScores={subjectScores}
               onClose={() => {}}
               isInline={true}
             />
@@ -1270,6 +1337,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
           student={student}
           activeSubject="ALL"
           studentWeeks={studentWeeks}
+          subjectScores={subjectScores}
           onClose={() => {
             setIsGraphOpen(false);
             setActiveTab('home');

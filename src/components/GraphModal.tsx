@@ -4,7 +4,27 @@ import {
   AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
   BarChart, Bar, Cell, LabelList, LineChart, Legend
 } from 'recharts';
-import type { Student, ActiveSubject } from '../types';
+import type { Student, ActiveSubject, SubjectScore } from '../types';
+import { getSubjectColor } from '../utils/subjectColors';
+
+// Academic-order sort value for week labels ("10-Iyun" / "1-Hafta")
+const parseWeekSortVal = (weekVal: string | null | undefined): number => {
+  if (weekVal === null || weekVal === undefined) return 0;
+  const weekStr = weekVal.toString();
+  if (weekStr.toLowerCase().endsWith('hafta')) {
+    const num = parseInt(weekStr, 10);
+    return isNaN(num) ? 0 : num;
+  }
+  const parts = weekStr.split('-');
+  if (parts.length !== 2) return 9999;
+  const day = parseInt(parts[0], 10);
+  if (isNaN(day)) return 9999;
+  const monthStr = parts[1].toLowerCase();
+  const academicMonths = ['sen', 'okt', 'noy', 'dek', 'yan', 'fev', 'mar', 'apr', 'may', 'iyun', 'iyul', 'avg'];
+  const monthIdx = academicMonths.indexOf(monthStr);
+  if (monthIdx === -1) return 1000 + day;
+  return 1000 + monthIdx * 100 + day;
+};
 
 const DEFAULT_DOMAIN: [number, number] = [0, 100];
 const FULL_TICKS = [0, 25, 50, 75, 100];
@@ -63,20 +83,35 @@ interface GraphModalProps {
   onClose: () => void;
   activeSubject: ActiveSubject;
   studentWeeks: any[];
+  subjectScores?: SubjectScore[];
   isInline?: boolean;
   showSummerPlan?: boolean;
 }
 
-const GraphModal: React.FC<GraphModalProps> = ({ 
-  student, 
-  onClose, 
-  activeSubject, 
-  studentWeeks, 
+const GraphModal: React.FC<GraphModalProps> = ({
+  student,
+  onClose,
+  activeSubject,
+  studentWeeks,
+  subjectScores = [],
   isInline = false,
   showSummerPlan = true
 }) => {
   const [isComparing, setIsComparing] = useState(false);
   const [allActiveTab, setAllActiveTab] = useState<'current' | 'progression' | 'terms'>('current');
+
+  // Custom-subject (non Eng/Math) scores for this student; scores are 0-100 already
+  const studentSubjectScores = React.useMemo(() => {
+    const sid = student.id?.toString().trim().toUpperCase();
+    return (subjectScores || []).filter(ss =>
+      ss && ss.subject && typeof ss.score === 'number' &&
+      ss.student_id?.toString().trim().toUpperCase() === sid
+    );
+  }, [subjectScores, student.id]);
+
+  const customSubjectNames = React.useMemo(() => {
+    return Array.from(new Set(studentSubjectScores.map(ss => ss.subject as string))).sort();
+  }, [studentSubjectScores]);
 
   const renderLegend = (props: any) => {
     const { payload } = props;
@@ -278,7 +313,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
   const { cleanEngScore, cleanMathScore, engPercent, mathPercent, attPercent, hwPercent } = scoresAndPercents;
 
   const barData = React.useMemo(() => {
-    return [
+    const base = [
       {
         name: 'Ingliz tili',
         value: Math.round(engPercent * 100) / 100,
@@ -300,7 +335,23 @@ const GraphModal: React.FC<GraphModalProps> = ({
         color: '#10b981'
       }
     ];
-  }, [engPercent, mathPercent, attPercent, hwPercent]);
+
+    // One bar per custom subject: latest week's score
+    customSubjectNames.forEach(subject => {
+      const rows = studentSubjectScores
+        .filter(ss => ss.subject === subject)
+        .sort((a, b) => parseWeekSortVal(a.week) - parseWeekSortVal(b.week));
+      if (rows.length > 0) {
+        base.push({
+          name: subject,
+          value: rows[rows.length - 1].score,
+          color: getSubjectColor(subject)
+        });
+      }
+    });
+
+    return base;
+  }, [engPercent, mathPercent, attPercent, hwPercent, customSubjectNames, studentSubjectScores]);
 
   // Compile weekly progression data for line chart
   const progressionData = React.useMemo(() => {
@@ -332,7 +383,19 @@ const GraphModal: React.FC<GraphModalProps> = ({
         mathPercent: mScore,
         attPercent: Math.round(wAttPercent * 100) / 100,
         hwPercent: Math.round(wHwPercent * 100) / 100
-      };
+      } as Record<string, string | number | null>;
+    });
+
+    // Merge custom-subject scores into their week rows (keys prefixed cs_)
+    const customByWeek: Record<string, Record<string, number>> = {};
+    studentSubjectScores.forEach(ss => {
+      if (!ss.week) return;
+      if (!customByWeek[ss.week]) customByWeek[ss.week] = {};
+      customByWeek[ss.week][`cs_${ss.subject}`] = ss.score;
+    });
+    compiledHistorical.forEach(row => {
+      const extras = typeof row.week === 'string' ? customByWeek[row.week] : undefined;
+      if (extras) Object.assign(row, extras);
     });
 
     compiledHistorical.sort((a, b) => {
@@ -369,7 +432,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
       }
     ];
     return allWeeks.slice(-4);
-  }, [studentWeeks, student.id, cleanEngScore, cleanMathScore, attPercent, hwPercent]);
+  }, [studentWeeks, student.id, cleanEngScore, cleanMathScore, attPercent, hwPercent, studentSubjectScores]);
 
   const ProgressionTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -926,15 +989,31 @@ const GraphModal: React.FC<GraphModalProps> = ({
                     dot={LINE_DOT_ATT}
                     activeDot={LINE_ACTIVE_DOT_ATT}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="hwPercent" 
-                    name="Vazifalar" 
-                    stroke="#10b981" 
-                    strokeWidth={3.5} 
+                  <Line
+                    type="monotone"
+                    dataKey="hwPercent"
+                    name="Vazifalar"
+                    stroke="#10b981"
+                    strokeWidth={3.5}
                     dot={LINE_DOT_HW}
                     activeDot={LINE_ACTIVE_DOT_HW}
                   />
+                  {customSubjectNames.map(subject => {
+                    const color = getSubjectColor(subject);
+                    return (
+                      <Line
+                        key={subject}
+                        type="monotone"
+                        dataKey={`cs_${subject}`}
+                        name={subject}
+                        stroke={color}
+                        strokeWidth={3.5}
+                        dot={{ r: 4, fill: '#ffffff', stroke: color, strokeWidth: 2 }}
+                        activeDot={{ r: 6, fill: color, stroke: '#ffffff', strokeWidth: 2 }}
+                        connectNulls
+                      />
+                    );
+                  })}
                 </LineChart>
               </ResponsiveContainer>
             </div>

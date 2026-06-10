@@ -11,7 +11,7 @@ import { Dashboard } from './components/Dashboard';
 import CustomDialog from './components/CustomDialog';
 import InstallAppDrawer from './components/InstallAppDrawer';
 import PasscodeModal from './components/PasscodeModal';
-import type { Student, ActiveSubject, Teacher } from './types';
+import type { Student, ActiveSubject, Teacher, SubjectScore } from './types';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
 import LoginScreen from './components/LoginScreen';
 import ParentCabinet from './components/ParentCabinet';
@@ -122,6 +122,7 @@ function App() {
   const [activeAdminTab, setActiveAdminTab] = useState<'home' | 'search' | 'stats' | 'settings' | 'news' | 'teachers' | 'trash'>('home');
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
+  const [subjectScores, setSubjectScores] = useState<SubjectScore[]>([]);
   const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher' | null>(null);
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
@@ -566,6 +567,16 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to fetch student weeks history:', err);
+    }
+
+    try {
+      const { data, error } = await supabase.from('subject_scores').select('*');
+      if (error) throw error;
+      if (data) {
+        setSubjectScores(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch subject scores:', err);
     }
 
     try {
@@ -1060,7 +1071,47 @@ function App() {
 
   const handleUpdateStudentScore = async (studentId: string, subjectName: string, scorePercent: number, weekName: string) => {
     const targetWeek = weekName || selectedWeek || '1-Hafta';
-    const isMath = subjectName.toLowerCase().includes('matem') || subjectName.toLowerCase().includes('math');
+    const lowerSubject = subjectName.toLowerCase();
+    const isMath = lowerSubject.includes('matem') || lowerSubject.includes('math');
+    const isEng = lowerSubject.includes('ingliz') || lowerSubject.includes('eng');
+
+    // Custom subjects (not Eng/Math) live in their own subject_scores table —
+    // they must never touch eng_score/math_score in student_weeks.
+    if (!isMath && !isEng) {
+      setSubjectScores(prev => {
+        const idx = prev.findIndex(ss =>
+          ss.student_id?.toString() === studentId?.toString() &&
+          ss.week === targetWeek &&
+          ss.subject === subjectName
+        );
+        const updated = [...prev];
+        if (idx !== -1) {
+          updated[idx] = { ...updated[idx], score: scorePercent };
+        } else {
+          updated.push({
+            id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            student_id: studentId,
+            week: targetWeek,
+            subject: subjectName,
+            score: scorePercent, // 0-100 percentage
+            created_at: new Date().toISOString()
+          });
+        }
+        return updated;
+      });
+
+      try {
+        await supabase
+          .from('subject_scores')
+          .upsert(
+            { student_id: studentId, week: targetWeek, subject: subjectName, score: scorePercent },
+            { onConflict: 'student_id,week,subject' }
+          );
+      } catch (err) {
+        console.error('Failed to sync custom subject score to database:', err);
+      }
+      return;
+    }
 
     // Update local students list
     setStudents(prev => prev.map(s => {
@@ -2410,6 +2461,7 @@ function App() {
       <TestorCabinet
         students={students}
         studentWeeks={studentWeeks}
+        subjectScores={subjectScores}
         teachers={teachers}
         onLogout={handleLogout}
         onUpdateStudentScore={handleUpdateStudentScore}
@@ -2423,6 +2475,7 @@ function App() {
         <ParentCabinet
           student={loggedInStudent}
           studentWeeks={studentWeeks}
+          subjectScores={subjectScores}
           parentStudents={parentStudents}
           onSwitchChild={(childId) => setActiveParentStudentId(childId)}
           onAddChild={(newStudent) => {
@@ -2574,6 +2627,7 @@ function App() {
               onRenameTeacherTable={handleRenameTeacherTable}
               onDeleteTeacherTable={handleDeleteTeacherTable}
               studentWeeks={studentWeeks}
+              subjectScores={subjectScores}
               onSaveCredentials={handleSaveCredentials}
               onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
               teachers={teachers}
@@ -3225,6 +3279,7 @@ function App() {
                 onRenameTeacherTable={handleRenameTeacherTable}
                 onDeleteTeacherTable={handleDeleteTeacherTable}
                 studentWeeks={studentWeeks}
+                subjectScores={subjectScores}
                 onSaveCredentials={handleSaveCredentials}
                 onBatchRegenerateCredentials={handleBatchRegenerateCredentials}
                 teachers={teachers}
