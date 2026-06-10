@@ -1762,26 +1762,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     >
                       {/* Name block */}
                       <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid var(--border-color)', height: '100%' }}>
-                        <div 
-                          onClick={() => {
-                            if (onUpdatePhoto) {
-                              if (student.pictureUrl) {
-                                setPhotoActionStudentId(student.id);
-                              } else {
-                                handleAvatarClick(student.id);
-                              }
-                            }
-                          }}
-                          style={{ 
-                            width: '52px', height: '52px', borderRadius: '50%', 
+                        <div
+                          style={{
+                            width: '52px', height: '52px', borderRadius: '50%',
                             background: 'var(--accent-primary)', color: '#ffffff',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '1.1rem', fontWeight: 600, flexShrink: 0,
-                            cursor: onUpdatePhoto ? 'pointer' : 'default',
                             overflow: 'hidden',
                             position: 'relative'
                           }}
-                          title={onUpdatePhoto ? (student.pictureUrl ? "Rasm yuklash / o'chirish" : "Rasm yuklash") : ""}
                         >
                           {student.pictureUrl ? (
                             <img src={student.pictureUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -3149,26 +3138,35 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 onDoubleClick={() => handleDoubleClick('name', fullName)}
                                 title="Tahrirlash uchun ikki marta bosing"
                               >
-                                {student.pictureUrl ? (
-                                  <img 
-                                    src={student.pictureUrl} 
-                                    alt={fullName} 
-                                    style={{
-                                      width: '40px', height: '40px', borderRadius: '50%',
-                                      objectFit: 'cover', flexShrink: 0,
-                                      border: '1px solid var(--profile-border)'
-                                    }}
-                                  />
-                                ) : (
-                                  <div style={{
+                                <div
+                                  onClick={(e) => {
+                                    if (!onUpdatePhoto) return;
+                                    e.stopPropagation();
+                                    if (student.pictureUrl) {
+                                      setPhotoActionStudentId(student.id);
+                                    } else {
+                                      handleAvatarClick(student.id);
+                                    }
+                                  }}
+                                  onDoubleClick={(e) => { if (onUpdatePhoto) e.stopPropagation(); }}
+                                  style={{
                                     width: '40px', height: '40px', borderRadius: '50%',
-                                    background: 'var(--profile-bg)', color: 'var(--profile-text)',
+                                    flexShrink: 0, overflow: 'hidden',
+                                    cursor: onUpdatePhoto ? 'pointer' : 'default',
+                                    border: student.pictureUrl ? '1px solid var(--profile-border)' : 'none',
+                                    background: student.pictureUrl ? 'transparent' : 'var(--profile-bg)',
+                                    color: 'var(--profile-text)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.9rem', fontWeight: 700, flexShrink: 0
-                                  }}>
-                                    {getInitials(nameVal, surnameVal)}
-                                  </div>
-                                )}
+                                    fontSize: '0.9rem', fontWeight: 700
+                                  }}
+                                  title={onUpdatePhoto ? (student.pictureUrl ? "Rasm yuklash / o'chirish" : "Rasm yuklash") : undefined}
+                                >
+                                  {student.pictureUrl ? (
+                                    <img src={student.pictureUrl} alt={fullName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    getInitials(nameVal, surnameVal)
+                                  )}
+                                </div>
                                 <div style={{ flexGrow: 1, paddingRight: '0.5rem' }}>
                                   {isEditing('name') ? (
                                     <input
@@ -3711,26 +3709,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       >
                         {/* Name block */}
                         <div className="name-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderRight: '1px solid var(--border-color)', height: '100%' }}>
-                          <div 
-                            onClick={() => {
-                              if (onUpdatePhoto) {
-                                if (student.pictureUrl) {
-                                  setPhotoActionStudentId(student.id);
-                                } else {
-                                  handleAvatarClick(student.id);
-                                }
-                              }
-                            }}
-                            style={{ 
-                              width: '52px', height: '52px', borderRadius: '50%', 
+                          <div
+                            style={{
+                              width: '52px', height: '52px', borderRadius: '50%',
                               background: theme.primary, color: '#ffffff',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontSize: '1.1rem', fontWeight: 600, flexShrink: 0,
-                              cursor: onUpdatePhoto ? 'pointer' : 'default',
                               overflow: 'hidden',
                               position: 'relative'
                             }}
-                            title={onUpdatePhoto ? (student.pictureUrl ? "Rasm yuklash / o'chirish" : "Rasm yuklash") : ""}
                           >
                             {student.pictureUrl ? (
                               <img src={student.pictureUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

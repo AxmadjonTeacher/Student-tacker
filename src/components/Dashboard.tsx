@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import type { Student } from '../types';
 import { 
   Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, BarChart, Bar
+  LineChart, BarChart, Bar, Legend
 } from 'recharts';
 import { Award, Calendar, TrendingUp, ArrowUpRight } from 'lucide-react';
 
@@ -87,7 +87,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Chart States
   const [chartSubject, setChartSubject] = useState<'ENG' | 'MATH'>('ENG');
-  const [chartClassGroup, setChartClassGroup] = useState<'5-6' | '7-8' | '9-11'>('5-6');
+  const [chartClassGroup, setChartClassGroup] = useState<'5-6' | '7-8' | '9-11' | 'ALL'>('5-6');
   
   // Weekly Leaders State
   const [leaderClassGroup, setLeaderClassGroup] = useState<'5-6' | '7-8' | '9-11'>('5-6');
@@ -189,40 +189,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [activeStudents, studentWeeks, activeLeaderWeek, leaderClassGroup]);
 
   // Compute Term Mastery Line Chart data
-  const termMasteryData = useMemo(() => {
+  const termMasteryData = useMemo((): Array<Record<string, string | number | null>> => {
     const terms = ['1-Chorak', '2-Chorak', '3-Chorak', '4-Chorak'];
-    
-    // Determine class filter range
-    const [minGrade, maxGrade] = chartClassGroup === '5-6' ? [5, 6] : chartClassGroup === '7-8' ? [7, 8] : [9, 11];
-    
-    // Filter active students in this range
-    const rangeStudents = activeStudents.filter(s => {
-      const gr = getGradeNumber(s.className);
-      return gr >= minGrade && gr <= maxGrade;
-    });
 
-    return terms.map((term, index) => {
-      const termNum = index + 1;
+    const bandRanges: Record<'5-6' | '7-8' | '9-11', [number, number]> = {
+      '5-6': [5, 6],
+      '7-8': [7, 8],
+      '9-11': [9, 11]
+    };
+
+    // Average term score for students within a grade range; null when no scores exist
+    const termAverage = (termNum: number, [minGrade, maxGrade]: [number, number]): number | null => {
       let scoresSum = 0;
       let scoresCount = 0;
 
-      rangeStudents.forEach(s => {
+      activeStudents.forEach(s => {
+        const gr = getGradeNumber(s.className);
+        if (gr < minGrade || gr > maxGrade) return;
+
         // Query corresponding tests based on selected subject
         const tests = chartSubject === 'MATH'
           ? (s.mathGrandTests || [])
           : (s.englishGrandTests || s.grandTests || []);
 
         const namesToTry = [
-          `grant ${termNum}`, 
-          `${termNum}-chorak`, 
-          `${termNum} chorak`, 
-          `${termNum}-term`, 
+          `grant ${termNum}`,
+          `${termNum}-chorak`,
+          `${termNum} chorak`,
+          `${termNum}-term`,
           `${termNum} term`,
           `chorak ${termNum}`,
           `g${termNum}`,
           termNum.toString()
         ].map(n => n.toLowerCase());
-        
+
         const found = tests.find(t => namesToTry.includes(t?.name?.toLowerCase()));
 
         if (found && found.score !== null && found.score !== undefined && found.score.toString().trim() !== '-') {
@@ -234,14 +234,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
       });
 
-      // Returns null if no term scores exist to show blank/available points only
-      const average = scoresCount > 0 ? Math.round(scoresSum / scoresCount) : null;
+      return scoresCount > 0 ? Math.round(scoresSum / scoresCount) : null;
+    };
 
-      return {
+    if (chartClassGroup === 'ALL') {
+      return terms.map((term, index) => ({
         name: term,
-        Natija: average
-      };
-    }).filter(t => t.Natija !== null);
+        '5-6': termAverage(index + 1, bandRanges['5-6']),
+        '7-8': termAverage(index + 1, bandRanges['7-8']),
+        '9-11': termAverage(index + 1, bandRanges['9-11'])
+      })).filter(t => t['5-6'] !== null || t['7-8'] !== null || t['9-11'] !== null);
+    }
+
+    return terms.map((term, index) => ({
+      name: term,
+      Natija: termAverage(index + 1, bandRanges[chartClassGroup])
+    })).filter(t => t.Natija !== null);
   }, [activeStudents, chartSubject, chartClassGroup]);
 
   // Compute Average Attendance History Bar Chart (last 4 weeks) across all classes
@@ -831,7 +839,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {[
                 { id: '5-6', label: '5-6 Sinflar' },
                 { id: '7-8', label: '7-8 Sinflar' },
-                { id: '9-11', label: '9-11 Sinflar' }
+                { id: '9-11', label: '9-11 Sinflar' },
+                { id: 'ALL', label: 'Barchasi' }
               ].map(grp => (
                 <button
                   key={grp.id}
@@ -870,15 +879,53 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <Tooltip
                     contentStyle={TOOLTIP_CONTENT_STYLE}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="Natija" 
-                    stroke={chartSubject === 'MATH' ? '#f97316' : 'var(--accent-primary)'} 
-                    strokeWidth={3}
-                    dot={LINE_DOT_STYLE}
-                    activeDot={LINE_ACTIVE_DOT_STYLE}
-                    connectNulls={true}
-                  />
+                  {chartClassGroup === 'ALL' ? (
+                    <>
+                      <Legend
+                        iconType="circle"
+                        iconSize={7}
+                        wrapperStyle={{ fontSize: '0.62rem', fontWeight: 700 }}
+                        formatter={(value: string) => <span style={{ color: 'var(--text-secondary)' }}>{value} Sinflar</span>}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="5-6"
+                        stroke="var(--accent-primary)"
+                        strokeWidth={3}
+                        dot={LINE_DOT_STYLE}
+                        activeDot={LINE_ACTIVE_DOT_STYLE}
+                        connectNulls={true}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="7-8"
+                        stroke="#f97316"
+                        strokeWidth={3}
+                        dot={{ ...LINE_DOT_STYLE, stroke: '#f97316' }}
+                        activeDot={LINE_ACTIVE_DOT_STYLE}
+                        connectNulls={true}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="9-11"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        dot={{ ...LINE_DOT_STYLE, stroke: '#3b82f6' }}
+                        activeDot={LINE_ACTIVE_DOT_STYLE}
+                        connectNulls={true}
+                      />
+                    </>
+                  ) : (
+                    <Line
+                      type="monotone"
+                      dataKey="Natija"
+                      stroke={chartSubject === 'MATH' ? '#f97316' : 'var(--accent-primary)'}
+                      strokeWidth={3}
+                      dot={LINE_DOT_STYLE}
+                      activeDot={LINE_ACTIVE_DOT_STYLE}
+                      connectNulls={true}
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>

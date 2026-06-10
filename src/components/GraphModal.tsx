@@ -715,12 +715,12 @@ const GraphModal: React.FC<GraphModalProps> = ({
           {/* Right: avatar + close */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
             <div style={{
-              width: '44px', height: '44px', borderRadius: '50%',
+              width: '64px', height: '64px', borderRadius: '50%',
               border: '1.5px solid var(--border-subtle)',
               background: 'var(--bg-card-hover)',
               color: 'var(--text-secondary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '0.92rem', fontWeight: 850,
+              fontSize: '1.25rem', fontWeight: 850,
               overflow: 'hidden',
               boxShadow: 'var(--glass-shadow-soft)'
             }}>

@@ -1089,20 +1089,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       ADMIN AMALLARI
                     </div>
                     
-                    <div style={{
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '20px',
-                      padding: '0.9rem 1.1rem',
-                      marginBottom: '1rem',
-                      boxShadow: 'var(--glass-shadow-soft)'
-                    }}>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Faol sinf ({activeClass}):</span>
-                        <strong style={{ color: 'var(--text-primary)' }}>{students.filter(s => getClassGroupLocal(s.className) === activeClass).length} ta</strong>
-                      </div>
-                    </div>
-                     {/* Class-wise overview */}
+                    {/* Class-wise overview */}
                     <div style={{
                       display: 'flex',
                       flexDirection: 'column',
@@ -3109,7 +3096,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
             justifyContent: 'center',
             background: 'rgba(0, 0, 0, 0.6)',
             backdropFilter: 'blur(12px)',
-            animation: 'fadeIn 0.25s ease-out'
+            animation: 'fadeIn 0.25s ease-out forwards'
           }}
         >
           <div 
@@ -3126,7 +3113,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               boxShadow: '0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
               borderRadius: '32px',
               overflow: 'hidden',
-              animation: 'premiumScaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              animation: 'premiumScaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
             }}
           >
             {/* Close button */}

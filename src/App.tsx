@@ -2915,8 +2915,8 @@ function App() {
                         alignItems: 'center',
                         justifyContent: isSidebarExpanded ? 'flex-start' : 'center',
                         gap: isSidebarExpanded ? '0.75rem' : '0',
-                        padding: '0.45rem 0.75rem',
-                        borderRadius: '9999px',
+                        padding: '0.35rem 0.7rem',
+                        borderRadius: '10px',
                         background: isActive 
                           ? (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)')
                           : 'transparent',
