@@ -2542,7 +2542,7 @@ function App() {
         <div style={{ display: activeAdminTab === 'settings' ? 'none' : 'block' }}>
           {activeSubject === 'DASHBOARD' ? (
             <Dashboard
-              students={students}
+              students={activeStudents}
               studentWeeks={studentWeeks}
               availableClasses={availableClasses}
               authRole={authRole}
@@ -2634,7 +2634,7 @@ function App() {
         </div>
 
         <div className="mobile-tab-bar" style={{ display: 'flex' }}>
-          <div className="tab-capsule" style={{ left: `calc(${activeAdminIndex} * 25% + 6px)` }} />
+          <div className="tab-capsule" style={{ left: `calc((100% - 16px) * ${(activeAdminIndex + 0.5) / 4} + 8px)` }} />
           <button 
             onClick={() => {
               setActiveAdminTab('home');
@@ -3193,7 +3193,7 @@ function App() {
             )}
             {activeSubject === 'DASHBOARD' ? (
               <Dashboard
-                students={students}
+                students={activeStudents}
                 studentWeeks={studentWeeks}
                 availableClasses={availableClasses}
                 authRole={authRole}

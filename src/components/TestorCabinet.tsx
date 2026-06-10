@@ -1446,50 +1446,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     return counts;
   }, [activeStudents, availableClasses]);
 
-  // Liquid slider refs & states for class selector
-  const classSelectorRef = React.useRef<HTMLDivElement>(null);
-  const [classSliderStyle, setClassSliderStyle] = React.useState({
-    left: 0,
-    right: 0,
-    height: 0,
-    top: 0,
-    opacity: 0,
-    prevLeft: 0
-  });
-
-  React.useLayoutEffect(() => {
-    if (!classSelectorRef.current) return;
-    const updateSlider = () => {
-      const activeEl = classSelectorRef.current?.querySelector('.active-pill') as HTMLElement | null;
-      if (activeEl && classSelectorRef.current) {
-        const containerWidth = classSelectorRef.current.scrollWidth;
-        const newLeft = activeEl.offsetLeft;
-        const newRight = containerWidth - (activeEl.offsetLeft + activeEl.offsetWidth);
-
-        setClassSliderStyle(prev => {
-          return {
-            left: newLeft,
-            right: newRight,
-            height: activeEl.offsetHeight,
-            top: activeEl.offsetTop,
-            opacity: 1,
-            prevLeft: prev.left
-          };
-        });
-      } else {
-        setClassSliderStyle(prev => ({ ...prev, opacity: 0 }));
-      }
-    };
-    
-    updateSlider();
-    const timer = setTimeout(updateSlider, 50);
-    window.addEventListener('resize', updateSlider);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', updateSlider);
-    };
-  }, [activeClass, availableClasses, activeTab]);
-
   // Set default class selector
   useEffect(() => {
     if (availableClasses.length > 0 && !availableClasses.includes(activeClass)) {
@@ -1775,6 +1731,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }} />
             <input
               type="text"
+              className="input-with-icon"
               placeholder="Test nomi yoki fanni kiriting..."
               value={testsSearch}
               onChange={(e) => setTestsSearch(e.target.value)}
@@ -2081,7 +2038,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                         </span>
                       </div>
                       
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700 }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '0.5rem' }}>
                         {subjectTeachers.length} ta o'qituvchi
                       </span>
                     </div>
@@ -2090,8 +2047,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     {isSubjExpanded && (
                       <div style={{
                         borderLeft: '2px solid #cbd5e1',
-                        marginLeft: '1.25rem',
-                        paddingLeft: '1.5rem',
+                        marginLeft: isMobile ? '0.6rem' : '1.25rem',
+                        paddingLeft: isMobile ? '0.85rem' : '1.5rem',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '0.5rem',
@@ -2104,9 +2061,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                             {/* Horizontal line for empty state */}
                             <div style={{
                               position: 'absolute',
-                              left: '-1.5rem',
+                              left: isMobile ? '-0.85rem' : '-1.5rem',
                               top: '50%',
-                              width: '1.25rem',
+                              width: isMobile ? '0.6rem' : '1.25rem',
                               height: '2px',
                               background: '#cbd5e1'
                             }} />
@@ -2125,9 +2082,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                                 {/* Horizontal connector branch line to this teacher folder */}
                                 <div style={{
                                   position: 'absolute',
-                                  left: '-1.5rem',
+                                  left: isMobile ? '-0.85rem' : '-1.5rem',
                                   top: '1.25rem',
-                                  width: '1.25rem',
+                                  width: isMobile ? '0.6rem' : '1.25rem',
                                   height: '2px',
                                   background: '#cbd5e1'
                                 }} />
@@ -2159,22 +2116,23 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                                     }
                                   }}
                                 >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
                                     <div style={{
                                       color: colors.primary,
                                       transform: isTeacherExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                                       transition: 'transform 0.2s ease',
                                       display: 'flex',
-                                      alignItems: 'center'
+                                      alignItems: 'center',
+                                      flexShrink: 0
                                     }}>
                                       <ChevronRight size={14} style={{ strokeWidth: 2.5 }} />
                                     </div>
-                                    <FolderOpen size={16} color={colors.primary} />
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 750, color: isTeacherExpanded ? colors.text : '#334155' }}>
+                                    <FolderOpen size={16} color={colors.primary} style={{ flexShrink: 0 }} />
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 750, color: isTeacherExpanded ? colors.text : '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                       {teacher}
                                     </span>
                                   </div>
-                                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700 }}>
+                                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '0.5rem' }}>
                                     {teacherTests.length} ta test
                                   </span>
                                 </div>
@@ -2183,8 +2141,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                                 {isTeacherExpanded && (
                                   <div style={{
                                     borderLeft: '2px solid #cbd5e1',
-                                    marginLeft: '1.1rem',
-                                    paddingLeft: '1.5rem',
+                                    marginLeft: isMobile ? '0.6rem' : '1.1rem',
+                                    paddingLeft: isMobile ? '0.85rem' : '1.5rem',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: '0.4rem',
@@ -2197,9 +2155,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                                       <div style={{ position: 'relative' }}>
                                         <div style={{
                                           position: 'absolute',
-                                          left: '-1.5rem',
+                                          left: isMobile ? '-0.85rem' : '-1.5rem',
                                           top: '50%',
-                                          width: '1.25rem',
+                                          width: isMobile ? '0.6rem' : '1.25rem',
                                           height: '2px',
                                           background: '#cbd5e1'
                                         }} />
@@ -2213,9 +2171,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                                           {/* Horizontal connector branch line to this test */}
                                           <div style={{
                                             position: 'absolute',
-                                            left: '-1.5rem',
+                                            left: isMobile ? '-0.85rem' : '-1.5rem',
                                             top: '1.1rem',
-                                            width: '1.25rem',
+                                            width: isMobile ? '0.6rem' : '1.25rem',
                                             height: '2px',
                                             background: '#cbd5e1'
                                           }} />
@@ -2227,6 +2185,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                                               display: 'flex',
                                               alignItems: 'center',
                                               justifyContent: 'space-between',
+                                              gap: '0.5rem',
                                               padding: '0.6rem 0.85rem',
                                               borderRadius: '10px',
                                               border: '1.5px solid #e2e8f0',
@@ -2243,16 +2202,18 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                                               e.currentTarget.style.background = '#ffffff';
                                             }}
                                           >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                                              <FileText size={16} color="#94a3b8" />
-                                              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>
-                                                {test.name}
-                                              </span>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', minWidth: 0, flex: 1 }}>
+                                              <FileText size={16} color="#94a3b8" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                                              <div style={{ minWidth: 0 }}>
+                                                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                  {test.name}
+                                                </div>
+                                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600, marginTop: '0.15rem' }}>
+                                                  {test.level} · {test.questions_json.length} ta kalit · {getScannedCount(test.id)} topshirildi
+                                                </div>
+                                              </div>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
-                                              <span>{test.level} · {test.questions_json.length} ta kalit · {getScannedCount(test.id)} topshirildi</span>
-                                              <ChevronRight size={12} color="#cbd5e1" />
-                                            </div>
+                                            <ChevronRight size={12} color="#cbd5e1" style={{ flexShrink: 0 }} />
                                           </div>
                                         </div>
                                       ))
@@ -2289,117 +2250,53 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         </div>
 
         {/* Dropdowns */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <div className="class-selector" ref={classSelectorRef} style={{ 
-            display: 'flex', 
-            gap: '0.25rem', 
-            background: colors.bg,
-            padding: '0.35rem', 
-            borderRadius: '9999px',
-            border: `1px solid ${colors.border}`,
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: isMobile ? '100%' : undefined }}>
+          <div className="class-selector" style={{
+            display: 'flex',
+            gap: '0.4rem',
             overflowX: 'auto',
             flex: '1 1 auto',
             maxWidth: '450px',
-            position: 'relative',
+            padding: '0.25rem 0.1rem',
             boxSizing: 'border-box',
-            scrollbarWidth: 'none'
+            scrollbarWidth: 'none',
+            WebkitOverflowScrolling: 'touch'
           }}>
-            {/* 1. Gooey Background Layer */}
-            <div className="class-selector-gooey-bg" style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              minWidth: 'max-content',
-              width: '100%',
-              filter: 'url(#liquid-gooey-filter)',
-              pointerEvents: 'none',
-              zIndex: 0,
-              display: 'flex',
-              gap: '0.25rem',
-              padding: '0.35rem',
-              boxSizing: 'border-box'
-            }}>
-              {availableClasses.map(cls => (
-                <div
-                  key={`bg-${cls}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    background: 'transparent',
-                    padding: '0.4rem 1rem',
-                    borderRadius: '9999px',
-                    color: 'transparent',
-                    pointerEvents: 'none',
-                    whiteSpace: 'nowrap',
-                    boxSizing: 'border-box',
-                    height: '28px',
-                    position: 'relative'
-                  }}
-                >
-                  <span style={{ opacity: 0, userSelect: 'none', fontSize: '0.75rem' }}>{cls} ({classCounts[cls] ?? 0})</span>
-                  {/* Small liquid dot centered inside the slot */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: '#ffffff',
-                    opacity: 0.35
-                  }} />
-                </div>
-              ))}
-
-              {/* Sliding active pill indicator */}
-              <div style={{
-                position: 'absolute',
-                left: classSliderStyle.left,
-                right: classSliderStyle.right,
-                height: classSliderStyle.height,
-                top: classSliderStyle.top,
-                opacity: classSliderStyle.opacity,
-                background: '#ffffff',
-                borderRadius: '9999px',
-                boxShadow: `0 4px 12px ${colors.hover}`,
-                transition: classSliderStyle.left > classSliderStyle.prevLeft 
-                  ? 'left 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, right 0.28s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.3s ease'
-                  : classSliderStyle.left < classSliderStyle.prevLeft
-                    ? 'left 0.28s cubic-bezier(0.2, 1, 0.3, 1), right 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, opacity 0.3s ease'
-                    : 'left 0.35s ease, right 0.35s ease, opacity 0.3s ease',
-                pointerEvents: 'none'
-              }} />
-            </div>
-
-            {/* 2. Foreground Crisp Text Buttons */}
             {availableClasses.map(cls => {
               const isActive = activeClass === cls;
               return (
                 <button
                   key={cls}
                   onClick={() => setActiveClass(cls)}
-                  className={`class-pill-btn ${isActive ? 'active-pill' : ''}`}
                   style={{
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    background: 'transparent',
-                    color: isActive ? colors.primary : '#475569',
-                    border: '1px solid transparent',
-                    boxShadow: 'none',
-                    padding: '0.4rem 1rem',
+                    gap: '0.4rem',
+                    background: isActive ? colors.primary : '#ffffff',
+                    color: isActive ? '#ffffff' : '#475569',
+                    border: isActive ? `1.5px solid ${colors.primary}` : '1.5px solid #e2e8f0',
+                    padding: '0.4rem 0.85rem',
                     borderRadius: '9999px',
                     cursor: 'pointer',
-                    fontWeight: isActive ? 800 : 600,
+                    fontWeight: isActive ? 800 : 650,
                     fontSize: '0.75rem',
-                    transition: 'color 0.35s ease',
                     whiteSpace: 'nowrap',
-                    zIndex: 1,
-                    height: '28px'
+                    flexShrink: 0,
+                    boxShadow: isActive ? `0 4px 12px ${colors.primary}30` : 'none',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  {cls} ({classCounts[cls] ?? 0})
+                  {cls}
+                  <span style={{
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    background: isActive ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                    color: isActive ? '#ffffff' : '#94a3b8',
+                    padding: '0.1rem 0.4rem',
+                    borderRadius: '9999px'
+                  }}>
+                    {classCounts[cls] ?? 0}
+                  </span>
                 </button>
               );
             })}
@@ -2445,6 +2342,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }} />
           <input
             type="text"
+            className="input-with-icon"
             placeholder="O'quvchining ismi yoki familiyasi bo'yicha qidirish..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -2542,7 +2440,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
           {(['indigo', 'teal', 'emerald', 'rose'] as const).map(color => {
             const isSelected = accentColor === color;
             const itemColor = {
@@ -2551,27 +2449,31 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               emerald: '#10b981',
               rose: '#f43f5e'
             }[color];
-            
+
             return (
               <button
                 key={color}
                 onClick={() => handleSelectAccent(color)}
                 style={{
+                  flex: 1,
+                  minWidth: 0,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.5rem 0.85rem',
-                  borderRadius: '10px',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  padding: '0.5rem 0.25rem',
+                  borderRadius: '9999px',
                   border: isSelected ? `2px solid ${itemColor}` : '1.5px solid #e2e8f0',
                   background: isSelected ? `${itemColor}10` : '#ffffff',
                   cursor: 'pointer',
                   fontWeight: 800,
-                  fontSize: '0.75rem',
+                  fontSize: '0.68rem',
                   color: isSelected ? itemColor : '#475569',
+                  whiteSpace: 'nowrap',
                   transition: 'all 0.15s'
                 }}
               >
-                <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: itemColor }} />
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: itemColor, flexShrink: 0 }} />
                 {color.toUpperCase()}
               </button>
             );
@@ -4325,7 +4227,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         <header style={{
           background: '#ffffff',
           borderBottom: '1px solid #e2e8f0',
-          padding: '0.85rem 1.25rem',
+          padding: 'calc(0.85rem + env(safe-area-inset-top, 0px)) 1.25rem 0.85rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -4356,25 +4258,15 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         {/* Scrollable View Content */}
         <main style={{
           flex: 1,
-          padding: '1.25rem 1.25rem 5rem 1.25rem', // Pad bottom to clear bottom nav
+          padding: '1.25rem 1.25rem calc(104px + env(safe-area-inset-bottom, 0px)) 1.25rem', // Pad bottom to clear floating tab bar
           overflowY: 'auto'
         }}>
           {currentTabContent()}
         </main>
 
-        {/* Fixed Bottom Navigation Bar */}
-        <nav style={{
-          position: 'fixed',
-          bottom: 0, left: 0, right: 0,
-          background: '#ffffff',
-          borderTop: '1px solid #e2e8f0',
-          padding: '0.5rem 0.25rem',
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          zIndex: 100,
-          boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.03)'
-        }}>
+        {/* Floating Liquid Glass Tab Bar (shared design) */}
+        <div className="mobile-tab-bar" style={{ display: 'flex' }}>
+          <div className="tab-capsule" style={{ left: `calc((100% - 16px) * ${(navItems.findIndex(n => n.id === activeTab) + 0.5) / navItems.length} + 8px)`, background: colors.primary }} />
           {navItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -4385,26 +4277,15 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   setSelectedTest(null); // Reset detail views when tab changes
                   setActiveTab(item.id);
                 }}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  background: 'transparent',
-                  border: 'none',
-                  color: isActive ? colors.primary : '#94a3b8',
-                  padding: '0.25rem 0.5rem',
-                  gap: '0.2rem',
-                  cursor: 'pointer',
-                  width: '20%',
-                  transition: 'color 0.15s'
-                }}
+                className={`tab-item ${isActive ? 'active' : ''}`}
+                style={isActive ? { color: colors.primary } : undefined}
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                <span style={{ fontSize: '0.6rem', fontWeight: isActive ? 800 : 600 }}>{item.label}</span>
+                <span>{item.label}</span>
               </button>
             );
           })}
-        </nav>
+        </div>
         {renderLogoutModal()}
         {renderEditKeyModal()}
         {renderScanModal()}

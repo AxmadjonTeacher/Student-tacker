@@ -117,6 +117,42 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [editTeacherPictureUrl, setEditTeacherPictureUrl] = useState('');
   const [activeCredentialsTeacher, setActiveCredentialsTeacher] = useState<Teacher | null>(null);
 
+  // Logged-in teacher's own profile (teacher role)
+  const currentTeacher = useMemo(() => {
+    if (authRole !== 'teacher') return null;
+    const teacherId = localStorage.getItem('teacher_id');
+    if (!teacherId) return null;
+    return teachers.find(t => t.id.toString() === teacherId) || null;
+  }, [authRole, teachers]);
+
+  const [isProfileEditing, setIsProfileEditing] = useState(false);
+  const [profileLoginId, setProfileLoginId] = useState('');
+  const [profilePasscode, setProfilePasscode] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+
+  const startProfileEditing = () => {
+    if (!currentTeacher) return;
+    setProfileLoginId(currentTeacher.login_id || '');
+    setProfilePasscode(currentTeacher.passcode || '');
+    setProfilePhone(currentTeacher.phone || '');
+    setIsProfileEditing(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!currentTeacher) return;
+    let phone = profilePhone.trim();
+    if (/^\d{9}$/.test(phone)) phone = `+998${phone}`;
+    await onEditTeacher(
+      currentTeacher.id,
+      currentTeacher.name,
+      phone || undefined,
+      profileLoginId.trim() || undefined,
+      profilePasscode.trim() || undefined,
+      currentTeacher.picture_url
+    );
+    setIsProfileEditing(false);
+  };
+
   useEffect(() => {
     if (editTeacher) {
       setEditTeacherName(editTeacher.name || '');
@@ -764,7 +800,144 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
         {/* Drawer Scrollable Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem 1.5rem' }}>
-          
+
+          {/* Teacher's own profile card (teacher role only) */}
+          {authRole === 'teacher' && currentTeacher && (
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '24px',
+              padding: '1.25rem',
+              boxShadow: 'var(--glass-shadow-soft)',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              {/* Avatar + name + role */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                {currentTeacher.picture_url ? (
+                  <img src={currentTeacher.picture_url} alt="avatar" style={{ width: '46px', height: '46px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--border-subtle)', flexShrink: 0 }} />
+                ) : (
+                  <div style={{
+                    width: '46px', height: '46px', borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(13, 148, 136, 0.12)', color: 'var(--accent-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1rem', fontWeight: 850
+                  }}>
+                    {currentTeacher.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                  </div>
+                )}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 850, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {currentTeacher.name}
+                  </div>
+                  {/* Role is fixed — not editable by the teacher */}
+                  <span style={{
+                    display: 'inline-block', marginTop: '0.25rem',
+                    fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.05em',
+                    color: currentTeacher.subject === 'MATH' ? '#ea580c' : 'var(--accent-primary)',
+                    background: currentTeacher.subject === 'MATH' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(13, 148, 136, 0.1)',
+                    padding: '0.2rem 0.6rem', borderRadius: '9999px'
+                  }}>
+                    {currentTeacher.subject === 'MATH' ? "MATEMATIKA O'QITUVCHISI" : "INGLIZ TILI O'QITUVCHISI"}
+                  </span>
+                </div>
+                {!isProfileEditing && (
+                  <button
+                    onClick={startProfileEditing}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.35rem',
+                      background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)',
+                      borderRadius: '9999px', padding: '0.4rem 0.85rem',
+                      color: 'var(--text-primary)', fontSize: '0.68rem', fontWeight: 800,
+                      cursor: 'pointer', flexShrink: 0,
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    }}
+                  >
+                    <Edit3 size={12} />
+                    Tahrirlash
+                  </button>
+                )}
+              </div>
+
+              {/* Credentials: ID, passcode, phone */}
+              {isProfileEditing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                  {[
+                    { label: 'LOGIN ID', value: profileLoginId, setter: setProfileLoginId, placeholder: 'Login ID' },
+                    { label: 'PAROL', value: profilePasscode, setter: setProfilePasscode, placeholder: 'Parol' },
+                    { label: 'TELEFON', value: profilePhone, setter: setProfilePhone, placeholder: '+998 XX XXX XX XX' }
+                  ].map(field => (
+                    <div key={field.label}>
+                      <label style={{ display: 'block', fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+                        {field.label}
+                      </label>
+                      <input
+                        type="text"
+                        value={field.value}
+                        onChange={(e) => field.setter(e.target.value)}
+                        placeholder={field.placeholder}
+                        style={{
+                          width: '100%', boxSizing: 'border-box', padding: '0.6rem 1rem',
+                          background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)',
+                          borderRadius: '14px', color: 'var(--text-primary)',
+                          fontSize: '0.82rem', fontWeight: 700, outline: 'none'
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                    <button
+                      onClick={handleSaveProfile}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                        background: 'var(--accent-hero)', color: '#ffffff', border: 'none',
+                        borderRadius: '9999px', padding: '0.65rem', fontSize: '0.75rem', fontWeight: 800,
+                        cursor: 'pointer', boxShadow: '0 4px 12px var(--accent-glow)'
+                      }}
+                    >
+                      <CheckCircle2 size={14} />
+                      Saqlash
+                    </button>
+                    <button
+                      onClick={() => setIsProfileEditing(false)}
+                      style={{
+                        flex: 1, background: 'var(--bg-card-hover)', color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-subtle)', borderRadius: '9999px',
+                        padding: '0.65rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer'
+                      }}
+                    >
+                      Bekor qilish
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {[
+                    { label: 'LOGIN ID', value: currentTeacher.login_id || '—' },
+                    { label: 'PAROL', value: currentTeacher.passcode || '—' },
+                    { label: 'TELEFON', value: currentTeacher.phone || '—' }
+                  ].map((row, idx) => (
+                    <div key={row.label} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.6rem 0.25rem',
+                      borderTop: idx === 0 ? '1px solid var(--border-subtle)' : 'none',
+                      borderBottom: '1px solid var(--border-subtle)'
+                    }}>
+                      <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+                        {row.label}
+                      </span>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB 1: System Settings */}
           {activeTab === 'settings' && authRole !== 'teacher' && (
             <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
@@ -1858,6 +2031,43 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 )}
               </div>
 
+            </div>
+          )}
+
+          {/* Sign out for teacher role (settings tab is hidden for teachers) */}
+          {authRole === 'teacher' && onLogout && (
+            <div style={{ marginTop: '2rem' }}>
+              <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '1.5rem 0' }} />
+              <button
+                onClick={onLogout}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.6rem',
+                  width: '100%',
+                  padding: '0.85rem',
+                  borderRadius: '9999px',
+                  background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                  border: `1px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#fee2e2'}`,
+                  color: isDarkMode ? '#fc8181' : '#ef4444',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = isDarkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2';
+                  e.currentTarget.style.borderColor = isDarkMode ? 'rgba(239, 68, 68, 0.5)' : '#ef4444';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2';
+                  e.currentTarget.style.borderColor = isDarkMode ? 'rgba(239, 68, 68, 0.25)' : '#fee2e2';
+                }}
+              >
+                <LogOut size={16} />
+                TIZIMDAN CHIQISH
+              </button>
             </div>
           )}
 
