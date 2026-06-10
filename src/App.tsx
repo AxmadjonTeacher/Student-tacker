@@ -2477,10 +2477,12 @@ function App() {
       </>
     );
   }
+  // Teachers' second tab opens their own subject marking view instead of the ID section
+  const teacherSecondTabSubject: ActiveSubject = authRole === 'teacher' ? 'ENG_MATH' : 'DETAILS';
   let activeAdminIndex = 0;
   if (activeAdminTab === 'settings' || activeAdminTab === 'news' || activeAdminTab === 'teachers' || activeAdminTab === 'trash') {
     activeAdminIndex = 3;
-  } else if (activeSubject === 'DETAILS') {
+  } else if (activeSubject === teacherSecondTabSubject) {
     activeAdminIndex = 1;
   } else if (activeSubject === 'ALL' || activeSubject === 'PRIMARY') {
     activeAdminIndex = 2;
@@ -2635,32 +2637,32 @@ function App() {
 
         <div className="mobile-tab-bar" style={{ display: 'flex' }}>
           <div className="tab-capsule" style={{ left: `calc((100% - 16px) * ${(activeAdminIndex + 0.5) / 4} + 8px)` }} />
-          <button 
+          <button
             onClick={() => {
               setActiveAdminTab('home');
-              if (activeSubject === 'DETAILS' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') {
+              if (activeSubject === teacherSecondTabSubject || activeSubject === 'ALL' || activeSubject === 'PRIMARY') {
                 setActiveSubject('DASHBOARD');
               }
               setSearchTerm('');
               window.scrollTo(0, 0);
             }}
-            className={`tab-item ${activeAdminTab === 'home' && activeSubject !== 'DETAILS' && activeSubject !== 'ALL' && activeSubject !== 'PRIMARY' ? 'active' : ''}`}
+            className={`tab-item ${activeAdminTab === 'home' && activeSubject !== teacherSecondTabSubject && activeSubject !== 'ALL' && activeSubject !== 'PRIMARY' ? 'active' : ''}`}
           >
             <Home size={20} />
             <span>Bosh sahifa</span>
           </button>
-          
-          <button 
+
+          <button
             onClick={() => {
               setActiveAdminTab('home');
-              setActiveSubject('DETAILS');
+              setActiveSubject(teacherSecondTabSubject);
               setSearchTerm('');
               window.scrollTo(0, 0);
             }}
-            className={`tab-item ${activeAdminTab === 'home' && activeSubject === 'DETAILS' ? 'active' : ''}`}
+            className={`tab-item ${activeAdminTab === 'home' && activeSubject === teacherSecondTabSubject ? 'active' : ''}`}
           >
-            <Users size={20} />
-            <span>ID bo'limi</span>
+            {authRole === 'teacher' ? <BookOpen size={20} /> : <Users size={20} />}
+            <span>{authRole === 'teacher' ? ((localStorage.getItem('teacher_subject') || 'ENG') === 'MATH' ? 'Matematika' : 'Ingliz tili') : "ID bo'limi"}</span>
           </button>
           
           <button 

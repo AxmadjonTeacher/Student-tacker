@@ -7,6 +7,7 @@ import {
 import type { Student, ActiveSubject } from '../types';
 
 const DEFAULT_DOMAIN: [number, number] = [0, 100];
+const FULL_TICKS = [0, 25, 50, 75, 100];
 const AREA_CHART_MARGIN = { top: 10, right: 30, left: 10, bottom: 20 };
 const AXIS_TICK_STYLE = { fill: 'var(--text-secondary)', fontSize: 10, fontWeight: 700 };
 const TOOLTIP_CURSOR_STYLE = { stroke: 'var(--border-color)', strokeWidth: 1.5 };
@@ -232,49 +233,6 @@ const GraphModal: React.FC<GraphModalProps> = ({
     return data;
   }, [student, showSummerPlan]);
 
-  // Dynamic Y-axis scale config based on combinedData
-  const yAxisConfig = React.useMemo(() => {
-    const allVisibleScores = (isComparing || activeSubject === 'ALL' || activeSubject === 'PRIMARY')
-      ? [
-          ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
-          ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
-          ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined && !isNaN(v)),
-          ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
-        ]
-      : (activeSubject === 'MATH' 
-          ? [
-              ...combinedData.map(d => d.mathVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
-              ...combinedData.map(d => d.mathEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
-            ]
-          : [
-              ...combinedData.map(d => d.engVal).filter(v => v !== null && v !== undefined && !isNaN(v)),
-              ...combinedData.map(d => d.engEstimate).filter(v => v !== null && v !== undefined && !isNaN(v))
-            ]
-        );
-
-    const minVal = allVisibleScores.length > 0 ? Math.min(...allVisibleScores) : 0;
-    const maxVal = allVisibleScores.length > 0 ? Math.max(...allVisibleScores) : 100;
-    const valRange = maxVal - minVal;
-    const padding = valRange < 15 ? 10 : 8; 
-    const domainMin = Math.max(0, Math.floor((minVal - padding) / 5) * 5);
-    const domainMax = Math.min(100, Math.ceil((maxVal + padding) / 5) * 5);
-
-    const ticks: number[] = [];
-    const tickStep = Math.max(5, Math.ceil((domainMax - domainMin) / 4 / 5) * 5);
-    for (let val = domainMin; val <= domainMax; val += tickStep) {
-      if (!ticks.includes(val)) {
-        ticks.push(val);
-      }
-    }
-    if (ticks[ticks.length - 1] < domainMax && domainMax <= 100) {
-      ticks.push(domainMax);
-    }
-
-    const domain: [number, number] = [domainMin, domainMax];
-    return { domainMin, domainMax, ticks, domain };
-  }, [combinedData, isComparing, activeSubject]);
-
-  const { domainMin, domainMax, ticks, domain } = yAxisConfig;
 
   // Calculate subject-specific level changes
   const levelChanges = React.useMemo(() => {
@@ -578,8 +536,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
             dy={10}
           />
           <YAxis 
-            domain={domain} 
-            ticks={ticks}
+            domain={DEFAULT_DOMAIN} 
+            ticks={FULL_TICKS}
             tickFormatter={formatPercent}
             axisLine={false}
             tickLine={false}
@@ -588,9 +546,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
           />
           <Tooltip content={<CustomTooltip />} cursor={TOOLTIP_CURSOR_STYLE} />
           
-          {domainMin <= 50 && domainMax >= 50 && (
-            <ReferenceLine y={50} stroke="var(--border-color)" strokeWidth={1.5} strokeDasharray="3 3" />
-          )}
+          <ReferenceLine y={50} stroke="var(--border-color)" strokeWidth={1.5} strokeDasharray="3 3" />
           
           {/* English Score Area (Teal) */}
           {(isComparing || activeSubject === 'ENG' || activeSubject === 'ALL' || activeSubject === 'PRIMARY') && (
@@ -689,17 +645,13 @@ const GraphModal: React.FC<GraphModalProps> = ({
         text-align: center;
       }
       .modal-tabs {
-        flex-direction: column !important;
-        border-radius: 20px !important;
         width: 100% !important;
         max-width: none !important;
-        gap: 4px !important;
+        gap: 3px !important;
       }
       .modal-tabs button {
-        width: 100% !important;
-        justify-content: center !important;
-        padding: 0.5rem !important;
-        font-size: 0.75rem !important;
+        padding: 0.5rem 0.4rem !important;
+        font-size: 0.66rem !important;
       }
       .modal-compare-btn {
         width: 100% !important;
@@ -746,52 +698,65 @@ const GraphModal: React.FC<GraphModalProps> = ({
       style={modalContentStyle}
     >
       <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '0.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <TrendingUp size={26} color={activeThemeColor} strokeWidth={2.5} style={{ flexShrink: 0 }} />
-            <h2 className="modal-title" style={{ fontSize: '1.5rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-              {student.name} {student.surname} — {
-                (activeSubject === 'ALL' || activeSubject === 'PRIMARY') 
-                  ? "Haftalik ko'rsatkichlar"
-                  : isComparing 
-                    ? 'Fanlar taqqoslovi' 
-                    : (activeSubject === 'MATH' ? 'Matematika natijalari' : 'Ingliz tili natijalari')
-              }
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+          {/* Left: meta line on top, name below (per sketch) */}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Sinf: <strong style={{ color: 'var(--text-primary)' }}>{student.className}</strong></span>
+              <span style={{ color: 'var(--border-subtle)' }}>·</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Sana: {student.dateJoined}</span>
+            </div>
+            <h2 className="modal-title" style={{ fontSize: '1.35rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <TrendingUp size={20} color={activeThemeColor} strokeWidth={2.5} style={{ flexShrink: 0 }} />
+              {student.name} {student.surname}
             </h2>
           </div>
-          
-          {!isInline && (
-            <button 
-              onClick={onClose}
-              style={{ 
-                background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)', 
-                borderRadius: '50%', padding: '6px', cursor: 'pointer',
-                color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                flexShrink: 0
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.08)';
-                e.currentTarget.style.color = '#ef4444';
-                e.currentTarget.style.borderColor = '#fca5a5';
-                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-                e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                e.currentTarget.style.background = 'var(--bg-card-hover)';
-              }}
-            >
-              <X size={18} />
-            </button>
-          )}
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sinf: {student.className}</span>
-          <span style={{ color: 'var(--border-subtle)' }}>·</span>
-          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Sana: {student.dateJoined}</span>
+
+          {/* Right: avatar + close */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '50%',
+              border: '1.5px solid var(--border-subtle)',
+              background: 'var(--bg-card-hover)',
+              color: 'var(--text-secondary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.92rem', fontWeight: 850,
+              overflow: 'hidden',
+              boxShadow: 'var(--glass-shadow-soft)'
+            }}>
+              {student.pictureUrl ? (
+                <img src={student.pictureUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                `${(student.name || ' ')[0]}${(student.surname || ' ')[0]}`
+              )}
+            </div>
+            {!isInline && (
+              <button
+                onClick={onClose}
+                style={{
+                  background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)',
+                  borderRadius: '50%', padding: '6px', cursor: 'pointer',
+                  color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  flexShrink: 0
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.08)';
+                  e.currentTarget.style.color = '#ef4444';
+                  e.currentTarget.style.borderColor = '#fca5a5';
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.background = 'var(--bg-card-hover)';
+                }}
+              >
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="modal-tags-container" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap' }}>
@@ -873,9 +838,9 @@ const GraphModal: React.FC<GraphModalProps> = ({
           border: '1px solid var(--border-subtle)'
         }}>
           {[
-            { id: 'current', label: '📊 JORIY HAFTA' },
-            { id: 'progression', label: '📈 HAFTALIK O\'ZGARISH' },
-            { id: 'terms', label: '🏆 CHORAKLIK NATIJALAR' }
+            { id: 'current', label: 'Joriy hafta' },
+            { id: 'progression', label: "Haftalik o'zgarish" },
+            { id: 'terms', label: 'Choraklik natija' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -883,20 +848,24 @@ const GraphModal: React.FC<GraphModalProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '0.5rem',
-                background: allActiveTab === tab.id 
-                  ? 'var(--accent-hero)' 
+                flex: '1 1 auto',
+                minWidth: 0,
+                background: allActiveTab === tab.id
+                  ? 'var(--accent-hero)'
                   : 'transparent',
                 color: allActiveTab === tab.id ? '#ffffff' : 'var(--text-secondary)',
                 border: 'none',
                 borderRadius: '9999px',
-                padding: '0.6rem 1.25rem',
-                fontSize: '0.8rem',
+                padding: '0.55rem 1.1rem',
+                fontSize: '0.78rem',
                 fontWeight: 800,
                 cursor: 'pointer',
+                whiteSpace: 'nowrap',
                 boxShadow: allActiveTab === tab.id ? '0 8px 16px var(--accent-glow)' : 'none',
                 transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                letterSpacing: '0.03em'
+                letterSpacing: '0.02em'
               }}
             >
               {tab.label}

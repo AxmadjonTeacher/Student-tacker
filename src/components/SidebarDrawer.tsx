@@ -829,34 +829,39 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   </div>
                 )}
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: '0.92rem', fontWeight: 850, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 850, color: 'var(--text-primary)', lineHeight: 1.25, letterSpacing: '-0.01em' }}>
                     {currentTeacher.name}
                   </div>
                   {/* Role is fixed — not editable by the teacher */}
-                  <span style={{
-                    display: 'inline-block', marginTop: '0.25rem',
-                    fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.05em',
-                    color: currentTeacher.subject === 'MATH' ? '#ea580c' : 'var(--accent-primary)',
-                    background: currentTeacher.subject === 'MATH' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(13, 148, 136, 0.1)',
-                    padding: '0.2rem 0.6rem', borderRadius: '9999px'
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.35rem',
+                    fontSize: '0.68rem', fontWeight: 750, letterSpacing: '0.02em',
+                    color: 'var(--text-secondary)', whiteSpace: 'nowrap'
                   }}>
-                    {currentTeacher.subject === 'MATH' ? "MATEMATIKA O'QITUVCHISI" : "INGLIZ TILI O'QITUVCHISI"}
-                  </span>
+                    <span style={{
+                      width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                      background: currentTeacher.subject === 'MATH' ? '#f97316' : 'var(--accent-primary)'
+                    }} />
+                    {currentTeacher.subject === 'MATH' ? "Matematika o'qituvchisi" : "Ingliz tili o'qituvchisi"}
+                  </div>
                 </div>
                 {!isProfileEditing && (
                   <button
                     onClick={startProfileEditing}
+                    title="Tahrirlash"
                     style={{
-                      display: 'flex', alignItems: 'center', gap: '0.35rem',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: '36px', height: '36px',
                       background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)',
-                      borderRadius: '9999px', padding: '0.4rem 0.85rem',
-                      color: 'var(--text-primary)', fontSize: '0.68rem', fontWeight: 800,
+                      borderRadius: '50%',
+                      color: 'var(--text-secondary)',
                       cursor: 'pointer', flexShrink: 0,
                       transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--text-primary)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                   >
-                    <Edit3 size={12} />
-                    Tahrirlash
+                    <Edit3 size={15} />
                   </button>
                 )}
               </div>
@@ -1359,8 +1364,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
             </div>
           )}
 
-          {/* TAB 2: News & Events management */}
-          {activeTab === 'news' && (
+          {/* TAB 2: News & Events management (not available for teachers) */}
+          {activeTab === 'news' && authRole !== 'teacher' && (
             <div style={{ animation: 'fadeIn 0.2s ease-out', marginTop: '0.5rem' }}>
               
               {/* Form Collapsible Toggle button */}

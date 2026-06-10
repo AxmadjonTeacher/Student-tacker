@@ -1504,7 +1504,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 {/* Header row */}
                 <div className="table-header-row" style={{
                   display: 'grid',
-                  gridTemplateColumns: isEditable ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
+                  gridTemplateColumns: isEditable ? 'minmax(0, 2.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr)' : 'minmax(0, 2.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr)',
                   alignItems: 'stretch',
                   padding: '0 1.5rem',
                   borderBottom: '1px solid var(--border-subtle)',
@@ -1750,7 +1750,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       className="student-row"
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: isEditable ? '2.5fr 1fr 1fr 1fr 1fr 1.5fr 1fr' : '2.5fr 1fr 1fr 1fr 1fr 1.5fr',
+                        gridTemplateColumns: isEditable ? 'minmax(0, 2.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr)' : 'minmax(0, 2.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr)',
                         alignItems: 'center',
                         padding: '1.2rem 1.5rem',
                         borderBottom: isLast ? 'none' : '1px solid var(--border-color)',
@@ -2785,7 +2785,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           {/* Table checklist grouped by teacher */}
                           <div style={{ overflowX: 'auto', marginBottom: '1.25rem' }}>
                             <div 
-                              className="table-card-container"
+                              className="table-card-container em-admin-table"
                               style={{
                                 background: 'var(--bg-card)',
                                 backdropFilter: 'var(--backdrop-blur-md)',
@@ -2798,7 +2798,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               }}
                             >
                               {/* Header row */}
-                              <div className="table-header-row" style={{
+                              <div className="table-header-row em-header" style={{
                                 display: 'grid',
                                 gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 1fr',
                                 alignItems: 'stretch',
@@ -2831,7 +2831,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 return (
                                   <div
                                     key={student.id}
-                                    className="table-row"
+                                    className="table-row em-row"
                                     style={{
                                       display: 'grid',
                                       gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 1fr',
@@ -2846,7 +2846,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
                                   >
                                     {/* Name and Avatar */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--border-color)', height: '100%', paddingRight: '0.5rem' }}>
+                                    <div className="em-cell em-cell-name" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderRight: '1px solid var(--border-color)', height: '100%', paddingRight: '0.5rem' }}>
                                       <div style={{
                                         width: '28px',
                                         height: '28px',
@@ -2873,26 +2873,26 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     </div>
 
                                     {/* Sinf */}
-                                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                                    <div className="em-cell em-cell-class" style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                                       {student.className}
                                     </div>
 
                                     {/* Davomat */}
-                                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div className="em-cell em-cell-stat" data-label="DAVOMAT" style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                       <span style={{ fontSize: '0.8rem', fontWeight: 800, color: attPercent >= 90 ? '#16a34a' : attPercent >= 70 ? '#d97706' : '#ef4444' }}>
                                         {attPercent.toFixed(0)}%
                                       </span>
                                     </div>
 
                                     {/* Uyga vazifa */}
-                                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div className="em-cell em-cell-stat" data-label="VAZIFA" style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                       <span style={{ fontSize: '0.8rem', fontWeight: 800, color: hwPercent >= 90 ? '#16a34a' : hwPercent >= 70 ? '#d97706' : '#ef4444' }}>
                                         {hwPercent.toFixed(0)}%
                                       </span>
                                     </div>
 
                                     {/* English Score Column */}
-                                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div className="em-cell em-cell-stat" data-label="INGLIZ T." style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                       {editingEngMathScore?.studentId === student.id && editingEngMathScore?.subject === 'ENG' ? (
                                         <input
                                           type="text"
@@ -2950,7 +2950,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     </div>
 
                                     {/* Math Score Column */}
-                                    <div style={{ textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div className="em-cell em-cell-stat" data-label="MATEM." style={{ textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                       {editingEngMathScore?.studentId === student.id && editingEngMathScore?.subject === 'MATH' ? (
                                         <input
                                           type="text"

@@ -133,6 +133,9 @@ const Header: React.FC<HeaderProps> = ({
         .mobile-header-menu-container {
           display: none;
         }
+        .subject-dropdown-mobile {
+          display: none;
+        }
         .school-logo {
           display: none !important;
         }
@@ -168,31 +171,61 @@ const Header: React.FC<HeaderProps> = ({
           .cabinet-header-subtitle {
             font-size: 0.65rem !important;
           }
+          /* One-shell class slider: keep the pill container, scroll inside it */
           .class-selector {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
             flex-wrap: nowrap !important;
             overflow-x: auto !important;
             white-space: nowrap !important;
             scrollbar-width: none !important; /* Firefox */
-            padding: 0.25rem 1.5rem 0.25rem 0.25rem !important;
             -webkit-overflow-scrolling: touch;
-            width: 100% !important;
-            mask-image: linear-gradient(to right, black 85%, transparent 100%) !important;
-            -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%) !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            padding: 0.3rem !important;
           }
           .class-selector::-webkit-scrollbar {
             display: none !important; /* Safari and Chrome */
           }
-          .class-selector button {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-            color: var(--text-secondary);
+          .class-selector button,
+          .class-selector .class-selector-gooey-bg > div {
+            padding: 0.4rem 0.9rem !important;
+            font-size: 0.78rem !important;
           }
-          .class-selector button.active-pill {
-            color: var(--text-primary) !important;
+          /* Compact subject dropdown shares the row with the class shell */
+          .subject-segmented {
+            display: none !important;
+          }
+          .subject-dropdown-mobile {
+            display: flex !important;
+          }
+          .subject-dropdown-mobile select {
+            padding: 0.5rem 1.6rem 0.5rem 0.85rem !important;
+            font-size: 0.75rem !important;
+          }
+          .header-context-controls {
+            flex-wrap: nowrap !important;
+            width: 100% !important;
+            gap: 0.5rem !important;
+          }
+          /* Eng/Math: grade slider + subject + week on a single line */
+          .engmath-controls {
+            flex-wrap: nowrap !important;
+            width: 100% !important;
+            gap: 0.5rem !important;
+          }
+          .engmath-controls .control-label {
+            display: none !important;
+          }
+          .grade-segmented-wrap {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+          }
+          .grade-segmented {
+            width: 100% !important;
+            min-width: 130px !important;
+          }
+          .engmath-controls select {
+            padding: 0.5rem 1.6rem 0.5rem 0.85rem !important;
+            font-size: 0.75rem !important;
           }
           .admin-header-bottom-row {
             margin-top: 1rem !important;
@@ -440,18 +473,18 @@ const Header: React.FC<HeaderProps> = ({
 
             {/* If Subject is ENG_MATH */}
             {activeSubject === 'ENG_MATH' && authRole !== 'teacher' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div className="engmath-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 {/* Grade Range Selector */}
                 {engMathGradeRange !== undefined && setEngMathGradeRange && (() => {
                   const rangeIndex = engMathGradeRange === '5-6' ? 0 : engMathGradeRange === '7-8' ? 1 : 2;
                   return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>SINF:</span>
-                      <div style={{ 
-                        display: 'flex', 
-                        background: 'var(--border-subtle)', 
-                        boxShadow: 'var(--inner-inset)', 
-                        borderRadius: '9999px', 
+                    <div className="grade-segmented-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className="control-label" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>SINF:</span>
+                      <div className="grade-segmented" style={{
+                        display: 'flex',
+                        background: 'var(--border-subtle)',
+                        boxShadow: 'var(--inner-inset)',
+                        borderRadius: '9999px',
                         padding: '2px',
                         position: 'relative',
                         width: '180px',
@@ -502,11 +535,37 @@ const Header: React.FC<HeaderProps> = ({
                   );
                 })()}
 
-                {/* Sub-Subject Selector (ENG vs MATH) */}
+                {/* Sub-Subject Selector (ENG vs MATH) — segmented on desktop, dropdown on mobile */}
+                {authRole !== 'teacher' && engMathSubSubject !== undefined && setEngMathSubSubject && (
+                  <div className="subject-dropdown-mobile" style={{ position: 'relative', alignItems: 'center', flexShrink: 0 }}>
+                    <select
+                      value={engMathSubSubject}
+                      onChange={(e) => setEngMathSubSubject(e.target.value as 'ENG' | 'MATH')}
+                      style={{
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        background: 'var(--bg-card-hover)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '9999px',
+                        fontWeight: 800,
+                        outline: 'none',
+                        cursor: 'pointer',
+                        boxShadow: 'var(--glass-shadow-soft)'
+                      }}
+                    >
+                      <option value="ENG">Ingliz tili</option>
+                      <option value="MATH">Matematika</option>
+                    </select>
+                    <div style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
+                      <ChevronDown size={13} />
+                    </div>
+                  </div>
+                )}
                 {authRole !== 'teacher' && engMathSubSubject !== undefined && setEngMathSubSubject && (() => {
                   const subIndex = engMathSubSubject === 'ENG' ? 0 : 1;
                   return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="subject-segmented" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FAN:</span>
                       <div style={{ 
                         display: 'flex', 
@@ -565,8 +624,8 @@ const Header: React.FC<HeaderProps> = ({
 
                 {/* Week Selector Dropdown */}
                 {onWeekChange && weeksList && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>HAFTA:</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                    <span className="control-label" style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>HAFTA:</span>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <select
                         value={selectedWeek}
@@ -617,7 +676,7 @@ const Header: React.FC<HeaderProps> = ({
             {activeSubject === 'GRANT' && authRole !== 'teacher' && grantSubject !== undefined && setGrantSubject && (() => {
               const grantIndex = grantSubject === 'ENG' ? 0 : 1;
               return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="subject-segmented" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>FAN:</span>
                   <div style={{ 
                     display: 'flex', 
@@ -786,6 +845,34 @@ const Header: React.FC<HeaderProps> = ({
                     </button>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Mobile-only subject dropdown sharing the class-shell row (Grant section) */}
+            {activeSubject === 'GRANT' && authRole !== 'teacher' && grantSubject !== undefined && setGrantSubject && (
+              <div className="subject-dropdown-mobile" style={{ position: 'relative', alignItems: 'center', flexShrink: 0 }}>
+                <select
+                  value={grantSubject}
+                  onChange={(e) => setGrantSubject(e.target.value as 'ENG' | 'MATH')}
+                  style={{
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    background: 'var(--bg-card-hover)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '9999px',
+                    fontWeight: 800,
+                    outline: 'none',
+                    cursor: 'pointer',
+                    boxShadow: 'var(--glass-shadow-soft)'
+                  }}
+                >
+                  <option value="ENG">Ingliz tili</option>
+                  <option value="MATH">Matematika</option>
+                </select>
+                <div style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center' }}>
+                  <ChevronDown size={13} />
+                </div>
               </div>
             )}
           </div>

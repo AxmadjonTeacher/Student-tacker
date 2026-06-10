@@ -244,7 +244,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           }
           .login-right-panel {
             width: 100% !important;
-            padding: 1.5rem !important;
+            padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
           }
         }
         .login-input-field:focus {

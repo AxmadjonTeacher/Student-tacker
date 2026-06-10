@@ -28,17 +28,9 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
   const [newsLoading, setNewsLoading] = useState(true);
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'search' | 'stats' | 'settings'>('home');
-  const [prevIndex, setPrevIndex] = useState(0);
-  
+
   const tabIndices = { home: 0, search: 1, stats: 2, settings: 3 };
   const activeIndex = tabIndices[activeTab] || 0;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPrevIndex(activeIndex);
-    }, 450);
-    return () => clearTimeout(timer);
-  }, [activeIndex]);
   
   // Add child states
   const [addChildId, setAddChildId] = useState('');
@@ -248,56 +240,22 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
           .desktop-only-btn {
             display: none !important;
           }
+          /* Shared floating liquid tab bar styling comes from index.css */
           .mobile-tab-bar {
             display: flex !important;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 64px;
-            background: #ffffff;
-            border-top: 1px solid #e2e8f0;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 998;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
-            padding-bottom: env(safe-area-inset-bottom);
           }
           .tab-capsule {
-            position: absolute;
-            top: 8px;
-            height: 48px;
-            width: calc(25% - 16px);
-            background: rgba(13, 148, 136, 0.08);
-            border: 1px solid rgba(13, 148, 136, 0.15);
-            border-radius: 16px;
-            z-index: 1;
-            transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-            backdrop-filter: blur(4px);
-          }
-          .mobile-tab-bar .tab-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-size: 0.7rem;
-            font-weight: 700;
-            gap: 0.25rem;
-            flex: 1;
-            height: 100%;
-            transition: all 0.15s ease;
-            position: relative;
-            z-index: 2;
+            background: #0d9488;
           }
           .mobile-tab-bar .tab-item.active {
             color: #0d9488;
           }
           .cabinet-grid {
-            margin-bottom: 80px !important;
+            margin-bottom: calc(104px + env(safe-area-inset-bottom, 0px)) !important;
+          }
+          /* Hero banner hidden on the Yangiliklar tab — news only */
+          .cabinet-banner {
+            display: ${activeTab === 'search' ? 'none' : 'flex'} !important;
           }
           .tab-content-home {
             display: ${activeTab === 'home' ? 'block' : 'none'} !important;
@@ -368,7 +326,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
       <header className="cabinet-header" style={{
         background: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
-        padding: '1.25rem 2rem',
+        padding: 'calc(1.25rem + env(safe-area-inset-top, 0px)) 2rem 1.25rem',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -532,7 +490,8 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
             <span style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.1em', color: '#ccfbf1', textTransform: 'uppercase' }}>
               O'quvchi ma'lumotlari
             </span>
-            <h2 className="cabinet-banner-title" style={{ fontSize: '2rem', fontWeight: 850, margin: 0, letterSpacing: '-0.02em' }}>
+            {/* Explicit white — a global h1-h6 color rule would otherwise paint this dark on the dark gradient */}
+            <h2 className="cabinet-banner-title" style={{ fontSize: '2rem', fontWeight: 850, margin: 0, letterSpacing: '-0.02em', color: '#ffffff' }}>
               {student.name} {student.surname}
             </h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem', fontSize: '0.9rem', color: '#f1f5f9', fontWeight: 550 }}>
@@ -1091,131 +1050,40 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
         </div>
       </main>
 
-      {/* Sticky Bottom Tab Bar for Mobile viewports */}
-      <div className="mobile-tab-bar" style={{ 
-        position: 'fixed', 
-        bottom: 0, 
-        left: 0, 
-        right: 0, 
-        height: '64px', 
-        zIndex: 998, 
-        background: 'var(--bg-main)', 
-        borderTop: '1px solid var(--border-subtle)', 
-        padding: '6px 12px', 
-        boxSizing: 'border-box',
-        display: 'flex'
-      }}>
-        {/* Curved Selector Track */}
-        <div style={{ 
-          position: 'relative', 
-          width: '100%', 
-          height: '100%', 
-          background: 'var(--bg-card-hover)', 
-          borderRadius: '14px', 
-          display: 'flex', 
-          alignItems: 'center',
-          boxSizing: 'border-box', 
-          overflow: 'hidden' 
-        }}>
-          {/* Gooey Background Container */}
-          <div className="mobile-tab-bar-gooey-bg" style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            filter: 'url(#liquid-gooey-filter)',
-            pointerEvents: 'none',
-            zIndex: 0,
-            display: 'flex',
-            boxSizing: 'border-box'
-          }}>
-            {/* Static white gooey dots under each tab slot */}
-            {[0, 1, 2, 3].map(idx => (
-              <div
-                key={idx}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  height: '100%',
-                  width: '25%',
-                  left: `calc(${idx} * 25%)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: '#ffffff',
-                  opacity: 0.35
-                }} />
-              </div>
-            ))}
+      {/* Floating Liquid Glass Tab Bar (shared design, mobile only) */}
+      <div className="mobile-tab-bar">
+        <div className="tab-capsule" style={{ left: `calc((100% - 16px) * ${(activeIndex + 0.5) / 4} + 8px)` }} />
+        <button
+          onClick={() => setActiveTab('home')}
+          className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
+        >
+          <Home size={20} />
+          <span>Bosh sahifa</span>
+        </button>
 
-            {/* Active sliding tab capsule (no class name to avoid transition overrides) */}
-            <div style={{ 
-              position: 'absolute',
-              top: '4px',
-              bottom: '4px',
-              left: `calc(${activeIndex} * 25% + 4px)`,
-              right: `calc(100% - (${activeIndex} + 1) * 25% + 4px)`,
-              background: '#ffffff',
-              border: 'none',
-              borderRadius: '10px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-              transition: activeIndex > prevIndex
-                ? 'left 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s, right 0.28s cubic-bezier(0.2, 1, 0.3, 1)'
-                : activeIndex < prevIndex
-                  ? 'left 0.28s cubic-bezier(0.2, 1, 0.3, 1), right 0.42s cubic-bezier(0.25, 1, 0.35, 1) 0.08s'
-                  : 'left 0.35s ease, right 0.35s ease',
-              backdropFilter: 'none',
-              boxSizing: 'border-box'
-            }} />
-          </div>
+        <button
+          onClick={() => setActiveTab('search')}
+          className={`tab-item ${activeTab === 'search' ? 'active' : ''}`}
+        >
+          <Bell size={20} />
+          <span>Yangiliklar</span>
+        </button>
 
-          {/* Foreground buttons */}
-          <button 
-            onClick={() => setActiveTab('home')}
-            className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
-            style={{ zIndex: 1 }}
-          >
-            <Home size={20} />
-            <span>Bosh sahifa</span>
-          </button>
-          
-          <button 
-            onClick={() => setActiveTab('search')}
-            className={`tab-item ${activeTab === 'search' ? 'active' : ''}`}
-            style={{ zIndex: 1 }}
-          >
-            <Bell size={20} />
-            <span>Yangiliklar</span>
-          </button>
-          
-          <button 
-            onClick={() => {
-              setActiveTab('stats');
-            }}
-            className={`tab-item ${activeTab === 'stats' ? 'active' : ''}`}
-            style={{ zIndex: 1 }}
-          >
-            <BarChart2 size={20} />
-            <span>Statistika</span>
-          </button>
-          
-          <button 
-            onClick={() => setActiveTab('settings')}
-            className={`tab-item ${activeTab === 'settings' ? 'active' : ''}`}
-            style={{ zIndex: 1 }}
-          >
-            <Settings size={20} />
-            <span>Sozlamalar</span>
-          </button>
-        </div>
+        <button
+          onClick={() => setActiveTab('stats')}
+          className={`tab-item ${activeTab === 'stats' ? 'active' : ''}`}
+        >
+          <BarChart2 size={20} />
+          <span>Statistika</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`tab-item ${activeTab === 'settings' ? 'active' : ''}`}
+        >
+          <Settings size={20} />
+          <span>Sozlamalar</span>
+        </button>
       </div>
 
       {/* Desktop/Mobile Modal Dialog for Adding Child */}

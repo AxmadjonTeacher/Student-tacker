@@ -4,7 +4,7 @@ import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, BarChart, Bar
 } from 'recharts';
-import { Award, Calendar, User, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Award, Calendar, TrendingUp, ArrowUpRight } from 'lucide-react';
 
 const CHART_MARGIN = { top: 10, right: 10, left: -25, bottom: 5 };
 const AXIS_TICK_STYLE = { fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 700 };
@@ -64,7 +64,6 @@ const DEFAULT_TICKS = [0, 30, 60, 90] as const;
 export const Dashboard: React.FC<DashboardProps> = ({ 
   students, 
   studentWeeks, 
-  authRole = null,
   onSelectStudentGrant
 }) => {
   // Active/non-deleted students
@@ -93,18 +92,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Weekly Leaders State
   const [leaderClassGroup, setLeaderClassGroup] = useState<'5-6' | '7-8' | '9-11'>('5-6');
 
-  // Role Formatted Display
-  const roleDisplay = useMemo(() => {
-    switch (authRole) {
-      case 'admin': return 'Admin Pro';
-      case 'admin123': return 'Admin';
-      case 'parent': return 'Parent';
-      case 'publish': return 'Publisher';
-      case 'testor': return 'Testor';
-      case 'teacher': return "O'qituvchi";
-      default: return 'Mehmon';
-    }
-  }, [authRole]);
 
 
 
@@ -293,41 +280,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        .profile-badge {
-          background: var(--bg-card);
-          backdrop-filter: var(--backdrop-blur-md);
-          -webkit-backdrop-filter: var(--backdrop-blur-md);
-          border: 1px solid var(--border-subtle);
-          border-radius: 9999px;
-          box-shadow: var(--glass-shadow-soft), inset 0 1px 0 var(--border-highlight);
-          transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        .profile-badge:hover {
-          background: var(--bg-card-hover);
-          transform: translateY(-1px);
-        }
-        .profile-container {
-          position: relative;
-        }
-        .profile-hover-popup {
-          display: none;
-          position: absolute;
-          top: 110%;
-          right: 0;
-          z-index: 100;
-          width: 200px;
-          background: var(--bg-card);
-          backdrop-filter: var(--backdrop-blur-md);
-          -webkit-backdrop-filter: var(--backdrop-blur-md);
-          border: 1px solid var(--border-subtle);
-          box-shadow: var(--glass-shadow-soft);
-          border-radius: 20px;
-          padding: 1rem;
-          animation: premiumScaleIn 0.3s forwards cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        .profile-container:hover .profile-hover-popup {
-          display: block;
-        }
         .top3-card {
           background: var(--bg-card);
           backdrop-filter: var(--backdrop-blur-md);
@@ -380,16 +332,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }
         @media (max-width: 768px) {
           .top3-grid {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: minmax(0, 1fr) !important;
           }
           .dashboard-columns {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+          .dashboard-columns > * {
+            min-width: 0 !important;
+            max-width: 100% !important;
           }
           .dashboard-card-inner {
             padding: 1.25rem !important;
+            min-width: 0 !important;
           }
           .dashboard-card-chart {
             padding: 1.25rem !important;
+            min-width: 0 !important;
           }
           .leader-filter-row {
             flex-direction: column !important;
@@ -421,69 +379,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.03em' }}>
           Bosh Sahifa
         </h1>
-
-        {/* Profile Container */}
-        <div className="profile-container">
-          <div className="profile-badge" style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            padding: 0,
-            borderRadius: '50%'
-          }}>
-            {/* Circular avatar profile image */}
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              border: '1.5px solid var(--border-subtle)',
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--bg-card-hover)',
-              boxShadow: 'var(--glass-shadow-soft)',
-              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--text-primary)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border-subtle)';
-              e.currentTarget.style.transform = 'none';
-            }}>
-              <img 
-                src="/default_avatar.jpg" 
-                alt="Profile Avatar" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-              />
-            </div>
-          </div>
-          
-          {/* Hover popup */}
-          <div className="profile-hover-popup">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <User size={14} color="var(--accent-primary)" />
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)' }}>Faol Rol:</span>
-              </div>
-              <div style={{ 
-                fontSize: '0.85rem', 
-                fontWeight: 900, 
-                color: 'var(--text-primary)',
-                background: 'var(--bg-card-hover)',
-                padding: '0.4rem 0.6rem',
-                borderRadius: '6px',
-                border: '1px solid var(--border-color)',
-                textAlign: 'center'
-              }}>
-                {roleDisplay}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── TOP 3 STUDENTS SECTION ───────────────────────────────────────── */}
@@ -683,7 +578,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* ── BOTTOM DOUBLE COLUMN LAYOUT ──────────────────────────────────── */}
-      <div className="dashboard-columns" style={{ display: 'grid', gridTemplateColumns: '4.5fr 5.5fr', gap: '1.25rem', width: '100%' }}>
+      <div className="dashboard-columns" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 4.5fr) minmax(0, 5.5fr)', gap: '1.25rem', width: '100%' }}>
         
         {/* LEFT COLUMN: Hafta Liderlari */}
         <div className="dashboard-card-inner" style={{
