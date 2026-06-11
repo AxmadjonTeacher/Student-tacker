@@ -6,6 +6,8 @@ import EditProgressModal from './EditProgressModal';
 import * as XLSX from 'xlsx';
 import { supabase } from '../supabase';
 import { weekLabelForDate } from '../utils/weekUtils';
+import { applyRulesPenalty, violationsForWeek } from '../utils/penalty';
+import RulesViolationChip from './RulesViolationChip';
 
 interface StudentTableProps {
   students: Student[];
@@ -208,23 +210,24 @@ const StudentTable: React.FC<StudentTableProps> = ({
     fetchWeeklyDailyRecords();
   }, [selectedWeek, classStudentIds]);
 
-  const recalculateWeeklyMetrics = async (studentId: string, week: string, _subject?: 'ENG' | 'MATH') => {
+  // Teachers only drive the weekly HOMEWORK metric. Attendance is marked by
+  // kurators (daily_records with subject = 'KURATOR') and recalculated in
+  // KuratorMarking — this function must never touch student_weeks.attendance.
+  const recalculateWeeklyHomework = async (studentId: string, week: string, _subject?: 'ENG' | 'MATH') => {
     try {
       const { data: records, error: fetchErr } = await supabase
         .from('daily_records')
         .select('*')
         .eq('student_id', studentId)
-        .eq('week', week);
-        
+        .eq('week', week)
+        .in('subject', ['ENG', 'MATH']);
+
       if (fetchErr) throw fetchErr;
-      
+
       const totalRecords = records ? records.length : 0;
-      const presentCount = records ? records.filter(r => r.attendance === true).length : 0;
       const doneHwCount = records ? records.filter(r => r.homework === true).length : 0;
-      
-      const attendanceVal = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 100;
       const homeworkVal = totalRecords > 0 ? Math.round((doneHwCount / totalRecords) * 100) : 100;
-      
+
       const { data: weekRecord, error: weekErr } = await supabase
         .from('student_weeks')
         .select('id')
@@ -232,14 +235,13 @@ const StudentTable: React.FC<StudentTableProps> = ({
         .eq('week', week)
         .eq('is_deleted', false)
         .maybeSingle();
-        
+
       if (weekErr) throw weekErr;
-      
+
       if (weekRecord) {
         const { error: updateErr } = await supabase
           .from('student_weeks')
           .update({
-            attendance: attendanceVal,
             homework: homeworkVal
           })
           .eq('id', weekRecord.id);
@@ -250,7 +252,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           .insert([{
             student_id: studentId,
             week: week,
-            attendance: attendanceVal,
+            attendance: 1,
             homework: homeworkVal,
             eng_score: null,
             math_score: null,
@@ -261,7 +263,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
         if (insertErr) throw insertErr;
       }
     } catch (err) {
-      console.error("Error recalculating weekly metrics:", err);
+      console.error("Error recalculating weekly homework:", err);
     }
   };
 
@@ -304,7 +306,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
       
       // Trigger weekly metrics recalculation for all students in the class
       for (const student of students) {
-        await recalculateWeeklyMetrics(student.id, selectedDailyWeek, activeSubject as 'ENG' | 'MATH');
+        await recalculateWeeklyHomework(student.id, selectedDailyWeek, activeSubject as 'ENG' | 'MATH');
       }
       
       // Refetch weekly daily records to keep tooltip cache in sync
@@ -358,7 +360,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           setWeeklyDailyRecords(prev => [...prev, inserted]);
         }
         
-        await recalculateWeeklyMetrics(studentId, selectedDailyWeek, activeSub);
+        await recalculateWeeklyHomework(studentId, selectedDailyWeek, activeSub);
       } catch (err) {
         console.error("Error creating daily record on toggle:", err);
       } finally {
@@ -385,7 +387,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
       setWeeklyDailyRecords(prev => prev.map(r => r.id === existing.id ? { ...r, [field]: updatedValue, teacher_name: teacherName } : r));
       
       // Recalculate weekly metrics for this student
-      await recalculateWeeklyMetrics(studentId, selectedDailyWeek, activeSub);
+      await recalculateWeeklyHomework(studentId, selectedDailyWeek, activeSub);
     } catch (err) {
       console.error("Error updating daily record:", err);
     } finally {
@@ -1361,7 +1363,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 }}>
                   <div className="daily-header-row" style={{
                     display: 'grid',
-                    gridTemplateColumns: '2fr 1fr 1fr',
+                    gridTemplateColumns: '2fr 1fr',
                     padding: '0.75rem 1.25rem',
                     background: 'rgba(0,0,0,0.02)',
                     color: 'var(--text-secondary)',
@@ -1370,7 +1372,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     letterSpacing: '0.05em'
                   }}>
                     <span>O'QUVCHI ISMI</span>
-                    <span style={{ textAlign: 'center' }}>DAVOMAT</span>
                     <span style={{ textAlign: 'center' }}>UY VAZIFASI</span>
                   </div>
 
@@ -1410,12 +1411,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         const isSaving = isSavingDaily === student.id;
                         
                         return (
-                          <div 
+                          <div
                             key={student.id}
                             className="daily-row"
                             style={{
                               display: 'grid',
-                              gridTemplateColumns: '2fr 1fr 1fr',
+                              gridTemplateColumns: '2fr 1fr',
                               padding: '0.9rem 1.25rem',
                               alignItems: 'center',
                               borderBottom: sIdx === students.length - 1 ? 'none' : '1px solid var(--border-subtle)',
@@ -1428,36 +1429,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             </span>
 
                             <div className="daily-row-controls" style={{ display: 'contents' }}>
-                              {/* Attendance Toggle */}
-                              <div className="daily-control-item" style={{ display: 'flex', justifyContent: 'center' }}>
-                                {record ? (
-                                  <button
-                                    disabled={isSaving}
-                                    onClick={() => handleToggleDailyRecord(student.id, 'attendance')}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '0.4rem',
-                                      padding: '0.4rem 0.85rem',
-                                      borderRadius: '9999px',
-                                      border: 'none',
-                                      cursor: isSaving ? 'not-allowed' : 'pointer',
-                                      fontWeight: 750,
-                                      fontSize: '0.75rem',
-                                      transition: 'all 0.2s ease',
-                                      background: record.attendance ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                      color: record.attendance ? '#16a34a' : '#ef4444',
-                                      boxShadow: record.attendance ? '0 2px 6px rgba(22, 163, 74, 0.05)' : 'none'
-                                    }}
-                                  >
-                                    <span>{record.attendance ? '✅ Keldi' : '❌ Kelmadi'}</span>
-                                  </button>
-                                ) : (
-                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>-</span>
-                                )}
-                              </div>
-
-                              {/* Homework Toggle */}
+                              {/* Homework Toggle (attendance is marked by kurators) */}
                               <div className="daily-control-item" style={{ display: 'flex', justifyContent: 'center' }}>
                                 {record ? (
                                   <button
@@ -1723,19 +1695,29 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
                 {/* Rows */}
                 {sortedStudents.map((student, idx) => {
-                  const engPercent = student.engScore !== null && student.engScore !== undefined ? (student.engScore / 15 * 100) : null;
-                  const mathPercent = student.mathScore !== null && student.mathScore !== undefined ? (student.mathScore / 15 * 100) : null;
+                  const weekRecord = studentWeeks?.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek);
+                  const isIdWrong = weekRecord?.id_wrong === true;
+                  const violations = weekRecord?.school_rules ?? 0;
+
+                  // Maktab qoidalari penalty is display-time only (raw scores untouched)
+                  const penalizedEng = applyRulesPenalty(student.engScore, violations);
+                  const penalizedMath = applyRulesPenalty(student.mathScore, violations);
+                  const engPercent = penalizedEng !== null && penalizedEng !== undefined ? (penalizedEng / 15 * 100) : null;
+                  const mathPercent = penalizedMath !== null && penalizedMath !== undefined ? (penalizedMath / 15 * 100) : null;
                   const engPercentVal = engPercent !== null ? engPercent : 0;
                   const mathPercentVal = mathPercent !== null ? mathPercent : 0;
                   const studentRecords = (weeklyDailyRecords || []).filter(r => r.student_id?.toString() === student.id?.toString());
-                  
+                  // Attendance comes from kurator records; homework from teacher records
+                  const kuratorRecords = studentRecords.filter(r => r.subject === 'KURATOR');
+                  const teacherRecords = studentRecords.filter(r => r.subject !== 'KURATOR');
+
                   let attVal = student.attendance ?? 1;
                   let attPercent = 100;
                   let absences = 0;
-                  if (studentRecords.length > 0) {
-                    const presentCount = studentRecords.filter(r => r.attendance === true).length;
-                    attPercent = Math.round((presentCount / studentRecords.length) * 100);
-                    absences = studentRecords.length - presentCount;
+                  if (kuratorRecords.length > 0) {
+                    const presentCount = kuratorRecords.filter(r => r.attendance === true).length;
+                    attPercent = Math.round((presentCount / kuratorRecords.length) * 100);
+                    absences = kuratorRecords.length - presentCount;
                     attVal = attPercent;
                   } else {
                     attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
@@ -1745,18 +1727,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   let hwVal = student.homework ?? 1;
                   let hwPercent = 100;
                   let missedHw = 0;
-                  if (studentRecords.length > 0) {
-                    const doneHwCount = studentRecords.filter(r => r.homework === true).length;
-                    hwPercent = Math.round((doneHwCount / studentRecords.length) * 100);
-                    missedHw = studentRecords.length - doneHwCount;
+                  if (teacherRecords.length > 0) {
+                    const doneHwCount = teacherRecords.filter(r => r.homework === true).length;
+                    hwPercent = Math.round((doneHwCount / teacherRecords.length) * 100);
+                    missedHw = teacherRecords.length - doneHwCount;
                     hwVal = hwPercent;
                   } else {
                     hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
                     missedHw = hwVal < 0 ? -hwVal : 0;
                   }
-
-                  const weekRecord = studentWeeks?.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek);
-                  const isIdWrong = weekRecord?.id_wrong === true;
 
                   const isLast = idx === sortedStudents.length - 1;
 
@@ -1819,6 +1798,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 ID Xato
                               </span>
                             )}
+                            <RulesViolationChip count={violations} />
                           </h3>
                           <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                             SINF {student.className.toUpperCase()}
@@ -1860,7 +1840,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               )}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <span>{`${student.engScore} / 15`}</span>
+                              <span>{`${penalizedEng} / 15`}</span>
                               {isIdWrong && (
                                 <span 
                                   style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '0.85rem', lineHeight: 1 }} 
@@ -1908,7 +1888,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               )}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                              <span>{`${student.mathScore} / 15`}</span>
+                              <span>{`${penalizedMath} / 15`}</span>
                               {isIdWrong && (
                                 <span 
                                   style={{ color: '#ef4444', fontWeight: 'bold', cursor: 'help', fontSize: '0.85rem', lineHeight: 1 }} 
@@ -1935,18 +1915,50 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         {/* Tooltip Content */}
                         {(() => {
                           const studentRecords = weeklyDailyRecords.filter(r => r.student_id?.toString() === student.id?.toString());
+                          const kuratorAtt = studentRecords.filter(r => r.subject === 'KURATOR');
+                          const ruleViolations = kuratorAtt.filter(r => r.school_rule === false);
+                          // Legacy weeks: attendance was marked by subject teachers
                           const engAtt = studentRecords.filter(r => r.subject === 'ENG');
                           const mathAtt = studentRecords.filter(r => r.subject === 'MATH');
+                          const showLegacy = kuratorAtt.length === 0;
                           return (
                             <div className="tooltip-content" style={{ pointerEvents: 'none' }}>
                               <div style={{ fontWeight: 900, fontSize: '0.72rem', marginBottom: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem', color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
                                 KUNLIK DAVOMAT
                               </div>
-                              {engAtt.length === 0 && mathAtt.length === 0 ? (
+                              {kuratorAtt.length === 0 && engAtt.length === 0 && mathAtt.length === 0 ? (
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Yozuvlar mavjud emas</div>
                               ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                  {engAtt.length > 0 && (
+                                  {kuratorAtt.length > 0 && (
+                                    <div>
+                                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#d97706', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>DAVOMAT (KURATOR):</div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                        {kuratorAtt.map(r => (
+                                          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', gap: '1rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>{r.date}</span>
+                                            <span style={{ fontWeight: 700, color: r.attendance ? '#16a34a' : '#ef4444' }}>
+                                              {r.attendance ? '✅ Kelgan' : '❌ Kelmagan'}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {ruleViolations.length > 0 && (
+                                    <div>
+                                      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#ef4444', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>QOIDABUZARLIK:</div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                        {ruleViolations.map(r => (
+                                          <div key={`rule-${r.id}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', gap: '1rem' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>{r.date}</span>
+                                            <span style={{ fontWeight: 700, color: '#d97706' }}>⚠️ Qoida buzilgan</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {showLegacy && engAtt.length > 0 && (
                                     <div>
                                       <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--accent-primary)', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>INGLIZ TILI:</div>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
@@ -1961,7 +1973,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                       </div>
                                     </div>
                                   )}
-                                  {mathAtt.length > 0 && (
+                                  {showLegacy && mathAtt.length > 0 && (
                                     <div>
                                       <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#8b5cf6', marginBottom: '0.2rem', letterSpacing: '0.04em' }}>MATEMATIKA:</div>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
@@ -2256,7 +2268,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     
                     // Trigger weekly metrics recalculation for all students in this range
                     for (const student of rangeStudents) {
-                      await recalculateWeeklyMetrics(student.id, selectedDailyWeek, teacherSubject as 'ENG' | 'MATH');
+                      await recalculateWeeklyHomework(student.id, selectedDailyWeek, teacherSubject as 'ENG' | 'MATH');
                     }
                     
                     // Refetch weekly daily records to keep tooltip cache in sync
@@ -2543,7 +2555,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         {/* Table content header */}
                         <div style={{
                           display: 'grid',
-                          gridTemplateColumns: '2fr 1fr 1fr',
+                          gridTemplateColumns: '2.5fr 1.5fr',
                           padding: '0.75rem 1.5rem',
                           borderBottom: '1px solid var(--border-color)',
                           background: 'var(--bg-card-hover)',
@@ -2554,17 +2566,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           textTransform: 'uppercase'
                         }}>
                           <div>O'quvchining ismi va familiyasi</div>
-                          <div style={{ textAlign: 'center' }}>Davomat</div>
                           <div style={{ textAlign: 'center' }}>Uyga vazifa</div>
                         </div>
 
-                        {/* Table content rows */}
+                        {/* Table content rows (attendance is marked by kurators) */}
                         {sortedStudentsForTable.map((student, sIdx) => {
                           const record = dailyRecords.find(r => r.student_id?.toString() === student.id?.toString());
                           const isSaving = isSavingDaily === student.id;
 
                           const hasRecord = !!record;
-                          const isAttended = record ? record.attendance : true;
                           const isHomeworkDone = record ? record.homework : true;
 
                           return (
@@ -2572,7 +2582,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               key={student.id}
                               style={{
                                 display: 'grid',
-                                gridTemplateColumns: '2fr 1fr 1fr',
+                                gridTemplateColumns: '2.5fr 1.5fr',
                                 padding: '0.9rem 1.5rem',
                                 alignItems: 'center',
                                 borderBottom: sIdx === sortedStudentsForTable.length - 1 ? 'none' : '1px solid var(--border-color)',
@@ -2598,31 +2608,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 }}>
                                   {student.className}
                                 </span>
-                              </div>
-
-                              {/* Attendance Toggle */}
-                              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                <button
-                                  disabled={isSaving}
-                                  onClick={() => handleToggleDailyRecord(student.id, 'attendance')}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.35rem',
-                                    padding: '0.4rem 0.85rem',
-                                    borderRadius: '9999px',
-                                    border: hasRecord ? 'none' : '1.5px dashed rgba(22, 163, 74, 0.5)',
-                                    cursor: isSaving ? 'not-allowed' : 'pointer',
-                                    fontWeight: 750,
-                                    fontSize: '0.75rem',
-                                    transition: 'all 0.2s ease',
-                                    background: isAttended ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                    color: isAttended ? '#16a34a' : '#ef4444',
-                                    opacity: hasRecord ? 1 : 0.85
-                                  }}
-                                >
-                                  <span>{isAttended ? '✅ Keldi' : '❌ Kelmadi'}</span>
-                                </button>
                               </div>
 
                               {/* Homework Toggle */}
@@ -2829,6 +2814,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 const attPercent = attVal < 0 ? Math.max(0, 100 + attVal * 16.67) : (attVal === 1 ? 100 : attVal);
                                 const hwVal = student.homework ?? 1;
                                 const hwPercent = hwVal < 0 ? Math.max(0, 100 + hwVal * 20) : (hwVal === 1 ? 100 : hwVal);
+                                const emWeekRecord = studentWeeks?.find(sw => sw.student_id?.toString() === student.id?.toString() && sw.week === selectedWeek && !sw.is_deleted);
+                                const emViolations = emWeekRecord?.school_rules ?? 0;
 
                                 const isLast = sIdx === teacherStudents.length - 1;
 
@@ -2874,6 +2861,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                       <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>
                                         {student.name} {student.surname}
                                       </span>
+                                      <RulesViolationChip count={emViolations} />
                                     </div>
 
                                     {/* Sinf */}
@@ -3124,8 +3112,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             editingCell?.studentId === student.id && editingCell?.field === field;
 
                           const handleDoubleClick = (field: 'name' | 'id' | 'passcode' | 'parentPhone', currentVal: string) => {
-                            if (!isAdminMode) return;
-                            if (authRole === 'admin123' && field !== 'parentPhone') return;
+                            // Kurators may edit phone numbers without admin mode
+                            if (!isAdminMode && authRole !== 'kurator') return;
+                            if ((authRole === 'admin123' || authRole === 'kurator') && field !== 'parentPhone') return;
                             setEditingCell({ studentId: student.id, field });
                             setEditingValue(currentVal);
                           };
@@ -3765,6 +3754,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                   ID Xato
                                 </span>
                               )}
+                              <RulesViolationChip count={weekRecord?.school_rules ?? 0} />
                             </h3>
                             <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                               SINF {student.className.toUpperCase()}
@@ -3935,6 +3925,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           activeSubject={activeSubject === 'GRANT' ? grantSubject : (activeSubject === 'ENG_MATH' ? (authRole === 'teacher' ? (localStorage.getItem('teacher_subject') as ActiveSubject || 'ENG') : engMathSubSubject) : activeSubject)}
           studentWeeks={studentWeeks}
           subjectScores={subjectScores}
+          currentWeekViolations={violationsForWeek(studentWeeks, selectedStudent.id, selectedWeek)}
           showSummerPlan={showSummerPlan}
         />
       )}

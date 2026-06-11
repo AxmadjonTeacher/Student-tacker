@@ -34,9 +34,9 @@ interface SidebarDrawerProps {
   isInline?: boolean;
   onLogout?: () => void;
   teachers: Teacher[];
-  onAddTeacher: (name: string, subject: 'ENG' | 'MATH', phone?: string) => Promise<void>;
+  onAddTeacher: (name: string, subject: 'ENG' | 'MATH' | 'KURATOR', phone?: string, gradeBand?: '5-6' | '7-8' | '9-11') => Promise<void>;
   onDeleteTeacher: (id: number) => Promise<void>;
-  onEditTeacher: (id: number, newName: string, phone?: string, loginId?: string, passcode?: string, pictureUrl?: string) => Promise<void>;
+  onEditTeacher: (id: number, newName: string, phone?: string, loginId?: string, passcode?: string, pictureUrl?: string, gradeBand?: '5-6' | '7-8' | '9-11') => Promise<void>;
   authRole?: string | null;
   activeTab?: 'settings' | 'news' | 'teachers' | 'trash';
   onTabChange?: (tab: 'settings' | 'news' | 'teachers' | 'trash') => void;
@@ -115,23 +115,26 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const [editTeacherLoginId, setEditTeacherLoginId] = useState('');
   const [editTeacherPasscode, setEditTeacherPasscode] = useState('');
   const [editTeacherPictureUrl, setEditTeacherPictureUrl] = useState('');
+  const [editTeacherBand, setEditTeacherBand] = useState<'5-6' | '7-8' | '9-11'>('5-6');
   const [activeCredentialsTeacher, setActiveCredentialsTeacher] = useState<Teacher | null>(null);
 
-  // Logged-in teacher's own profile (teacher role)
+  // Logged-in teacher's/kurator's own profile
   const currentTeacher = useMemo(() => {
-    if (authRole !== 'teacher') return null;
+    if (authRole !== 'teacher' && authRole !== 'kurator') return null;
     const teacherId = localStorage.getItem('teacher_id');
     if (!teacherId) return null;
     return teachers.find(t => t.id.toString() === teacherId) || null;
   }, [authRole, teachers]);
 
   const [isProfileEditing, setIsProfileEditing] = useState(false);
+  const [profileName, setProfileName] = useState('');
   const [profileLoginId, setProfileLoginId] = useState('');
   const [profilePasscode, setProfilePasscode] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
 
   const startProfileEditing = () => {
     if (!currentTeacher) return;
+    setProfileName(currentTeacher.name || '');
     setProfileLoginId(currentTeacher.login_id || '');
     setProfilePasscode(currentTeacher.passcode || '');
     setProfilePhone(currentTeacher.phone || '');
@@ -142,14 +145,19 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
     if (!currentTeacher) return;
     let phone = profilePhone.trim();
     if (/^\d{9}$/.test(phone)) phone = `+998${phone}`;
+    // Kurators may rename their own account; teachers keep their fixed name
+    const newName = authRole === 'kurator' && profileName.trim() ? profileName.trim() : currentTeacher.name;
     await onEditTeacher(
       currentTeacher.id,
-      currentTeacher.name,
+      newName,
       phone || undefined,
       profileLoginId.trim() || undefined,
       profilePasscode.trim() || undefined,
       currentTeacher.picture_url
     );
+    if (authRole === 'kurator' && newName !== currentTeacher.name) {
+      localStorage.setItem('teacher_name', newName);
+    }
     setIsProfileEditing(false);
   };
 
@@ -160,12 +168,14 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
       setEditTeacherLoginId(editTeacher.login_id || '');
       setEditTeacherPasscode(editTeacher.passcode || '');
       setEditTeacherPictureUrl(editTeacher.picture_url || '');
+      setEditTeacherBand(editTeacher.grade_band || '5-6');
     } else {
       setEditTeacherName('');
       setEditTeacherPhone('');
       setEditTeacherLoginId('');
       setEditTeacherPasscode('');
       setEditTeacherPictureUrl('');
+      setEditTeacherBand('5-6');
     }
   }, [editTeacher]);
 
@@ -241,7 +251,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
   // Teachers Form states
   const [newTeacherName, setNewTeacherName] = useState('');
-  const [newTeacherSubject, setNewTeacherSubject] = useState<'ENG' | 'MATH'>('ENG');
+  const [newTeacherSubject, setNewTeacherSubject] = useState<'ENG' | 'MATH' | 'KURATOR'>('ENG');
+  const [newTeacherBand, setNewTeacherBand] = useState<'5-6' | '7-8' | '9-11'>('5-6');
   const [newTeacherPhone, setNewTeacherPhone] = useState('');
   const [isAddingTeacher, setIsAddingTeacher] = useState(false);
 
@@ -781,7 +792,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         </div>
 
         {/* Navigation Tabs Selector */}
-        {authRole !== 'admin123' && authRole !== 'teacher' && (!isInline || isMobile) && (
+        {authRole !== 'admin123' && authRole !== 'teacher' && authRole !== 'kurator' && (!isInline || isMobile) && (
           <div style={{
             display: 'flex',
             background: 'var(--bg-card-hover)',
@@ -837,8 +848,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
         {/* Drawer Scrollable Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem 1.5rem' }}>
 
-          {/* Teacher's own profile card (teacher role only) */}
-          {authRole === 'teacher' && currentTeacher && (
+          {/* Teacher's/Kurator's own profile card */}
+          {(authRole === 'teacher' || authRole === 'kurator') && currentTeacher && (
             <div style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border-subtle)',
@@ -876,9 +887,13 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   }}>
                     <span style={{
                       width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
-                      background: currentTeacher.subject === 'MATH' ? '#f97316' : 'var(--accent-primary)'
+                      background: currentTeacher.subject === 'MATH' ? '#f97316' : currentTeacher.subject === 'KURATOR' ? '#d97706' : 'var(--accent-primary)'
                     }} />
-                    {currentTeacher.subject === 'MATH' ? "Matematika o'qituvchisi" : "Ingliz tili o'qituvchisi"}
+                    {currentTeacher.subject === 'MATH'
+                      ? "Matematika o'qituvchisi"
+                      : currentTeacher.subject === 'KURATOR'
+                        ? `Kurator (${currentTeacher.grade_band || '5-6'}-sinflar)`
+                        : "Ingliz tili o'qituvchisi"}
                   </div>
                 </div>
                 {!isProfileEditing && (
@@ -906,6 +921,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               {isProfileEditing ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   {[
+                    // Kurators may rename their own account; teacher names are admin-managed
+                    ...(authRole === 'kurator' ? [{ label: 'ISM', value: profileName, setter: setProfileName, placeholder: 'Ism' }] : []),
                     { label: 'LOGIN ID', value: profileLoginId, setter: setProfileLoginId, placeholder: 'Login ID' },
                     { label: 'PAROL', value: profilePasscode, setter: setProfilePasscode, placeholder: 'Parol' },
                     { label: 'TELEFON', value: profilePhone, setter: setProfilePhone, placeholder: '+998 XX XXX XX XX' }
@@ -1002,11 +1019,16 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                           color: 'var(--accent-primary)', 
                           bg: 'rgba(13, 148, 136, 0.12)' 
                         },
-                        { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' }
+                        { id: 'DETAILS', title: 'Tafsilotlar', desc: "O'quvchi ID raqamlari, parollari va telefon raqamlari", color: 'var(--accent-primary)', bg: 'rgba(13, 148, 136, 0.12)' },
+                        { id: 'KURATOR', title: 'Davomat & Qoidalar', desc: "Kundalik davomat va maktab qoidalarini belgilash", color: '#d97706', bg: 'rgba(245, 158, 11, 0.12)' }
                       ];
                       if (authRole === 'teacher') {
                         const tSubject = localStorage.getItem('teacher_subject');
                         subjects = subjects.filter(s => s.id === tSubject || s.id === 'GRANT');
+                      } else if (authRole === 'kurator') {
+                        subjects = subjects.filter(s => s.id === 'KURATOR' || s.id === 'ALL' || s.id === 'DETAILS');
+                      } else {
+                        subjects = subjects.filter(s => s.id !== 'KURATOR');
                       }
                       return subjects;
                     })().map(subj => {
@@ -1065,7 +1087,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
               )}
 
               {/* Section 2: Admin Mode Toggle */}
-              {authRole !== 'publish' && authRole !== 'teacher' && (!isInline || isMobile) && (
+              {authRole !== 'publish' && authRole !== 'teacher' && authRole !== 'kurator' && (!isInline || isMobile) && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
@@ -1188,6 +1210,85 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       })}
                     </div>
 
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <button
+                        onClick={() => setIsAddStudentOpen(true)}
+                        className="drawer-action-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          width: '100%',
+                          padding: '0.75rem 1.25rem',
+                          borderRadius: '9999px',
+                          background: 'var(--bg-card)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-subtle)',
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                          boxShadow: 'var(--glass-shadow-soft)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--accent-hero)';
+                          e.currentTarget.style.color = '#ffffff';
+                          e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'var(--bg-card)';
+                          e.currentTarget.style.color = 'var(--text-primary)';
+                          e.currentTarget.style.transform = 'none';
+                        }}
+                      >
+                        <UserPlus size={15} />
+                        <span>YANGI O'QUVCHI QO'SHISH</span>
+                      </button>
+
+                      <button
+                        onClick={() => { setUploadStatus(null); setIsCsvModalOpen(true); }}
+                        className="drawer-action-btn"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          width: '100%',
+                          padding: '0.75rem 1.25rem',
+                          borderRadius: '9999px',
+                          background: 'var(--accent-hero)',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                          boxShadow: '0 8px 16px var(--accent-glow)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'none';
+                        }}
+                      >
+                        <UploadCloud size={15} />
+                        <span>GURUHLI YUKLASH (EXCEL / CSV)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Section 3.5: Kurator student management (no admin mode needed) */}
+              {authRole === 'kurator' && (
+                <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '0' }} />
+                  <div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.08em', marginBottom: '0.75rem' }}>
+                      O'QUVCHILARNI BOSHQARISH
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       <button
                         onClick={() => setIsAddStudentOpen(true)}
@@ -2155,7 +2256,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   if (!newTeacherName.trim()) return;
                   setIsAddingTeacher(true);
                   try {
-                    await onAddTeacher(newTeacherName.trim(), newTeacherSubject, newTeacherPhone.trim());
+                    await onAddTeacher(newTeacherName.trim(), newTeacherSubject, newTeacherPhone.trim(), newTeacherSubject === 'KURATOR' ? newTeacherBand : undefined);
                     setNewTeacherName('');
                     setNewTeacherPhone('');
                   } catch (err) {
@@ -2263,7 +2364,7 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   <select
                     id="teacher-subject"
                     value={newTeacherSubject}
-                    onChange={(e) => setNewTeacherSubject(e.target.value as 'ENG' | 'MATH')}
+                    onChange={(e) => setNewTeacherSubject(e.target.value as 'ENG' | 'MATH' | 'KURATOR')}
                     disabled={isAddingTeacher}
                     style={{
                       width: '100%',
@@ -2294,8 +2395,40 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   >
                     <option value="ENG">Ingliz Tili (English)</option>
                     <option value="MATH">Matematika (Math)</option>
+                    <option value="KURATOR">Kurator (sinflar kuratori)</option>
                   </select>
                 </div>
+
+                {newTeacherSubject === 'KURATOR' && (
+                  <div>
+                    <label htmlFor="kurator-band" style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                      SINFLAR GURUHI
+                    </label>
+                    <select
+                      id="kurator-band"
+                      value={newTeacherBand}
+                      onChange={(e) => setNewTeacherBand(e.target.value as '5-6' | '7-8' | '9-11')}
+                      disabled={isAddingTeacher}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem 1.25rem',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '9999px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        outline: 'none',
+                        color: 'var(--text-primary)',
+                        background: 'var(--bg-card-hover)',
+                        boxSizing: 'border-box',
+                        appearance: 'none'
+                      }}
+                    >
+                      <option value="5-6">5-6 sinflar (Kurator 1)</option>
+                      <option value="7-8">7-8 sinflar (Kurator 2)</option>
+                      <option value="9-11">9-11 sinflar (Kurator 3)</option>
+                    </select>
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -2473,6 +2606,129 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                             <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
                           </div>
                           
+                          <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                            {/* Glassy Credentials Button */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setActiveCredentialsTeacher(teacher); }}
+                              style={{
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-subtle)',
+                                borderRadius: '50%',
+                                padding: '0.45rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                              }}
+                              title="Ma'lumotlarni ko'rish"
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-hero)'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.transform = 'none'; }}
+                            >
+                              <ArrowUpRight size={13} strokeWidth={2.5} />
+                            </button>
+
+                            {isAdminMode && (
+                              <>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setEditTeacher(teacher); }}
+                                  style={{
+                                    background: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
+                                    color: '#3b82f6',
+                                    border: isDarkMode ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid #dbeafe',
+                                    borderRadius: '50%',
+                                    padding: '0.45rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                  }}
+                                  title="Tahrirlash"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.2)' : '#dbeafe'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(59,130,246,0.1)' : '#eff6ff'; e.currentTarget.style.transform = 'none'; }}
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Haqiqatan ham ${teacher.name}ni o'chirishni xohlaysizmi?`)) {
+                                      onDeleteTeacher(teacher.id);
+                                    }
+                                  }}
+                                  style={{
+                                    background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                                    color: '#ef4444',
+                                    border: isDarkMode ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #fee2e2',
+                                    borderRadius: '50%',
+                                    padding: '0.45rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                  }}
+                                  title="O'chirish"
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.2)' : '#fee2e2'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = isDarkMode ? 'rgba(239,68,68,0.1)' : '#fef2f2'; e.currentTarget.style.transform = 'none'; }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Kurators */}
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#d97706', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#d97706' }} />
+                    KURATORLAR ({teachers.filter(t => t.subject === 'KURATOR').length} ta)
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {teachers.filter(t => t.subject === 'KURATOR').length === 0 ? (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '0.75rem 1rem', background: 'var(--bg-card-hover)', borderRadius: '12px', border: `1px solid var(--border-subtle)` }}>
+                        Ro'yxat bo'sh
+                      </div>
+                    ) : (
+                      teachers.filter(t => t.subject === 'KURATOR').map(teacher => (
+                        <div
+                          key={teacher.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: '20px',
+                            padding: '0.75rem 1rem',
+                            boxShadow: 'var(--glass-shadow-soft)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 650, color: 'var(--text-primary)' }}>{teacher.name}</span>
+                            <span style={{
+                              fontSize: '0.6rem',
+                              fontWeight: 800,
+                              color: '#d97706',
+                              background: 'rgba(245, 158, 11, 0.12)',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                              borderRadius: '9999px',
+                              padding: '0.08rem 0.5rem',
+                              alignSelf: 'flex-start',
+                              letterSpacing: '0.04em'
+                            }}>
+                              {teacher.grade_band || '5-6'} SINFLAR
+                            </span>
+                          </div>
+
                           <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                             {/* Glassy Credentials Button */}
                             <button
@@ -3113,6 +3369,34 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   style={{ width: '100%' }}
                 />
               </div>
+
+              {editTeacher?.subject === 'KURATOR' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
+                    Sinflar guruhi
+                  </label>
+                  <select
+                    value={editTeacherBand}
+                    onChange={(e) => setEditTeacherBand(e.target.value as '5-6' | '7-8' | '9-11')}
+                    style={{
+                      width: '100%',
+                      padding: '0.6rem 1rem',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-card-hover)',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="5-6">5-6 sinflar (Kurator 1)</option>
+                    <option value="7-8">7-8 sinflar (Kurator 2)</option>
+                    <option value="9-11">9-11 sinflar (Kurator 3)</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -3144,7 +3428,8 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                       editTeacherPhone.trim(),
                       editTeacherLoginId.trim(),
                       editTeacherPasscode.trim(),
-                      editTeacherPictureUrl.trim()
+                      editTeacherPictureUrl.trim(),
+                      editTeacher.subject === 'KURATOR' ? editTeacherBand : undefined
                     );
                     setEditTeacher(null);
                   }
@@ -3259,16 +3544,20 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                 <CheckCircle2 size={17} fill="#10b981" color="#ffffff" style={{ flexShrink: 0 }} />
               </div>
 
-              <div style={{ 
-                fontSize: '0.75rem', 
-                fontWeight: 750, 
-                color: activeCredentialsTeacher.subject === 'ENG' ? 'var(--accent-primary)' : '#f97316', 
-                textTransform: 'uppercase', 
-                textAlign: 'center', 
+              <div style={{
+                fontSize: '0.75rem',
+                fontWeight: 750,
+                color: activeCredentialsTeacher.subject === 'ENG' ? 'var(--accent-primary)' : (activeCredentialsTeacher.subject === 'KURATOR' ? '#d97706' : '#f97316'),
+                textTransform: 'uppercase',
+                textAlign: 'center',
                 letterSpacing: '0.08em',
-                marginBottom: '1.75rem' 
+                marginBottom: '1.75rem'
               }}>
-                {activeCredentialsTeacher.subject === 'ENG' ? "Ingliz Tili O'qituvchisi" : "Matematika O'qituvchisi"}
+                {activeCredentialsTeacher.subject === 'ENG'
+                  ? "Ingliz Tili O'qituvchisi"
+                  : activeCredentialsTeacher.subject === 'KURATOR'
+                    ? `Kurator (${activeCredentialsTeacher.grade_band || '5-6'}-sinflar)`
+                    : "Matematika O'qituvchisi"}
               </div>
 
               {/* Grid with Details */}

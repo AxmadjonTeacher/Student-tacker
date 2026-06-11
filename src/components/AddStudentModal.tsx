@@ -20,7 +20,12 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
   const [selectedClass, setSelectedClass] = useState('5-Sinf');
 
   useEffect(() => {
-    if (isOpen && activeClass) {
+    if (!isOpen) return;
+    const band = localStorage.getItem('auth_role') === 'kurator' ? localStorage.getItem('kurator_band') : null;
+    if (band) {
+      // Default to the first class of the kurator's band
+      setSelectedClass(band === '5-6' ? '5-Sinf' : band === '7-8' ? '7-Sinf' : '9-Sinf');
+    } else if (activeClass) {
       setSelectedClass(activeClass);
     }
   }, [isOpen, activeClass]);
@@ -173,7 +178,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
               <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
                 Sinf *
               </label>
-              <select 
+              <select
                 value={selectedClass}
                 onChange={e => setSelectedClass(e.target.value)}
                 style={{
@@ -182,17 +187,22 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClose, onAd
                   backgroundColor: 'var(--bg-card-hover)', color: 'var(--text-primary)', cursor: 'pointer', outline: 'none'
                 }}
               >
-                <option value="1-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>1-Sinf</option>
-                <option value="2-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>2-Sinf</option>
-                <option value="3-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>3-Sinf</option>
-                <option value="4-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>4-Sinf</option>
-                <option value="5-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>5-Sinf</option>
-                <option value="6-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>6-Sinf</option>
-                <option value="7-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>7-Sinf</option>
-                <option value="8-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>8-Sinf</option>
-                <option value="9-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>9-Sinf</option>
-                <option value="10-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>10-Sinf</option>
-                <option value="11-Sinf" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>11-Sinf</option>
+                {(() => {
+                  const allClasses = ['1-Sinf', '2-Sinf', '3-Sinf', '4-Sinf', '5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'];
+                  // Kurators only add students within their own grade band
+                  const band = localStorage.getItem('auth_role') === 'kurator' ? localStorage.getItem('kurator_band') : null;
+                  const visible = band
+                    ? allClasses.filter(cls => {
+                        const g = parseInt(cls, 10);
+                        if (band === '5-6') return g === 5 || g === 6;
+                        if (band === '7-8') return g === 7 || g === 8;
+                        return g >= 9 && g <= 11;
+                      })
+                    : allClasses;
+                  return visible.map(cls => (
+                    <option key={cls} value={cls} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>{cls}</option>
+                  ));
+                })()}
               </select>
             </div>
 

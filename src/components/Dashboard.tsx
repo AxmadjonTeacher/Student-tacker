@@ -5,6 +5,7 @@ import {
   LineChart, BarChart, Bar, Legend
 } from 'recharts';
 import { Award, Calendar, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { applyRulesPenalty } from '../utils/penalty';
 
 const CHART_MARGIN = { top: 10, right: 10, left: -25, bottom: 5 };
 const AXIS_TICK_STYLE = { fill: 'var(--text-secondary)', fontSize: 9, fontWeight: 700 };
@@ -168,9 +169,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
       
       const gr = getGradeNumber(student.className);
       if (gr < minGrade || gr > maxGrade) return null;
-      
-      const engPct = sw.eng_score != null ? Math.round((sw.eng_score / 15) * 100) : 0;
-      const mathPct = sw.math_score != null ? Math.round((sw.math_score / 15) * 100) : 0;
+
+      // Maktab qoidalari penalty (display-time)
+      const violations = sw.school_rules ?? 0;
+      const penEng = applyRulesPenalty(sw.eng_score, violations);
+      const penMath = applyRulesPenalty(sw.math_score, violations);
+      const engPct = penEng != null ? Math.round((penEng / 15) * 100) : 0;
+      const mathPct = penMath != null ? Math.round((penMath / 15) * 100) : 0;
       const avgPct = (engPct + mathPct) / 2;
 
       return {

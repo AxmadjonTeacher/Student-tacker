@@ -13,7 +13,7 @@ import {
 import { haptics } from '../utils/haptics';
 
 interface LoginScreenProps {
-  onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher', studentData?: any) => void;
+  onLoginSuccess: (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher' | 'kurator', studentData?: any) => void;
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
 }
@@ -120,12 +120,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       if (teacherError) throw teacherError;
 
       if (teacherData) {
-        localStorage.setItem('auth_role', 'teacher');
+        // KURATOR rows in the teachers table are grade-band curators
+        const isKurator = teacherData.subject === 'KURATOR';
+        localStorage.setItem('auth_role', isKurator ? 'kurator' : 'teacher');
         localStorage.setItem('teacher_id', teacherData.id.toString());
         localStorage.setItem('teacher_name', teacherData.name);
         localStorage.setItem('teacher_subject', teacherData.subject);
+        if (isKurator) {
+          localStorage.setItem('kurator_band', teacherData.grade_band || '5-6');
+        }
         offerBiometricEnrollment(trimmedId, trimmedPasscode);
-        onLoginSuccess('teacher');
+        onLoginSuccess(isKurator ? 'kurator' : 'teacher');
         setIsLoading(false);
         return;
       }

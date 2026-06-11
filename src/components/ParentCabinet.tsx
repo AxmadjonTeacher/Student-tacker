@@ -4,6 +4,8 @@ import type { Student, NewsEvent, SubjectScore } from '../types';
 import { supabase, mapDbToStudent } from '../supabase';
 import GraphModal from './GraphModal';
 import { getSubjectColor } from '../utils/subjectColors';
+import { applyRulesPenalty, applyRulesPenaltyPercent, violationsForWeek } from '../utils/penalty';
+import RulesViolationChip from './RulesViolationChip';
 import iconLight from '../assets/icon-light.png';
 
 interface ParentCabinetProps {
@@ -175,8 +177,13 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
     }
   };
 
-  const engPercentage = student.engScore !== null && student.engScore !== undefined ? Math.round((student.engScore / 15 * 100) * 10) / 10 : null;
-  const mathPercentage = student.mathScore !== null && student.mathScore !== undefined ? Math.round((student.mathScore / 15 * 100) * 10) / 10 : null;
+  // Maktab qoidalari violations of the latest week (display-time score penalty)
+  const currentViolations = latestWeekRecord?.school_rules ?? 0;
+  const penalizedEngScore = applyRulesPenalty(student.engScore, currentViolations);
+  const penalizedMathScore = applyRulesPenalty(student.mathScore, currentViolations);
+
+  const engPercentage = penalizedEngScore !== null && penalizedEngScore !== undefined ? Math.round((penalizedEngScore / 15 * 100) * 10) / 10 : null;
+  const mathPercentage = penalizedMathScore !== null && penalizedMathScore !== undefined ? Math.round((penalizedMathScore / 15 * 100) * 10) / 10 : null;
 
   const attVal = student.attendance ?? 1;
   const attPercentage = attVal < 0 ? Math.max(0, Math.round((100 + attVal * 16.67) * 10) / 10) : (attVal === 1 ? 100 : attVal);
@@ -213,13 +220,15 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
       if (ss.student_id?.toString().trim().toUpperCase() !== sid) return;
       const sortVal = parseWeekVal(ss.week || '');
       if (!map[ss.subject] || sortVal >= map[ss.subject].sortVal) {
-        map[ss.subject] = { score: ss.score, week: ss.week, sortVal };
+        // Apply that week's Maktab qoidalari penalty (display-time only)
+        const wViolations = violationsForWeek(studentWeeks, student.id, ss.week);
+        map[ss.subject] = { score: applyRulesPenaltyPercent(ss.score, wViolations) ?? ss.score, week: ss.week, sortVal };
       }
     });
     return Object.entries(map)
       .map(([subject, v]) => ({ subject, score: v.score, week: v.week }))
       .sort((a, b) => a.subject.localeCompare(b.subject));
-  }, [subjectScores, student.id]);
+  }, [subjectScores, student.id, studentWeeks]);
 
   const getUrgencyColor = (val: string) => {
     switch (val) {
@@ -657,8 +666,8 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 {/* Metric Item: English */}
                 <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>INGLIZ TILI</span>
-                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#4f46e5' }}>{student.engScore !== null && student.engScore !== undefined ? `${student.engScore}/15` : '—/15'}</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>INGLIZ TILI <RulesViolationChip count={currentViolations} /></span>
+                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#4f46e5' }}>{penalizedEngScore !== null && penalizedEngScore !== undefined ? `${penalizedEngScore}/15` : '—/15'}</span>
                   </div>
                   <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${engPercentage ?? 0}%`, height: '100%', background: '#4f46e5', borderRadius: '4px' }} />
@@ -671,8 +680,8 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
                 {/* Metric Item: Math */}
                 <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em' }}>MATEMATIKA</span>
-                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#0d9488' }}>{student.mathScore !== null && student.mathScore !== undefined ? `${student.mathScore}/15` : '—/15'}</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', letterSpacing: '0.04em', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>MATEMATIKA <RulesViolationChip count={currentViolations} /></span>
+                    <span style={{ fontSize: '1rem', fontWeight: 900, color: '#0d9488' }}>{penalizedMathScore !== null && penalizedMathScore !== undefined ? `${penalizedMathScore}/15` : '—/15'}</span>
                   </div>
                   <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${mathPercentage ?? 0}%`, height: '100%', background: '#0d9488', borderRadius: '4px' }} />
@@ -871,6 +880,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
               activeSubject="ALL"
               studentWeeks={studentWeeks}
               subjectScores={subjectScores}
+              currentWeekViolations={currentViolations}
               onClose={() => {}}
               isInline={true}
             />
@@ -1338,6 +1348,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
           activeSubject="ALL"
           studentWeeks={studentWeeks}
           subjectScores={subjectScores}
+          currentWeekViolations={currentViolations}
           onClose={() => {
             setIsGraphOpen(false);
             setActiveTab('home');

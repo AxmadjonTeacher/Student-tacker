@@ -43,6 +43,7 @@ import {
   SELECTABLE_QUESTION_COUNTS
 } from '../utils/omrScanner';
 import type { Point } from '../utils/omrScanner';
+import { applyRulesPenaltyPercent, violationsForWeek } from '../utils/penalty';
 
 // Normalization and sorting helpers
 const getClassGroup = (cls: string): string => {
@@ -506,11 +507,11 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const [isCreatingTest, setIsCreatingTest] = useState(false);
 
   // Filter teachers list based on active subject selection in the modal.
-  // Custom subjects can be taught by anyone, so the full list is shown.
+  // Custom subjects can be taught by any subject teacher (kurators excluded).
   const filteredTeachersForNewTest = useMemo(() => {
     if (newTestSubject === 'Matematika') return teachers.filter(t => t.subject === 'MATH');
     if (newTestSubject === 'Ingliz Tili') return teachers.filter(t => t.subject === 'ENG');
-    return teachers;
+    return teachers.filter(t => t.subject !== 'KURATOR');
   }, [newTestSubject, teachers]);
 
   // Custom subjects already present among tests (offered for reuse in the modal)
@@ -1586,13 +1587,15 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       if (!classStudentIds.has(ss.student_id?.toString())) return;
       if (typeof ss.score !== 'number') return;
       if (!map[ss.subject]) map[ss.subject] = { sum: 0, count: 0 };
-      map[ss.subject].sum += ss.score;
+      // Average reflects the displayed (rules-penalized) score
+      const violations = violationsForWeek(studentWeeks, ss.student_id, ss.week);
+      map[ss.subject].sum += applyRulesPenaltyPercent(ss.score, violations) ?? ss.score;
       map[ss.subject].count++;
     });
     return Object.entries(map)
       .map(([subject, v]) => ({ subject, avg: Math.round(v.sum / v.count), count: v.count }))
       .sort((a, b) => a.subject.localeCompare(b.subject));
-  }, [subjectScores, activeStudents, activeClass, selectedWeek]);
+  }, [subjectScores, activeStudents, activeClass, selectedWeek, studentWeeks]);
 
   // Set default class selector
   useEffect(() => {

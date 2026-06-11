@@ -49,12 +49,16 @@ export interface NewsEvent {
   type?: 'news' | 'event' | 'reminder';
 }
 
-export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD' | 'PRIMARY' | 'GRANT' | 'ENG_MATH';
+export type ActiveSubject = 'ENG' | 'MATH' | 'ALL' | 'DETAILS' | 'DASHBOARD' | 'PRIMARY' | 'GRANT' | 'ENG_MATH' | 'KURATOR';
+
+export type GradeBand = '5-6' | '7-8' | '9-11';
 
 export interface Teacher {
   id: number;
   name: string;
-  subject: 'ENG' | 'MATH';
+  // 'KURATOR' rows are grade-band curators, not subject teachers
+  subject: 'ENG' | 'MATH' | 'KURATOR';
+  grade_band?: GradeBand;
   created_at?: string;
   login_id?: string;
   passcode?: string;
@@ -77,9 +81,12 @@ export interface DailyRecord {
   id?: string;
   student_id: string;
   date: string;
-  subject: 'ENG' | 'MATH';
+  // 'KURATOR' records carry attendance + school_rule; teacher records carry homework
+  subject: 'ENG' | 'MATH' | 'KURATOR';
   attendance: boolean;
   homework: boolean;
+  // true = rules followed, false = violation (Maktab qoidalari); KURATOR records only
+  school_rule?: boolean;
   teacher_name: string;
   week: string;
   created_at?: string;

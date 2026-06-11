@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import type { Student, ActiveSubject, SubjectScore } from '../types';
 import { getSubjectColor } from '../utils/subjectColors';
+import { applyRulesPenalty, applyRulesPenaltyPercent, violationsForWeek } from '../utils/penalty';
 
 // Academic-order sort value for week labels ("10-Iyun" / "1-Hafta")
 const parseWeekSortVal = (weekVal: string | null | undefined): number => {
@@ -84,6 +85,8 @@ interface GraphModalProps {
   activeSubject: ActiveSubject;
   studentWeeks: any[];
   subjectScores?: SubjectScore[];
+  // Maktab qoidalari violations of the week the student's current scores belong to
+  currentWeekViolations?: number;
   isInline?: boolean;
   showSummerPlan?: boolean;
 }
@@ -94,6 +97,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
   activeSubject,
   studentWeeks,
   subjectScores = [],
+  currentWeekViolations = 0,
   isInline = false,
   showSummerPlan = true
 }) => {
@@ -290,9 +294,14 @@ const GraphModal: React.FC<GraphModalProps> = ({
   const scoresAndPercents = React.useMemo(() => {
     const rawEngScore = typeof student.engScore === 'string' ? parseFloat(student.engScore) : student.engScore;
     const rawMathScore = typeof student.mathScore === 'string' ? parseFloat(student.mathScore) : student.mathScore;
-    
-    const cleanEngScore = (rawEngScore !== null && rawEngScore !== undefined && !isNaN(rawEngScore)) ? rawEngScore : null;
-    const cleanMathScore = (rawMathScore !== null && rawMathScore !== undefined && !isNaN(rawMathScore)) ? rawMathScore : null;
+
+    // Maktab qoidalari penalty applied display-time only
+    const cleanEngScore = (rawEngScore !== null && rawEngScore !== undefined && !isNaN(rawEngScore))
+      ? applyRulesPenalty(rawEngScore, currentWeekViolations)
+      : null;
+    const cleanMathScore = (rawMathScore !== null && rawMathScore !== undefined && !isNaN(rawMathScore))
+      ? applyRulesPenalty(rawMathScore, currentWeekViolations)
+      : null;
 
     const engPercent = cleanEngScore !== null ? (cleanEngScore / 15 * 100) : 0;
     const mathPercent = cleanMathScore !== null ? (cleanMathScore / 15 * 100) : 0;
@@ -308,7 +317,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
     const hwPercent = isNaN(hwPercentVal) ? 100 : hwPercentVal;
 
     return { cleanEngScore, cleanMathScore, engPercent, mathPercent, attPercent, hwPercent };
-  }, [student.engScore, student.mathScore, student.attendance, student.homework]);
+  }, [student.engScore, student.mathScore, student.attendance, student.homework, currentWeekViolations]);
 
   const { cleanEngScore, cleanMathScore, engPercent, mathPercent, attPercent, hwPercent } = scoresAndPercents;
 
@@ -336,22 +345,24 @@ const GraphModal: React.FC<GraphModalProps> = ({
       }
     ];
 
-    // One bar per custom subject: latest week's score
+    // One bar per custom subject: latest week's score (with that week's rules penalty)
     customSubjectNames.forEach(subject => {
       const rows = studentSubjectScores
         .filter(ss => ss.subject === subject)
         .sort((a, b) => parseWeekSortVal(a.week) - parseWeekSortVal(b.week));
       if (rows.length > 0) {
+        const latest = rows[rows.length - 1];
+        const latestViolations = violationsForWeek(studentWeeks, student.id, latest.week);
         base.push({
           name: subject,
-          value: rows[rows.length - 1].score,
+          value: applyRulesPenaltyPercent(latest.score, latestViolations) ?? latest.score,
           color: getSubjectColor(subject)
         });
       }
     });
 
     return base;
-  }, [engPercent, mathPercent, attPercent, hwPercent, customSubjectNames, studentSubjectScores]);
+  }, [engPercent, mathPercent, attPercent, hwPercent, customSubjectNames, studentSubjectScores, studentWeeks, student.id]);
 
   // Compile weekly progression data for line chart
   const progressionData = React.useMemo(() => {
@@ -367,14 +378,22 @@ const GraphModal: React.FC<GraphModalProps> = ({
       const wHwPercentVal = isNaN(wHwVal) ? 100 : (wHwVal < 0 ? Math.max(0, 100 + wHwVal * 20) : (wHwVal === 1 ? 100 : wHwVal));
       const wHwPercent = isNaN(wHwPercentVal) ? 100 : wHwPercentVal;
 
+      const wViolations = sw.school_rules ?? 0;
       const wRawEScore = typeof sw.eng_score === 'string' ? parseFloat(sw.eng_score) : sw.eng_score;
       const wRawMScore = typeof sw.math_score === 'string' ? parseFloat(sw.math_score) : sw.math_score;
-
-      const eScore = (wRawEScore !== null && wRawEScore !== undefined && !isNaN(wRawEScore)) 
-        ? Math.round((wRawEScore / 15 * 100) * 100) / 100 
+      // Maktab qoidalari penalty per week, display-time only
+      const wPenEScore = (wRawEScore !== null && wRawEScore !== undefined && !isNaN(wRawEScore))
+        ? applyRulesPenalty(wRawEScore, wViolations)
         : null;
-      const mScore = (wRawMScore !== null && wRawMScore !== undefined && !isNaN(wRawMScore)) 
-        ? Math.round((wRawMScore / 15 * 100) * 100) / 100 
+      const wPenMScore = (wRawMScore !== null && wRawMScore !== undefined && !isNaN(wRawMScore))
+        ? applyRulesPenalty(wRawMScore, wViolations)
+        : null;
+
+      const eScore = wPenEScore !== null
+        ? Math.round((wPenEScore / 15 * 100) * 100) / 100
+        : null;
+      const mScore = wPenMScore !== null
+        ? Math.round((wPenMScore / 15 * 100) * 100) / 100
         : null;
 
       return {
@@ -386,12 +405,14 @@ const GraphModal: React.FC<GraphModalProps> = ({
       } as Record<string, string | number | null>;
     });
 
-    // Merge custom-subject scores into their week rows (keys prefixed cs_)
+    // Merge custom-subject scores into their week rows (keys prefixed cs_),
+    // applying the same per-week rules penalty
     const customByWeek: Record<string, Record<string, number>> = {};
     studentSubjectScores.forEach(ss => {
       if (!ss.week) return;
       if (!customByWeek[ss.week]) customByWeek[ss.week] = {};
-      customByWeek[ss.week][`cs_${ss.subject}`] = ss.score;
+      const wViolations = violationsForWeek(studentWeeks, student.id, ss.week);
+      customByWeek[ss.week][`cs_${ss.subject}`] = applyRulesPenaltyPercent(ss.score, wViolations) ?? ss.score;
     });
     compiledHistorical.forEach(row => {
       const extras = typeof row.week === 'string' ? customByWeek[row.week] : undefined;

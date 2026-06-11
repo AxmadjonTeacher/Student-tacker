@@ -383,7 +383,7 @@ const Header: React.FC<HeaderProps> = ({
               AL-XORAZMIY SCHOOL
             </h1>
             <p className="cabinet-header-subtitle" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, margin: 0, textAlign: 'left' }}>
-              {authRole === 'teacher' ? 'O\'QITUVCHI KABINETI' : 'ADMIN KABINETI'}
+              {authRole === 'teacher' ? 'O\'QITUVCHI KABINETI' : authRole === 'kurator' ? 'KURATOR KABINETI' : 'ADMIN KABINETI'}
             </p>
           </div>
         </div>
@@ -471,6 +471,30 @@ const Header: React.FC<HeaderProps> = ({
                     </h2>
                     <p style={{ margin: '0.2rem 0 0', opacity: 0.8, fontSize: '0.75rem', fontWeight: 650, color: 'var(--text-secondary)' }}>
                       Kundalik dars davomati va uyga vazifalarni tekshirish paneli
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--border-subtle)', padding: '0.4rem 0.8rem', borderRadius: '10px' }}>
+                    <Users size={15} style={{ color: 'var(--text-secondary)' }} />
+                    <span style={{ fontWeight: 800, fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                      {studentCount ?? 0} nafar o'quvchi
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* If Subject is KURATOR (kurator daily marking) */}
+            {activeSubject === 'KURATOR' && (() => {
+              const kuratorName = localStorage.getItem('teacher_name') || 'Kurator';
+              const band = localStorage.getItem('kurator_band') || '5-6';
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, letterSpacing: '-0.02em', color: 'var(--text-primary)', lineHeight: '1.2' }}>
+                      Kurator kabineti: {kuratorName}
+                    </h2>
+                    <p style={{ margin: '0.2rem 0 0', opacity: 0.8, fontSize: '0.75rem', fontWeight: 650, color: 'var(--text-secondary)' }}>
+                      {band}-sinflar davomati va maktab qoidalarini belgilash paneli
                     </p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--border-subtle)', padding: '0.4rem 0.8rem', borderRadius: '10px' }}>
@@ -755,7 +779,7 @@ const Header: React.FC<HeaderProps> = ({
             })()}
 
             {/* Standard Class Selector for other subjects */}
-            {activeSubject !== 'ENG_MATH' && (
+            {activeSubject !== 'ENG_MATH' && activeSubject !== 'KURATOR' && (
               <div className="class-selector" ref={containerRef} style={{ 
                 display: 'flex', 
                 gap: '0.25rem', 
@@ -899,7 +923,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
     
           {/* Right Side: Integrated Search Bar & Excel Export Button */}
-          <div className="admin-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '1 1 auto', justifyContent: 'flex-end', minWidth: 0 }}>
+          <div className="admin-controls-wrapper" style={{ display: activeSubject === 'KURATOR' ? 'none' : 'flex', alignItems: 'center', gap: '0.75rem', flex: '1 1 auto', justifyContent: 'flex-end', minWidth: 0 }}>
             <div className="mobile-sticky-search" style={{
               display: 'flex',
               alignItems: 'center',

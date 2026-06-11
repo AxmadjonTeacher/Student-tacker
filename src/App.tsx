@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
+import {
   Home, BarChart2, Settings, LogOut,
   BookOpen, Activity, ShieldAlert, Bell, Users, Trash2, GraduationCap,
-  PanelLeftClose, Shield, Sun, Moon, Award
+  PanelLeftClose, Shield, Sun, Moon, Award, ClipboardCheck
 } from 'lucide-react';
 import Header from './components/Header';
 import StudentTable from './components/StudentTable';
@@ -11,11 +11,13 @@ import { Dashboard } from './components/Dashboard';
 import CustomDialog from './components/CustomDialog';
 import InstallAppDrawer from './components/InstallAppDrawer';
 import PasscodeModal from './components/PasscodeModal';
-import type { Student, ActiveSubject, Teacher, SubjectScore } from './types';
+import type { Student, ActiveSubject, Teacher, SubjectScore, GradeBand } from './types';
+import { matchesGradeBand } from './utils/gradeBand';
 import { supabase, mapDbToStudent, mapStudentToDb } from './supabase';
 import LoginScreen from './components/LoginScreen';
 import ParentCabinet from './components/ParentCabinet';
 import TestorCabinet from './components/TestorCabinet';
+import KuratorMarking from './components/KuratorMarking';
 import iconLight from './assets/icon-light.png';
 import iconDark from './assets/icon-dark.png';
 import { Capacitor } from '@capacitor/core';
@@ -123,7 +125,7 @@ function App() {
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [studentWeeks, setStudentWeeks] = useState<any[]>([]);
   const [subjectScores, setSubjectScores] = useState<SubjectScore[]>([]);
-  const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher' | null>(null);
+  const [authRole, setAuthRole] = useState<'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher' | 'kurator' | null>(null);
   const [parentStudents, setParentStudents] = useState<Student[]>([]);
   const [activeParentStudentId, setActiveParentStudentId] = useState<string | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -641,6 +643,14 @@ function App() {
         const teacherId = localStorage.getItem('teacher_id');
         if (teacherId) {
           setAuthRole('teacher');
+          setIsAdminMode(false);
+          await fetchAllData();
+          return;
+        }
+      } else if (storedRole === 'kurator') {
+        const teacherId = localStorage.getItem('teacher_id');
+        if (teacherId) {
+          setAuthRole('kurator');
           setIsAdminMode(false);
           await fetchAllData();
           return;
@@ -1247,16 +1257,16 @@ function App() {
     }
   };
 
-  const handleAddTeacher = async (name: string, subject: 'ENG' | 'MATH', phone?: string) => {
+  const handleAddTeacher = async (name: string, subject: 'ENG' | 'MATH' | 'KURATOR', phone?: string, gradeBand?: GradeBand) => {
     try {
       const { data, error } = await supabase
         .from('teachers')
-        .insert([{ name, subject, phone }])
+        .insert([{ name, subject, phone, grade_band: subject === 'KURATOR' ? (gradeBand || '5-6') : null }])
         .select();
       if (error) throw error;
       if (data && data.length > 0) {
         setTeachers(prev => [...prev, data[0] as Teacher]);
-        showAlert("Muvaffaqiyatli", "Yangi o'qituvchi muvaffaqiyatli qo'shildi!");
+        showAlert("Muvaffaqiyatli", subject === 'KURATOR' ? "Yangi kurator muvaffaqiyatli qo'shildi!" : "Yangi o'qituvchi muvaffaqiyatli qo'shildi!");
       }
     } catch (err: any) {
       console.error('Failed to add teacher:', err);
@@ -1286,14 +1296,16 @@ function App() {
     );
   };
 
-  const handleEditTeacher = async (id: number, newName: string, phone?: string, loginId?: string, passcode?: string, pictureUrl?: string) => {
+  const handleEditTeacher = async (id: number, newName: string, phone?: string, loginId?: string, passcode?: string, pictureUrl?: string, gradeBand?: GradeBand) => {
     try {
+      const updatePayload: Record<string, string | undefined> = { name: newName, phone, login_id: loginId, passcode, picture_url: pictureUrl };
+      if (gradeBand !== undefined) updatePayload.grade_band = gradeBand;
       const { error } = await supabase
         .from('teachers')
-        .update({ name: newName, phone, login_id: loginId, passcode, picture_url: pictureUrl })
+        .update(updatePayload)
         .eq('id', id);
       if (error) throw error;
-      setTeachers(prev => prev.map(t => t.id === id ? { ...t, name: newName, phone, login_id: loginId, passcode, picture_url: pictureUrl } : t));
+      setTeachers(prev => prev.map(t => t.id === id ? { ...t, name: newName, phone, login_id: loginId, passcode, picture_url: pictureUrl, ...(gradeBand !== undefined ? { grade_band: gradeBand } : {}) } : t));
       showAlert("Muvaffaqiyatli", "O'qituvchi muvaffaqiyatli tahrirlandi!");
     } catch (err: any) {
       console.error('Failed to update teacher:', err);
@@ -1355,16 +1367,16 @@ function App() {
     }
   };
 
-  const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher', studentData?: any) => {
+  const handleLoginSuccess = async (role: 'admin' | 'admin123' | 'publish' | 'parent' | 'testor' | 'teacher' | 'kurator', studentData?: any) => {
     setAuthRole(role);
     setActiveSubject('DASHBOARD');
     setActiveAdminTab('home');
     haptics.success();
     // Register push notifications for staff roles
-    if (role === 'admin' || role === 'admin123' || role === 'teacher' || role === 'testor') {
+    if (role === 'admin' || role === 'admin123' || role === 'teacher' || role === 'testor' || role === 'kurator') {
       initPushNotifications(role).catch(console.error);
     }
-    if (role === 'admin' || role === 'admin123' || role === 'publish' || role === 'testor' || role === 'teacher') {
+    if (role === 'admin' || role === 'admin123' || role === 'publish' || role === 'testor' || role === 'teacher' || role === 'kurator') {
       setIsAdminMode(false);
       await fetchAllData();
     } else if (role === 'parent' && studentData) {
@@ -1416,6 +1428,7 @@ function App() {
     localStorage.removeItem('teacher_id');
     localStorage.removeItem('teacher_name');
     localStorage.removeItem('teacher_subject');
+    localStorage.removeItem('kurator_band');
     removePushListeners().catch(console.error);
 
     setAuthRole(null);
@@ -1536,6 +1549,10 @@ function App() {
         // ENG or fallback
         return (s.teacher || '').trim() === teacherName.trim();
       });
+    } else if (authRole === 'kurator') {
+      // Kurators see every student in their grade band
+      const band = (localStorage.getItem('kurator_band') as GradeBand) || '5-6';
+      active = active.filter(s => matchesGradeBand(s.className, band));
     }
     return active;
   }, [students, authRole]);
@@ -2583,8 +2600,9 @@ function App() {
       </>
     );
   }
-  // Teachers' second tab opens their own subject marking view instead of the ID section
-  const teacherSecondTabSubject: ActiveSubject = authRole === 'teacher' ? 'ENG_MATH' : 'DETAILS';
+  // Teachers' second tab opens their subject marking view; kurators get their
+  // attendance/rules marking view; admins keep the ID section
+  const teacherSecondTabSubject: ActiveSubject = authRole === 'teacher' ? 'ENG_MATH' : authRole === 'kurator' ? 'KURATOR' : 'DETAILS';
   let activeAdminIndex = 0;
   if (activeAdminTab === 'settings' || activeAdminTab === 'news' || activeAdminTab === 'teachers' || activeAdminTab === 'trash') {
     activeAdminIndex = 3;
@@ -2609,13 +2627,15 @@ function App() {
   };
   const teacherNameForCount = localStorage.getItem('teacher_name') || '';
   const teacherSubjectForCount = localStorage.getItem('teacher_subject') || 'ENG';
-  const teacherStudentCount = students.filter(student => {
-    if (student.isDeleted) return false;
-    const matchesRange = matchesGradeRangeForCount(student.className, engMathGradeRange || '5-6');
-    if (!matchesRange) return false;
-    const assignedTeacher = teacherSubjectForCount === 'MATH' ? student.mathTeacher : student.teacher;
-    return assignedTeacher?.trim() === teacherNameForCount.trim();
-  }).length;
+  const teacherStudentCount = authRole === 'kurator'
+    ? activeStudents.length // already band-filtered for kurators
+    : students.filter(student => {
+        if (student.isDeleted) return false;
+        const matchesRange = matchesGradeRangeForCount(student.className, engMathGradeRange || '5-6');
+        if (!matchesRange) return false;
+        const assignedTeacher = teacherSubjectForCount === 'MATH' ? student.mathTeacher : student.teacher;
+        return assignedTeacher?.trim() === teacherNameForCount.trim();
+      }).length;
 
   if (isMobile) {
     return (
@@ -2666,6 +2686,8 @@ function App() {
                 setSearchFilter('student');
               }}
             />
+          ) : activeSubject === 'KURATOR' ? (
+            <KuratorMarking students={activeStudents} weeksList={weeksList} />
           ) : (
             <StudentTable
               students={filteredStudents}
@@ -2768,8 +2790,8 @@ function App() {
             }}
             className={`tab-item ${activeAdminTab === 'home' && activeSubject === teacherSecondTabSubject ? 'active' : ''}`}
           >
-            {authRole === 'teacher' ? <BookOpen size={20} /> : <Users size={20} />}
-            <span>{authRole === 'teacher' ? ((localStorage.getItem('teacher_subject') || 'ENG') === 'MATH' ? 'Matematika' : 'Ingliz tili') : "ID bo'limi"}</span>
+            {authRole === 'teacher' ? <BookOpen size={20} /> : authRole === 'kurator' ? <ClipboardCheck size={20} /> : <Users size={20} />}
+            <span>{authRole === 'teacher' ? ((localStorage.getItem('teacher_subject') || 'ENG') === 'MATH' ? 'Matematika' : 'Ingliz tili') : authRole === 'kurator' ? 'Davomat' : "ID bo'limi"}</span>
           </button>
           
           <button 
@@ -2944,14 +2966,15 @@ function App() {
                   { id: 'subj_primary', label: 'Boshlang\'ich', icon: GraduationCap, isActive: activeAdminTab === 'home' && activeSubject === 'PRIMARY', action: () => { setActiveAdminTab('home'); setActiveSubject('PRIMARY'); } },
                   { id: 'subj_grant', label: 'Grant testlar', icon: Award, isActive: activeAdminTab === 'home' && activeSubject === 'GRANT', action: () => { setActiveAdminTab('home'); setActiveSubject('GRANT'); } },
                   { id: 'subj_all', label: 'Haftalik tahlil', icon: Activity, isActive: activeAdminTab === 'home' && activeSubject === 'ALL', action: () => { setActiveAdminTab('home'); setActiveSubject('ALL'); } },
-                  { 
-                    id: 'subj_eng_math', 
-                    label: authRole === 'teacher' 
+                  { id: 'subj_kurator', label: 'Davomat & Qoidalar', icon: ClipboardCheck, isActive: activeAdminTab === 'home' && activeSubject === 'KURATOR', action: () => { setActiveAdminTab('home'); setActiveSubject('KURATOR'); } },
+                  {
+                    id: 'subj_eng_math',
+                    label: authRole === 'teacher'
                       ? ((localStorage.getItem('teacher_subject') || 'ENG') === 'MATH' ? 'Math' : 'English')
-                      : 'Eng/Math', 
-                    icon: BookOpen, 
-                    isActive: activeAdminTab === 'home' && activeSubject === 'ENG_MATH', 
-                    action: () => { setActiveAdminTab('home'); setActiveSubject('ENG_MATH'); } 
+                      : 'Eng/Math',
+                    icon: BookOpen,
+                    isActive: activeAdminTab === 'home' && activeSubject === 'ENG_MATH',
+                    action: () => { setActiveAdminTab('home'); setActiveSubject('ENG_MATH'); }
                   },
                 ]
               },
@@ -2990,7 +3013,28 @@ function App() {
                   };
                 }
               }
-              return group;
+              if (authRole === 'kurator') {
+                if (group.title === 'Tizim') {
+                  return group; // Bosh sahifa + ID & Telefonlar
+                }
+                if (group.title === 'Fanlar & Tahlil') {
+                  return {
+                    ...group,
+                    items: group.items.filter(item => item.id === 'subj_kurator' || item.id === 'subj_all')
+                  };
+                }
+                if (group.title === 'Boshqaruv') {
+                  return {
+                    ...group,
+                    items: []
+                  };
+                }
+              }
+              // Admin/publish roles don't see the kurator marking view
+              return {
+                ...group,
+                items: group.items.filter(item => item.id !== 'subj_kurator')
+              };
             }).filter(group => group.items.length > 0);
 
             return sidebarGroups.map((group, groupIdx) => (
@@ -3067,7 +3111,7 @@ function App() {
           {isSidebarExpanded ? (
             <>
               {/* Admin Mode Toggle */}
-              {authRole !== 'teacher' && (
+              {authRole !== 'teacher' && authRole !== 'kurator' && (
                 <div style={{
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border-subtle)',
@@ -3164,7 +3208,7 @@ function App() {
             </>
           ) : (
             <>
-              {authRole !== 'teacher' && (
+              {authRole !== 'teacher' && authRole !== 'kurator' && (
                 <button
                   onClick={handleToggleAdmin}
                   title={isAdminMode ? "Admin rejimidan chiqish" : "Admin rejimini yoqish"}
@@ -3318,6 +3362,8 @@ function App() {
                   setSearchFilter('student');
                 }}
               />
+            ) : activeSubject === 'KURATOR' ? (
+              <KuratorMarking students={activeStudents} weeksList={weeksList} />
             ) : (
               <StudentTable
                 students={filteredStudents}
