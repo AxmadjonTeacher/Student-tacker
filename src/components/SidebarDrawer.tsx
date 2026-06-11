@@ -180,6 +180,42 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   const newsImageInputRef = useRef<HTMLInputElement>(null);
   const editPhotoInputRef = useRef<HTMLInputElement>(null);
 
+  // Auto week creation toggle (DB-backed: app_settings.auto_week_enabled,
+  // read by the pg_cron job that opens a new week every Monday 06:00)
+  const [autoWeekEnabled, setAutoWeekEnabled] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen || !isAdminMode) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'auto_week_enabled')
+          .maybeSingle();
+        if (data) setAutoWeekEnabled(data.value === 'true');
+      } catch (e) {
+        console.error('Failed to fetch auto week setting:', e);
+      }
+    })();
+  }, [isOpen, isAdminMode]);
+
+  const handleToggleAutoWeek = async () => {
+    const next = !autoWeekEnabled;
+    setAutoWeekEnabled(next);
+    try {
+      await supabase
+        .from('app_settings')
+        .upsert(
+          { key: 'auto_week_enabled', value: next ? 'true' : 'false', updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        );
+    } catch (e) {
+      console.error('Failed to update auto week setting:', e);
+      setAutoWeekEnabled(!next);
+    }
+  };
+
   // News and Events states
   const [newsEvents, setNewsEvents] = useState<any[]>([]);
   const [isNewsLoading, setIsNewsLoading] = useState(false);
@@ -1308,6 +1344,50 @@ const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
                   </button>
                 </div>
               </div>
+
+              {/* Section 5.5: Auto Week Toggle (admin only, global DB-backed) */}
+              {isAdminMode && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)', letterSpacing: '0.01em' }}>
+                        AVTOMATIK HAFTA
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.15rem', maxWidth: '240px', lineHeight: 1.4 }}>
+                        Har dushanba soat 6:00 da yangi hafta (shanba sanasi bilan) avtomatik ochiladi
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleToggleAutoWeek}
+                      style={{
+                        width: '46px',
+                        height: '24px',
+                        borderRadius: '9999px',
+                        background: autoWeekEnabled ? 'var(--accent-primary)' : 'rgba(120, 130, 140, 0.25)',
+                        border: '1px solid var(--border-subtle)',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        padding: 0,
+                        transition: 'background-color 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexShrink: 0
+                      }}
+                    >
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        position: 'absolute',
+                        left: autoWeekEnabled ? '24px' : '4px',
+                        transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.12)'
+                      }} />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Section 6: Logout/Sign Out Button */}
               {onLogout && (

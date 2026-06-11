@@ -134,6 +134,25 @@ Contains registered instructors.
 #### 4. `public.news_events`
 Stores scheduled announcements, alerts, and calendar logs.
 
+#### 5. `public.subject_scores`
+Weekly results for custom (non Eng/Math) subjects scanned in the Testor cabinet.
+- `student_id` (`text`) / `week` (`text`) / `subject` (`text`): unique together.
+- `score` (`integer`): **0–100 percentage** (unlike `eng_score`/`math_score`, custom subjects have variable question counts).
+
+#### 6. `public.app_settings`
+Global key/value settings read by both the app and database jobs.
+- `auto_week_enabled` (`'true'`/`'false'`): controls automatic week creation. Toggled from the admin Sozlamalar drawer ("AVTOMATIK HAFTA").
+
+### 5.2 Automatic Week Creation (pg_cron)
+
+A `pg_cron` job lives **in the main database**, not in this repo:
+- Job `auto-week-monday`, schedule `0 1 * * 1` (01:00 UTC = **06:00 Asia/Tashkent every Monday**), runs `public.create_weekly_snapshot()`.
+- The function exits early unless `app_settings.auto_week_enabled = 'true'`.
+- It computes the current week's **Saturday** date in Tashkent time and builds the week label as `{day}-{month}` using the short Uzbek month array `['Yan','Fev','Mar','Apr','May','Iyun','Iyul','Avg','Sen','Okt','Noy','Dek']` (same as `formatDateLabel` in `App.tsx`).
+- It inserts one `student_weeks` snapshot row per active student (scores `null`, attendance/homework `1`, level/grand-test snapshots copied from `Students`) with `ON CONFLICT (student_id, week) DO NOTHING` — so re-runs are idempotent and **soft-deleted weeks are never resurrected** (their rows still exist with `is_deleted = true`).
+- Holiday weeks: either toggle AVTOMATIK HAFTA off beforehand, or delete the auto-created week via the existing delete-week flow.
+- To inspect or change the job: `select * from cron.job;` / `cron.alter_job(...)` in the Supabase SQL editor.
+
 ---
 
 ## 6. Technical Workflow Guidelines

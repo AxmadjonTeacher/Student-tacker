@@ -5,6 +5,7 @@ import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
 import * as XLSX from 'xlsx';
 import { supabase } from '../supabase';
+import { weekLabelForDate } from '../utils/weekUtils';
 
 interface StudentTableProps {
   students: Student[];
@@ -161,11 +162,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
   const classStudentIds = useMemo(() => students.map(s => s.id), [students]);
 
+  // The marking week is derived from the lesson date (its week's Saturday
+  // label) — teachers only pick a date; Sundays derive to null.
   useEffect(() => {
-    if (selectedWeek) {
-      setSelectedDailyWeek(selectedWeek);
+    const derived = weekLabelForDate(selectedDailyDate);
+    if (derived) {
+      setSelectedDailyWeek(derived);
     }
-  }, [selectedWeek]);
+  }, [selectedDailyDate]);
 
   const fetchDailyRecords = async () => {
     if (!selectedDailyDate || !activeSubject) return;
@@ -266,7 +270,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
       alert("Sinfda o'quvchilar mavjud emas!");
       return;
     }
-    
+
+    const derivedWeek = weekLabelForDate(selectedDailyDate);
+    if (!derivedWeek) {
+      alert("Yakshanba dars kuni emas — boshqa sana tanlang.");
+      return;
+    }
+    if (!weeksList.includes(derivedWeek)) {
+      alert(`"${derivedWeek}" haftasi hali ochilmagan — avval hafta yaratilishi kerak.`);
+      return;
+    }
+
     const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
     
     const newRecords = students.map(student => ({
@@ -479,12 +493,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
 
   const [showAllWeeks, setShowAllWeeks] = useState(false);
   const displayedWeeks = useMemo(() => {
-    if (showAllWeeks || weeksList.length <= 6) return weeksList;
-    const last6 = weeksList.slice(-6);
-    if (selectedWeek && !last6.includes(selectedWeek)) {
-      return [...weeksList.filter(w => w === selectedWeek), ...last6];
+    if (showAllWeeks || weeksList.length <= 4) return weeksList;
+    const last4 = weeksList.slice(-4);
+    if (selectedWeek && !last4.includes(selectedWeek)) {
+      return [...weeksList.filter(w => w === selectedWeek), ...last4];
     }
-    return last6;
+    return last4;
   }, [weeksList, showAllWeeks, selectedWeek]);
 
   const handleCopyText = (text: string, studentId: string, field: string) => {
@@ -1576,10 +1590,10 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           </div>
                         </div>
 
-                        {weeksList.length > 6 && (
+                        {weeksList.length > 4 && (
                           <button
                             onClick={() => setShowAllWeeks(!showAllWeeks)}
-                            title={showAllWeeks ? "Faqat oxirgi 6 haftani ko'rsatish" : "Barcha haftalarni ko'rsatish"}
+                            title={showAllWeeks ? "Faqat oxirgi 4 haftani ko'rsatish" : "Barcha haftalarni ko'rsatish"}
                             style={{
                               background: showAllWeeks ? 'var(--accent-hero)' : 'var(--bg-card-hover)',
                               color: showAllWeeks ? '#ffffff' : 'var(--text-secondary)',
@@ -2208,7 +2222,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     alert("O'quvchilar mavjud emas!");
                     return;
                   }
-                  
+
+                  const derivedWeek = weekLabelForDate(selectedDailyDate);
+                  if (!derivedWeek) {
+                    alert("Yakshanba dars kuni emas — boshqa sana tanlang.");
+                    return;
+                  }
+                  if (!weeksList.includes(derivedWeek)) {
+                    alert(`"${derivedWeek}" haftasi hali ochilmagan — avval hafta yaratilishi kerak.`);
+                    return;
+                  }
+
                   const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
                   
                   const newRecords = rangeStudents.map(student => ({
@@ -2422,48 +2446,37 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               </div>
                             </div>
 
-                            {/* Week selection */}
+                            {/* Week derived from the lesson date (Saturday label) */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
                               <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
-                              <div style={{ position: 'relative' }}>
-                                <select
-                                  value={selectedDailyWeek}
-                                  onChange={(e) => setSelectedDailyWeek(e.target.value)}
-                                  style={{
-                                    background: 'var(--bg-card-hover)',
-                                    color: 'var(--text-primary)',
-                                    border: '1.5px solid var(--border-color)',
-                                    borderRadius: '10px',
-                                    padding: '0.35rem 1.5rem 0.35rem 0.5rem',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 800,
-                                    outline: 'none',
-                                    cursor: 'pointer',
-                                    appearance: 'none',
-                                    lineHeight: 1.2
-                                  }}
-                                >
-                                  {weeksList.length === 0 ? (
-                                    <option value="">Hafta yo'q</option>
-                                  ) : (
-                                    weeksList.map(w => (
-                                      <option key={w} value={w}>{w}</option>
-                                    ))
-                                  )}
-                                </select>
-                                <div style={{
-                                  position: 'absolute',
-                                  right: '0.4rem',
-                                  top: '50%',
-                                  transform: 'translateY(-50%)',
-                                  pointerEvents: 'none',
-                                  color: '#64748b',
-                                  display: 'flex',
-                                  alignItems: 'center'
-                                }}>
-                                  <ChevronDown size={12} />
-                                </div>
-                              </div>
+                              {(() => {
+                                const derivedWeek = weekLabelForDate(selectedDailyDate);
+                                const weekExists = derivedWeek !== null && weeksList.includes(derivedWeek);
+                                return (
+                                  <div
+                                    title={derivedWeek === null
+                                      ? 'Yakshanba dars kuni emas'
+                                      : (weekExists ? 'Sanadan avtomatik aniqlanadi' : 'Bu hafta hali ochilmagan')}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.3rem',
+                                      background: weekExists ? 'var(--bg-card-hover)' : 'rgba(245, 158, 11, 0.12)',
+                                      color: weekExists ? 'var(--text-primary)' : '#b45309',
+                                      border: weekExists ? '1.5px solid var(--border-color)' : '1.5px solid rgba(245, 158, 11, 0.4)',
+                                      borderRadius: '10px',
+                                      padding: '0.35rem 0.6rem',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 800,
+                                      lineHeight: 1.2,
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    <Calendar size={12} style={{ flexShrink: 0 }} />
+                                    {derivedWeek === null ? 'Yakshanba' : derivedWeek}
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Plus button */}

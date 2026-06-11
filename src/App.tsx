@@ -1195,6 +1195,58 @@ function App() {
     }
   };
 
+  // Removes a scanned score (used when a saved scan is reassigned to another student)
+  const handleClearStudentScore = async (studentId: string, subjectName: string, weekName: string) => {
+    const targetWeek = weekName || selectedWeek || '1-Hafta';
+    const lowerSubject = subjectName.toLowerCase();
+    const isMath = lowerSubject.includes('matem') || lowerSubject.includes('math');
+    const isEng = lowerSubject.includes('ingliz') || lowerSubject.includes('eng');
+
+    if (!isMath && !isEng) {
+      // Custom subject: drop the subject_scores row
+      setSubjectScores(prev => prev.filter(ss =>
+        !(ss.student_id?.toString() === studentId?.toString() && ss.week === targetWeek && ss.subject === subjectName)
+      ));
+      try {
+        await supabase
+          .from('subject_scores')
+          .delete()
+          .match({ student_id: studentId, week: targetWeek, subject: subjectName });
+      } catch (err) {
+        console.error('Failed to delete custom subject score:', err);
+      }
+      return;
+    }
+
+    // Eng/Math: null out the week column
+    setStudents(prev => prev.map(s => {
+      if (s.id !== studentId) return s;
+      return isMath ? { ...s, mathScore: null } : { ...s, engScore: null };
+    }));
+    setStudentWeeks(prev => prev.map(sw => {
+      if (sw.student_id?.toString() !== studentId?.toString() || sw.week !== targetWeek || sw.is_deleted) return sw;
+      return isMath ? { ...sw, math_score: null } : { ...sw, eng_score: null };
+    }));
+
+    try {
+      const { data: dbRec, error: fetchErr } = await supabase
+        .from('student_weeks')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('week', targetWeek)
+        .eq('is_deleted', false);
+      if (fetchErr) throw fetchErr;
+      if (dbRec && dbRec.length > 0) {
+        await supabase
+          .from('student_weeks')
+          .update(isMath ? { math_score: null } : { eng_score: null })
+          .eq('id', dbRec[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to clear scanned score in database:', err);
+    }
+  };
+
   const handleAddTeacher = async (name: string, subject: 'ENG' | 'MATH', phone?: string) => {
     try {
       const { data, error } = await supabase
@@ -2465,6 +2517,7 @@ function App() {
         teachers={teachers}
         onLogout={handleLogout}
         onUpdateStudentScore={handleUpdateStudentScore}
+        onClearStudentScore={handleClearStudentScore}
       />
     );
   }

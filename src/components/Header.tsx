@@ -55,6 +55,18 @@ const Header: React.FC<HeaderProps> = ({
   studentCount
 }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  // Week dropdown shows only the last 4 weeks; "Eski haftalar…" expands the full list
+  const [showAllWeeks, setShowAllWeeks] = React.useState(false);
+  const displayedWeeks = React.useMemo(() => {
+    const list = weeksList || [];
+    if (showAllWeeks || list.length <= 4) return list;
+    const last4 = list.slice(-4);
+    if (selectedWeek && !last4.includes(selectedWeek)) {
+      return [selectedWeek, ...last4];
+    }
+    return last4;
+  }, [weeksList, showAllWeeks, selectedWeek]);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [sliderStyle, setSliderStyle] = React.useState({
     left: 0,
@@ -629,7 +641,13 @@ const Header: React.FC<HeaderProps> = ({
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <select
                         value={selectedWeek}
-                        onChange={(e) => onWeekChange(e.target.value)}
+                        onChange={(e) => {
+                          if (e.target.value === '__more__') {
+                            setShowAllWeeks(true);
+                            return;
+                          }
+                          onWeekChange(e.target.value);
+                        }}
                         style={{
                           appearance: 'none',
                           background: 'var(--bg-card-hover)',
@@ -649,9 +667,12 @@ const Header: React.FC<HeaderProps> = ({
                         {weeksList.length === 0 ? (
                           <option value="">Hafta yo'q</option>
                         ) : (
-                          weeksList.map(w => (
+                          displayedWeeks.map(w => (
                             <option key={w} value={w}>{w}</option>
                           ))
+                        )}
+                        {!showAllWeeks && weeksList.length > 4 && (
+                          <option value="__more__">Eski haftalar…</option>
                         )}
                       </select>
                       <div style={{

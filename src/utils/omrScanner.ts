@@ -570,7 +570,9 @@ export function parseOMRSheet(canvas: HTMLCanvasElement, questionCount: number =
     if (contrast > 25 && maxDensity > 0.25) {
       studentIdCode += maxIdx.toString();
     } else {
-      studentIdCode += '0';
+      // Unreadable/unshaded digit: '?' (never collides with a real code and
+      // fails the BR/AL ### auto-match, forcing manual student selection)
+      studentIdCode += '?';
     }
   }
 

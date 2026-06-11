@@ -438,6 +438,7 @@ interface TestorCabinetProps {
   teachers: Teacher[];
   onLogout: (force?: boolean) => void;
   onUpdateStudentScore?: (studentId: string, subject: string, score: number, week: string) => Promise<void>;
+  onClearStudentScore?: (studentId: string, subject: string, week: string) => Promise<void>;
 }
 
 const TestorCabinet: React.FC<TestorCabinetProps> = ({
@@ -446,7 +447,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   subjectScores = [],
   teachers,
   onLogout,
-  onUpdateStudentScore
+  onUpdateStudentScore,
+  onClearStudentScore
 }) => {
   // Mobile UI vs Desktop UI states
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -480,6 +482,15 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       return parseWeekToSortValue(a) - parseWeekToSortValue(b);
     });
   }, [studentWeeks]);
+
+  // Week dropdowns show the last 4 weeks; "Eski haftalar…" expands the full list
+  const [showAllWeeks, setShowAllWeeks] = useState(false);
+  const weekOptionsFor = (selected: string) => {
+    if (showAllWeeks || weeksList.length <= 4) return weeksList;
+    const last4 = weeksList.slice(-4);
+    if (selected && !last4.includes(selected)) return [selected, ...last4];
+    return last4;
+  };
 
   // States for adding a new test
   // newTestSubject holds 'Matematika' | 'Ingliz Tili' | an existing custom subject
@@ -535,10 +546,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   };
 
   // States for folder tree expansion in "Papkalar" section
-  // Hierarchy: Week → Subject → Teacher → Tests; child keys are week-prefixed
+  // Hierarchy: Week → Subject → Tests; subject keys are week-prefixed
   const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
-  const [expandedTeachers, setExpandedTeachers] = useState<Record<string, boolean>>({});
 
   const toggleWeek = (week: string) => {
     setExpandedWeeks(prev => ({
@@ -550,14 +560,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const toggleSubject = (week: string, subj: string) => {
     const key = `${week}__${subj}`;
     setExpandedSubjects(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  const toggleTeacher = (week: string, subj: string, teacher: string) => {
-    const key = `${week}__${subj}__${teacher}`;
-    setExpandedTeachers(prev => ({
       ...prev,
       [key]: !prev[key]
     }));
@@ -824,18 +826,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     return Array.from(set).sort();
   };
 
-  const getTeachersForSubject = (week: string, subj: string) => {
-    const set = new Set<string>();
-    dbTests.forEach(t => {
-      if (testWeekOf(t) === week && t.subject === subj && t.teacher_name) {
-        set.add(t.teacher_name);
-      }
-    });
-    return Array.from(set).sort();
-  };
-
-  const getTestsForTeacher = (week: string, subj: string, teacher: string) => {
-    return dbTests.filter(t => testWeekOf(t) === week && t.subject === subj && t.teacher_name === teacher);
+  const getTestsForSubject = (week: string, subj: string) => {
+    return dbTests.filter(t => testWeekOf(t) === week && t.subject === subj);
   };
 
   // Options views & Camera scanning states
@@ -1490,6 +1482,52 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     handleIncrementStudentCount(selectedTest.id, filtered.length);
   };
 
+  // Reassign a saved scan to a different student: the wrong student's score is
+  // cleared, the right student's score is written, and the buffer is updated.
+  const [reassignTargetId, setReassignTargetId] = useState('');
+  const [isReassigning, setIsReassigning] = useState(false);
+
+  interface ScanRecord {
+    id: string;
+    studentId: string;
+    studentName: string;
+    percentage: number;
+    week?: string;
+    [key: string]: unknown;
+  }
+
+  const handleReassignScan = async (scan: ScanRecord, newStudentId: string) => {
+    if (!selectedTest || !newStudentId || newStudentId === scan.studentId) return;
+    const newStudent = students.find(s => s.id === newStudentId);
+    if (!newStudent) return;
+
+    setIsReassigning(true);
+    try {
+      const week = scan.week || selectedWeekForSaving || selectedWeek || '1-Hafta';
+      await onClearStudentScore?.(scan.studentId, selectedTest.subject, week);
+      await onUpdateStudentScore?.(newStudentId, selectedTest.subject, scan.percentage, week);
+
+      const updatedScan = {
+        ...scan,
+        studentId: newStudentId,
+        studentName: `${newStudent.name} ${newStudent.surname}`
+      };
+      // Keep the dedupe-by-student rule: drop any existing scan of the new student
+      const remaining = currentTestScans.filter(s => s.id !== scan.id && s.studentId !== newStudentId);
+      const updatedScans = [updatedScan, ...remaining];
+      setCurrentTestScans(updatedScans);
+      localStorage.setItem(`testor_scans_${selectedTest.id}`, JSON.stringify(updatedScans));
+      handleIncrementStudentCount(selectedTest.id, updatedScans.length);
+      setSelectedScanDetail(updatedScan);
+      setReassignTargetId('');
+    } catch (err) {
+      console.error('Failed to reassign scan:', err);
+      alert("Natijani boshqa o'quvchiga o'tkazishda xatolik yuz berdi.");
+    } finally {
+      setIsReassigning(false);
+    }
+  };
+
   // Analysis Tab States
   const [activeClass, setActiveClass] = useState<string>('5-Sinf');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -2077,10 +2115,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       <div style={{ animation: 'fadeIn 0.3s ease' }}>
         <div style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ fontSize: '1.35rem', fontWeight: 850, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
-            Fanlar & O'qituvchilar Papkalari
+            Haftalik Papkalar
           </h2>
           <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
-            Topshiriqlar fayl tizimi ko'rinishida guruhlangan.
+            Testlar hafta va fan bo'yicha guruhlangan.
           </p>
         </div>
 
@@ -2197,7 +2235,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                       }}>
               {weekSubjects.map((subj, sIdx) => {
                 const isSubjExpanded = !!expandedSubjects[`${week}__${subj}`];
-                const subjectTeachers = getTeachersForSubject(week, subj);
+                const subjectTests = getTestsForSubject(week, subj);
 
                 return (
                   <div key={sIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
@@ -2256,11 +2294,11 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                       </div>
                       
                       <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '0.5rem' }}>
-                        {subjectTeachers.length} ta o'qituvchi
+                        {subjectTests.length} ta test
                       </span>
                     </div>
 
-                    {/* Subject Children (Teachers) */}
+                    {/* Subject Children (Tests list) */}
                     {isSubjExpanded && (
                       <div style={{
                         borderLeft: '2px solid #cbd5e1',
@@ -2268,12 +2306,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                         paddingLeft: isMobile ? '0.85rem' : '1.5rem',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '0.5rem',
+                        gap: '0.4rem',
                         position: 'relative',
                         paddingTop: '0.25rem',
                         paddingBottom: '0.25rem'
                       }}>
-                        {subjectTeachers.length === 0 ? (
+                        {subjectTests.length === 0 ? (
                           <div style={{ position: 'relative' }}>
                             {/* Horizontal line for empty state */}
                             <div style={{
@@ -2284,162 +2322,62 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                               height: '2px',
                               background: '#cbd5e1'
                             }} />
-                            <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '0.5rem' }}>
-                              O'qituvchilar mavjud emas
+                            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '0.5rem' }}>
+                              Testlar mavjud emas
                             </div>
                           </div>
                         ) : (
-                          subjectTeachers.map((teacher, tIdx) => {
-                            const teacherKey = `${week}__${subj}__${teacher}`;
-                            const isTeacherExpanded = !!expandedTeachers[teacherKey];
-                            const teacherTests = getTestsForTeacher(week, subj, teacher);
+                          subjectTests.map((test) => (
+                            <div key={test.id} style={{ position: 'relative' }}>
+                              {/* Horizontal connector branch line to this test */}
+                              <div style={{
+                                position: 'absolute',
+                                left: isMobile ? '-0.85rem' : '-1.5rem',
+                                top: '1.1rem',
+                                width: isMobile ? '0.6rem' : '1.25rem',
+                                height: '2px',
+                                background: '#cbd5e1'
+                              }} />
 
-                            return (
-                              <div key={tIdx} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}>
-                                {/* Horizontal connector branch line to this teacher folder */}
-                                <div style={{
-                                  position: 'absolute',
-                                  left: isMobile ? '-0.85rem' : '-1.5rem',
-                                  top: '1.25rem',
-                                  width: isMobile ? '0.6rem' : '1.25rem',
-                                  height: '2px',
-                                  background: '#cbd5e1'
-                                }} />
-
-                                {/* Teacher Folder Row */}
-                                <div
-                                  onClick={() => toggleTeacher(week, subj, teacher)}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '0.65rem 0.85rem',
-                                    borderRadius: '10px',
-                                    border: isTeacherExpanded ? `1.5px solid ${colors.primary}` : '1.5px solid #e2e8f0',
-                                    background: isTeacherExpanded ? colors.bg : '#ffffff',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease'
-                                  }}
-                                  onMouseEnter={e => {
-                                    if (!isTeacherExpanded) {
-                                      e.currentTarget.style.borderColor = colors.border;
-                                      e.currentTarget.style.background = colors.bg;
-                                    }
-                                  }}
-                                  onMouseLeave={e => {
-                                    if (!isTeacherExpanded) {
-                                      e.currentTarget.style.borderColor = '#e2e8f0';
-                                      e.currentTarget.style.background = '#ffffff';
-                                    }
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
-                                    <div style={{
-                                      color: colors.primary,
-                                      transform: isTeacherExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                                      transition: 'transform 0.2s ease',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      flexShrink: 0
-                                    }}>
-                                      <ChevronRight size={14} style={{ strokeWidth: 2.5 }} />
+                              {/* Test File Row */}
+                              <div
+                                onClick={() => setSelectedTest(test)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '0.5rem',
+                                  padding: '0.6rem 0.85rem',
+                                  borderRadius: '10px',
+                                  border: '1.5px solid #e2e8f0',
+                                  background: '#ffffff',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={e => {
+                                  e.currentTarget.style.borderColor = colors.border;
+                                  e.currentTarget.style.background = colors.bg;
+                                }}
+                                onMouseLeave={e => {
+                                  e.currentTarget.style.borderColor = '#e2e8f0';
+                                  e.currentTarget.style.background = '#ffffff';
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', minWidth: 0, flex: 1 }}>
+                                  <FileText size={16} color="#94a3b8" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {test.name}
                                     </div>
-                                    <FolderOpen size={16} color={colors.primary} style={{ flexShrink: 0 }} />
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 750, color: isTeacherExpanded ? colors.text : '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {teacher}
-                                    </span>
+                                    <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600, marginTop: '0.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {test.teacher_name} · {test.level} · {test.questions_json.length} ta kalit · {getScannedCount(test.id)} topshirildi
+                                    </div>
                                   </div>
-                                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '0.5rem' }}>
-                                    {teacherTests.length} ta test
-                                  </span>
                                 </div>
-
-                                {/* Teacher Children (Tests list) */}
-                                {isTeacherExpanded && (
-                                  <div style={{
-                                    borderLeft: '2px solid #cbd5e1',
-                                    marginLeft: isMobile ? '0.6rem' : '1.1rem',
-                                    paddingLeft: isMobile ? '0.85rem' : '1.5rem',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '0.4rem',
-                                    position: 'relative',
-                                    paddingTop: '0.25rem',
-                                    paddingBottom: '0.25rem',
-                                    marginTop: '0.1rem'
-                                  }}>
-                                    {teacherTests.length === 0 ? (
-                                      <div style={{ position: 'relative' }}>
-                                        <div style={{
-                                          position: 'absolute',
-                                          left: isMobile ? '-0.85rem' : '-1.5rem',
-                                          top: '50%',
-                                          width: isMobile ? '0.6rem' : '1.25rem',
-                                          height: '2px',
-                                          background: '#cbd5e1'
-                                        }} />
-                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontStyle: 'italic', paddingLeft: '0.5rem' }}>
-                                          Testlar mavjud emas
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      teacherTests.map((test) => (
-                                        <div key={test.id} style={{ position: 'relative' }}>
-                                          {/* Horizontal connector branch line to this test */}
-                                          <div style={{
-                                            position: 'absolute',
-                                            left: isMobile ? '-0.85rem' : '-1.5rem',
-                                            top: '1.1rem',
-                                            width: isMobile ? '0.6rem' : '1.25rem',
-                                            height: '2px',
-                                            background: '#cbd5e1'
-                                          }} />
-
-                                          {/* Test File Row */}
-                                          <div
-                                            onClick={() => setSelectedTest(test)}
-                                            style={{
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'space-between',
-                                              gap: '0.5rem',
-                                              padding: '0.6rem 0.85rem',
-                                              borderRadius: '10px',
-                                              border: '1.5px solid #e2e8f0',
-                                              background: '#ffffff',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s ease'
-                                            }}
-                                            onMouseEnter={e => {
-                                              e.currentTarget.style.borderColor = colors.border;
-                                              e.currentTarget.style.background = colors.bg;
-                                            }}
-                                            onMouseLeave={e => {
-                                              e.currentTarget.style.borderColor = '#e2e8f0';
-                                              e.currentTarget.style.background = '#ffffff';
-                                            }}
-                                          >
-                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', minWidth: 0, flex: 1 }}>
-                                              <FileText size={16} color="#94a3b8" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-                                              <div style={{ minWidth: 0 }}>
-                                                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                  {test.name}
-                                                </div>
-                                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600, marginTop: '0.15rem' }}>
-                                                  {test.level} · {test.questions_json.length} ta kalit · {getScannedCount(test.id)} topshirildi
-                                                </div>
-                                              </div>
-                                            </div>
-                                            <ChevronRight size={12} color="#cbd5e1" style={{ flexShrink: 0 }} />
-                                          </div>
-                                        </div>
-                                      ))
-                                    )}
-                                  </div>
-                                )}
+                                <ChevronRight size={12} color="#cbd5e1" style={{ flexShrink: 0 }} />
                               </div>
-                            );
-                          })
+                            </div>
+                          ))
                         )}
                       </div>
                     )}
@@ -2526,7 +2464,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
           <select
             value={selectedWeek}
-            onChange={(e) => setSelectedWeek(e.target.value)}
+            onChange={(e) => {
+              if (e.target.value === '__more__') { setShowAllWeeks(true); return; }
+              setSelectedWeek(e.target.value);
+            }}
             style={{
               padding: '0.55rem 0.85rem',
               borderRadius: '10px',
@@ -2542,9 +2483,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             {weeksList.length === 0 ? (
               <option value="">Haftalar yo'q</option>
             ) : (
-              weeksList.map(wk => (
+              weekOptionsFor(selectedWeek).map(wk => (
                 <option key={wk} value={wk}>{wk}</option>
               ))
+            )}
+            {!showAllWeeks && weeksList.length > 4 && (
+              <option value="__more__">Eski haftalar…</option>
             )}
           </select>
         </div>
@@ -3704,6 +3648,26 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 />
               </div>
 
+              {/* Unreadable/unshaded ID warning */}
+              {(scannedOMRSheet.studentIdCode || '').includes('?') && !selectedStudentForScan && (
+                <div style={{
+                  background: '#fffbeb',
+                  border: '1.5px solid #fcd34d',
+                  borderRadius: '14px',
+                  padding: '0.75rem 1rem',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.5rem',
+                  color: '#b45309',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  lineHeight: 1.4
+                }}>
+                  <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                  <span>O'quvchi IDsi belgilanmagan yoki o'qilmadi — o'quvchini quyidan qo'lda tanlang.</span>
+                </div>
+              )}
+
               {/* Student and Week mapper fields */}
               <div style={{
                 background: '#ffffff',
@@ -3762,7 +3726,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   <label style={{ fontSize: '0.75rem', fontWeight: 850, color: '#475569' }}>Natija yoziladigan hafta:</label>
                   <select
                     value={selectedWeekForSaving}
-                    onChange={(e) => setSelectedWeekForSaving(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value === '__more__') { setShowAllWeeks(true); return; }
+                      setSelectedWeekForSaving(e.target.value);
+                    }}
                     style={{
                       padding: '0.65rem',
                       borderRadius: '10px',
@@ -3776,13 +3743,16 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     }}
                   >
                     {weeksList.length > 0 ? (
-                      weeksList.map(w => (
+                      weekOptionsFor(selectedWeekForSaving).map(w => (
                         <option key={w} value={w}>{w}</option>
                       ))
                     ) : (
                       ['1-Hafta', '2-Hafta', '3-Hafta', '4-Hafta'].map(w => (
                         <option key={w} value={w}>{w}</option>
                       ))
+                    )}
+                    {!showAllWeeks && weeksList.length > 4 && (
+                      <option value="__more__">Eski haftalar…</option>
                     )}
                   </select>
                 </div>
@@ -4033,7 +4003,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               filteredAndSortedScans.map(scan => (
                 <div
                   key={scan.id}
-                  onClick={() => setSelectedScanDetail(scan)}
+                  onClick={() => { setReassignTargetId(''); setSelectedScanDetail(scan); }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -4201,7 +4171,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           </div>
 
           {/* Graded Sheet Replica */}
-          <div style={{ overflowY: 'auto', flex: 1, maxHeight: '65vh', paddingRight: '0.2rem' }}>
+          <div style={{ overflowY: 'auto', flex: 1, maxHeight: '55vh', paddingRight: '0.2rem' }}>
             <OMRSheetMockup
               studentIdCode={selectedScanDetail.studentIdCode}
               answers={selectedScanDetail.answers}
@@ -4209,6 +4179,61 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               students={students}
             />
           </div>
+
+          {/* Reassign to another student */}
+          {selectedTest && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
+              <label style={{ fontSize: '0.7rem', fontWeight: 850, color: '#475569' }}>
+                O'quvchini o'zgartirish ({selectedScanDetail.studentName}):
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <select
+                  value={reassignTargetId}
+                  onChange={(e) => setReassignTargetId(e.target.value)}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: '0.55rem 0.65rem',
+                    borderRadius: '10px',
+                    border: '1.5px solid #e2e8f0',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    background: '#ffffff',
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="">Boshqa o'quvchini tanlang...</option>
+                  {students
+                    .filter(s => !s.isDeleted && getClassGroup(s.className) === getClassGroup(selectedTest.level) && s.id !== selectedScanDetail.studentId)
+                    .map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} {s.surname} ({s.id})
+                      </option>
+                    ))}
+                </select>
+                <button
+                  disabled={!reassignTargetId || isReassigning}
+                  onClick={() => handleReassignScan(selectedScanDetail, reassignTargetId)}
+                  style={{
+                    background: (!reassignTargetId || isReassigning) ? '#cbd5e1' : '#f59e0b',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '0.55rem 0.85rem',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    cursor: (!reassignTargetId || isReassigning) ? 'not-allowed' : 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}
+                >
+                  {isReassigning ? '...' : "O'tkazish"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Close button */}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -4414,7 +4439,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Hafta:</label>
               <select
                 value={newTestWeek}
-                onChange={(e) => setNewTestWeek(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value === '__more__') { setShowAllWeeks(true); return; }
+                  setNewTestWeek(e.target.value);
+                }}
                 style={{
                   padding: '0.65rem 0.85rem',
                   borderRadius: '10px',
@@ -4428,9 +4456,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 }}
               >
                 <option value="">Hafta tanlanmagan</option>
-                {weeksList.map(w => (
+                {weekOptionsFor(newTestWeek).map(w => (
                   <option key={w} value={w}>{w}</option>
                 ))}
+                {!showAllWeeks && weeksList.length > 4 && (
+                  <option value="__more__">Eski haftalar…</option>
+                )}
               </select>
             </div>
 
