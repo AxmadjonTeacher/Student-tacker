@@ -44,6 +44,8 @@ import {
 } from '../utils/omrScanner';
 import type { Point } from '../utils/omrScanner';
 import { applyRulesPenaltyPercent, violationsForWeek } from '../utils/penalty';
+import { normalizeKeys, normalizeKeyEntry, scoreAnswers, keyEntryToStorage } from '../utils/answerKey';
+import { downloadAnswerSheetPNG } from '../utils/sheetGenerator';
 
 // Normalization and sorting helpers
 const getClassGroup = (cls: string): string => {
@@ -119,7 +121,8 @@ const SAMPLE_OMR_SHEETS = [
 interface OMRSheetMockupProps {
   studentIdCode: string;
   answers: string[];
-  testKeys: string[];
+  // Raw questions_json entries — may be "A", "AC" or legacy {correct_answer}
+  testKeys: any[];
   students: Student[];
 }
 
@@ -201,9 +204,9 @@ const OMRSheetMockup: React.FC<OMRSheetMockupProps> = ({ studentIdCode, answers,
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {Array.from({ length: 13 }).map((_, i) => {
             const qNum = i + 1;
-            const correctKey = testKeys[qNum - 1] || 'A';
+            const acceptedKeys = normalizeKeyEntry(testKeys[qNum - 1] || 'A');
             const studentAns = answers[qNum - 1] || '';
-            const isCorrect = studentAns === correctKey;
+            const isCorrect = acceptedKeys.includes(studentAns);
 
             return (
               <div key={qNum} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '22px' }}>
@@ -222,7 +225,7 @@ const OMRSheetMockup: React.FC<OMRSheetMockupProps> = ({ studentIdCode, answers,
                 <div style={{ display: 'flex', gap: '0.25rem' }}>
                   {options.map(opt => {
                     const isSelected = studentAns === opt;
-                    const isCorrectOpt = correctKey === opt;
+                    const isCorrectOpt = acceptedKeys.includes(opt);
                     let bubbleBg = '#ffffff';
                     let bubbleColor = '#475569';
                     let bubbleBorder = '1px solid #94a3b8';
@@ -283,9 +286,9 @@ const OMRSheetMockup: React.FC<OMRSheetMockupProps> = ({ studentIdCode, answers,
           {/* Questions 14 & 15 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {[14, 15].map(qNum => {
-              const correctKey = testKeys[qNum - 1] || 'A';
+              const acceptedKeys = normalizeKeyEntry(testKeys[qNum - 1] || 'A');
               const studentAns = answers[qNum - 1] || '';
-              const isCorrect = studentAns === correctKey;
+              const isCorrect = acceptedKeys.includes(studentAns);
 
               return (
                 <div key={qNum} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', height: '22px' }}>
@@ -303,7 +306,7 @@ const OMRSheetMockup: React.FC<OMRSheetMockupProps> = ({ studentIdCode, answers,
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
                     {options.map(opt => {
                       const isSelected = studentAns === opt;
-                      const isCorrectOpt = correctKey === opt;
+                      const isCorrectOpt = acceptedKeys.includes(opt);
                       let bubbleBg = '#ffffff';
                       let bubbleColor = '#475569';
                       let bubbleBorder = '1px solid #94a3b8';
@@ -751,8 +754,108 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     return 0;
   };
 
-  // Sync / local saves for answer key updates
+  // ---- test_scans mirror (testor DB) ----
+  // Raw per-question answers are mirrored to the testor DB so answer-key
+  // edits can re-score committed results from any device (sql/testor_test_scans.sql).
+  // Every call degrades silently to the localStorage buffer when the table
+  // is missing or the device is offline.
+  interface TestorScan {
+    id: string;
+    studentId: string;
+    studentName: string;
+    studentIdCode: string;
+    scannedAt: string;
+    answers: (string | null)[];
+    correctCount: number;
+    totalQuestions: number;
+    percentage: number;
+    week: string;
+  }
+
+  interface TestScanDbRow {
+    id: string;
+    student_id: string | null;
+    student_id_code: string | null;
+    student_name: string | null;
+    answers: unknown;
+    correct_count: number | null;
+    total_questions: number | null;
+    percentage: number | null;
+    week: string | null;
+    scanned_at: string | null;
+  }
+
+  const scanToDbRow = (testId: string, scan: TestorScan) => ({
+    test_id: testId,
+    student_id: scan.studentId || null,
+    student_id_code: scan.studentIdCode || null,
+    student_name: scan.studentName || null,
+    answers: scan.answers || [],
+    correct_count: scan.correctCount ?? 0,
+    total_questions: scan.totalQuestions ?? 0,
+    percentage: scan.percentage ?? 0,
+    week: scan.week || null,
+    updated_at: new Date().toISOString()
+  });
+
+  const dbRowToScan = (row: TestScanDbRow): TestorScan => ({
+    id: `db_${row.id}`,
+    studentId: row.student_id || '',
+    studentName: row.student_name || '',
+    studentIdCode: row.student_id_code || '',
+    scannedAt: row.scanned_at
+      ? new Date(row.scanned_at).toLocaleTimeString() + ' ' + new Date(row.scanned_at).toLocaleDateString()
+      : '',
+    answers: Array.isArray(row.answers) ? row.answers : [],
+    correctCount: row.correct_count ?? 0,
+    totalQuestions: row.total_questions ?? 0,
+    percentage: row.percentage ?? 0,
+    week: row.week || ''
+  });
+
+  const upsertScansToDb = async (testId: string, scans: TestorScan[]) => {
+    if (!scans.length) return;
+    try {
+      await supabaseTestor
+        .from('test_scans')
+        .upsert(scans.map(s => scanToDbRow(testId, s)), { onConflict: 'test_id,student_id' });
+    } catch (err) {
+      console.warn('test_scans upsert skipped (table missing/offline):', err);
+    }
+  };
+
+  const deleteScanFromDb = async (testId: string, studentId: string) => {
+    if (!studentId) return;
+    try {
+      await supabaseTestor
+        .from('test_scans')
+        .delete()
+        .eq('test_id', testId)
+        .eq('student_id', studentId);
+    } catch (err) {
+      console.warn('test_scans delete skipped (table missing/offline):', err);
+    }
+  };
+
+  const fetchScansFromDb = async (testId: string): Promise<TestorScan[] | null> => {
+    try {
+      const { data, error } = await supabaseTestor
+        .from('test_scans')
+        .select('*')
+        .eq('test_id', testId);
+      if (error) throw error;
+      return ((data || []) as TestScanDbRow[]).map(dbRowToScan);
+    } catch (err) {
+      console.warn('test_scans fetch skipped (table missing/offline):', err);
+      return null;
+    }
+  };
+
+  // Sync / local saves for answer key updates, then re-score every committed
+  // scan of this test against the new key (raw answers come from the
+  // test_scans mirror, falling back to this device's localStorage buffer).
   const handleSaveAnswerKey = async (testId: string, updatedKeys: any[]) => {
+    const test = dbTests.find(t => t.id === testId);
     // Update local state first
     const updated = dbTests.map(t => {
       if (t.id === testId) {
@@ -774,6 +877,69 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       }
     } catch (err) {
       console.error('Failed to update DB keys:', err);
+    }
+
+    try {
+      const newKeys = normalizeKeys(updatedKeys);
+
+      // Merge the local buffer with scans synced from other devices
+      let scans: TestorScan[] = [];
+      const saved = localStorage.getItem(`testor_scans_${testId}`);
+      if (saved) {
+        try { scans = JSON.parse(saved) || []; } catch { /* corrupted buffer — start empty */ }
+      }
+      const dbScans = await fetchScansFromDb(testId);
+      if (dbScans && dbScans.length) {
+        const byStudent = new Map<string, TestorScan>();
+        scans.forEach(s => { if (s.studentId) byStudent.set(s.studentId, s); });
+        dbScans.forEach(s => { if (s.studentId) byStudent.set(s.studentId, s); });
+        scans = Array.from(byStudent.values());
+      }
+      if (!scans.length) return;
+
+      const rescored = scans.map(s => {
+        const answers = Array.isArray(s.answers) ? s.answers : [];
+        const { correctCount, percentage } = scoreAnswers(answers, newKeys);
+        return { ...s, correctCount, totalQuestions: newKeys.length, percentage };
+      });
+      const changed = rescored.filter((s, i) =>
+        s.percentage !== scans[i].percentage || s.correctCount !== scans[i].correctCount
+      );
+
+      localStorage.setItem(`testor_scans_${testId}`, JSON.stringify(rescored));
+      if (selectedTest && selectedTest.id === testId) setCurrentTestScans(rescored);
+      upsertScansToDb(testId, rescored);
+
+      // Push changed percentages into student records (student_weeks / subject_scores)
+      const subject = test?.subject || selectedTest?.subject;
+      const pushable = changed.filter(s => s.studentId && s.week && subject);
+      if (pushable.length && onUpdateStudentScore) {
+        setRescoreProgress({ done: 0, total: pushable.length });
+        let done = 0;
+        let failed = 0;
+        for (const s of pushable) {
+          try {
+            await onUpdateStudentScore(s.studentId, subject, s.percentage, s.week);
+          } catch (err) {
+            failed++;
+            console.error('Re-score push failed for', s.studentId, err);
+          }
+          done++;
+          setRescoreProgress({ done, total: pushable.length });
+        }
+        setRescoreProgress(null);
+        alert(
+          `Kalit yangilandi: ${rescored.length} ta skan qayta hisoblandi, ` +
+          `${pushable.length - failed} ta o'quvchi bahosi yangilandi` +
+          (failed ? `, ${failed} ta xatolik.` : '.')
+        );
+      } else {
+        alert(`Kalit yangilandi: ${rescored.length} ta skan qayta hisoblandi (baholar o'zgarmadi).`);
+      }
+    } catch (err) {
+      setRescoreProgress(null);
+      console.error('Re-scoring failed:', err);
+      alert("Kalit saqlandi, lekin natijalarni qayta hisoblashda xatolik yuz berdi.");
     }
   };
 
@@ -869,6 +1035,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   // localStorage persistence of OMR scans
   const [currentTestScans, setCurrentTestScans] = useState<any[]>([]);
 
+  // Key-edit re-scoring progress ("34/70") shown as a global toast
+  const [rescoreProgress, setRescoreProgress] = useState<{ done: number; total: number } | null>(null);
+  // Guards the per-test test_scans fetch (selectedTest object identity churns
+  // on every key toggle in the edit modal)
+  const lastScansFetchRef = useRef<string | null>(null);
+
   // OMR scan helper states
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [selectedWeekForSaving, setSelectedWeekForSaving] = useState<string>('');
@@ -888,10 +1060,24 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   useEffect(() => {
     if (selectedTest) {
       const saved = localStorage.getItem(`testor_scans_${selectedTest.id}`);
+      let local: TestorScan[] = [];
       if (saved) {
-        setCurrentTestScans(JSON.parse(saved));
-      } else {
-        setCurrentTestScans([]);
+        try { local = JSON.parse(saved) || []; } catch { /* corrupted buffer — start empty */ }
+      }
+      setCurrentTestScans(local);
+      // Merge in scans synced from other devices (test_scans mirror) once per test
+      if (lastScansFetchRef.current !== selectedTest.id) {
+        lastScansFetchRef.current = selectedTest.id;
+        const testId = selectedTest.id;
+        fetchScansFromDb(testId).then(dbScans => {
+          if (!dbScans || !dbScans.length) return;
+          const byStudent = new Map<string, TestorScan>();
+          local.forEach(s => { if (s.studentId) byStudent.set(s.studentId, s); });
+          dbScans.forEach(s => { if (s.studentId) byStudent.set(s.studentId, s); });
+          const merged = Array.from(byStudent.values());
+          setCurrentTestScans(merged);
+          localStorage.setItem(`testor_scans_${testId}`, JSON.stringify(merged));
+        });
       }
       // Tests linked to a week pre-select that week for scan saving
       // (the review dropdown still allows manual override)
@@ -901,6 +1087,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       }
     } else {
       setCurrentTestScans([]);
+      lastScansFetchRef.current = null;
     }
   }, [selectedTest]);
 
@@ -1146,27 +1333,23 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     // 2. Warp the frame to the destination canvas
     warpQuadrilateral(ctx, corners, warpCanvas);
     
-    // 3. Grade against the selected test key
+    // 3. Grade against the selected test key (entries may hold several
+    //    accepted letters, e.g. "AC")
     const rawKeys = selectedTest.questions_json || Array(15).fill("A");
-    const testKeys = rawKeys.map((q: any) =>
-      typeof q === 'object' && q !== null ? q.correct_answer : q
-    );
+    const testKeys = normalizeKeys(rawKeys);
     const numQuestions = testKeys.length;
 
     // 4. Parse the bubbled answers & ID using the layout for this question count
     const parsed = parseOMRSheet(warpCanvas, numQuestions);
-    
+
     let studentAnswers = [...parsed.answers];
     if (studentAnswers.length < numQuestions) {
       studentAnswers = [...studentAnswers, ...Array(numQuestions - studentAnswers.length).fill("A")];
     } else if (studentAnswers.length > numQuestions) {
       studentAnswers = studentAnswers.slice(0, numQuestions);
     }
-    
-    let correct = 0;
-    studentAnswers.forEach((ans, idx) => {
-      if (ans && ans === testKeys[idx]) correct++;
-    });
+
+    const { correctCount: correct } = scoreAnswers(studentAnswers, testKeys);
 
     // 5. Crop the signature region from the warped canvas
     const sigCanvas = document.createElement('canvas');
@@ -1241,9 +1424,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     const sheet = sample || selectedSampleSheet || SAMPLE_OMR_SHEETS[0];
     const rawKeys = selectedTest.questions_json || Array(15).fill("A");
-    const testKeys = rawKeys.map((q: any) => 
-      typeof q === 'object' && q !== null ? q.correct_answer : q
-    );
+    const testKeys = normalizeKeys(rawKeys);
     const numQuestions = testKeys.length;
 
     // Load OMR template image, draw mock answers onto it, then parse
@@ -1309,10 +1490,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         studentAnswers = studentAnswers.slice(0, numQuestions);
       }
 
-      let correct = 0;
-      studentAnswers.forEach((ans, idx) => {
-        if (ans && ans === testKeys[idx]) correct++;
-      });
+      const { correctCount: correct } = scoreAnswers(studentAnswers, testKeys);
 
       // Crop the signature area or generate text-drawn signature
       const sigCanvas = document.createElement('canvas');
@@ -1434,6 +1612,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       setCurrentTestScans(updatedScans);
       localStorage.setItem(`testor_scans_${selectedTest.id}`, JSON.stringify(updatedScans));
 
+      // Mirror raw answers to the testor DB so key edits can re-score later
+      upsertScansToDb(selectedTest.id, [newScan]);
+
       // Update database & local test student count
       handleIncrementStudentCount(selectedTest.id, updatedScans.length);
 
@@ -1477,10 +1658,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   // Remove a scanned sheet
   const handleDeleteScannedSheet = (scanId: string) => {
     if (!selectedTest) return;
+    const removed = currentTestScans.find(s => s.id === scanId);
     const filtered = currentTestScans.filter(s => s.id !== scanId);
     setCurrentTestScans(filtered);
     localStorage.setItem(`testor_scans_${selectedTest.id}`, JSON.stringify(filtered));
     handleIncrementStudentCount(selectedTest.id, filtered.length);
+    if (removed?.studentId) deleteScanFromDb(selectedTest.id, removed.studentId);
   };
 
   // Reassign a saved scan to a different student: the wrong student's score is
@@ -1519,6 +1702,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       setCurrentTestScans(updatedScans);
       localStorage.setItem(`testor_scans_${selectedTest.id}`, JSON.stringify(updatedScans));
       handleIncrementStudentCount(selectedTest.id, updatedScans.length);
+      deleteScanFromDb(selectedTest.id, scan.studentId);
+      upsertScansToDb(selectedTest.id, [updatedScan as unknown as TestorScan]);
       setSelectedScanDetail(updatedScan);
       setReassignTargetId('');
     } catch (err) {
@@ -1535,6 +1720,19 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
   // Settings Tab States
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [generatingSheet, setGeneratingSheet] = useState<number | null>(null);
+
+  const handleDownloadSheet = async (count: number) => {
+    setGeneratingSheet(count);
+    try {
+      await downloadAnswerSheetPNG(count);
+    } catch (err) {
+      console.error('Sheet generation failed:', err);
+      alert('Varaqani yaratishda xatolik yuz berdi.');
+    } finally {
+      setGeneratingSheet(null);
+    }
+  };
 
   // Update theme settings
   const handleSelectAccent = (color: 'indigo' | 'teal' | 'emerald' | 'rose') => {
@@ -2778,6 +2976,68 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         </div>
       </div>
 
+      {/* Answer Sheets (generated PNG) Section */}
+      <div style={{
+        background: '#ffffff',
+        border: '1.5px solid #e2e8f0',
+        borderRadius: '24px',
+        padding: '1.5rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        <div>
+          <h4 style={{ fontSize: '0.85rem', fontWeight: 850, color: '#334155', margin: '0 0 0.25rem 0' }}>
+            Javob varaqalari (PNG)
+          </h4>
+          <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+            Har bir savollar soni uchun chop etishga tayyor javob varaqasi. Varaqlar skaner koordinatalari bilan bir manbadan yaratiladi, shuning uchun 10, 15, 20 va 30 savollik testlarning barchasini skanerlash mumkin. A4 qog'ozga 100% masshtabda chop eting.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {SELECTABLE_QUESTION_COUNTS.map(count => {
+            const busy = generatingSheet === count;
+            return (
+              <button
+                key={count}
+                onClick={() => handleDownloadSheet(count)}
+                disabled={generatingSheet !== null}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.15rem',
+                  borderRadius: '12px',
+                  border: '1.5px solid #e2e8f0',
+                  background: busy ? '#f8fafc' : '#ffffff',
+                  color: '#475569',
+                  cursor: generatingSheet !== null ? 'wait' : 'pointer',
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (generatingSheet === null) {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = busy ? '#f8fafc' : '#ffffff';
+                  e.currentTarget.style.borderColor = '#e2e8f0';
+                }}
+              >
+                {busy
+                  ? <RefreshCw size={16} style={{ animation: 'spin 1.2s linear infinite' }} />
+                  : <Download size={16} />}
+                {count}.png — {count} savol
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* About Section */}
       <div style={{
         background: '#ffffff',
@@ -2975,12 +3235,14 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             </button>
           </div>
 
+          <p style={{ fontSize: '0.72rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+            Bir savolda bir nechta to'g'ri javob bo'lishi mumkin — kerakli harflarni yoqib/o'chirib belgilang.
+            Kalit saqlanganda barcha skanerlangan natijalar avtomatik qayta hisoblanadi.
+          </p>
+
           <div style={{ overflowY: 'auto', flex: 1, paddingRight: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {Array.from({ length: numQuestions }).map((_, idx) => {
-              const item = testKeys[idx];
-              const currentKey = typeof item === 'object' && item !== null 
-                ? item.correct_answer 
-                : (item || "A");
+              const selectedLetters = normalizeKeyEntry(testKeys[idx]);
               return (
                 <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '12px', gap: '1rem' }}>
                   <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', minWidth: '40px' }}>
@@ -2988,17 +3250,21 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   </span>
                   <div style={{ display: 'flex', gap: '0.4rem', flex: 1, justifyContent: 'flex-end' }}>
                     {["A", "B", "C", "D"].map(option => {
-                      const isActive = currentKey === option;
+                      const isActive = selectedLetters.includes(option);
                       return (
                         <button
                           key={option}
                           onClick={() => {
-                            const newKeys = [...testKeys];
-                            if (typeof newKeys[idx] === 'object' && newKeys[idx] !== null) {
-                              newKeys[idx] = { ...newKeys[idx], correct_answer: option };
+                            let letters = normalizeKeyEntry(testKeys[idx]);
+                            if (letters.includes(option)) {
+                              // A question must keep at least one correct answer
+                              if (letters.length === 1) return;
+                              letters = letters.filter(l => l !== option);
                             } else {
-                              newKeys[idx] = typeof newKeys[idx] === 'string' ? option : { correct_answer: option };
+                              letters = [...letters, option].sort();
                             }
+                            const newKeys = [...testKeys];
+                            newKeys[idx] = keyEntryToStorage(letters);
                             // Update local state temporarily
                             setSelectedTest({ ...selectedTest, questions_json: newKeys });
                           }}
@@ -3051,7 +3317,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             </button>
             <button
               onClick={() => {
-                handleSaveAnswerKey(selectedTest.id, testKeys);
+                const storageKeys = testKeys.map((k: any) => keyEntryToStorage(normalizeKeyEntry(k)));
+                handleSaveAnswerKey(selectedTest.id, storageKeys);
                 setShowEditKeyModal(false);
               }}
               style={{
@@ -3070,6 +3337,33 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             </button>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  // Global toast shown while a key edit is pushing re-scored results
+  const renderRescoreToast = () => {
+    if (!rescoreProgress) return null;
+    return (
+      <div style={{
+        position: 'fixed',
+        bottom: '90px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: '#0f172a',
+        color: '#ffffff',
+        borderRadius: '9999px',
+        padding: '0.6rem 1.25rem',
+        fontSize: '0.8rem',
+        fontWeight: 800,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        zIndex: 1500,
+        boxShadow: '0 10px 25px -5px rgba(0,0,0,0.35)'
+      }}>
+        <RefreshCw size={15} style={{ animation: 'spin 1.2s linear infinite' }} />
+        Natijalar qayta hisoblanmoqda… {rescoreProgress.done}/{rescoreProgress.total}
       </div>
     );
   };
@@ -3644,9 +3938,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 <OMRSheetMockup
                   studentIdCode={scannedOMRSheet.studentIdCode}
                   answers={scannedOMRSheet.answers}
-                  testKeys={(selectedTest.questions_json || Array(15).fill("A")).map((q: any) => 
-                    typeof q === 'object' && q !== null ? q.correct_answer : q
-                  )}
+                  testKeys={selectedTest.questions_json || Array(15).fill("A")}
                   students={students}
                 />
               </div>
@@ -4131,10 +4423,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   // MODAL E: SCAN DETAIL VIEW MODAL
   const renderScanDetailModal = () => {
     if (!selectedScanDetail) return null;
-    const rawKeys = selectedTest?.questions_json || Array(15).fill("A");
-    const testKeys = rawKeys.map((q: any) => 
-      typeof q === 'object' && q !== null ? q.correct_answer : q
-    );
+    const testKeys = selectedTest?.questions_json || Array(15).fill("A");
 
     return (
       <div style={{
@@ -4654,6 +4943,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         {renderReviewModal()}
         {renderScanDetailModal()}
         {renderAddTestModal()}
+        {renderRescoreToast()}
       </div>
     );
   }
@@ -4779,6 +5069,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       {renderReviewModal()}
       {renderScanDetailModal()}
       {renderAddTestModal()}
+      {renderRescoreToast()}
     </div>
   );
 };

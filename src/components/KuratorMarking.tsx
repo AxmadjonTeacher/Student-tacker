@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Inbox } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Inbox, Lock } from 'lucide-react';
 import type { Student } from '../types';
 import { supabase } from '../supabase';
-import { weekLabelForDate } from '../utils/weekUtils';
+import { weekLabelForDate, dateRangeForWeek, isLessonEditable } from '../utils/weekUtils';
 
 interface KuratorMarkingProps {
   students: Student[]; // already band-filtered by App's activeStudents
@@ -16,7 +16,6 @@ interface KuratorMarkingProps {
 const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [dailyRecords, setDailyRecords] = useState<any[]>([]);
-  const [markedDates, setMarkedDates] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState<string | null>(null);
   const [isAddingDay, setIsAddingDay] = useState(false);
   const [activeClassFilter, setActiveClassFilter] = useState<string>('ALL');
@@ -25,6 +24,58 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
 
   const derivedWeek = weekLabelForDate(selectedDate);
   const weekExists = derivedWeek !== null && weeksList.includes(derivedWeek);
+
+  // Week navigation: kurators pick a week from the dropdown, see its created
+  // lesson dates, and may open new days only inside the latest week. Marks
+  // stay editable for 2 days after the lesson date, then become read-only.
+  const latestWeek = weeksList.length > 0 ? weeksList[weeksList.length - 1] : null;
+  const [selectedWeekView, setSelectedWeekView] = useState<string>('');
+  const [weekDates, setWeekDates] = useState<string[]>([]);
+  const [showOldWeeks, setShowOldWeeks] = useState(false);
+
+  // Until the kurator picks a week explicitly, view the latest one
+  const effectiveWeekView = selectedWeekView || latestWeek || '';
+  const weekRange = effectiveWeekView ? dateRangeForWeek(effectiveWeekView) : null;
+  const isLatestWeek = effectiveWeekView !== '' && effectiveWeekView === latestWeek;
+  const lessonEditable = isLessonEditable(selectedDate);
+
+  // Created lesson dates of the viewed week (any kurator)
+  useEffect(() => {
+    if (!effectiveWeekView) return;
+    let active = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('daily_records')
+          .select('date')
+          .eq('subject', 'KURATOR')
+          .eq('week', effectiveWeekView);
+        if (error) throw error;
+        if (!active) return;
+        const dates = Array.from(new Set((data || []).map(r => r.date))).sort();
+        setWeekDates(dates);
+        // Keep the selected date inside the viewed week
+        if (!dates.includes(selectedDate)) {
+          const range = dateRangeForWeek(effectiveWeekView);
+          if (dates.length > 0) {
+            setSelectedDate(dates[dates.length - 1]);
+          } else if (range && (selectedDate < range.start || selectedDate > range.end)) {
+            const today = new Date().toISOString().split('T')[0];
+            setSelectedDate(today >= range.start && today <= range.end ? today : range.start);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching week lesson dates:', err);
+      }
+    })();
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveWeekView, dailyRecords.length]);
+
+  const visibleWeeks = useMemo(() => {
+    if (showOldWeeks || weeksList.length <= 4) return weeksList;
+    return weeksList.slice(-4);
+  }, [weeksList, showOldWeeks]);
 
   const sortedStudents = useMemo(() => {
     return [...students].sort((a, b) => {
@@ -44,23 +95,6 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
     return sortedStudents.filter(s => s.className?.toUpperCase() === activeClassFilter);
   }, [sortedStudents, activeClassFilter]);
 
-  // Dates this kurator has already marked (for prev/next navigation)
-  const fetchMarkedDates = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('daily_records')
-        .select('date')
-        .eq('subject', 'KURATOR')
-        .eq('teacher_name', kuratorName);
-      if (error) throw error;
-      if (data) {
-        setMarkedDates(Array.from(new Set(data.map(r => r.date))).sort());
-      }
-    } catch (err) {
-      console.error('Error fetching kurator marked dates:', err);
-    }
-  };
-
   const fetchDailyRecords = async () => {
     if (!selectedDate) return;
     try {
@@ -79,11 +113,6 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
   useEffect(() => {
     fetchDailyRecords();
   }, [selectedDate]);
-
-  useEffect(() => {
-    fetchMarkedDates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dailyRecords.length]);
 
   // Weekly attendance % (KURATOR records only) + violation count → student_weeks
   const recalculateWeeklyAttendanceAndRules = async (studentId: string, week: string) => {
@@ -151,6 +180,14 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
       alert(`"${derivedWeek}" haftasi hali ochilmagan — avval hafta yaratilishi kerak.`);
       return;
     }
+    if (derivedWeek !== latestWeek) {
+      alert("Yangi kun faqat oxirgi (joriy) hafta ichida ochiladi.");
+      return;
+    }
+    if (!isLessonEditable(selectedDate)) {
+      alert("Bu sana uchun belgilash muddati o'tgan (dars kunidan keyin 2 kun ichida).");
+      return;
+    }
 
     setIsAddingDay(true);
     try {
@@ -192,6 +229,7 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
   const handleToggle = async (studentId: string, field: 'attendance' | 'school_rule') => {
     const record = dailyRecords.find(r => r.student_id?.toString() === studentId?.toString());
     if (!record) return;
+    if (!isLessonEditable(record.date || selectedDate)) return; // 2-day edit window passed
     setIsSaving(studentId);
     try {
       const newValue = !record[field];
@@ -210,8 +248,9 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
     }
   };
 
-  const prevDate = [...markedDates].reverse().find(d => d < selectedDate) || null;
-  const nextDate = markedDates.find(d => d > selectedDate) || null;
+  // Prev/next navigation stays inside the selected week's created dates
+  const prevDate = [...weekDates].reverse().find(d => d < selectedDate) || null;
+  const nextDate = weekDates.find(d => d > selectedDate) || null;
 
   const navButtonStyle = (enabled: boolean): React.CSSProperties => ({
     background: 'var(--bg-card)',
@@ -242,7 +281,43 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
         alignItems: 'flex-end',
         gap: '1rem'
       }}>
-        {/* Date picker + nav */}
+        {/* Week dropdown */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+          <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <Calendar size={14} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+            <select
+              value={effectiveWeekView}
+              onChange={(e) => {
+                if (e.target.value === '__older__') {
+                  setShowOldWeeks(true);
+                  return;
+                }
+                setSelectedWeekView(e.target.value);
+              }}
+              style={{
+                background: 'var(--bg-card-hover)',
+                color: 'var(--text-primary)',
+                border: '1.5px solid var(--border-color)',
+                borderRadius: '10px',
+                padding: '0.35rem 0.5rem',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              {!showOldWeeks && weeksList.length > 4 && (
+                <option value="__older__">Eski haftalar...</option>
+              )}
+              {visibleWeeks.map(w => (
+                <option key={w} value={w}>{w}{w === latestWeek ? ' (joriy)' : ''}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Date picker + nav, constrained to the selected week */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
           <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Dars kuni</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -257,6 +332,8 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
             <input
               type="date"
               value={selectedDate}
+              min={weekRange?.start}
+              max={weekRange?.end}
               onChange={(e) => setSelectedDate(e.target.value)}
               style={{
                 background: 'var(--bg-card-hover)',
@@ -280,20 +357,22 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
           </div>
         </div>
 
-        {/* Derived week chip */}
+        {/* Edit-window status chip */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-          <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
+          <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Holat</span>
           <div
             title={derivedWeek === null
               ? 'Yakshanba dars kuni emas'
-              : (weekExists ? 'Sanadan avtomatik aniqlanadi' : 'Bu hafta hali ochilmagan')}
+              : (lessonEditable
+                ? "Belgilash mumkin (dars kunidan keyin 2 kun ichida)"
+                : "Tahrirlash muddati o'tgan — faqat ko'rish mumkin")}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.3rem',
-              background: weekExists ? 'var(--bg-card-hover)' : 'rgba(245, 158, 11, 0.12)',
-              color: weekExists ? 'var(--text-primary)' : '#b45309',
-              border: weekExists ? '1.5px solid var(--border-color)' : '1.5px solid rgba(245, 158, 11, 0.4)',
+              background: lessonEditable ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.1)',
+              color: lessonEditable ? '#16a34a' : '#ef4444',
+              border: lessonEditable ? '1.5px solid rgba(22, 163, 74, 0.35)' : '1.5px solid rgba(239, 68, 68, 0.35)',
               borderRadius: '10px',
               padding: '0.35rem 0.6rem',
               fontSize: '0.75rem',
@@ -302,8 +381,8 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
               whiteSpace: 'nowrap'
             }}
           >
-            <Calendar size={12} style={{ flexShrink: 0 }} />
-            {derivedWeek === null ? 'Yakshanba' : derivedWeek}
+            {lessonEditable ? <Calendar size={12} style={{ flexShrink: 0 }} /> : <Lock size={12} style={{ flexShrink: 0 }} />}
+            {derivedWeek === null ? 'Yakshanba' : (lessonEditable ? 'Ochiq' : 'Yopilgan')}
           </div>
         </div>
 
@@ -334,13 +413,17 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
           </div>
         )}
 
-        {/* Add day button */}
+        {/* Add day button — only inside the latest week's open window */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', marginLeft: 'auto' }}>
           <span style={{ fontSize: '0.55rem', opacity: 0, pointerEvents: 'none' }}>Label</span>
           <button
             onClick={handleAddDay}
-            disabled={isAddingDay}
-            title="Ushbu kun uchun belgilashni ochish"
+            disabled={isAddingDay || !isLatestWeek || !lessonEditable}
+            title={!isLatestWeek
+              ? "Yangi kun faqat oxirgi (joriy) haftada ochiladi"
+              : (!lessonEditable
+                ? "Bu sana uchun belgilash muddati o'tgan"
+                : 'Ushbu kun uchun belgilashni ochish')}
             style={{
               background: 'var(--accent-primary)',
               color: '#ffffff',
@@ -349,13 +432,14 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
               padding: '0.35rem 0.85rem',
               fontSize: '0.75rem',
               fontWeight: 800,
-              cursor: isAddingDay ? 'not-allowed' : 'pointer',
+              cursor: (isAddingDay || !isLatestWeek || !lessonEditable) ? 'not-allowed' : 'pointer',
+              opacity: (!isLatestWeek || !lessonEditable) ? 0.45 : 1,
               display: 'flex',
               alignItems: 'center',
               gap: '0.25rem',
               transition: 'transform 0.15s ease'
             }}
-            onMouseEnter={(e) => { if (!isAddingDay) e.currentTarget.style.transform = 'scale(1.03)'; }}
+            onMouseEnter={(e) => { if (!isAddingDay && isLatestWeek && lessonEditable) e.currentTarget.style.transform = 'scale(1.03)'; }}
             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
             <Plus size={14} />
@@ -398,8 +482,11 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
           <div style={{ padding: '2.5rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '1.5rem' }}>📅</span>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              Ushbu sana uchun belgilash hali ochilmagan.
+              {isLatestWeek && lessonEditable
+                ? 'Ushbu sana uchun belgilash hali ochilmagan.'
+                : "Ushbu sana uchun belgilash ochilmagan (yangi kun faqat joriy haftada, 2 kun ichida ochiladi)."}
             </span>
+            {isLatestWeek && lessonEditable && (
             <button
               onClick={handleAddDay}
               disabled={isAddingDay}
@@ -419,6 +506,7 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
             >
               Kunni ochish
             </button>
+            )}
           </div>
         ) : (
           visibleStudents.map((student, sIdx) => {
@@ -464,8 +552,9 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                   {record ? (
                     <button
-                      disabled={saving}
+                      disabled={saving || !lessonEditable}
                       onClick={() => handleToggle(student.id, 'attendance')}
+                      title={!lessonEditable ? "Tahrirlash muddati o'tgan (2 kun)" : undefined}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -473,7 +562,8 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
                         padding: '0.4rem 0.85rem',
                         borderRadius: '9999px',
                         border: 'none',
-                        cursor: saving ? 'not-allowed' : 'pointer',
+                        cursor: (saving || !lessonEditable) ? 'not-allowed' : 'pointer',
+                        opacity: !lessonEditable ? 0.65 : 1,
                         fontWeight: 750,
                         fontSize: '0.75rem',
                         transition: 'all 0.2s ease',
@@ -481,6 +571,7 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
                         color: isAttended ? '#16a34a' : '#ef4444'
                       }}
                     >
+                      {!lessonEditable && <Lock size={11} style={{ flexShrink: 0 }} />}
                       <span>{isAttended ? '✅ Keldi' : '❌ Kelmadi'}</span>
                     </button>
                   ) : (
@@ -492,9 +583,11 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                   {record ? (
                     <button
-                      disabled={saving}
+                      disabled={saving || !lessonEditable}
                       onClick={() => handleToggle(student.id, 'school_rule')}
-                      title={rulesOk ? "Qoidabuzarlik belgilash (-2 ball jarima)" : "Qoidabuzarlikni bekor qilish"}
+                      title={!lessonEditable
+                        ? "Tahrirlash muddati o'tgan (2 kun)"
+                        : (rulesOk ? "Qoidabuzarlik belgilash (-2 ball jarima)" : "Qoidabuzarlikni bekor qilish")}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -502,7 +595,8 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
                         padding: '0.4rem 0.85rem',
                         borderRadius: '9999px',
                         border: 'none',
-                        cursor: saving ? 'not-allowed' : 'pointer',
+                        cursor: (saving || !lessonEditable) ? 'not-allowed' : 'pointer',
+                        opacity: !lessonEditable ? 0.65 : 1,
                         fontWeight: 750,
                         fontSize: '0.75rem',
                         transition: 'all 0.2s ease',
@@ -510,6 +604,7 @@ const KuratorMarking: React.FC<KuratorMarkingProps> = ({ students, weeksList }) 
                         color: rulesOk ? '#16a34a' : '#d97706'
                       }}
                     >
+                      {!lessonEditable && <Lock size={11} style={{ flexShrink: 0 }} />}
                       <span>{rulesOk ? '✅ Buzilmagan' : '⚠️ Qoidabuzarlik'}</span>
                     </button>
                   ) : (

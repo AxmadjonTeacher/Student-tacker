@@ -5,7 +5,7 @@ import GraphModal from './GraphModal';
 import EditProgressModal from './EditProgressModal';
 import * as XLSX from 'xlsx';
 import { supabase } from '../supabase';
-import { weekLabelForDate } from '../utils/weekUtils';
+import { weekLabelForDate, dateRangeForWeek, isLessonEditable } from '../utils/weekUtils';
 import { applyRulesPenalty, violationsForWeek } from '../utils/penalty';
 import RulesViolationChip from './RulesViolationChip';
 
@@ -173,6 +173,51 @@ const StudentTable: React.FC<StudentTableProps> = ({
     }
   }, [selectedDailyDate]);
 
+  // Week navigation for daily marking: teachers pick a week from a dropdown,
+  // switch between its created lesson dates, and may add new lessons only in
+  // the latest week. Marks lock 2 days after the lesson date; admin bypasses.
+  const latestWeek = weeksList.length > 0 ? weeksList[weeksList.length - 1] : null;
+  const [selectedDailyWeekView, setSelectedDailyWeekView] = useState<string>('');
+  const [showOldWeeksDaily, setShowOldWeeksDaily] = useState(false);
+
+  // Until the teacher picks a week explicitly, view the latest one
+  const effectiveDailyWeekView = selectedDailyWeekView || latestWeek || '';
+  const dailyWeekRange = effectiveDailyWeekView ? dateRangeForWeek(effectiveDailyWeekView) : null;
+  const dailyLessonEditable = isAdminMode || isLessonEditable(selectedDailyDate);
+  const canCreateLesson = isAdminMode || (
+    latestWeek !== null &&
+    weekLabelForDate(selectedDailyDate) === latestWeek &&
+    isLessonEditable(selectedDailyDate)
+  );
+
+  const visibleDailyWeeks = useMemo(() => {
+    if (showOldWeeksDaily || weeksList.length <= 4) return weeksList;
+    return weeksList.slice(-4);
+  }, [weeksList, showOldWeeksDaily]);
+
+  // Created lesson dates inside the viewed week (markedDates are this
+  // teacher's dates across all weeks)
+  const weekDatesInView = useMemo(() => {
+    if (!dailyWeekRange) return markedDates;
+    return markedDates.filter(d => d >= dailyWeekRange.start && d <= dailyWeekRange.end);
+  }, [markedDates, dailyWeekRange]);
+
+  // Week dropdown change: switch the view and snap the lesson date into the
+  // chosen week (last created lesson date, today, or the week's Monday)
+  const handleDailyWeekViewChange = (week: string) => {
+    setSelectedDailyWeekView(week);
+    const range = dateRangeForWeek(week);
+    if (!range) return;
+    if (selectedDailyDate >= range.start && selectedDailyDate <= range.end) return;
+    const datesInWeek = markedDates.filter(d => d >= range.start && d <= range.end);
+    if (datesInWeek.length > 0) {
+      setSelectedDailyDate(datesInWeek[datesInWeek.length - 1]);
+    } else {
+      const today = new Date().toISOString().split('T')[0];
+      setSelectedDailyDate(today >= range.start && today <= range.end ? today : range.start);
+    }
+  };
+
   const fetchDailyRecords = async () => {
     if (!selectedDailyDate || !activeSubject) return;
     try {
@@ -282,9 +327,17 @@ const StudentTable: React.FC<StudentTableProps> = ({
       alert(`"${derivedWeek}" haftasi hali ochilmagan — avval hafta yaratilishi kerak.`);
       return;
     }
+    if (!isAdminMode && derivedWeek !== latestWeek) {
+      alert("Yangi dars faqat oxirgi (joriy) hafta ichida qo'shiladi.");
+      return;
+    }
+    if (!isAdminMode && !isLessonEditable(selectedDailyDate)) {
+      alert("Bu sana uchun belgilash muddati o'tgan (dars kunidan keyin 2 kun ichida).");
+      return;
+    }
 
     const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
-    
+
     const newRecords = students.map(student => ({
       student_id: student.id,
       date: selectedDailyDate,
@@ -327,6 +380,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   };
 
   const handleToggleDailyRecord = async (studentId: string, field: 'attendance' | 'homework') => {
+    if (!dailyLessonEditable) return; // 2-day edit window passed (teachers only)
     const existing = dailyRecords.find(r => r.student_id?.toString() === studentId?.toString());
     const teacherName = localStorage.getItem('teacher_name') || 'O\'qituvchi';
     const teacherSubject = localStorage.getItem('teacher_subject') || 'ENG';
@@ -1290,9 +1344,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                       SANA TANLASH
                     </label>
-                    <input 
+                    <input
                       type="date"
                       value={selectedDailyDate}
+                      min={dailyWeekRange?.start}
+                      max={dailyWeekRange?.end}
                       onChange={(e) => setSelectedDailyDate(e.target.value)}
                       style={{
                         padding: '0.65rem 1.25rem',
@@ -1308,29 +1364,50 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     />
                   </div>
 
-                  {/* Week indicator */}
+                  {/* Week dropdown */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
                       HAFTA
                     </label>
-                    <div style={{
-                      padding: '0.65rem 1.25rem',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '9999px',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      background: 'var(--accent-glow)',
-                      color: 'var(--accent-hero)',
-                      minWidth: '100px',
-                      textAlign: 'center'
-                    }}>
-                      {selectedDailyWeek}
-                    </div>
+                    <select
+                      value={effectiveDailyWeekView}
+                      onChange={(e) => {
+                        if (e.target.value === '__older__') {
+                          setShowOldWeeksDaily(true);
+                          return;
+                        }
+                        handleDailyWeekViewChange(e.target.value);
+                      }}
+                      style={{
+                        padding: '0.65rem 1.25rem',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '9999px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        background: 'var(--accent-glow)',
+                        color: 'var(--accent-hero)',
+                        minWidth: '100px',
+                        textAlign: 'center',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {!showOldWeeksDaily && weeksList.length > 4 && (
+                        <option value="__older__">Eski haftalar...</option>
+                      )}
+                      {visibleDailyWeeks.map(w => (
+                        <option key={w} value={w}>{w}{w === latestWeek ? ' (joriy)' : ''}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Add new lesson button */}
-                  <button 
+                  {/* Add new lesson button — latest week + open window only */}
+                  <button
                     onClick={handleAddNewLesson}
+                    disabled={!canCreateLesson}
+                    title={canCreateLesson
+                      ? "Yangi dars qo'shish"
+                      : "Yangi dars faqat joriy haftada, dars kunidan keyin 2 kun ichida qo'shiladi"}
                     style={{
                       background: 'var(--accent-hero)',
                       color: '#ffffff',
@@ -1339,14 +1416,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       padding: '0.75rem 1.75rem',
                       fontWeight: 800,
                       fontSize: '0.85rem',
-                      cursor: 'pointer',
+                      cursor: canCreateLesson ? 'pointer' : 'not-allowed',
+                      opacity: canCreateLesson ? 1 : 0.45,
                       boxShadow: '0 8px 16px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                       transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem'
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)'; }}
+                    onMouseEnter={(e) => { if (canCreateLesson) e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
                   >
                     <Plus size={16} />
@@ -1383,9 +1461,12 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     <div style={{ padding: '2.5rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
                       <span style={{ fontSize: '1.5rem' }}>📅</span>
                       <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                        Ushbu sana uchun dars hali boshlanmagan.
+                        {canCreateLesson
+                          ? 'Ushbu sana uchun dars hali boshlanmagan.'
+                          : "Ushbu sana uchun dars ochilmagan (yangi dars faqat joriy haftada, 2 kun ichida qo'shiladi)."}
                       </span>
-                      <button 
+                      {canCreateLesson && (
+                      <button
                         onClick={handleAddNewLesson}
                         style={{
                           background: 'transparent',
@@ -1403,6 +1484,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       >
                         Dars boshlash
                       </button>
+                      )}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1433,8 +1515,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               <div className="daily-control-item" style={{ display: 'flex', justifyContent: 'center' }}>
                                 {record ? (
                                   <button
-                                    disabled={isSaving}
+                                    disabled={isSaving || !dailyLessonEditable}
                                     onClick={() => handleToggleDailyRecord(student.id, 'homework')}
+                                    title={!dailyLessonEditable ? "Tahrirlash muddati o'tgan (2 kun)" : undefined}
                                     style={{
                                       display: 'flex',
                                       alignItems: 'center',
@@ -1442,7 +1525,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                       padding: '0.4rem 0.85rem',
                                       borderRadius: '9999px',
                                       border: 'none',
-                                      cursor: isSaving ? 'not-allowed' : 'pointer',
+                                      cursor: (isSaving || !dailyLessonEditable) ? 'not-allowed' : 'pointer',
+                                      opacity: !dailyLessonEditable ? 0.6 : 1,
                                       fontWeight: 750,
                                       fontSize: '0.75rem',
                                       transition: 'all 0.2s ease',
@@ -2199,14 +2283,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   return (a.surname || '').localeCompare(b.surname || '');
                 });
 
+                // Prev/next navigation stays inside the viewed week's created dates
                 const prevDate = (() => {
-                  if (markedDates.length === 0) return null;
-                  const currentIndex = markedDates.indexOf(selectedDailyDate);
+                  if (weekDatesInView.length === 0) return null;
+                  const currentIndex = weekDatesInView.indexOf(selectedDailyDate);
                   if (currentIndex > 0) {
-                    return markedDates[currentIndex - 1];
+                    return weekDatesInView[currentIndex - 1];
                   }
                   if (currentIndex === -1) {
-                    const prevDates = markedDates.filter(d => d < selectedDailyDate);
+                    const prevDates = weekDatesInView.filter(d => d < selectedDailyDate);
                     if (prevDates.length > 0) {
                       return prevDates[prevDates.length - 1];
                     }
@@ -2215,13 +2300,13 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 })();
 
                 const nextDate = (() => {
-                  if (markedDates.length === 0) return null;
-                  const currentIndex = markedDates.indexOf(selectedDailyDate);
-                  if (currentIndex !== -1 && currentIndex < markedDates.length - 1) {
-                    return markedDates[currentIndex + 1];
+                  if (weekDatesInView.length === 0) return null;
+                  const currentIndex = weekDatesInView.indexOf(selectedDailyDate);
+                  if (currentIndex !== -1 && currentIndex < weekDatesInView.length - 1) {
+                    return weekDatesInView[currentIndex + 1];
                   }
                   if (currentIndex === -1) {
-                    const nextDates = markedDates.filter(d => d > selectedDailyDate);
+                    const nextDates = weekDatesInView.filter(d => d > selectedDailyDate);
                     if (nextDates.length > 0) {
                       return nextDates[0];
                     }
@@ -2242,6 +2327,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   }
                   if (!weeksList.includes(derivedWeek)) {
                     alert(`"${derivedWeek}" haftasi hali ochilmagan — avval hafta yaratilishi kerak.`);
+                    return;
+                  }
+                  if (!isAdminMode && derivedWeek !== latestWeek) {
+                    alert("Yangi dars faqat oxirgi (joriy) hafta ichida qo'shiladi.");
+                    return;
+                  }
+                  if (!isAdminMode && !isLessonEditable(selectedDailyDate)) {
+                    alert("Bu sana uchun belgilash muddati o'tgan (dars kunidan keyin 2 kun ichida).");
                     return;
                   }
 
@@ -2418,6 +2511,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                 <input
                                   type="date"
                                   value={selectedDailyDate}
+                                  min={dailyWeekRange?.start}
+                                  max={dailyWeekRange?.end}
                                   onChange={(e) => setSelectedDailyDate(e.target.value)}
                                   style={{
                                     background: 'var(--bg-card-hover)',
@@ -2458,45 +2553,75 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               </div>
                             </div>
 
-                            {/* Week derived from the lesson date (Saturday label) */}
+                            {/* Week dropdown (created lessons of any week stay viewable) */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
                               <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>O'quv haftasi</span>
-                              {(() => {
-                                const derivedWeek = weekLabelForDate(selectedDailyDate);
-                                const weekExists = derivedWeek !== null && weeksList.includes(derivedWeek);
-                                return (
-                                  <div
-                                    title={derivedWeek === null
-                                      ? 'Yakshanba dars kuni emas'
-                                      : (weekExists ? 'Sanadan avtomatik aniqlanadi' : 'Bu hafta hali ochilmagan')}
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '0.3rem',
-                                      background: weekExists ? 'var(--bg-card-hover)' : 'rgba(245, 158, 11, 0.12)',
-                                      color: weekExists ? 'var(--text-primary)' : '#b45309',
-                                      border: weekExists ? '1.5px solid var(--border-color)' : '1.5px solid rgba(245, 158, 11, 0.4)',
-                                      borderRadius: '10px',
-                                      padding: '0.35rem 0.6rem',
-                                      fontSize: '0.75rem',
-                                      fontWeight: 800,
-                                      lineHeight: 1.2,
-                                      whiteSpace: 'nowrap'
-                                    }}
-                                  >
-                                    <Calendar size={12} style={{ flexShrink: 0 }} />
-                                    {derivedWeek === null ? 'Yakshanba' : derivedWeek}
-                                  </div>
-                                );
-                              })()}
+                              <select
+                                value={effectiveDailyWeekView}
+                                onChange={(e) => {
+                                  if (e.target.value === '__older__') {
+                                    setShowOldWeeksDaily(true);
+                                    return;
+                                  }
+                                  handleDailyWeekViewChange(e.target.value);
+                                }}
+                                style={{
+                                  background: 'var(--bg-card-hover)',
+                                  color: 'var(--text-primary)',
+                                  border: '1.5px solid var(--border-color)',
+                                  borderRadius: '10px',
+                                  padding: '0.35rem 0.5rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 800,
+                                  outline: 'none',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {!showOldWeeksDaily && weeksList.length > 4 && (
+                                  <option value="__older__">Eski haftalar...</option>
+                                )}
+                                {visibleDailyWeeks.map(w => (
+                                  <option key={w} value={w}>{w}{w === latestWeek ? ' (joriy)' : ''}</option>
+                                ))}
+                              </select>
                             </div>
 
-                            {/* Plus button */}
+                            {/* Edit-window status chip */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Holat</span>
+                              <div
+                                title={dailyLessonEditable
+                                  ? "Belgilash mumkin (dars kunidan keyin 2 kun ichida)"
+                                  : "Tahrirlash muddati o'tgan — faqat ko'rish mumkin"}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  background: dailyLessonEditable ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.1)',
+                                  color: dailyLessonEditable ? '#16a34a' : '#ef4444',
+                                  border: dailyLessonEditable ? '1.5px solid rgba(22, 163, 74, 0.35)' : '1.5px solid rgba(239, 68, 68, 0.35)',
+                                  borderRadius: '10px',
+                                  padding: '0.35rem 0.6rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 800,
+                                  lineHeight: 1.2,
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                <Calendar size={12} style={{ flexShrink: 0 }} />
+                                {dailyLessonEditable ? 'Ochiq' : 'Yopilgan'}
+                              </div>
+                            </div>
+
+                            {/* Plus button — latest week + open window only */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', justifyContent: 'flex-end', height: '100%' }}>
                               <span style={{ fontSize: '0.55rem', opacity: 0, pointerEvents: 'none' }}>Label</span>
                               <button
                                 onClick={() => handleAddNewLessonForGradeRange(gradeFilteredStudents)}
-                                title="Yangi dars qo'shish"
+                                disabled={!canCreateLesson}
+                                title={canCreateLesson
+                                  ? "Yangi dars qo'shish"
+                                  : "Yangi dars faqat joriy haftada, dars kunidan keyin 2 kun ichida qo'shiladi"}
                                 style={{
                                   background: 'var(--accent-primary)',
                                   color: '#ffffff',
@@ -2505,13 +2630,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                   padding: '0.35rem 0.75rem',
                                   fontSize: '0.75rem',
                                   fontWeight: 800,
-                                  cursor: 'pointer',
+                                  cursor: canCreateLesson ? 'pointer' : 'not-allowed',
+                                  opacity: canCreateLesson ? 1 : 0.45,
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '0.25rem',
                                   transition: 'transform 0.15s ease'
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                                onMouseEnter={(e) => { if (canCreateLesson) e.currentTarget.style.transform = 'scale(1.03)'; }}
                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                               >
                                 <Plus size={14} />
@@ -2613,8 +2739,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               {/* Homework Toggle */}
                               <div style={{ display: 'flex', justifyContent: 'center' }}>
                                 <button
-                                  disabled={isSaving}
+                                  disabled={isSaving || !dailyLessonEditable}
                                   onClick={() => handleToggleDailyRecord(student.id, 'homework')}
+                                  title={!dailyLessonEditable ? "Tahrirlash muddati o'tgan (2 kun)" : undefined}
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -2622,13 +2749,13 @@ const StudentTable: React.FC<StudentTableProps> = ({
                                     padding: '0.4rem 0.85rem',
                                     borderRadius: '9999px',
                                     border: hasRecord ? 'none' : '1.5px dashed rgba(22, 163, 74, 0.5)',
-                                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                                    cursor: (isSaving || !dailyLessonEditable) ? 'not-allowed' : 'pointer',
                                     fontWeight: 750,
                                     fontSize: '0.75rem',
                                     transition: 'all 0.2s ease',
                                     background: isHomeworkDone ? 'rgba(22, 163, 74, 0.12)' : 'rgba(239, 68, 68, 0.12)',
                                     color: isHomeworkDone ? '#16a34a' : '#ef4444',
-                                    opacity: hasRecord ? 1 : 0.85
+                                    opacity: !dailyLessonEditable ? 0.6 : (hasRecord ? 1 : 0.85)
                                   }}
                                 >
                                   <span>{isHomeworkDone ? '✅ Bajarilgan' : '❌ Bajarilmagan'}</span>

@@ -409,34 +409,67 @@ function getGrayscalePixelsInCircle(
 }
 
 // ── Question layouts ─────────────────────────────────────────────────────────
-// Bubble coordinates per question live in omr_coordinates.json (`questions`),
-// and `layouts` maps a question count to the indices of that array to grade.
-// Adding 20/30-question sheet support = adding their coordinate entries +
-// a "20"/"30" layout key to the JSON. No code changes needed.
+// Bubble coordinates per question live in omr_coordinates.json. A layout
+// either references the shared `questions`/`studentId` geometry by index
+// ("10"/"15" — the original printed sheets), or carries its own `questions`
+// and `studentId` blocks ("20"/"30" — generated sheets with a compact
+// top-right ID grid). The sheet generator draws from the same JSON, so
+// scanner and generated PNGs can never drift apart.
 
-interface OMRQuestionEntry {
+export interface OMRQuestionEntry {
   q: number;
   column: string;
   options: Record<string, number[]>;
 }
 
+export interface OMRStudentIdColumn {
+  column: number;
+  x: number;
+  digits: Record<string, number>;
+}
+
+export interface OMRResolvedLayout {
+  questions: OMRQuestionEntry[];
+  studentId: OMRStudentIdColumn[];
+}
+
+interface OMRLayoutDef {
+  questionIndices?: number[];
+  questions?: OMRQuestionEntry[];
+  studentId?: OMRStudentIdColumn[];
+}
+
 const QUESTION_ENTRIES = omrCoordinates.questions as OMRQuestionEntry[];
-const LAYOUTS = (omrCoordinates as unknown as { layouts: Record<string, { questionIndices: number[] }> }).layouts;
+const STUDENT_ID_COLUMNS = omrCoordinates.studentId as OMRStudentIdColumn[];
+const LAYOUTS = (omrCoordinates as unknown as { layouts: Record<string, OMRLayoutDef> }).layouts;
 
 /** Question counts the scanner can physically grade (layout data exists). */
-export const SUPPORTED_SCAN_COUNTS: number[] = Object.keys(LAYOUTS || {}).map(Number);
+export const SUPPORTED_SCAN_COUNTS: number[] = Object.keys(LAYOUTS || {}).map(Number).sort((a, b) => a - b);
 
-/** Question counts selectable when creating a test (20/30 scan when layouts arrive). */
+/** Question counts selectable when creating a test. */
 export const SELECTABLE_QUESTION_COUNTS: number[] = [10, 15, 20, 30];
 
-/** Resolves the bubble-coordinate entries for a question count, or null if unsupported. */
-export function getOMRLayout(questionCount: number): OMRQuestionEntry[] | null {
+/** Resolves the full sheet geometry for a question count, or null if unsupported. */
+export function getOMRLayout(questionCount: number): OMRResolvedLayout | null {
   const layout = LAYOUTS?.[questionCount.toString()];
   if (!layout) return null;
-  const entries = layout.questionIndices
-    .map(i => QUESTION_ENTRIES[i])
-    .filter((e): e is OMRQuestionEntry => Boolean(e));
-  return entries.length === layout.questionIndices.length ? entries : null;
+
+  let questions: OMRQuestionEntry[];
+  if (layout.questions) {
+    questions = layout.questions;
+  } else if (layout.questionIndices) {
+    questions = layout.questionIndices
+      .map(i => QUESTION_ENTRIES[i])
+      .filter((e): e is OMRQuestionEntry => Boolean(e));
+    if (questions.length !== layout.questionIndices.length) return null;
+  } else {
+    return null;
+  }
+
+  return {
+    questions,
+    studentId: layout.studentId || STUDENT_ID_COLUMNS
+  };
 }
 
 /**
@@ -515,9 +548,9 @@ export function parseOMRSheet(canvas: HTMLCanvasElement, questionCount: number =
 
   // 1. Parse questions via the coordinate layout for this question count
   const layout = getOMRLayout(questionCount) || getOMRLayout(15)!;
-  const answers: string[] = Array(layout.length).fill('');
+  const answers: string[] = Array(layout.questions.length).fill('');
 
-  layout.forEach((entry, idx) => {
+  layout.questions.forEach((entry, idx) => {
     const centers: Array<[number, number]> = ['A', 'B', 'C', 'D'].map(opt => {
       const [cx, cy] = entry.options[opt];
       return [cx, cy] as [number, number];
@@ -525,14 +558,17 @@ export function parseOMRSheet(canvas: HTMLCanvasElement, questionCount: number =
     answers[idx] = detectMarkedOption(ctx, centers, outerRadius, innerQRadius);
   });
 
-  // 3. Parse Student ID (3 columns of digits 0 to 9)
+  // 3. Parse Student ID (3 columns of digits 0 to 9, layout-specific grid)
   let studentIdCode = '';
-  for (let col = 0; col < 3; col++) {
-    const cx = STUDENT_ID_X[col];
-    const colPixels: number[] = [];
+  for (const idColumn of layout.studentId) {
+    const cx = idColumn.x;
+    const digitYs: number[] = [];
+    for (let digit = 0; digit < 10; digit++) {
+      digitYs.push(idColumn.digits[digit.toString()]);
+    }
 
-    for (let row = 0; row < 10; row++) {
-      const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
+    const colPixels: number[] = [];
+    for (const cy of digitYs) {
       const pixels = getGrayscalePixelsInCircle(ctx, cx, cy, outerRadius - 1.5);
       colPixels.push(...pixels);
     }
@@ -546,14 +582,14 @@ export function parseOMRSheet(canvas: HTMLCanvasElement, questionCount: number =
 
     const contrast = maxVal - minVal;
     const localThreshold = minVal + 0.45 * contrast;
-    
+
     let maxIdx = 0;
     let maxDensity = -1;
 
     for (let row = 0; row < 10; row++) {
-      const cy = STUDENT_ID_Y_START + row * STUDENT_ID_Y_STEP;
+      const cy = digitYs[row];
       const innerPixels = getGrayscalePixelsInCircle(ctx, cx, cy, innerIdRadius);
-      
+
       let blackCount = 0;
       for (const val of innerPixels) {
         if (val < localThreshold) {
