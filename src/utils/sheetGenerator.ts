@@ -51,10 +51,7 @@ export function renderAnswerSheetCanvas(questionCount: number, scale: number = 4
   // Title row under the signature box
   ctx.font = 'bold 13px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`JAVOBLAR VARAQASI — ${questionCount} SAVOL`, 98, 100);
-  ctx.font = '11px sans-serif';
-  ctx.fillStyle = '#334155';
-  ctx.fillText('Sinf: ________      Fan: ____________      Sana: ________', 98, 122);
+  ctx.fillText(`JAVOBLAR VARAQASI — ${questionCount} SAVOL`, 98, 104);
 
   // Student ID grid (geometry is layout-specific: standard right-middle grid
   // for 10/15, compact top-right grid for 20/30)

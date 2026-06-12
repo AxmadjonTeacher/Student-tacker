@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Key,
   Trash2,
-  Download
+  Download,
+  Pencil
 } from 'lucide-react';
 import type { Student, Teacher, SubjectScore } from '../types';
 import StudentTable from './StudentTable';
@@ -503,19 +504,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const [newTestName, setNewTestName] = useState('');
   const [newTestSubject, setNewTestSubject] = useState<string>('Matematika');
   const [newCustomSubjectName, setNewCustomSubjectName] = useState('');
-  const [newTestTeacher, setNewTestTeacher] = useState('');
-  const [newTestLevel, setNewTestLevel] = useState('5-Sinf');
   const [newTestQuestionsCount, setNewTestQuestionsCount] = useState(15);
   const [newTestWeek, setNewTestWeek] = useState('');
   const [isCreatingTest, setIsCreatingTest] = useState(false);
-
-  // Filter teachers list based on active subject selection in the modal.
-  // Custom subjects can be taught by any subject teacher (kurators excluded).
-  const filteredTeachersForNewTest = useMemo(() => {
-    if (newTestSubject === 'Matematika') return teachers.filter(t => t.subject === 'MATH');
-    if (newTestSubject === 'Ingliz Tili') return teachers.filter(t => t.subject === 'ENG');
-    return teachers.filter(t => t.subject !== 'KURATOR');
-  }, [newTestSubject, teachers]);
 
   // Custom subjects already present among tests (offered for reuse in the modal)
   const existingCustomSubjects = useMemo(() => {
@@ -526,28 +517,19 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     )).sort() as string[];
   }, [dbTests]);
 
-  // Set default teacher when filtered list changes or when modal is opened
-  useEffect(() => {
-    if (filteredTeachersForNewTest.length > 0) {
-      if (!filteredTeachersForNewTest.some(t => t.name === newTestTeacher)) {
-        setNewTestTeacher(filteredTeachersForNewTest[0].name);
-      }
-    } else {
-      setNewTestTeacher('');
-    }
-  }, [filteredTeachersForNewTest]);
-
   const openAddTestModal = () => {
     setNewTestName('');
     setNewTestSubject('Matematika');
     setNewCustomSubjectName('');
-    const mathTeachers = teachers.filter(t => t.subject === 'MATH');
-    setNewTestTeacher(mathTeachers.length > 0 ? mathTeachers[0].name : '');
-    setNewTestLevel('5-Sinf');
     setNewTestQuestionsCount(15);
     setNewTestWeek('');
     setShowAddTestModal(true);
   };
+
+  // Test actions modal: move the test to another week folder, or delete it
+  const [showTestActionsModal, setShowTestActionsModal] = useState(false);
+  const [moveTargetWeek, setMoveTargetWeek] = useState('');
+  const [isDeletingTest, setIsDeletingTest] = useState(false);
 
   // States for folder tree expansion in "Papkalar" section
   // Hierarchy: Week → Subject → Tests; subject keys are week-prefixed
@@ -580,10 +562,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       alert("Iltimos, yangi fan nomini kiriting!");
       return;
     }
-    if (!newTestTeacher) {
-      alert("Iltimos, o'qituvchini tanlang!");
-      return;
-    }
     if (newTestQuestionsCount < 1 || newTestQuestionsCount > 100) {
       alert("Savollar soni 1 va 100 oralig'ida bo'lishi kerak!");
       return;
@@ -592,11 +570,13 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     setIsCreatingTest(true);
     const questionsArray = Array(newTestQuestionsCount).fill("A");
 
+    // Tests are no longer bound to a teacher or class — student matching is
+    // school-wide by the unique 3-digit ID code.
     const newTestData = {
       name: newTestName.trim(),
       subject: effectiveSubject,
-      teacher_name: newTestTeacher,
-      level: newTestLevel,
+      teacher_name: '',
+      level: '',
       questions_json: questionsArray,
       student_count: 0
     };
@@ -720,8 +700,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             name: t.name || 'Nomsiz test',
             subject: t.subject || 'Boshqa',
             created_at: t.created_at || new Date().toISOString(),
-            teacher_name: t.teacher_name || "O'qituvchi",
-            level: t.level || '5-Sinf',
+            teacher_name: t.teacher_name || '',
+            level: t.level || '',
             questions_json: questions,
             student_count: t.student_count || 0,
             week: t.week || null
@@ -940,6 +920,58 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       setRescoreProgress(null);
       console.error('Re-scoring failed:', err);
       alert("Kalit saqlandi, lekin natijalarni qayta hisoblashda xatolik yuz berdi.");
+    }
+  };
+
+  // Move a test into another week folder (Papkalar hierarchy is Week → Subject → Tests)
+  const handleMoveTestToWeek = async (testId: string, week: string) => {
+    const newWeek = week || null;
+    setDbTests(prev => prev.map(t => t.id === testId ? { ...t, week: newWeek } : t));
+    if (selectedTest && selectedTest.id === testId) {
+      setSelectedTest({ ...selectedTest, week: newWeek });
+    }
+    try {
+      const { error } = await supabaseTestor
+        .from('public_tests')
+        .update({ week: newWeek })
+        .eq('id', testId);
+      if (error) console.warn('Week move DB update failed, kept locally:', error.message);
+    } catch (err) {
+      console.error('Failed to move test week:', err);
+    }
+    setShowTestActionsModal(false);
+  };
+
+  // Delete a test together with its scans (DB + local buffer)
+  const handleDeleteTest = async (testId: string) => {
+    setIsDeletingTest(true);
+    try {
+      if (!testId.startsWith('local_')) {
+        try {
+          await supabaseTestor.from('test_scans').delete().eq('test_id', testId);
+        } catch (err) {
+          console.warn('test_scans cleanup skipped:', err);
+        }
+        const { data, error } = await supabaseTestor
+          .from('public_tests')
+          .delete()
+          .eq('id', testId)
+          .select('id');
+        if (error) throw error;
+        // RLS-blocked deletes "succeed" with 0 rows — surface that honestly
+        if (!data || data.length === 0) {
+          throw new Error('Delete blocked by RLS (run sql/testor_public_tests_policy.sql)');
+        }
+      }
+      localStorage.removeItem(`testor_scans_${testId}`);
+      setDbTests(prev => prev.filter(t => t.id !== testId));
+      setSelectedTest(null);
+      setShowTestActionsModal(false);
+    } catch (err) {
+      console.error('Failed to delete test:', err);
+      alert("Testni o'chirishda xatolik yuz berdi.");
+    } finally {
+      setIsDeletingTest(false);
     }
   };
 
@@ -1186,42 +1218,30 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           y: (pt.y / detH) * scaledH + offsetY
         });
 
-        const mapToVideo = (screenX: number, screenY: number) => {
-          // Inverse of mapToScreen:
-          // screenX = (vx / detW) * scaledW + offsetX => vx = ((screenX - offsetX) / scaledW) * detW
-          const vx = ((screenX - offsetX) / scaledW) * detW;
-          const vy = ((screenY - offsetY) / scaledH) * detH;
-          return { x: vx, y: vy };
-        };
+        // 2. ZipGrade-style hover scanning: search each FULL quadrant of the
+        // frame instead of tight windows around viewfinder guides, so the
+        // sheet locks on wherever it sits in the frame — no manual alignment.
+        const qx = detW * 0.25;
+        const qy = detH * 0.25;
+        const qRadius = Math.max(qx, qy); // window covers the whole quadrant
 
-        // 2. Define quadrant search centers on downscaled canvas
-        // Fallback default search centers (approx 15% margins)
-        let detSearchTL = { x: detW * 0.15, y: detH * 0.15 };
-        let detSearchTR = { x: detW * 0.85, y: detH * 0.15 };
-        let detSearchBL = { x: detW * 0.15, y: detH * 0.85 };
-        let detSearchBR = { x: detW * 0.85, y: detH * 0.85 };
+        let tlDet = findMarkerCentroid(detCtx, qx, qy, qRadius);
+        let trDet = findMarkerCentroid(detCtx, detW - qx, qy, qRadius);
+        let blDet = findMarkerCentroid(detCtx, qx, detH - qy, qRadius);
+        let brDet = findMarkerCentroid(detCtx, detW - qx, detH - qy, qRadius);
 
-        // Attempt to calculate precise search centers using the physical viewfinder guides
-        const vf = viewfinderRef.current;
-        if (vf) {
-          const rect = vf.getBoundingClientRect();
-          const videoRect = video.getBoundingClientRect();
-          
-          // Map viewport coordinates to video element local coordinates by subtracting video offset
-          detSearchTL = mapToVideo(rect.left - videoRect.left, rect.top - videoRect.top);
-          detSearchTR = mapToVideo(rect.right - videoRect.left, rect.top - videoRect.top);
-          detSearchBL = mapToVideo(rect.left - videoRect.left, rect.bottom - videoRect.top);
-          detSearchBR = mapToVideo(rect.right - videoRect.left, rect.bottom - videoRect.top);
+        // Geometry sanity check: the four blobs must form a sensibly sized,
+        // correctly ordered quadrilateral (guards against false positives now
+        // that the search covers the full frame)
+        if (tlDet && trDet && blDet && brDet) {
+          const topW = trDet.x - tlDet.x;
+          const botW = brDet.x - blDet.x;
+          const leftH = blDet.y - tlDet.y;
+          const rightH = brDet.y - trDet.y;
+          if (topW < detW * 0.22 || botW < detW * 0.22 || leftH < detH * 0.3 || rightH < detH * 0.3) {
+            tlDet = trDet = blDet = brDet = null;
+          }
         }
-
-        // Restrict search radius to a tight 90px (in 800x600 space) to avoid middle markers
-        const detRadius = 90;
-
-        // Find markers on downscaled frame
-        let tlDet = findMarkerCentroid(detCtx, detSearchTL.x, detSearchTL.y, detRadius);
-        let trDet = findMarkerCentroid(detCtx, detSearchTR.x, detSearchTR.y, detRadius);
-        let blDet = findMarkerCentroid(detCtx, detSearchBL.x, detSearchBL.y, detRadius);
-        let brDet = findMarkerCentroid(detCtx, detSearchBR.x, detSearchBR.y, detRadius);
 
         // Store detected corners mapped to absolute screen pixels for UI feedback (snapping dots)
         setDetectedCorners({
@@ -1263,8 +1283,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
           lastCorners = [tl, tr, bl, br];
 
-          // Require 6 consecutive stable frames (~100ms) before triggering the scan
-          if (consecutiveSuccessFrames >= 6) {
+          // 3 consecutive stable frames is enough for an instant lock-on
+          if (consecutiveSuccessFrames >= 3) {
             // Success! Stop loop, perform warp and parse
             active = false;
             
@@ -1903,9 +1923,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     
     return (
       <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-        {/* Back Link Row */}
-        <div style={{ alignSelf: 'flex-start', marginBottom: '1.5rem' }}>
-          <button 
+        {/* Back Link Row + test actions */}
+        <div style={{ alignSelf: 'stretch', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
             onClick={() => setSelectedTest(null)}
             style={{
               background: 'transparent',
@@ -1922,6 +1942,33 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           >
             <ArrowLeft size={16} />
             <span>Ortga qaytish</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setMoveTargetWeek(test.week && test.week !== UNASSIGNED_WEEK ? test.week : '');
+              setShowTestActionsModal(true);
+            }}
+            title="Testni boshqarish: papkasini o'zgartirish yoki o'chirish"
+            style={{
+              background: '#ffffff',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '9999px',
+              color: '#475569',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              padding: '0.4rem 0.85rem',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#ffffff'; }}
+          >
+            <Pencil size={13} />
+            <span>Tahrirlash</span>
           </button>
         </div>
 
@@ -1940,16 +1987,28 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           color: '#0f172a',
           boxSizing: 'border-box'
         }}>
-          {/* Properties summary */}
+          {/* Properties summary (teacher/class rows only for legacy tests that have them) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>O'qituvchi:</span>
-              <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.teacher_name}</span>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Fan:</span>
+              <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.subject}</span>
             </div>
             <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>Sinf:</span>
-              <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.level}</span>
+              <span style={{ color: '#64748b', fontWeight: 600 }}>Hafta:</span>
+              <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.week && test.week !== UNASSIGNED_WEEK ? test.week : 'Haftasiz'}</span>
             </div>
+            {test.teacher_name && (
+              <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+                <span style={{ color: '#64748b', fontWeight: 600 }}>O'qituvchi:</span>
+                <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.teacher_name}</span>
+              </div>
+            )}
+            {test.level && (
+              <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+                <span style={{ color: '#64748b', fontWeight: 600 }}>Sinf:</span>
+                <span style={{ fontWeight: 800, color: '#0f172a' }}>{test.level}</span>
+              </div>
+            )}
             <div style={{ fontSize: '0.92rem', display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
               <span style={{ color: '#64748b', fontWeight: 600 }}>Sana:</span>
               <span style={{ fontWeight: 800, color: '#0f172a' }}>{formattedDate}</span>
@@ -2270,7 +2329,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     fontWeight: 800,
                     padding: '0.2rem 0.5rem',
                     borderRadius: '6px'
-                  }}>{test.level}</span>
+                  }}>{test.level || (test.week && test.week !== UNASSIGNED_WEEK ? test.week : 'Haftasiz')}</span>
                 </div>
 
                 <div>
@@ -2280,9 +2339,13 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.7rem', color: '#64748b', marginTop: '0.35rem' }}>
                     <Calendar size={12} />
                     <span>{new Date(test.created_at).toLocaleDateString()}</span>
-                    <span>·</span>
-                    <Award size={12} />
-                    <span>{test.teacher_name}</span>
+                    {test.teacher_name && (
+                      <>
+                        <span>·</span>
+                        <Award size={12} />
+                        <span>{test.teacher_name}</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -2571,7 +2634,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                                       {test.name}
                                     </div>
                                     <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600, marginTop: '0.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {test.teacher_name} · {test.level} · {test.questions_json.length} ta kalit · {getScannedCount(test.id)} topshirildi
+                                      {[test.teacher_name, test.level, `${test.questions_json.length} ta kalit`, `${getScannedCount(test.id)} topshirildi`].filter(Boolean).join(' · ')}
                                     </div>
                                   </div>
                                 </div>
@@ -2888,91 +2951,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               </button>
             );
           })}
-        </div>
-      </div>
-
-      {/* Template Download Section */}
-      <div style={{
-        background: '#ffffff',
-        border: '1.5px solid #e2e8f0',
-        borderRadius: '24px',
-        padding: '1.5rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem'
-      }}>
-        <div>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: 850, color: '#334155', margin: '0 0 0.25rem 0' }}>
-            Javoblar varaqasi shabloni
-          </h4>
-          <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
-            Baholash skaneri to'g'ri va aniq ishlashi uchun OMR javoblar varaqasi shablonini yuklab oling va A4 qog'oziga chop eting. Chop etishda "Haqiqiy o'lcham" (Actual Size / 100%) sozlamasidan foydalanish tavsiya etiladi.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <a
-            href="/omr_sheet_template.pdf"
-            download="omr_sheet_template.pdf"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.65rem 1.15rem',
-              borderRadius: '12px',
-              border: 'none',
-              background: colors.primary,
-              color: '#ffffff',
-              cursor: 'pointer',
-              fontWeight: 800,
-              fontSize: '0.75rem',
-              textDecoration: 'none',
-              transition: 'all 0.2s',
-              boxShadow: `0 4px 10px ${colors.primary}20`
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = `0 6px 14px ${colors.primary}30`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = `0 4px 10px ${colors.primary}20`;
-            }}
-          >
-            <FileText size={16} />
-            PDF shablonini yuklab olish
-          </a>
-          
-          <a
-            href="/omr_sheet_template.svg"
-            download="omr_sheet_template.svg"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.65rem 1.15rem',
-              borderRadius: '12px',
-              border: '1.5px solid #e2e8f0',
-              background: '#ffffff',
-              color: '#475569',
-              cursor: 'pointer',
-              fontWeight: 800,
-              fontSize: '0.75rem',
-              textDecoration: 'none',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#f8fafc';
-              e.currentTarget.style.borderColor = '#cbd5e1';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#ffffff';
-              e.currentTarget.style.borderColor = '#e2e8f0';
-            }}
-          >
-            <Download size={16} />
-            SVG shablonini yuklab olish
-          </a>
         </div>
       </div>
 
@@ -3341,6 +3319,130 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     );
   };
 
+  // MODAL: TEST ACTIONS (move between week folders / delete)
+  const renderTestActionsModal = () => {
+    if (!selectedTest || !showTestActionsModal) return null;
+    const currentWeek = selectedTest.week && selectedTest.week !== UNASSIGNED_WEEK ? selectedTest.week : '';
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(15, 23, 42, 0.5)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1100,
+        padding: '1rem'
+      }} onClick={() => setShowTestActionsModal(false)}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          width: '100%',
+          maxWidth: '380px',
+          padding: '1.75rem',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+          boxSizing: 'border-box'
+        }} onClick={e => e.stopPropagation()}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: colors.primary }}>
+              <Pencil size={18} />
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 850, color: '#0f172a', margin: 0 }}>Testni boshqarish</h3>
+            </div>
+            <button
+              onClick={() => setShowTestActionsModal(false)}
+              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0 }}
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>
+            {selectedTest.name} <span style={{ color: '#94a3b8', fontWeight: 600 }}>({selectedTest.subject})</span>
+          </div>
+
+          {/* Move between week folders */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Papkasi (hafta):</label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <select
+                value={moveTargetWeek}
+                onChange={(e) => setMoveTargetWeek(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '0.6rem 0.85rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid #e2e8f0',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  color: '#334155',
+                  background: '#ffffff',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="">Haftasiz</option>
+                {weeksList.map(w => (
+                  <option key={w} value={w}>{w}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => handleMoveTestToWeek(selectedTest.id, moveTargetWeek)}
+                disabled={moveTargetWeek === currentWeek}
+                style={{
+                  background: moveTargetWeek === currentWeek ? '#e2e8f0' : colors.primary,
+                  color: moveTargetWeek === currentWeek ? '#94a3b8' : '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '0.6rem 1rem',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  cursor: moveTargetWeek === currentWeek ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Ko'chirish
+              </button>
+            </div>
+          </div>
+
+          {/* Delete */}
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+            <button
+              onClick={() => {
+                if (window.confirm(`"${selectedTest.name}" testini o'chirishni tasdiqlaysizmi? Skanerlangan natijalar ham o'chiriladi.`)) {
+                  handleDeleteTest(selectedTest.id);
+                }
+              }}
+              disabled={isDeletingTest}
+              style={{
+                width: '100%',
+                background: '#fef2f2',
+                border: '1.5px solid #fee2e2',
+                color: '#ef4444',
+                borderRadius: '12px',
+                padding: '0.7rem',
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                cursor: isDeletingTest ? 'wait' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem'
+              }}
+            >
+              <Trash2 size={15} />
+              {isDeletingTest ? "O'chirilmoqda..." : "Testni o'chirish"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Global toast shown while a key edit is pushing re-scored results
   const renderRescoreToast = () => {
     if (!rescoreProgress) return null;
@@ -3372,11 +3474,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
   const renderScanModal = () => {
     if (!selectedTest || !showScanModal) return null;
 
-    // Filter students belonging to this class/grade level (e.g. 5-Sinf, etc.)
+    // Tests without a class binding (the default now) match the whole school;
+    // legacy tests with a level keep their class-scoped candidate list.
     const classStudents = students.filter(s => {
-      const group = getClassGroup(s.className);
-      const testGroup = getClassGroup(selectedTest.level);
-      return group === testGroup && !s.isDeleted;
+      if (s.isDeleted) return false;
+      if (!selectedTest.level) return true;
+      return getClassGroup(s.className) === getClassGroup(selectedTest.level);
     });
 
     return (
@@ -3429,9 +3532,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 top: `${detectedCorners.tl.y}px`,
                 width: '20px', height: '20px',
                 borderRadius: '50%',
-                background: '#22c55e',
+                background: colors.primary,
                 border: '3px solid #ffffff',
-                boxShadow: '0 0 12px #22c55e',
+                boxShadow: `0 0 12px ${colors.primary}`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: 900,
                 pointerEvents: 'none',
@@ -3445,9 +3548,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 top: `${detectedCorners.tr.y}px`,
                 width: '20px', height: '20px',
                 borderRadius: '50%',
-                background: '#22c55e',
+                background: colors.primary,
                 border: '3px solid #ffffff',
-                boxShadow: '0 0 12px #22c55e',
+                boxShadow: `0 0 12px ${colors.primary}`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: 900,
                 pointerEvents: 'none',
@@ -3461,9 +3564,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 top: `${detectedCorners.bl.y}px`,
                 width: '20px', height: '20px',
                 borderRadius: '50%',
-                background: '#22c55e',
+                background: colors.primary,
                 border: '3px solid #ffffff',
-                boxShadow: '0 0 12px #22c55e',
+                boxShadow: `0 0 12px ${colors.primary}`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: 900,
                 pointerEvents: 'none',
@@ -3477,9 +3580,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 top: `${detectedCorners.br.y}px`,
                 width: '20px', height: '20px',
                 borderRadius: '50%',
-                background: '#22c55e',
+                background: colors.primary,
                 border: '3px solid #ffffff',
-                boxShadow: '0 0 12px #22c55e',
+                boxShadow: `0 0 12px ${colors.primary}`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: 900,
                 pointerEvents: 'none',
@@ -3580,10 +3683,13 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               justifyContent: 'space-between',
               zIndex: 10
             }}>
-              {/* Header Top Bar */}
+              {/* Header Top Bar — glass, clears the iOS status bar via safe-area inset */}
               <div style={{
-                background: '#15803d',
-                padding: '0.85rem 1.25rem',
+                background: 'rgba(15, 23, 42, 0.78)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: 'calc(env(safe-area-inset-top, 0px) + 0.85rem) 1.25rem 0.85rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -3592,27 +3698,27 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 <button
                   onClick={() => setShowScanModal(false)}
                   style={{
-                    background: 'transparent',
-                    border: 'none',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '9999px',
                     color: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.35rem',
-                    fontSize: '0.85rem',
+                    fontSize: '0.8rem',
                     fontWeight: 800,
                     cursor: 'pointer',
-                    padding: 0
+                    padding: '0.4rem 0.9rem'
                   }}
                 >
-                  <ArrowLeft size={16} />
-                  <span>Done Scanning</span>
+                  <ArrowLeft size={15} />
+                  <span>Orqaga</span>
                 </button>
 
-                <span style={{ fontSize: '0.9rem', fontWeight: 900, letterSpacing: '0.05em' }}>SCANNING</span>
-                
-                <button style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', padding: 0 }}>
-                  <Settings size={18} />
-                </button>
+                <span style={{ fontSize: '0.82rem', fontWeight: 900, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.9)' }}>SKANERLASH</span>
+
+                {/* spacer to keep the title centered */}
+                <div style={{ width: '86px' }} />
               </div>
 
               {/* Viewfinder Squares Overlay */}
@@ -3640,10 +3746,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     top: 0, left: 0,
                     width: '56px', height: '56px',
-                    border: `3px solid ${detectedCorners.tl ? '#10b981' : 'rgba(239, 68, 68, 0.8)'}`,
-                    borderRadius: '12px',
-                    background: detectedCorners.tl ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.05)',
-                    boxShadow: detectedCorners.tl ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                    border: `2.5px solid ${detectedCorners.tl ? colors.primary : 'rgba(255, 255, 255, 0.4)'}`,
+                    borderRadius: '14px',
+                    background: detectedCorners.tl ? `${colors.primary}26` : 'transparent',
+                    boxShadow: detectedCorners.tl ? `0 0 15px ${colors.primary}66` : 'none',
                     transition: 'all 0.15s ease',
                     display: 'flex',
                     alignItems: 'center',
@@ -3652,7 +3758,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     <div style={{
                       width: '6px', height: '6px',
                       borderRadius: '50%',
-                      background: detectedCorners.tl ? '#10b981' : '#ef4444',
+                      background: detectedCorners.tl ? colors.primary : 'rgba(255, 255, 255, 0.55)',
                     }} />
                   </div>
                   
@@ -3661,10 +3767,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     top: 0, right: 0,
                     width: '56px', height: '56px',
-                    border: `3px solid ${detectedCorners.tr ? '#10b981' : 'rgba(239, 68, 68, 0.8)'}`,
-                    borderRadius: '12px',
-                    background: detectedCorners.tr ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.05)',
-                    boxShadow: detectedCorners.tr ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                    border: `2.5px solid ${detectedCorners.tr ? colors.primary : 'rgba(255, 255, 255, 0.4)'}`,
+                    borderRadius: '14px',
+                    background: detectedCorners.tr ? `${colors.primary}26` : 'transparent',
+                    boxShadow: detectedCorners.tr ? `0 0 15px ${colors.primary}66` : 'none',
                     transition: 'all 0.15s ease',
                     display: 'flex',
                     alignItems: 'center',
@@ -3673,7 +3779,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     <div style={{
                       width: '6px', height: '6px',
                       borderRadius: '50%',
-                      background: detectedCorners.tr ? '#10b981' : '#ef4444',
+                      background: detectedCorners.tr ? colors.primary : 'rgba(255, 255, 255, 0.55)',
                     }} />
                   </div>
 
@@ -3682,10 +3788,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     bottom: 0, left: 0,
                     width: '56px', height: '56px',
-                    border: `3px solid ${detectedCorners.bl ? '#10b981' : 'rgba(239, 68, 68, 0.8)'}`,
-                    borderRadius: '12px',
-                    background: detectedCorners.bl ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.05)',
-                    boxShadow: detectedCorners.bl ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                    border: `2.5px solid ${detectedCorners.bl ? colors.primary : 'rgba(255, 255, 255, 0.4)'}`,
+                    borderRadius: '14px',
+                    background: detectedCorners.bl ? `${colors.primary}26` : 'transparent',
+                    boxShadow: detectedCorners.bl ? `0 0 15px ${colors.primary}66` : 'none',
                     transition: 'all 0.15s ease',
                     display: 'flex',
                     alignItems: 'center',
@@ -3694,7 +3800,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     <div style={{
                       width: '6px', height: '6px',
                       borderRadius: '50%',
-                      background: detectedCorners.bl ? '#10b981' : '#ef4444',
+                      background: detectedCorners.bl ? colors.primary : 'rgba(255, 255, 255, 0.55)',
                     }} />
                   </div>
 
@@ -3703,10 +3809,10 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     position: 'absolute',
                     bottom: 0, right: 0,
                     width: '56px', height: '56px',
-                    border: `3px solid ${detectedCorners.br ? '#10b981' : 'rgba(239, 68, 68, 0.8)'}`,
-                    borderRadius: '12px',
-                    background: detectedCorners.br ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.05)',
-                    boxShadow: detectedCorners.br ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                    border: `2.5px solid ${detectedCorners.br ? colors.primary : 'rgba(255, 255, 255, 0.4)'}`,
+                    borderRadius: '14px',
+                    background: detectedCorners.br ? `${colors.primary}26` : 'transparent',
+                    boxShadow: detectedCorners.br ? `0 0 15px ${colors.primary}66` : 'none',
                     transition: 'all 0.15s ease',
                     display: 'flex',
                     alignItems: 'center',
@@ -3715,31 +3821,32 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     <div style={{
                       width: '6px', height: '6px',
                       borderRadius: '50%',
-                      background: detectedCorners.br ? '#10b981' : '#ef4444',
+                      background: detectedCorners.br ? colors.primary : 'rgba(255, 255, 255, 0.55)',
                     }} />
                   </div>
 
-                  /* Guide instruction card */
+                  {/* Guide instruction card */}
                   <div style={{
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(4px)',
-                    color: '#0f172a',
-                    padding: '0.85rem 1.25rem',
-                    borderRadius: '12px',
+                    background: 'rgba(15, 23, 42, 0.7)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
+                    color: '#ffffff',
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '20px',
                     textAlign: 'center',
                     fontSize: '0.78rem',
                     fontWeight: 750,
                     lineHeight: 1.4,
-                    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.35)',
                     width: '80%',
                     position: 'absolute',
                     top: '20px',
                     zIndex: 50
                   }}>
-                    <div style={{ color: '#64748b', fontSize: '0.68rem', marginBottom: '0.2rem' }}>[OMR GRADED SHEET]</div>
-                    <div style={{ fontWeight: 900, marginBottom: '0.4rem' }}>{selectedTest.name} ({selectedTest.subject})</div>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#334155' }}>
-                      {cameraStream ? "Align paper corners with viewfinder" : `Simulating: ${selectedSampleSheet?.name}`}
+                    <div style={{ fontWeight: 900, marginBottom: '0.25rem' }}>{selectedTest.name} ({selectedTest.subject})</div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'rgba(255, 255, 255, 0.65)' }}>
+                      {cameraStream ? "Varaqni kadrga tuting — avtomatik skanerlanadi" : `Simulyatsiya: ${selectedSampleSheet?.name}`}
                     </div>
                   </div>
 
@@ -3814,15 +3921,17 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                     </div>
                   )}
 
-                  {/* Glowing Green Scanline */}
+                  {/* Glowing accent scanline */}
                   {(scanStatus === 'scanning' || scanStatus === 'aligning' || scanStatus === 'saving') && (
                     <div style={{
                       position: 'absolute',
                       left: '5%',
                       width: '90%',
-                      height: '3px',
-                      background: scanStatus === 'saving' ? 'transparent' : '#22c55e',
-                      boxShadow: scanStatus === 'saving' ? 'none' : '0 0 10px #22c55e, 0 0 20px #22c55e',
+                      height: '2.5px',
+                      borderRadius: '9999px',
+                      background: scanStatus === 'saving' ? 'transparent' : colors.primary,
+                      boxShadow: scanStatus === 'saving' ? 'none' : `0 0 10px ${colors.primary}, 0 0 20px ${colors.primary}`,
+                      opacity: 0.85,
                       zIndex: 20,
                       animation: scanStatus === 'saving' ? 'none' : 'scanLineMove 2s linear infinite'
                     }} />
@@ -3853,23 +3962,26 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
               {/* Bottom control bar */}
               <div style={{
-                background: 'rgba(15, 23, 42, 0.85)',
-                padding: '1.25rem',
+                background: 'rgba(15, 23, 42, 0.78)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '1.1rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 1.1rem)',
                 textAlign: 'center',
                 color: '#ffffff'
               }}>
                 {scanStatus === 'aligning' && (
-                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fdba74' }}>
-                    Qog'oz joylashuvi tekshirilmoqda...
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255, 255, 255, 0.65)' }}>
+                    Varaq qidirilmoqda…
                   </span>
                 )}
                 {scanStatus === 'scanning' && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#4ade80' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#ffffff' }}>
                       Skanerlanmoqda... {scanProgress}%
                     </span>
                     <div style={{ width: '80%', maxWidth: '240px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ width: `${scanProgress}%`, height: '100%', background: '#22c55e', transition: 'width 0.15s ease' }} />
+                      <div style={{ width: `${scanProgress}%`, height: '100%', background: colors.primary, transition: 'width 0.15s ease' }} />
                     </div>
                   </div>
                 )}
@@ -4498,7 +4610,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
                 >
                   <option value="">Boshqa o'quvchini tanlang...</option>
                   {students
-                    .filter(s => !s.isDeleted && getClassGroup(s.className) === getClassGroup(selectedTest.level) && s.id !== selectedScanDetail.studentId)
+                    .filter(s => !s.isDeleted && (!selectedTest.level || getClassGroup(s.className) === getClassGroup(selectedTest.level)) && s.id !== selectedScanDetail.studentId)
                     .map(s => (
                       <option key={s.id} value={s.id}>
                         {s.name} {s.surname} ({s.id})
@@ -4672,60 +4784,6 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               )}
             </div>
 
-            {/* Teacher */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>O'qituvchi:</label>
-              {filteredTeachersForNewTest.length === 0 ? (
-                <div style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 600 }}>
-                  Ushbu fan bo'yicha o'qituvchilar topilmadi. Avval o'qituvchilarni qo'shing.
-                </div>
-              ) : (
-                <select
-                  value={newTestTeacher}
-                  onChange={(e) => setNewTestTeacher(e.target.value)}
-                  style={{
-                    padding: '0.65rem 0.85rem',
-                    borderRadius: '10px',
-                    border: '1.5px solid #e2e8f0',
-                    fontSize: '0.82rem',
-                    fontWeight: 800,
-                    color: '#334155',
-                    background: '#ffffff',
-                    cursor: 'pointer',
-                    outline: 'none'
-                  }}
-                >
-                  {filteredTeachersForNewTest.map(t => (
-                    <option key={t.id} value={t.name}>{t.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Level/Class */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Sinf / Guruh:</label>
-              <select
-                value={newTestLevel}
-                onChange={(e) => setNewTestLevel(e.target.value)}
-                style={{
-                  padding: '0.65rem 0.85rem',
-                  borderRadius: '10px',
-                  border: '1.5px solid #e2e8f0',
-                  fontSize: '0.82rem',
-                  fontWeight: 800,
-                  color: '#334155',
-                  background: '#ffffff',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                {['5-Sinf', '6-Sinf', '7-Sinf', '8-Sinf', '9-Sinf', '10-Sinf', '11-Sinf'].map(cls => (
-                  <option key={cls} value={cls}>{cls}</option>
-                ))}
-              </select>
-            </div>
-
             {/* Week */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>Hafta:</label>
@@ -4814,17 +4872,17 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isCreatingTest || filteredTeachersForNewTest.length === 0}
+                disabled={isCreatingTest}
                 style={{
                   flex: 1,
-                  background: (isCreatingTest || filteredTeachersForNewTest.length === 0) ? '#cbd5e1' : colors.primary,
+                  background: isCreatingTest ? '#cbd5e1' : colors.primary,
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '12px',
                   padding: '0.75rem',
                   fontSize: '0.8rem',
                   fontWeight: 800,
-                  cursor: (isCreatingTest || filteredTeachersForNewTest.length === 0) ? 'not-allowed' : 'pointer',
+                  cursor: isCreatingTest ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -4943,6 +5001,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         {renderReviewModal()}
         {renderScanDetailModal()}
         {renderAddTestModal()}
+        {renderTestActionsModal()}
         {renderRescoreToast()}
       </div>
     );
@@ -5069,6 +5128,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       {renderReviewModal()}
       {renderScanDetailModal()}
       {renderAddTestModal()}
+      {renderTestActionsModal()}
       {renderRescoreToast()}
     </div>
   );
