@@ -1188,6 +1188,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
     const processFrame = () => {
       if (!active) return;
+      try {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         // Use actual video dimensions for high-res warping
         const vw = video.videoWidth || 640;
@@ -1225,10 +1226,13 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         const qy = detH * 0.25;
         const qRadius = Math.max(qx, qy); // window covers the whole quadrant
 
-        let tlDet = findMarkerCentroid(detCtx, qx, qy, qRadius);
-        let trDet = findMarkerCentroid(detCtx, detW - qx, qy, qRadius);
-        let blDet = findMarkerCentroid(detCtx, qx, detH - qy, qRadius);
-        let brDet = findMarkerCentroid(detCtx, detW - qx, detH - qy, qRadius);
+        // Corner hints bias each quadrant search toward the outermost square
+        // (the actual fiducial), so a stray dark blob nearer the frame center
+        // can't win over the real corner marker.
+        let tlDet = findMarkerCentroid(detCtx, qx, qy, qRadius, { x: 0, y: 0 });
+        let trDet = findMarkerCentroid(detCtx, detW - qx, qy, qRadius, { x: detW, y: 0 });
+        let blDet = findMarkerCentroid(detCtx, qx, detH - qy, qRadius, { x: 0, y: detH });
+        let brDet = findMarkerCentroid(detCtx, detW - qx, detH - qy, qRadius, { x: detW, y: detH });
 
         // Geometry sanity check: the four blobs must form a sensibly sized,
         // correctly ordered quadrilateral (guards against false positives now
@@ -1238,7 +1242,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           const botW = brDet.x - blDet.x;
           const leftH = blDet.y - tlDet.y;
           const rightH = brDet.y - trDet.y;
-          if (topW < detW * 0.22 || botW < detW * 0.22 || leftH < detH * 0.3 || rightH < detH * 0.3) {
+          if (topW < detW * 0.18 || botW < detW * 0.18 || leftH < detH * 0.22 || rightH < detH * 0.22) {
             tlDet = trDet = blDet = brDet = null;
           }
         }
@@ -1268,7 +1272,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             const distBL = Math.hypot(bl.x - lastCorners[2].x, bl.y - lastCorners[2].y);
             const distBR = Math.hypot(br.x - lastCorners[3].x, br.y - lastCorners[3].y);
             
-            const maxJitter = 12.0; // Max allowed pixel displacement in native resolution between frames
+            // Tolerance scales with native resolution (≈3% of frame width) so
+            // normal handheld shake doesn't keep resetting the lock-on.
+            const maxJitter = Math.max(24, vw * 0.03);
             if (distTL > maxJitter || distTR > maxJitter || distBL > maxJitter || distBR > maxJitter) {
               isStable = false;
             }
@@ -1283,8 +1289,8 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
           lastCorners = [tl, tr, bl, br];
 
-          // 3 consecutive stable frames is enough for an instant lock-on
-          if (consecutiveSuccessFrames >= 3) {
+          // 2 consecutive stable frames is enough for an instant lock-on
+          if (consecutiveSuccessFrames >= 2) {
             // Success! Stop loop, perform warp and parse
             active = false;
             
@@ -1301,8 +1307,14 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           lastCorners = null;
         }
       }
+      } catch (err) {
+        // A single bad frame must never kill the scan loop — log and keep going
+        console.warn('OMR frame processing error (continuing):', err);
+        consecutiveSuccessFrames = 0;
+        lastCorners = null;
+      }
 
-      requestAnimationFrame(processFrame);
+      if (active) requestAnimationFrame(processFrame);
     };
 
     requestAnimationFrame(processFrame);

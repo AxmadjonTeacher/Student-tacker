@@ -50,7 +50,11 @@ export function findMarkerCentroid(
   ctx: CanvasRenderingContext2D,
   searchX: number,
   searchY: number,
-  radius: number
+  radius: number,
+  // Optional global coordinate the marker is expected to sit near (a frame
+  // corner). When given, candidate scoring is biased toward this point so the
+  // outermost square wins instead of whatever sits in the window center.
+  cornerHint?: Point
 ): Point | null {
   const canvasWidth = ctx.canvas.width;
   const canvasHeight = ctx.canvas.height;
@@ -97,83 +101,110 @@ export function findMarkerCentroid(
     binary[i] = gray[i] < threshold ? 1 : 0;
   }
 
-  // Breadth-First Search (BFS) to find connected components of black pixels
+  // Breadth-First Search (BFS) to find connected components of black pixels.
+  // Stats are accumulated incrementally (bbox, pixel sums, gray sum) instead of
+  // storing every pixel — a single large dark blob (shadow/background) would
+  // otherwise build a multi-thousand-element array and crash later code that
+  // spreads it into Math.min(...) / reduce. This keeps the scan loop alive.
+  interface Component {
+    area: number;
+    sumX: number;
+    sumY: number;
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    graySum: number;
+    width: number;
+    height: number;
+  }
   const visited = new Uint8Array(winW * winH);
-  const components: Array<{ points: Point[]; width: number; height: number; area: number }> = [];
+  const components: Component[] = [];
+  const queue = new Int32Array(winW * winH);
 
   for (let y = 0; y < winH; y++) {
     for (let x = 0; x < winW; x++) {
       const idx = y * winW + x;
       if (binary[idx] === 1 && visited[idx] === 0) {
         // Start new component flood fill
-        const compPoints: Point[] = [];
-        const queue: number[] = [idx];
-        visited[idx] = 1;
+        let area = 0;
+        let sumX = 0;
+        let sumY = 0;
+        let graySum = 0;
+        let cMinX = x, cMaxX = x, cMinY = y, cMaxY = y;
 
         let head = 0;
-        while (head < queue.length) {
+        let tail = 0;
+        queue[tail++] = idx;
+        visited[idx] = 1;
+
+        while (head < tail) {
           const currIdx = queue[head++];
           const cx = currIdx % winW;
-          const cy = Math.floor(currIdx / winW);
-          compPoints.push({ x: cx, y: cy });
+          const cy = (currIdx / winW) | 0;
+
+          area++;
+          sumX += cx;
+          sumY += cy;
+          graySum += gray[currIdx];
+          if (cx < cMinX) cMinX = cx;
+          if (cx > cMaxX) cMaxX = cx;
+          if (cy < cMinY) cMinY = cy;
+          if (cy > cMaxY) cMaxY = cy;
 
           // 4-Connectivity neighbors
-          const neighbors = [
-            { x: cx - 1, y: cy },
-            { x: cx + 1, y: cy },
-            { x: cx, y: cy - 1 },
-            { x: cx, y: cy + 1 }
-          ];
-
-          for (const n of neighbors) {
-            if (n.x >= 0 && n.x < winW && n.y >= 0 && n.y < winH) {
-              const nIdx = n.y * winW + n.x;
-              if (binary[nIdx] === 1 && visited[nIdx] === 0) {
-                visited[nIdx] = 1;
-                queue.push(nIdx);
-              }
-            }
+          if (cx > 0) {
+            const n = currIdx - 1;
+            if (binary[n] === 1 && visited[n] === 0) { visited[n] = 1; queue[tail++] = n; }
+          }
+          if (cx < winW - 1) {
+            const n = currIdx + 1;
+            if (binary[n] === 1 && visited[n] === 0) { visited[n] = 1; queue[tail++] = n; }
+          }
+          if (cy > 0) {
+            const n = currIdx - winW;
+            if (binary[n] === 1 && visited[n] === 0) { visited[n] = 1; queue[tail++] = n; }
+          }
+          if (cy < winH - 1) {
+            const n = currIdx + winW;
+            if (binary[n] === 1 && visited[n] === 0) { visited[n] = 1; queue[tail++] = n; }
           }
         }
 
-        // Component filtering: raised noise threshold to 15 pixels to reject tiny dots
-        if (compPoints.length > 15) {
-          const xs = compPoints.map(p => p.x);
-          const ys = compPoints.map(p => p.y);
-          const minX = Math.min(...xs);
-          const maxX = Math.max(...xs);
-          const minY = Math.min(...ys);
-          const maxY = Math.max(...ys);
-          const w = maxX - minX + 1;
-          const h = maxY - minY + 1;
-
+        // Component filtering: noise threshold rejects tiny dots
+        if (area > 15) {
           components.push({
-            points: compPoints,
-            width: w,
-            height: h,
-            area: compPoints.length
+            area,
+            sumX,
+            sumY,
+            minX: cMinX,
+            maxX: cMaxX,
+            minY: cMinY,
+            maxY: cMaxY,
+            graySum,
+            width: cMaxX - cMinX + 1,
+            height: cMaxY - cMinY + 1
           });
         }
       }
     }
   }
 
-  // Filter candidates that resemble a solid square marker
-  // Enforce strict aspect ratio, high solidity, minimum size, and absolute darkness
+  // Filter candidates that resemble a solid square fiducial marker.
+  // Solidity ≥ 0.82 is the key discriminator: a printed square fills its
+  // bounding box (~0.9+, even under perspective), while a filled answer/ID
+  // bubble is a circle (~0.785) and is rejected — so the scanner no longer
+  // mistakes a shaded bubble for a corner marker.
   const markerCandidates = components.filter(c => {
     const aspect = c.width / c.height;
-    const boxArea = c.width * c.height;
-    const solidity = c.area / boxArea;
-    
-    // Geometric checks: must be close to a square and highly solid
-    if (aspect < 0.70 || aspect > 1.43 || solidity < 0.70 || c.width < 12 || c.width > 120) {
+    const solidity = c.area / (c.width * c.height);
+
+    if (aspect < 0.65 || aspect > 1.54 || solidity < 0.82 || c.width < 8 || c.width > 200) {
       return false;
     }
 
-    // Absolute darkness check: average grayscale intensity of candidate pixels must be low (black)
-    const compGraySum = c.points.reduce((acc, p) => acc + gray[p.y * winW + p.x], 0);
-    const avgGray = compGraySum / c.points.length;
-    if (avgGray > 110) {
+    // Absolute darkness check: average grayscale must be low (black ink)
+    if (c.graySum / c.area > 115) {
       return false;
     }
 
@@ -182,43 +213,44 @@ export function findMarkerCentroid(
 
   if (markerCandidates.length === 0) return null;
 
-  // Sort by area descending to find the largest marker-like component
-  markerCandidates.sort((a, b) => b.area - a.area);
-
-  // Among top candidates, prefer those closest to center with good squareness
+  // Score candidates: bigger + squarer + more solid is better, and (when a
+  // corner hint is supplied) closer to the expected frame corner is strongly
+  // preferred so the outermost square wins.
   const centerWinX = winW / 2;
   const centerWinY = winH / 2;
   let bestCandidate = markerCandidates[0];
   let bestScore = -Infinity;
 
   for (const c of markerCandidates) {
-    const xs = c.points.map(p => p.x);
-    const ys = c.points.map(p => p.y);
-    const cx = xs.reduce((a, b) => a + b, 0) / c.points.length;
-    const cy = ys.reduce((a, b) => a + b, 0) / c.points.length;
-    const dist = Math.sqrt((cx - centerWinX) ** 2 + (cy - centerWinY) ** 2);
-    
-    // Scoring: bigger area is better, closer to center is better, squareness bonus
+    const localCx = c.sumX / c.area;
+    const localCy = c.sumY / c.area;
+    const globalCx = xMin + localCx;
+    const globalCy = yMin + localCy;
+
+    let dist: number;
+    let distWeight: number;
+    if (cornerHint) {
+      dist = Math.hypot(globalCx - cornerHint.x, globalCy - cornerHint.y);
+      distWeight = 5;
+    } else {
+      dist = Math.hypot(localCx - centerWinX, localCy - centerWinY);
+      distWeight = 3;
+    }
+
     const aspect = c.width / c.height;
     const squareness = 1 - Math.abs(1 - aspect);
     const solidity = c.area / (c.width * c.height);
-    const score = c.area * 2 + squareness * 100 + solidity * 50 - dist * 3;
-    
+    const score = c.area * 2 + squareness * 100 + solidity * 80 - dist * distWeight;
+
     if (score > bestScore) {
       bestScore = score;
       bestCandidate = c;
     }
   }
 
-  // Calculate final centroid in global coordinates
-  const finalXs = bestCandidate.points.map(p => p.x);
-  const finalYs = bestCandidate.points.map(p => p.y);
-  const localCentroidX = finalXs.reduce((a, b) => a + b, 0) / bestCandidate.points.length;
-  const localCentroidY = finalYs.reduce((a, b) => a + b, 0) / bestCandidate.points.length;
-
   return {
-    x: xMin + localCentroidX,
-    y: yMin + localCentroidY
+    x: xMin + bestCandidate.sumX / bestCandidate.area,
+    y: yMin + bestCandidate.sumY / bestCandidate.area
   };
 }
 
