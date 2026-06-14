@@ -12,14 +12,14 @@ The application uses custom CSS variables to support dynamic themes (Light and D
 
 | Variable | Light Theme | Dark Theme | Purpose / Usage |
 | :--- | :--- | :--- | :--- |
-| `--bg-main` | `#f6f8fa` (Cool off-white) | `#050505` (Pitch black/Deep void) | Main application canvas |
-| `--bg-sidebar` | `rgba(255, 255, 255, 0.4)` | `rgba(15, 15, 15, 0.4)` | Sidebar container (Requires backdrop blur) |
-| `--bg-card` | `rgba(255, 255, 255, 0.7)` | `rgba(24, 24, 27, 0.65)` | Cards, tables, and modals |
-| `--bg-card-hover` | `rgba(255, 255, 255, 0.95)` | `rgba(39, 39, 42, 0.8)` | Row and card interactive hover background |
-| `--border-subtle` | `rgba(0, 0, 0, 0.06)` | `rgba(255, 255, 255, 0.08)` | Micro-borders for structure, replacing heavy solid lines |
-| `--border-highlight`| `rgba(255, 255, 255, 0.6)` | `rgba(255, 255, 255, 0.12)` | Top/inner borders to simulate light reflection |
-| `--text-primary` | `#0f172a` (Deep slate) | `#ffffff` (Pure white) | Primary text and headings |
-| `--text-secondary` | `#64748b` | `#a1a1aa` | Secondary/metadata text and labels |
+| `--bg-main` | `#f6f8fa` (Cool off-white) | `#0d0f14` (Elevated dark slate) | Main application canvas — **not** pitch black, so translucent cards lift off it and the glass blur reads |
+| `--bg-sidebar` | `rgba(255, 255, 255, 0.4)` | `rgba(20, 23, 29, 0.5)` | Sidebar container (Requires backdrop blur) |
+| `--bg-card` | `rgba(255, 255, 255, 0.7)` | `rgba(34, 38, 46, 0.72)` | Cards, tables, and modals — surface sits clearly above the canvas for elevation |
+| `--bg-card-hover` | `rgba(255, 255, 255, 0.95)` | `rgba(48, 53, 63, 0.85)` | Row and card interactive hover background |
+| `--border-subtle` | `rgba(0, 0, 0, 0.06)` | `rgba(255, 255, 255, 0.09)` | Micro-borders for structure, replacing heavy solid lines |
+| `--border-highlight`| `rgba(255, 255, 255, 0.6)` | `rgba(255, 255, 255, 0.14)` | Top/inner borders to simulate light reflection |
+| `--text-primary` | `#0f172a` (Deep slate) | `#f3f4f6` (Off-white) | Primary text and headings — off-white avoids halation against the dark canvas |
+| `--text-secondary` | `#64748b` | `#a4abb6` | Secondary/metadata text and labels |
 | `--accent-hero` | `#000000` (Stark black) | `#6366f1` (Vibrant Indigo) | The single hero accent color |
 | `--accent-hover` | `#333333` | `#818cf8` | Hover state for primary items |
 | `--accent-glow` | `rgba(0, 0, 0, 0.15)` | `rgba(99, 102, 241, 0.4)` | For active states and button shadows |

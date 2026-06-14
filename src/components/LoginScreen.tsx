@@ -270,7 +270,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div 
           className="login-left-panel"
           style={{
-            background: isDarkMode ? '#09090b' : '#f8fafc',
+            background: isDarkMode ? '#0d0f14' : '#f8fafc',
             backgroundImage: isDarkMode 
               ? 'radial-gradient(circle at 50% 30%, rgba(139, 92, 246, 0.18) 0%, transparent 70%)' 
               : 'radial-gradient(circle at 50% 30%, rgba(13, 148, 136, 0.18) 0%, transparent 70%)',

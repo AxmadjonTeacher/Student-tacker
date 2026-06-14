@@ -125,14 +125,17 @@
 }
 
 [data-theme="dark"] {
-  --bg-main: #050505;
-  --bg-sidebar: rgba(15, 15, 15, 0.4);
-  --bg-card: rgba(24, 24, 27, 0.65);
-  --bg-card-hover: rgba(39, 39, 42, 0.8);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-highlight: rgba(255, 255, 255, 0.12);
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
+  /* Elevated dark slate canvas (not pitch black) so translucent cards can
+     visibly lift off the background and the glass blur has something to
+     diffuse. Text is off-white to avoid halation against the dark base. */
+  --bg-main: #0d0f14;
+  --bg-sidebar: rgba(20, 23, 29, 0.5);
+  --bg-card: rgba(34, 38, 46, 0.72);
+  --bg-card-hover: rgba(48, 53, 63, 0.85);
+  --border-subtle: rgba(255, 255, 255, 0.09);
+  --border-highlight: rgba(255, 255, 255, 0.14);
+  --text-primary: #f3f4f6;
+  --text-secondary: #a4abb6;
   --accent-hero: #6366f1;
   --accent-hover: #818cf8;
   --accent-glow: rgba(99, 102, 241, 0.3);
@@ -163,22 +166,24 @@
   --inner-inset: inset 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
   /* ── Glassmorphism Material Tiers (dark) ── */
-  --glass-ultra-thin-bg:   rgba(28,28,30,0.35);
+  /* Based on a lighter slate (rgb 40,45,54) than the canvas so the blur
+     reads as a frosted surface instead of disappearing into black. */
+  --glass-ultra-thin-bg:   rgba(40,45,54,0.40);
   --glass-ultra-thin-blur: blur(8px) saturate(130%);
-  --glass-thin-bg:         rgba(28,28,30,0.52);
+  --glass-thin-bg:         rgba(40,45,54,0.55);
   --glass-thin-blur:       blur(16px) saturate(150%);
-  --glass-regular-bg:      rgba(28,28,30,0.65);
+  --glass-regular-bg:      rgba(40,45,54,0.68);
   --glass-regular-blur:    blur(24px) saturate(170%);
-  --glass-thick-bg:        rgba(28,28,30,0.80);
+  --glass-thick-bg:        rgba(40,45,54,0.82);
   --glass-thick-blur:      blur(40px) saturate(190%);
 
   --backdrop-blur: blur(24px);
   --backdrop-blur-md: blur(24px);
 
-  --bg-header-rgba: rgba(5, 5, 5, 0.6);
-  --marquee-bg: linear-gradient(160deg, #1e1b4b 0%, #050505 100%);
+  --bg-header-rgba: rgba(13, 15, 20, 0.7);
+  --marquee-bg: linear-gradient(160deg, #1e1b4b 0%, #0d0f14 100%);
   --marquee-fade-left: linear-gradient(to right, #1e1b4b, transparent);
-  --marquee-fade-right: linear-gradient(to left, #050505, transparent);
+  --marquee-fade-right: linear-gradient(to left, #0d0f14, transparent);
 
   --profile-bg: linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(13, 148, 136, 0.35));
   --profile-text: #14b8a6;
