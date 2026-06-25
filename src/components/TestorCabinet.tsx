@@ -26,10 +26,12 @@ import type { Student, Teacher, SubjectScore } from '../types';
 import StudentTable from './StudentTable';
 import iconLight from '../assets/icon-light.png';
 import { supabaseTestor } from '../supabase_testor';
-import { 
-  findMarkerCentroid, 
-  warpQuadrilateral, 
-  parseOMRSheet, 
+import {
+  findMarkerInGray,
+  buildGrayscale,
+  verifyWarpedMarkers,
+  warpQuadrilateral,
+  parseOMRSheet,
   QUESTIONS_LEFT_X,
   QUESTIONS_LEFT_Y_START,
   QUESTIONS_LEFT_Y_STEP,
@@ -1179,10 +1181,22 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     if (!video) return;
 
     let active = true;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
-    // Only need 2 consecutive frames for instant scanning (ZipGrade-style)
+    // Canvases are created ONCE per scan session and reused every frame —
+    // allocating them per frame (the old code) thrashed GC and tanked FPS.
+    const detW = 800;
+    const detH = 600;
+    const detCanvas = document.createElement('canvas');
+    detCanvas.width = detW;
+    detCanvas.height = detH;
+    const detCtx = detCanvas.getContext('2d', { willReadFrequently: true })!;
+
+    const captureCanvas = document.createElement('canvas');
+    const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true })!;
+
+    // 3 consecutive still frames lock on; the warp is then verified before
+    // committing, so a fast lock can't produce a wrong read.
+    const REQUIRED_STABLE_FRAMES = 3;
     let consecutiveSuccessFrames = 0;
     let lastCorners: [Point, Point, Point, Point] | null = null;
 
@@ -1196,16 +1210,12 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
         const cw = video.clientWidth || 640;
         const ch = video.clientHeight || 480;
 
-        // 1. Create downscaled canvas for super fast marker detection (CPU-friendly BFS)
-        const detW = 800;
-        const detH = 600;
-        const detCanvas = document.createElement('canvas');
-        detCanvas.width = detW;
-        detCanvas.height = detH;
-        const detCtx = detCanvas.getContext('2d', { willReadFrequently: true })!;
-
-        // Draw video frame onto downscaled detection canvas
+        // Draw video onto the reused downscaled detection canvas and read the
+        // whole frame back ONCE, converting to a single grayscale buffer that
+        // all four quadrant searches share (no per-search getImageData).
         detCtx.drawImage(video, 0, 0, detW, detH);
+        const frame = detCtx.getImageData(0, 0, detW, detH);
+        const gray = buildGrayscale(frame.data, detW, detH);
 
         // Aspect Ratio Scale & offset calculations to map video coords to screen overlay
         const scaleFit = Math.max(cw / vw, ch / vh);
@@ -1219,20 +1229,15 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
           y: (pt.y / detH) * scaledH + offsetY
         });
 
-        // 2. ZipGrade-style hover scanning: search each FULL quadrant of the
-        // frame instead of tight windows around viewfinder guides, so the
-        // sheet locks on wherever it sits in the frame — no manual alignment.
-        const qx = detW * 0.25;
-        const qy = detH * 0.25;
-        const qRadius = Math.max(qx, qy); // window covers the whole quadrant
-
-        // Corner hints bias each quadrant search toward the outermost square
-        // (the actual fiducial), so a stray dark blob nearer the frame center
-        // can't win over the real corner marker.
-        let tlDet = findMarkerCentroid(detCtx, qx, qy, qRadius, { x: 0, y: 0 });
-        let trDet = findMarkerCentroid(detCtx, detW - qx, qy, qRadius, { x: detW, y: 0 });
-        let blDet = findMarkerCentroid(detCtx, qx, detH - qy, qRadius, { x: 0, y: detH });
-        let brDet = findMarkerCentroid(detCtx, detW - qx, detH - qy, qRadius, { x: detW, y: detH });
+        // ZipGrade-style hover scanning: search each FULL quadrant of the frame
+        // (with a corner hint biasing toward the outermost square) so the sheet
+        // locks on wherever it sits in the frame — no manual alignment.
+        const mx = detW / 2;
+        const my = detH / 2;
+        let tlDet = findMarkerInGray(gray, detW, detH, 0, 0, mx, my, { x: 0, y: 0 });
+        let trDet = findMarkerInGray(gray, detW, detH, mx, 0, detW, my, { x: detW, y: 0 });
+        let blDet = findMarkerInGray(gray, detW, detH, 0, my, mx, detH, { x: 0, y: detH });
+        let brDet = findMarkerInGray(gray, detW, detH, mx, my, detW, detH, { x: detW, y: detH });
 
         // Geometry sanity check: the four blobs must form a sensibly sized,
         // correctly ordered quadrilateral (guards against false positives now
@@ -1271,10 +1276,11 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
             const distTR = Math.hypot(tr.x - lastCorners[1].x, tr.y - lastCorners[1].y);
             const distBL = Math.hypot(bl.x - lastCorners[2].x, bl.y - lastCorners[2].y);
             const distBR = Math.hypot(br.x - lastCorners[3].x, br.y - lastCorners[3].y);
-            
-            // Tolerance scales with native resolution (≈3% of frame width) so
-            // normal handheld shake doesn't keep resetting the lock-on.
-            const maxJitter = Math.max(24, vw * 0.03);
+
+            // Tolerance scales with native resolution (≈2% of frame width).
+            // Tighter than before because the faster loop yields many more
+            // frames/sec, so "still" really means still → less motion blur.
+            const maxJitter = Math.max(16, vw * 0.02);
             if (distTL > maxJitter || distTR > maxJitter || distBL > maxJitter || distBR > maxJitter) {
               isStable = false;
             }
@@ -1289,18 +1295,23 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
           lastCorners = [tl, tr, bl, br];
 
-          // 2 consecutive stable frames is enough for an instant lock-on
-          if (consecutiveSuccessFrames >= 2) {
-            // Success! Stop loop, perform warp and parse
-            active = false;
-            
-            // Draw video frame at full native resolution on the main canvas
-            canvas.width = vw;
-            canvas.height = vh;
-            ctx.drawImage(video, 0, 0, vw, vh);
+          if (consecutiveSuccessFrames >= REQUIRED_STABLE_FRAMES) {
+            // Draw the frame at full native resolution and try to grade it.
+            // handleGradeOMRFrame verifies the warp and returns false if the
+            // alignment didn't check out — in that case we keep scanning
+            // instead of committing a wrong result.
+            captureCanvas.width = vw;
+            captureCanvas.height = vh;
+            captureCtx.drawImage(video, 0, 0, vw, vh);
 
-            handleGradeOMRFrame(ctx, lastCorners);
-            return;
+            const committed = handleGradeOMRFrame(captureCtx, lastCorners);
+            if (committed) {
+              active = false;
+              return;
+            }
+            // Rejected by verification — reset and resume scanning
+            consecutiveSuccessFrames = 0;
+            lastCorners = null;
           }
         } else {
           consecutiveSuccessFrames = 0;
@@ -1353,18 +1364,29 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
     };
   }, [showScanModal, cameraStream, scanStatus, selectedSampleSheet]);
 
-  // Dynamic grading frame processor
-  const handleGradeOMRFrame = (ctx: CanvasRenderingContext2D, corners: [Point, Point, Point, Point]) => {
-    if (!selectedTest) return;
+  // Dynamic grading frame processor.
+  // Returns true when the frame was accepted (graded/committed or sent to
+  // manual review), false when the warp failed verification so the caller
+  // should keep scanning instead of committing a wrong result.
+  const handleGradeOMRFrame = (ctx: CanvasRenderingContext2D, corners: [Point, Point, Point, Point]): boolean => {
+    if (!selectedTest) return false;
 
     // 1. Create a 750 x 1000 destination canvas
     const warpCanvas = document.createElement('canvas');
     warpCanvas.width = 750;
     warpCanvas.height = 1000;
-    
+
     // 2. Warp the frame to the destination canvas
     warpQuadrilateral(ctx, corners, warpCanvas);
-    
+
+    // 2b. Correctness gate: the four corner fiducials must land dark at their
+    // template positions. A false corner lock warps non-marker content there
+    // and fails this check, so we reject and keep scanning — this is what
+    // prevents a fast lock from reading the wrong sheet/answers.
+    if (!verifyWarpedMarkers(warpCanvas)) {
+      return false;
+    }
+
     // 3. Grade against the selected test key (entries may hold several
     //    accepted letters, e.g. "AC")
     const rawKeys = selectedTest.questions_json || Array(15).fill("A");
@@ -1448,6 +1470,9 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
       setSelectedStudentForScan('');
       setScanStatus('success');
     }
+
+    // Frame accepted (auto-saved or sent to manual review)
+    return true;
   };
 
   // Perform grading and student association simulation using real OMR Canvas Parser

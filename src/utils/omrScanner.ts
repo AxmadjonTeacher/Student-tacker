@@ -254,6 +254,217 @@ export function findMarkerCentroid(
   };
 }
 
+// ── Fast realtime detection path ─────────────────────────────────────────────
+// The live scan loop runs the detector 4× per frame at video frame-rate. To
+// stay fast it does ONE getImageData per frame, converts to a single grayscale
+// buffer, and finds markers directly in that buffer — no per-call canvas
+// readbacks and no per-frame allocation (scratch buffers are reused).
+
+let _grayScratch: Uint8Array | null = null;
+let _visitedScratch: Uint8Array | null = null;
+let _queueScratch: Int32Array | null = null;
+
+function ensureScratch(n: number) {
+  if (!_grayScratch || _grayScratch.length < n) _grayScratch = new Uint8Array(n);
+  if (!_visitedScratch || _visitedScratch.length < n) _visitedScratch = new Uint8Array(n);
+  if (!_queueScratch || _queueScratch.length < n) _queueScratch = new Int32Array(n);
+}
+
+/**
+ * Converts an RGBA frame to a single grayscale buffer in one pass, cached in a
+ * reused scratch array (valid until the next call). Integer luma approximation
+ * keeps the per-frame cost to a single tight loop.
+ */
+export function buildGrayscale(rgba: Uint8ClampedArray, width: number, height: number): Uint8Array {
+  const n = width * height;
+  ensureScratch(n);
+  const g = _grayScratch!;
+  for (let i = 0; i < n; i++) {
+    const j = i << 2;
+    g[i] = (rgba[j] * 77 + rgba[j + 1] * 150 + rgba[j + 2] * 29) >> 8;
+  }
+  return g;
+}
+
+/**
+ * Finds the best corner-fiducial square inside a rectangular region of a
+ * grayscale buffer. Same square/solidity/darkness logic as findMarkerCentroid,
+ * but reads from a shared buffer (no getImageData) and reuses scratch memory,
+ * so it can run 4× per frame in realtime. Returns a point in full-frame coords.
+ */
+export function findMarkerInGray(
+  gray: Uint8Array,
+  width: number,
+  height: number,
+  rx0: number,
+  ry0: number,
+  rx1: number,
+  ry1: number,
+  cornerHint?: Point
+): Point | null {
+  const x0 = Math.max(0, rx0 | 0);
+  const y0 = Math.max(0, ry0 | 0);
+  const x1 = Math.min(width, rx1 | 0);
+  const y1 = Math.min(height, ry1 | 0);
+  const regW = x1 - x0;
+  const regH = y1 - y0;
+  if (regW <= 1 || regH <= 1) return null;
+  const regN = regW * regH;
+
+  ensureScratch(width * height);
+  const visited = _visitedScratch!;
+  const queue = _queueScratch!;
+  visited.fill(0, 0, regN);
+
+  // Region min/max for adaptive thresholding
+  let minVal = 255;
+  let maxVal = 0;
+  for (let ly = 0; ly < regH; ly++) {
+    const rowBase = (y0 + ly) * width + x0;
+    for (let lx = 0; lx < regW; lx++) {
+      const v = gray[rowBase + lx];
+      if (v < minVal) minVal = v;
+      if (v > maxVal) maxVal = v;
+    }
+  }
+  if (maxVal - minVal < 45) return null;
+  const threshold = minVal + 0.4 * (maxVal - minVal);
+
+  interface Comp {
+    area: number; sumX: number; sumY: number;
+    minX: number; maxX: number; minY: number; maxY: number;
+    graySum: number; width: number; height: number;
+  }
+  const components: Comp[] = [];
+
+  for (let ly = 0; ly < regH; ly++) {
+    for (let lx = 0; lx < regW; lx++) {
+      const lidx = ly * regW + lx;
+      if (visited[lidx] === 1) continue;
+      const g0 = gray[(y0 + ly) * width + (x0 + lx)];
+      if (g0 >= threshold) { visited[lidx] = 1; continue; }
+
+      // Flood fill this dark component (local indices, global gray reads)
+      let area = 0, sumX = 0, sumY = 0, graySum = 0;
+      let cMinX = lx, cMaxX = lx, cMinY = ly, cMaxY = ly;
+      let head = 0, tail = 0;
+      queue[tail++] = lidx;
+      visited[lidx] = 1;
+
+      while (head < tail) {
+        const cur = queue[head++];
+        const cx = cur % regW;
+        const cy = (cur / regW) | 0;
+        area++;
+        sumX += cx;
+        sumY += cy;
+        graySum += gray[(y0 + cy) * width + (x0 + cx)];
+        if (cx < cMinX) cMinX = cx;
+        if (cx > cMaxX) cMaxX = cx;
+        if (cy < cMinY) cMinY = cy;
+        if (cy > cMaxY) cMaxY = cy;
+
+        if (cx > 0) {
+          const n = cur - 1;
+          if (visited[n] === 0 && gray[(y0 + cy) * width + (x0 + cx - 1)] < threshold) { visited[n] = 1; queue[tail++] = n; }
+        }
+        if (cx < regW - 1) {
+          const n = cur + 1;
+          if (visited[n] === 0 && gray[(y0 + cy) * width + (x0 + cx + 1)] < threshold) { visited[n] = 1; queue[tail++] = n; }
+        }
+        if (cy > 0) {
+          const n = cur - regW;
+          if (visited[n] === 0 && gray[(y0 + cy - 1) * width + (x0 + cx)] < threshold) { visited[n] = 1; queue[tail++] = n; }
+        }
+        if (cy < regH - 1) {
+          const n = cur + regW;
+          if (visited[n] === 0 && gray[(y0 + cy + 1) * width + (x0 + cx)] < threshold) { visited[n] = 1; queue[tail++] = n; }
+        }
+      }
+
+      if (area > 15) {
+        components.push({
+          area, sumX, sumY,
+          minX: cMinX, maxX: cMaxX, minY: cMinY, maxY: cMaxY,
+          graySum,
+          width: cMaxX - cMinX + 1,
+          height: cMaxY - cMinY + 1
+        });
+      }
+    }
+  }
+
+  // Filter to solid square fiducials (solidity ≥ 0.82 rejects round bubbles)
+  let best: Comp | null = null;
+  let bestScore = -Infinity;
+  const centerLX = regW / 2;
+  const centerLY = regH / 2;
+
+  for (const c of components) {
+    const aspect = c.width / c.height;
+    const solidity = c.area / (c.width * c.height);
+    if (aspect < 0.65 || aspect > 1.54 || solidity < 0.82 || c.width < 8 || c.width > 200) continue;
+    if (c.graySum / c.area > 115) continue;
+
+    const localCx = c.sumX / c.area;
+    const localCy = c.sumY / c.area;
+    let dist: number;
+    let distWeight: number;
+    if (cornerHint) {
+      dist = Math.hypot(x0 + localCx - cornerHint.x, y0 + localCy - cornerHint.y);
+      distWeight = 5;
+    } else {
+      dist = Math.hypot(localCx - centerLX, localCy - centerLY);
+      distWeight = 3;
+    }
+    const squareness = 1 - Math.abs(1 - aspect);
+    const score = c.area * 2 + squareness * 100 + solidity * 80 - dist * distWeight;
+    if (score > bestScore) {
+      bestScore = score;
+      best = c;
+    }
+  }
+
+  if (!best) return null;
+  return { x: x0 + best.sumX / best.area, y: y0 + best.sumY / best.area };
+}
+
+/** Average grayscale in a small square window — used by the warp verifier. */
+function avgGrayAt(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number): number {
+  const x = Math.max(0, Math.floor(cx - r));
+  const y = Math.max(0, Math.floor(cy - r));
+  const w = Math.min(ctx.canvas.width - x, r * 2 + 1);
+  const h = Math.min(ctx.canvas.height - y, r * 2 + 1);
+  if (w <= 0 || h <= 0) return 255;
+  const d = ctx.getImageData(x, y, w, h).data;
+  let sum = 0;
+  let n = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    sum += (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+    n++;
+  }
+  return n ? sum / n : 255;
+}
+
+/**
+ * Correctness gate run after warping a candidate frame: every one of the four
+ * corner fiducials must land dark at its template position. A false corner
+ * lock warps non-marker content to those spots and fails this check, so the
+ * scanner only commits a result when the sheet is genuinely aligned — this is
+ * what stops fast captures from reading the wrong answers.
+ */
+export function verifyWarpedMarkers(canvas: HTMLCanvasElement): boolean {
+  const ctx = canvas.getContext('2d')!;
+  const markers = [TEMPLATE_TL, TEMPLATE_TR, TEMPLATE_BL, TEMPLATE_BR];
+  let total = 0;
+  for (const m of markers) {
+    const center = avgGrayAt(ctx, m.x, m.y, 4);
+    if (center > 130) return false; // this corner is not a dark marker → misaligned
+    total += center;
+  }
+  return total / markers.length < 110; // collectively crisp and dark
+}
+
 /**
  * Full-frame marker scan: searches the entire canvas for 4 corner markers.
  * Divides the frame into quadrants and finds the best square marker in each.
