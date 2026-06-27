@@ -916,32 +916,28 @@ select option {
     overflow: visible;
   }
 
-  /* Active-tab dot indicator.
+  /* Active-tab pill indicator (sliding white capsule behind the active tab).
      Moved with transform (GPU-composited) instead of `left` so the slide is
-     smooth and never triggers per-frame layout/paint. The capsule spans one
-     tab slot and centers the dot as its ::after, so switching tabs just
-     translates it by whole slots: translateX(index * 100%). */
+     smooth and never triggers per-frame layout/paint. The pill spans one tab
+     slot, so switching tabs just translates it by whole slots:
+     translateX(index * 100%). */
   .tab-capsule {
     position: absolute;
+    top: 7px;
     bottom: 7px;
     left: 8px;
-    height: 6px;
     width: calc((100% - 16px) / var(--tab-count, 4));
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.10),
+      0 2px 4px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
     transform: translate3d(calc(var(--active-index, 0) * 100%), 0, 0);
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
     pointer-events: none;
     z-index: 1;
-  }
-  .tab-capsule::after {
-    content: '';
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--capsule-color, var(--text-primary));
   }
 
   .mobile-tab-bar .tab-item {
@@ -971,6 +967,7 @@ select option {
 
   .mobile-tab-bar .tab-item.active {
     color: var(--text-primary);
+    font-weight: 800;
   }
 
   .mobile-tab-bar .tab-item.active svg {
@@ -986,9 +983,11 @@ select option {
       0 4px 14px rgba(0, 0, 0, 0.35),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
-  [data-theme="dark"] .tab-capsule::after {
-    background: var(--capsule-color, #ffffff);
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.55);
+  [data-theme="dark"] .tab-capsule {
+    background: rgba(255, 255, 255, 0.10);
+    box-shadow:
+      0 4px 14px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10);
   }
   [data-theme="dark"] .mobile-tab-bar .tab-item {
     color: rgba(255, 255, 255, 0.38);

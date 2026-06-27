@@ -291,9 +291,6 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
           .mobile-tab-bar {
             display: flex !important;
           }
-          .tab-capsule {
-            --capsule-color: #0d9488;
-          }
           .mobile-tab-bar .tab-item.active {
             color: #0d9488;
           }

@@ -5012,7 +5012,7 @@ const TestorCabinet: React.FC<TestorCabinetProps> = ({
 
         {/* Floating Liquid Glass Tab Bar (shared design) */}
         <div className="mobile-tab-bar" style={{ display: 'flex' }}>
-          <div className="tab-capsule" style={{ '--active-index': navItems.findIndex(n => n.id === activeTab), '--tab-count': navItems.length, '--capsule-color': colors.primary } as React.CSSProperties} />
+          <div className="tab-capsule" style={{ '--active-index': navItems.findIndex(n => n.id === activeTab), '--tab-count': navItems.length } as React.CSSProperties} />
           {navItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
