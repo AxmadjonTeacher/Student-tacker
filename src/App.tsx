@@ -2765,7 +2765,7 @@ function App() {
         </div>
 
         <div className="mobile-tab-bar" style={{ display: 'flex' }}>
-          <div className="tab-capsule" style={{ left: `calc((100% - 16px) * ${(activeAdminIndex + 0.5) / 4} + 8px)` }} />
+          <div className="tab-capsule" style={{ '--active-index': activeAdminIndex, '--tab-count': 4 } as React.CSSProperties} />
           <button
             onClick={() => {
               setActiveAdminTab('home');

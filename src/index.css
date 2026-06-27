@@ -916,17 +916,32 @@ select option {
     overflow: visible;
   }
 
-  /* Active-tab dot indicator */
+  /* Active-tab dot indicator.
+     Moved with transform (GPU-composited) instead of `left` so the slide is
+     smooth and never triggers per-frame layout/paint. The capsule spans one
+     tab slot and centers the dot as its ::after, so switching tabs just
+     translates it by whole slots: translateX(index * 100%). */
   .tab-capsule {
     position: absolute;
     bottom: 7px;
+    left: 8px;
+    height: 6px;
+    width: calc((100% - 16px) / var(--tab-count, 4));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate3d(calc(var(--active-index, 0) * 100%), 0, 0);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .tab-capsule::after {
+    content: '';
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--text-primary);
-    transform: translateX(-50%);
-    z-index: 1;
-    transition: left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: var(--capsule-color, var(--text-primary));
   }
 
   .mobile-tab-bar .tab-item {
@@ -971,8 +986,8 @@ select option {
       0 4px 14px rgba(0, 0, 0, 0.35),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
-  [data-theme="dark"] .tab-capsule {
-    background: #ffffff;
+  [data-theme="dark"] .tab-capsule::after {
+    background: var(--capsule-color, #ffffff);
     box-shadow: 0 0 8px rgba(139, 92, 246, 0.55);
   }
   [data-theme="dark"] .mobile-tab-bar .tab-item {

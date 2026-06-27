@@ -292,7 +292,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
             display: flex !important;
           }
           .tab-capsule {
-            background: #0d9488;
+            --capsule-color: #0d9488;
           }
           .mobile-tab-bar .tab-item.active {
             color: #0d9488;
@@ -1129,7 +1129,7 @@ const ParentCabinet: React.FC<ParentCabinetProps> = ({
 
       {/* Floating Liquid Glass Tab Bar (shared design, mobile only) */}
       <div className="mobile-tab-bar">
-        <div className="tab-capsule" style={{ left: `calc((100% - 16px) * ${(activeIndex + 0.5) / 4} + 8px)` }} />
+        <div className="tab-capsule" style={{ '--active-index': activeIndex, '--tab-count': 4 } as React.CSSProperties} />
         <button
           onClick={() => setActiveTab('home')}
           className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
